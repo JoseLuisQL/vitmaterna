@@ -13,7 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../../../src/store/authStore';
+import { useAuthStore } from '../../../src/store/authStore';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import api from '../../../src/services/api';
@@ -36,7 +36,7 @@ interface Appointment {
 
 export default function AppointmentsScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
