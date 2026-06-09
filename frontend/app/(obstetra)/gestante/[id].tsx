@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, Dimensions,
-  StatusBar, Platform
+  StatusBar, Platform, Modal, TextInput, Alert, ActivityIndicator
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -14,7 +14,7 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
-import { usePatientProfile } from '../../../src/services/api-queries';
+import { usePatientProfile, useCreateLabResult, useCreateVaccine } from '../../../src/services/api-queries';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -154,6 +154,87 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [activeTab, setActiveTab] = useState('datos');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
+
+  // Modal and Form States
+  const [isLabModalVisible, setIsLabModalVisible] = useState(false);
+  const [isVaxModalVisible, setIsVaxModalVisible] = useState(false);
+
+  // Form states for Lab Result
+  const [labTipo, setLabTipo] = useState('');
+  const [labToma, setLabToma] = useState('1');
+  const [labValorNum, setLabValorNum] = useState('');
+  const [labValorText, setLabValorText] = useState('');
+  const [labUnidad, setLabUnidad] = useState('');
+  const [labResultado, setLabResultado] = useState('');
+  const [labObs, setLabObs] = useState('');
+
+  // Form states for Vaccine Record
+  const [vaxNombre, setVaxNombre] = useState('');
+  const [vaxDosis, setVaxDosis] = useState('1');
+  const [vaxSemana, setVaxSemana] = useState('');
+  const [vaxEstado, setVaxEstado] = useState('aplicada');
+
+  // Mutations
+  const { mutate: createLabResult, isPending: isSavingLab } = useCreateLabResult();
+  const { mutate: createVaccine, isPending: isSavingVax } = useCreateVaccine();
+
+  const handleSaveLab = () => {
+    if (!labTipo) return Alert.alert('Error', 'El tipo de examen es requerido.');
+    if (!patient) return;
+
+    createLabResult({
+      gestanteId: patient.id,
+      tipoExamen: labTipo,
+      numeroToma: parseInt(labToma, 10) || 1,
+      valorNumerico: labValorNum ? parseFloat(labValorNum) : undefined,
+      valor: labValorText || undefined,
+      unidad: labUnidad || undefined,
+      resultado: labResultado || undefined,
+      fechaExamen: new Date().toISOString().split('T')[0],
+      observaciones: labObs || undefined
+    }, {
+      onSuccess: () => {
+        Alert.alert('Éxito', 'Resultado de laboratorio registrado.');
+        setIsLabModalVisible(false);
+        setLabTipo('');
+        setLabToma('1');
+        setLabValorNum('');
+        setLabValorText('');
+        setLabUnidad('');
+        setLabResultado('');
+        setLabObs('');
+      },
+      onError: () => {
+        Alert.alert('Error', 'No se pudo registrar el examen.');
+      }
+    });
+  };
+
+  const handleSaveVax = () => {
+    if (!vaxNombre) return Alert.alert('Error', 'El nombre de la vacuna es requerido.');
+    if (!patient) return;
+
+    createVaccine({
+      gestanteId: patient.id,
+      vacuna: vaxNombre,
+      dosisNumero: parseInt(vaxDosis, 10) || 1,
+      egSemanasAplicacion: vaxSemana ? parseInt(vaxSemana, 10) : undefined,
+      fechaAplicacion: vaxEstado === 'aplicada' ? new Date().toISOString().split('T')[0] : undefined,
+      estado: vaxEstado,
+    }, {
+      onSuccess: () => {
+        Alert.alert('Éxito', 'Registro de vacuna guardado.');
+        setIsVaxModalVisible(false);
+        setVaxNombre('');
+        setVaxDosis('1');
+        setVaxSemana('');
+        setVaxEstado('aplicada');
+      },
+      onError: () => {
+        Alert.alert('Error', 'No se pudo registrar la vacuna.');
+      }
+    });
+  };
 
   if (isLoading) return <LoadingScreen message="Cargando historia clínica..." />;
 
@@ -428,7 +509,16 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── TAB: LABORATORIO ── */}
           {activeTab === 'laboratorio' && (
             <View style={[styles.card, designTokens.cardShadow]}>
-              <Text style={styles.cardHeader}>Resultados Analíticos</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Resultados Analíticos</Text>
+                <TouchableOpacity 
+                  style={styles.primaryActionBtn}
+                  onPress={() => setIsLabModalVisible(true)}
+                >
+                  <Plus size={16} color="#FFF" />
+                  <Text style={styles.primaryActionText}>Registrar</Text>
+                </TouchableOpacity>
+              </View>
               
               {lab.hemoglobina1 && lab.hemoglobina1 < 11 && (
                 <View style={styles.alertBanner}>
@@ -455,7 +545,16 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── TAB: VACUNAS ── */}
           {activeTab === 'vacunas' && (
             <View style={[styles.card, designTokens.cardShadow]}>
-              <Text style={styles.cardHeader}>Esquema de Vacunación</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Esquema de Vacunación</Text>
+                <TouchableOpacity 
+                  style={styles.primaryActionBtn}
+                  onPress={() => setIsVaxModalVisible(true)}
+                >
+                  <Plus size={16} color="#FFF" />
+                  <Text style={styles.primaryActionText}>Registrar</Text>
+                </TouchableOpacity>
+              </View>
               {vacunas.length > 0 ? vacunas.map((v: any, i: number) => (
                 <View key={i} style={[styles.vaxRow, i < vacunas.length - 1 && styles.vaxBorder]}>
                   <View style={styles.vaxIconBox}>
@@ -478,6 +577,190 @@ export default function PatientProfileScreen(): React.ReactElement {
           )}
         </ScrollView>
       </View>
+
+      {/* ── MODAL: REGISTRAR EXAMEN ── */}
+      <Modal
+        visible={isLabModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsLabModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>Registrar Examen de Laboratorio</Text>
+            
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Tipo de Examen</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. Hemoglobina, Glucemia, VIH..."
+                  value={labTipo}
+                  onChangeText={setLabTipo}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Número de Toma</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 1, 2, 3"
+                  keyboardType="numeric"
+                  value={labToma}
+                  onChangeText={setLabToma}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Valor Numérico (Opcional)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 11.5"
+                  keyboardType="numeric"
+                  value={labValorNum}
+                  onChangeText={setLabValorNum}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Valor Texto (Opcional)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. Normal, Reactivo..."
+                  value={labValorText}
+                  onChangeText={setLabValorText}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Unidad (Opcional)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. g/dL, mg/dL"
+                  value={labUnidad}
+                  onChangeText={setLabUnidad}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Resultado (Opcional)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. Normal, Anemia Leve..."
+                  value={labResultado}
+                  onChangeText={setLabResultado}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Observaciones</Text>
+                <TextInput
+                  style={[styles.textInput, { height: 80 }]}
+                  placeholder="Notas adicionales..."
+                  multiline
+                  value={labObs}
+                  onChangeText={setLabObs}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsLabModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveLab} disabled={isSavingLab}>
+                {isSavingLab ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── MODAL: REGISTRAR VACUNA ── */}
+      <Modal
+        visible={isVaxModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsVaxModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>Registrar Vacunación</Text>
+            
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Nombre de la Vacuna</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. Influenza, Tétanos..."
+                  value={vaxNombre}
+                  onChangeText={setVaxNombre}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Número de Dosis</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 1, 2"
+                  keyboardType="numeric"
+                  value={vaxDosis}
+                  onChangeText={setVaxDosis}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Semanas de Embarazo Aplicación</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 20"
+                  keyboardType="numeric"
+                  value={vaxSemana}
+                  onChangeText={setVaxSemana}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Estado</Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {['aplicada', 'pendiente'].map((est) => (
+                    <TouchableOpacity
+                      key={est}
+                      style={[
+                        styles.textInput,
+                        { flex: 1, alignItems: 'center' },
+                        vaxEstado === est && { borderColor: '#BE185D', backgroundColor: '#FDF2F8' }
+                      ]}
+                      onPress={() => setVaxEstado(est)}
+                    >
+                      <Text style={[vaxEstado === est && { color: '#BE185D', fontWeight: 'bold' }]}>
+                        {est.toUpperCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsVaxModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveVax} disabled={isSavingVax}>
+                {isSavingVax ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -895,5 +1178,83 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontStyle: 'italic',
     marginTop: 16,
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    width: '100%',
+    maxHeight: '85%',
+    padding: 24,
+    gap: 16,
+  },
+  modalHeader: {
+    fontFamily: typography.h3.fontFamily,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  inputFieldGroup: {
+    gap: 6,
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  textInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#0F172A',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 16,
+  },
+  cancelBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  saveBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#BE185D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 100,
+  },
+  saveBtnText: {
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
 });

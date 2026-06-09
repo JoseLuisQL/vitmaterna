@@ -4,25 +4,102 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import { sendPushNotification } from '../notifications/notification.service.js';
 
 export class ClinicalService {
-  async createPrenatalControl(data: any) {
-    const { proximaCita, ...controlData } = data;
+  async createPrenatalControl(data: any, authenticatedUserId?: string) {
+    const gestanteId = data.patientId || data.gestanteId;
     
-    // Parse dates
-    const parsedProximaCita = proximaCita ? new Date(`${proximaCita}T00:00:00.000Z`) : undefined;
+    if (!gestanteId) {
+      throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'El ID de la gestante es requerido');
+    }
 
-    // Create control in transaction so we can update the risk level
+    // Resolve obstetraId
+    let resolvedObstetraId = data.obstetraId;
+    if (!resolvedObstetraId && authenticatedUserId) {
+      const obstetra = await prisma.obstetra.findUnique({ where: { userId: authenticatedUserId } });
+      resolvedObstetraId = obstetra?.id;
+    }
+
+    if (!resolvedObstetraId) {
+      throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'El ID del obstetra es requerido');
+    }
+
+    // Parse gestational age
+    const egSemanas = data.week !== undefined ? Number(data.week) : (data.egSemanas !== undefined ? Number(data.egSemanas) : 0);
+
+    // Parse weight
+    const peso = data.weight !== undefined ? Number(data.weight) : (data.peso !== undefined ? Number(data.peso) : undefined);
+
+    // Parse blood pressure
+    let presionSistolica = data.presionSistolica;
+    let presionDiastolica = data.presionDiastolica;
+    if (data.bloodPressure && typeof data.bloodPressure === 'string') {
+      const parts = data.bloodPressure.split('/');
+      if (parts.length === 2) {
+        presionSistolica = parseInt(parts[0].trim(), 10);
+        presionDiastolica = parseInt(parts[1].trim(), 10);
+      }
+    }
+
+    // Parse fetal heart rate
+    const fcf = data.fetalHeartRate !== undefined ? Number(data.fetalHeartRate) : (data.fcf !== undefined ? Number(data.fcf) : undefined);
+
+    // Parse fundal height
+    const alturaUterina = data.fundalHeight !== undefined ? Number(data.fundalHeight) : (data.alturaUterina !== undefined ? Number(data.alturaUterina) : undefined);
+
+    // Parse observations
+    const observaciones = data.indications || data.observaciones || '';
+
+    // Parse next appointment
+    const parsedProximaCita = data.proximaCita ? new Date(`${data.proximaCita}T00:00:00.000Z`) : undefined;
+
     return prisma.$transaction(async (tx) => {
+      // Auto-calculate control number
+      const controlCount = await tx.prenatalControl.count({
+        where: { gestanteId }
+      });
+      const numeroControl = data.numeroControl || (controlCount + 1);
+
       const control = await tx.prenatalControl.create({
         data: {
-          ...controlData,
+          gestanteId,
+          obstetraId: resolvedObstetraId,
+          appointmentId: data.appointmentId || undefined,
+          numeroControl,
           fecha: new Date(),
+          egSemanas,
+          peso,
+          temperatura: data.temperatura ? Number(data.temperatura) : undefined,
+          presionSistolica,
+          presionDiastolica,
+          pulsoMaterno: data.pulsoMaterno ? Number(data.pulsoMaterno) : undefined,
+          alturaUterina,
+          situacion: data.situacion || undefined,
+          presentacion: data.presentacion || undefined,
+          posicion: data.posicion || undefined,
+          fcf,
+          movimientoFetal: data.movimientoFetal || undefined,
+          proteinuria: data.proteinuria || undefined,
+          edema: data.edema || undefined,
+          reflejoOsteotendinoso: data.reflejoOsteotendinoso ? Number(data.reflejoOsteotendinoso) : undefined,
+          examenPezon: data.examenPezon || undefined,
+          indicacionHierro: data.indicacionHierro || undefined,
+          indicacionCalcio: data.indicacionCalcio || undefined,
+          indicacionAcidoFolico: data.indicacionAcidoFolico || undefined,
+          orientacion: data.orientacion || [],
+          ecografiaControl: data.ecografiaControl || undefined,
+          perfilBiofisico: data.perfilBiofisico || undefined,
+          visitaDomiciliaria: data.visitaDomiciliaria || undefined,
+          planParto: data.planParto || undefined,
           proximaCita: parsedProximaCita,
+          establecimiento: data.establecimiento || undefined,
+          responsable: data.responsable || undefined,
+          nroFormatoSis: data.nroFormatoSis || undefined,
+          observaciones,
         },
       });
 
       // Recalculate Risk Level
       const gestante = await tx.gestante.findUnique({
-        where: { id: data.gestanteId },
+        where: { id: gestanteId },
         include: {
           antecedentes: true,
           prenatalControls: {
@@ -58,7 +135,7 @@ export class ClinicalService {
         });
 
         await tx.gestante.update({
-          where: { id: data.gestanteId },
+          where: { id: gestanteId },
           data: { nivelRiesgo: riskAssessment.level },
         });
       }
@@ -93,8 +170,8 @@ export class ClinicalService {
     });
   }
 
-  async createSupplementLog(treatmentId: string, data: any) {
-    const { fecha, ...logData } = data;
+  async createSupplementLog(treatmentId: string, data: any, authenticatedUserId?: string) {
+    const { fecha, gestanteId, ...logData } = data;
     
     // Ensure treatment exists
     const treatment = await prisma.treatment.findUnique({ where: { id: treatmentId } });
@@ -102,11 +179,46 @@ export class ClinicalService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Tratamiento no encontrado');
     }
 
+    // Resolve gestanteId
+    let resolvedGestanteId = gestanteId || treatment.gestanteId;
+    if (!resolvedGestanteId && authenticatedUserId) {
+      const gestante = await prisma.gestante.findUnique({ where: { userId: authenticatedUserId } });
+      resolvedGestanteId = gestante?.id;
+    }
+
+    if (!resolvedGestanteId) {
+      throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Gestante ID es requerido');
+    }
+
+    // Resolve date
+    const dateStr = fecha || new Date().toISOString().split('T')[0];
+    const logDate = new Date(`${dateStr}T00:00:00.000Z`);
+
+    // Check if log already exists
+    const existingLog = await prisma.supplementLog.findFirst({
+      where: {
+        treatmentId,
+        fecha: logDate,
+      }
+    });
+
+    if (existingLog) {
+      return prisma.supplementLog.update({
+        where: { id: existingLog.id },
+        data: {
+          tomado: logData.tomado !== undefined ? logData.tomado : true,
+          notas: logData.notas ?? existingLog.notas,
+        }
+      });
+    }
+
     return prisma.supplementLog.create({
       data: {
         ...logData,
         treatmentId,
-        fecha: new Date(`${fecha}T00:00:00.000Z`),
+        gestanteId: resolvedGestanteId,
+        fecha: logDate,
+        tomado: logData.tomado !== undefined ? logData.tomado : true,
       },
     });
   }
@@ -156,6 +268,291 @@ export class ClinicalService {
     }
 
     return dangerSign;
+  }
+
+  async createLabResult(data: any, authenticatedUserId?: string) {
+    const { gestanteId, fechaExamen, valorNumerico, ...labData } = data;
+    
+    let resolvedObstetraId = data.obstetraId;
+    if (!resolvedObstetraId && authenticatedUserId) {
+      const obstetra = await prisma.obstetra.findUnique({ where: { userId: authenticatedUserId } });
+      resolvedObstetraId = obstetra?.id;
+    }
+
+    const valNum = valorNumerico !== undefined ? Number(valorNumerico) : undefined;
+    let valCorregido = data.valorCorregido !== undefined ? Number(data.valorCorregido) : undefined;
+    let resultado = data.resultado;
+
+    if (labData.tipoExamen === 'Hemoglobina' && valNum !== undefined) {
+      const { analyzeHemoglobin } = await import('../../utils/hemoglobinCorrection.js');
+      const analysis = analyzeHemoglobin(valNum, 2926);
+      valCorregido = analysis.correctedHb;
+      resultado = analysis.classification;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const labResult = await tx.labResult.create({
+        data: {
+          ...labData,
+          gestanteId,
+          obstetraId: resolvedObstetraId,
+          valorNumerico: valNum,
+          valorCorregido: valCorregido,
+          resultado,
+          fechaExamen: new Date(fechaExamen),
+        }
+      });
+
+      // Recalculate Risk Level
+      const gestante = await tx.gestante.findUnique({
+        where: { id: gestanteId },
+        include: {
+          antecedentes: true,
+          prenatalControls: {
+            orderBy: { fecha: 'desc' },
+            take: 1,
+          },
+          labResults: {
+            where: { tipoExamen: 'Hemoglobina' },
+            orderBy: { fechaExamen: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      if (gestante) {
+        const latestControl = gestante.prenatalControls[0];
+        const latestLab = gestante.labResults[0];
+
+        const { calculateRiskLevel } = await import('../../utils/riskCalculator.js');
+        const riskAssessment = calculateRiskLevel({
+          age: gestante.ageAtRegistration || undefined,
+          imc: gestante.imc ? Number(gestante.imc) : undefined,
+          correctedHemoglobin: latestLab?.valorCorregido ? Number(latestLab.valorCorregido) : undefined,
+          presionSistolica: latestControl?.presionSistolica || undefined,
+          presionDiastolica: latestControl?.presionDiastolica || undefined,
+          cesareasPrevias: gestante.cesareas,
+          abortosPrevios: gestante.abortos,
+          nacidosMuertos: gestante.nacidosMuertos,
+          gestaciones: gestante.gestaciones,
+          rhSensitizado: gestante.rhSensitizado || undefined,
+          antecedentesPersonales: gestante.antecedentes
+            .filter((a) => a.tipo === 'personal')
+            .map((a) => a.condicion),
+        });
+
+        await tx.gestante.update({
+          where: { id: gestanteId },
+          data: { nivelRiesgo: riskAssessment.level },
+        });
+      }
+
+      return labResult;
+    });
+  }
+
+  async getLabResults(gestanteId: string) {
+    return prisma.labResult.findMany({
+      where: { gestanteId },
+      orderBy: { fechaExamen: 'desc' },
+    });
+  }
+
+  async createUltrasound(data: any) {
+    const { gestanteId, fecha, ...ultrasoundData } = data;
+    return prisma.ultrasound.create({
+      data: {
+        ...ultrasoundData,
+        gestanteId,
+        fecha: new Date(fecha),
+      }
+    });
+  }
+
+  async getUltrasounds(gestanteId: string) {
+    return prisma.ultrasound.findMany({
+      where: { gestanteId },
+      orderBy: { fecha: 'desc' },
+    });
+  }
+
+  async createVaccinationRecord(data: any) {
+    const { gestanteId, fechaAplicacion, ...vaccineData } = data;
+    return prisma.vaccinationRecord.create({
+      data: {
+        ...vaccineData,
+        gestanteId,
+        fechaAplicacion: fechaAplicacion ? new Date(fechaAplicacion) : undefined,
+      }
+    });
+  }
+
+  async getVaccinationRecords(gestanteId: string) {
+    return prisma.vaccinationRecord.findMany({
+      where: { gestanteId },
+      orderBy: { fechaAplicacion: 'desc' },
+    });
+  }
+
+  async createPathology(data: any) {
+    const { gestanteId, fechaDiagnostico, ...pathologyData } = data;
+    return prisma.pathology.create({
+      data: {
+        ...pathologyData,
+        gestanteId,
+        fechaDiagnostico: new Date(fechaDiagnostico),
+      }
+    });
+  }
+
+  async getPathologies(gestanteId: string) {
+    return prisma.pathology.findMany({
+      where: { gestanteId },
+      orderBy: { fechaDiagnostico: 'desc' },
+    });
+  }
+
+  async createMentalHealthScreening(data: any, authenticatedUserId?: string) {
+    const { gestanteId, fecha, respuestas, ...screeningData } = data;
+    
+    let resolvedObstetraId = data.obstetraId;
+    if (!resolvedObstetraId && authenticatedUserId) {
+      const obstetra = await prisma.obstetra.findUnique({ where: { userId: authenticatedUserId } });
+      resolvedObstetraId = obstetra?.id;
+    }
+
+    let puntajeP1_18 = screeningData.puntajeP1_18;
+    let puntajeP19_22 = screeningData.puntajeP19_22;
+    let pregunta23 = screeningData.pregunta23;
+    let puntajeP24_28 = screeningData.puntajeP24_28;
+
+    if (respuestas && typeof respuestas === 'object') {
+      if (puntajeP1_18 === undefined) {
+        puntajeP1_18 = 0;
+        for (let i = 1; i <= 18; i++) {
+          if (respuestas[`p${i}`] === true || respuestas[`p${i}`] === 'si' || respuestas[`p${i}`] === 'yes') {
+            puntajeP1_18++;
+          }
+        }
+      }
+      if (puntajeP19_22 === undefined) {
+        puntajeP19_22 = 0;
+        for (let i = 19; i <= 22; i++) {
+          if (respuestas[`p${i}`] === true || respuestas[`p${i}`] === 'si' || respuestas[`p${i}`] === 'yes') {
+            puntajeP19_22++;
+          }
+        }
+      }
+      if (pregunta23 === undefined) {
+        pregunta23 = respuestas[`p23`] === true || respuestas[`p23`] === 'si' || respuestas[`p23`] === 'yes';
+      }
+      if (puntajeP24_28 === undefined) {
+        puntajeP24_28 = 0;
+        for (let i = 24; i <= 28; i++) {
+          if (respuestas[`p${i}`] === true || respuestas[`p${i}`] === 'si' || respuestas[`p${i}`] === 'yes') {
+            puntajeP24_28++;
+          }
+        }
+      }
+    }
+
+    let resultado = screeningData.resultado;
+    let derivacion = screeningData.derivacion || false;
+    if (!resultado) {
+      if (puntajeP1_18 >= 9 || puntajeP19_22 >= 1 || pregunta23 === true || puntajeP24_28 >= 1) {
+        resultado = 'positivo';
+        derivacion = true;
+      } else {
+        resultado = 'negativo';
+      }
+    }
+
+    return prisma.mentalHealthScreening.create({
+      data: {
+        gestanteId,
+        obstetraId: resolvedObstetraId,
+        respuestas: respuestas || {},
+        puntajeP1_18,
+        puntajeP19_22,
+        pregunta23,
+        puntajeP24_28,
+        resultado,
+        derivacion,
+        observaciones: screeningData.observaciones,
+        fecha: new Date(fecha || new Date()),
+      }
+    });
+  }
+
+  async getMentalHealthScreenings(gestanteId: string) {
+    return prisma.mentalHealthScreening.findMany({
+      where: { gestanteId },
+      orderBy: { fecha: 'desc' },
+    });
+  }
+
+  async createViolenceScreening(data: any, authenticatedUserId?: string) {
+    const { gestanteId, fecha, respuestas, ...screeningData } = data;
+    
+    let resolvedObstetraId = data.obstetraId;
+    if (!resolvedObstetraId && authenticatedUserId) {
+      const obstetra = await prisma.obstetra.findUnique({ where: { userId: authenticatedUserId } });
+      resolvedObstetraId = obstetra?.id;
+    }
+
+    let puntajeTotal = screeningData.puntajeTotal || 0;
+    if (respuestas && typeof respuestas === 'object' && screeningData.puntajeTotal === undefined) {
+      for (const val of Object.values(respuestas)) {
+        if (val === true || val === 'si' || val === 'yes') {
+          puntajeTotal++;
+        } else if (typeof val === 'number') {
+          puntajeTotal += val;
+        }
+      }
+    }
+
+    let tamizajePositivo = screeningData.tamizajePositivo;
+    if (tamizajePositivo === undefined) {
+      tamizajePositivo = puntajeTotal > 0;
+    }
+
+    return prisma.violenceScreening.create({
+      data: {
+        gestanteId,
+        obstetraId: resolvedObstetraId,
+        respuestas: respuestas || {},
+        puntajeTotal,
+        tamizajePositivo,
+        derivacion: screeningData.derivacion || tamizajePositivo,
+        observaciones: screeningData.observaciones,
+        fecha: new Date(fecha || new Date()),
+      }
+    });
+  }
+
+  async getViolenceScreenings(gestanteId: string) {
+    return prisma.violenceScreening.findMany({
+      where: { gestanteId },
+      orderBy: { fecha: 'desc' },
+    });
+  }
+
+  async createDentalRecord(data: any) {
+    const { gestanteId, fecha, ...dentalData } = data;
+    return prisma.dentalRecord.create({
+      data: {
+        ...dentalData,
+        gestanteId,
+        fecha: new Date(fecha || new Date()),
+      }
+    });
+  }
+
+  async getDentalRecords(gestanteId: string) {
+    return prisma.dentalRecord.findMany({
+      where: { gestanteId },
+      orderBy: { fecha: 'desc' },
+    });
   }
 }
 

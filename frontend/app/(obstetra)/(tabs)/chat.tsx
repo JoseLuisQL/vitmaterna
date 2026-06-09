@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../../src/services/api';
 import { AppHeader } from '../../../src/components/ui/AppHeader';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { Send } from 'lucide-react-native';
+import { Send, ChevronLeft, User, MessageSquare } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 
@@ -18,30 +18,68 @@ interface ChatMessage {
 export default function ObstetraChatScreen() {
   const { user } = useAuthStore();
   const { socket, isConnected, emit } = useSocket();
+  const [activeConv, setActiveConv] = useState<any>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
-  const conversationId = 'default';
-
-  const { isLoading } = useQuery({
-    queryKey: ['chat-history', conversationId],
+  // 1. Fetch active conversations for this obstetra
+  const { data: conversations, isLoading: isLoadingConvs, refetch: refetchConvs } = useQuery({
+    queryKey: ['chat-conversations'],
     queryFn: async () => {
       try {
-        const res = await api.get(`/chat/history/${conversationId}`);
-        const history = res.data.data as ChatMessage[];
-        setMessages(history);
-        return history;
+        const res = await api.get('/chat/conversations');
+        return res.data.data || [];
       } catch (error) {
+        console.warn('Failed to load conversations:', error);
         return [];
       }
     },
   });
 
+  // 2. Fetch history for active conversation
+  const conversationId = activeConv?.id || null;
+  const { isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['chat-history', conversationId],
+    queryFn: async () => {
+      if (!conversationId) return [];
+      try {
+        const res = await api.get(`/chat/history/${conversationId}`);
+        const history = res.data.data || [];
+        const mappedHistory = history.map((m: any) => ({
+          id: m.id,
+          senderId: m.senderId,
+          text: m.contenido,
+          createdAt: m.createdAt,
+        }));
+        const sortedHistory = [...mappedHistory].reverse();
+        setMessages(sortedHistory);
+        return sortedHistory;
+      } catch (error) {
+        return [];
+      }
+    },
+    enabled: !!conversationId,
+  });
+
+  // 3. Socket listener for active conversation
   useEffect(() => {
-    if (socket) {
-      socket.on('receive_message', (message: ChatMessage) => {
-        setMessages(prev => [...prev, message]);
+    if (socket && conversationId) {
+      emit('join_conversation', conversationId);
+
+      socket.on('receive_message', (message: any) => {
+        const chatMsg: ChatMessage = {
+          id: message.id,
+          senderId: message.senderId,
+          text: message.contenido,
+          createdAt: message.createdAt,
+        };
+
+        setMessages(prev => {
+          if (prev.some(m => m.id === chatMsg.id)) return prev;
+          const filtered = prev.filter(m => !(m.senderId === 'me' && m.text === chatMsg.text && m.id.length < 15));
+          return [...filtered, chatMsg];
+        });
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       });
     }
@@ -49,18 +87,17 @@ export default function ObstetraChatScreen() {
     return () => {
       if (socket) {
         socket.off('receive_message');
+        if (conversationId) {
+          emit('leave_conversation', conversationId);
+        }
       }
     };
-  }, [socket]);
+  }, [socket, conversationId]);
 
   const handleSend = () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !conversationId) return;
 
-    const newMessage = {
-      conversationId,
-      text: inputText.trim(),
-    };
-
+    const newMessage = { conversationId, content: inputText.trim(), type: 'texto' };
     emit('send_message', newMessage);
 
     const optimisticMessage: ChatMessage = {
@@ -73,6 +110,12 @@ export default function ObstetraChatScreen() {
     setMessages(prev => [...prev, optimisticMessage]);
     setInputText('');
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const handleBack = () => {
+    setActiveConv(null);
+    setMessages([]);
+    refetchConvs();
   };
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
@@ -90,9 +133,61 @@ export default function ObstetraChatScreen() {
     );
   };
 
-  if (isLoading) {
-    return <LoadingScreen message="Cargando chat..." />;
+  const renderConvItem = ({ item }: { item: any }) => {
+    const patientName = `${item.gestante?.user?.firstName || 'Gestante'} ${item.gestante?.user?.lastName || ''}`;
+    const dni = item.gestante?.user?.dni || '';
+    const lastMsg = item.messages?.[0]?.contenido || 'No hay mensajes aún';
+    const lastMsgTime = item.messages?.[0]?.createdAt 
+      ? new Date(item.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      : '';
+
+    return (
+      <TouchableOpacity 
+        style={styles.convItem} 
+        onPress={() => setActiveConv(item)}
+      >
+        <View style={styles.convAvatar}>
+          <User size={22} color="#9D174D" />
+        </View>
+        <View style={styles.convInfo}>
+          <View style={styles.convHeaderRow}>
+            <Text style={styles.convName} numberOfLines={1}>{patientName}</Text>
+            <Text style={styles.convTime}>{lastMsgTime}</Text>
+          </View>
+          <Text style={styles.convDni}>DNI: {dni}</Text>
+          <Text style={styles.convLastMsg} numberOfLines={1}>{lastMsg}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (!activeConv) {
+    if (isLoadingConvs) return <LoadingScreen message="Cargando consultas..." />;
+
+    return (
+      <View style={styles.container}>
+        <AppHeader title="Bandeja de Consultas" />
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item.id}
+          renderItem={renderConvItem}
+          contentContainerStyle={styles.listContent}
+          refreshing={isLoadingConvs}
+          onRefresh={refetchConvs}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MessageSquare size={48} color="#9CA3AF" style={{ marginBottom: 16 }} />
+              <Text style={styles.emptyText}>No tienes consultas o chats activos con gestantes en este momento.</Text>
+            </View>
+          }
+        />
+      </View>
+    );
   }
+
+  if (isLoadingHistory) return <LoadingScreen message="Cargando chat..." />;
+
+  const activePatientName = `${activeConv.gestante?.user?.firstName || 'Gestante'} ${activeConv.gestante?.user?.lastName || ''}`;
 
   return (
     <KeyboardAvoidingView 
@@ -100,7 +195,15 @@ export default function ObstetraChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <AppHeader title="Consultas (Pacientes)" />
+      <View style={styles.activeChatHeader}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+          <ChevronLeft size={24} color="#0F172A" />
+        </TouchableOpacity>
+        <View style={styles.activeHeaderTitleWrap}>
+          <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
+          <Text style={styles.activeHeaderSubtitle}>DNI: {activeConv.gestante?.user?.dni || ''}</Text>
+        </View>
+      </View>
       
       {!isConnected && (
         <View style={styles.offlineBanner}>
@@ -117,7 +220,7 @@ export default function ObstetraChatScreen() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Selecciona una paciente para comenzar a chatear.</Text>
+            <Text style={styles.emptyText}>No hay mensajes en esta conversación. Envía uno para comenzar.</Text>
           </View>
         }
       />
@@ -147,21 +250,95 @@ export default function ObstetraChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAFC',
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+  convItem: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  convAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FCE7F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  convInfo: {
+    flex: 1,
+  },
+  convHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  convName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    flex: 1,
+    marginRight: 8,
+  },
+  convTime: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  convDni: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 4,
+  },
+  convLastMsg: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  activeChatHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'ios' ? 44 : 20,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  backBtn: {
+    padding: 6,
+    marginRight: 10,
+  },
+  activeHeaderTitleWrap: {
+    flex: 1,
+  },
+  activeHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  activeHeaderSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
   },
   offlineBanner: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     padding: 8,
     alignItems: 'center',
   },
   offlineText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontFamily: 'Inter-Medium',
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 24,
+    color: '#64748B',
   },
   messageBubble: {
     maxWidth: '80%',
@@ -178,51 +355,50 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     borderBottomLeftRadius: 4,
   },
   messageText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
+    fontSize: 15,
     marginBottom: 4,
+    lineHeight: 20,
   },
   messageTextMe: {
     color: '#FFFFFF',
   },
   messageTextOther: {
-    color: '#1F2937',
+    color: '#0F172A',
   },
   timeText: {
     fontSize: 10,
-    fontFamily: 'Inter-Medium',
     alignSelf: 'flex-end',
   },
   timeTextMe: {
     color: '#FBCFE8',
   },
   timeTextOther: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     alignItems: 'flex-end',
+    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
   input: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
     minHeight: 40,
     maxHeight: 120,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#1F2937',
+    fontSize: 15,
+    color: '#0F172A',
   },
   sendButton: {
     backgroundColor: '#DB2777',
@@ -235,18 +411,19 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   sendButtonDisabled: {
-    backgroundColor: '#D1D5DB',
+    backgroundColor: '#CBD5E1',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 80,
+    paddingHorizontal: 32,
   },
   emptyText: {
-    color: '#6B7280',
-    fontFamily: 'Inter-Regular',
+    color: '#64748B',
     textAlign: 'center',
-    paddingHorizontal: 32,
+    fontSize: 15,
+    lineHeight: 22,
   }
 });

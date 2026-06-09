@@ -14,4 +14,13 @@ router.get(
   chatController.getHistory
 );
 
+router.get('/conversations', chatController.getConversations);
+router.get('/conversation', chatController.getConversation);
+
+router.post(
+  '/emergencia',
+  validate(chatSchema.emergencyAlertSchema),
+  chatController.sendEmergencyAlert
+);
+
 export default router;

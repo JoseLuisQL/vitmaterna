@@ -30,3 +30,23 @@ export const getPatientById = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const buscarPatient = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dni = req.query.dni as string;
+    const data = await patientService.findByDni(dni);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePatient = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await patientService.updatePatient(id, req.body);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};

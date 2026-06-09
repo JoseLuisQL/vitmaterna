@@ -18,7 +18,19 @@ patientRoutes.get(
 );
 
 patientRoutes.get(
+  '/buscar',
+  validate(schema.buscarPatientSchema),
+  controller.buscarPatient
+);
+
+patientRoutes.get(
   '/:id',
   validate(schema.getPatientByIdSchema),
   controller.getPatientById
+);
+
+patientRoutes.patch(
+  '/:id',
+  validate(schema.updatePatientSchema),
+  controller.updatePatient
 );

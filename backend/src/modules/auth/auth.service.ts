@@ -167,7 +167,45 @@ export async function createUser(
 ): Promise<User> {
   const existingUser = await findUserByDni(input.dni);
   if (existingUser) {
-    throw new AppError(409, ErrorCodes.CONFLICT, 'A user with this DNI already exists');
+    if (existingUser.role === 'gestante') {
+      const isUnclaimed = await comparePassword(input.dni, existingUser.passwordHash);
+      if (isUnclaimed) {
+        const newPasswordHash = await hashPassword(input.password);
+        return prisma.$transaction(async (tx) => {
+          const updatedUser = await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              passwordHash: newPasswordHash,
+              firstName: input.firstName,
+              lastName: input.lastName,
+              phone: input.phone ?? existingUser.phone,
+              email: input.email ?? existingUser.email,
+              consentAccepted: input.consentAccepted,
+              consentDate: new Date(),
+              isActive: true,
+              isVerified: true,
+            },
+          });
+
+          // Check if Gestante profile exists, if not create it
+          const gestanteProfile = await tx.gestante.findUnique({
+            where: { userId: updatedUser.id },
+          });
+          if (!gestanteProfile) {
+            await tx.gestante.create({
+              data: {
+                userId: updatedUser.id,
+                fechaNacimiento: new Date('1990-01-01'),
+                nivelRiesgo: 'verde',
+                estado: 'activa',
+              },
+            });
+          }
+          return updatedUser;
+        });
+      }
+    }
+    throw new AppError(409, ErrorCodes.CONFLICT, 'Ya existe un usuario registrado con este DNI');
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -194,6 +232,15 @@ export async function createUser(
         data: {
           userId: newUser.id,
           cop: input.cop,
+        },
+      });
+    } else if (input.role === 'gestante') {
+      await tx.gestante.create({
+        data: {
+          userId: newUser.id,
+          fechaNacimiento: new Date('1990-01-01'),
+          nivelRiesgo: 'verde',
+          estado: 'activa',
         },
       });
     }

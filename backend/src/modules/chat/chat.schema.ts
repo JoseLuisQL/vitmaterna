@@ -9,3 +9,10 @@ export const chatHistorySchema = {
     limit: z.coerce.number().int().min(1).max(100).optional().default(50),
   }),
 };
+
+export const emergencyAlertSchema = {
+  body: z.object({
+    latitude: z.number({ required_error: 'La latitud es requerida' }),
+    longitude: z.number({ required_error: 'La longitud es requerida' }),
+  }),
+};

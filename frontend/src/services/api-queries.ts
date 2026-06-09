@@ -103,7 +103,7 @@ const mapPatientProfile = (g: any) => {
       date: c.fecha,
       week: c.egSemanas,
       bloodPressure: `${c.presionSistolica || 120}/${c.presionDiastolica || 80}`,
-      weight: c.pesoMadre || 0,
+      weight: c.peso || 0,
       fetalHeartRate: c.fcf || 0,
       alturaUterina: c.alturaUterina || null,
       temperatura: c.temperatura || null,
@@ -113,7 +113,7 @@ const mapPatientProfile = (g: any) => {
     laboratorio: (() => {
       const labs = g.labResults || [];
       const findLab = (tipo: string, toma?: number) => 
-        labs.find((l: any) => l.tipoExamen === tipo && (!toma || l.numeroToma === toma));
+        labs.find((l: any) => l.tipoExamen && l.tipoExamen.toLowerCase() === tipo.toLowerCase() && (!toma || l.numeroToma === toma));
       const hb1 = findLab('hemoglobina', 1);
       const hb2 = findLab('hemoglobina', 2);
       const hb3 = findLab('hemoglobina', 3);
@@ -325,3 +325,110 @@ export const useCreateAppointment = () => {
 };
 
 export const useTodayAppointments = () => useQuery({ queryKey: ['todayAppointments'], queryFn: fetchTodayAppointments });
+
+export const useUpdatePatient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await api.patch(`/patients/${id}`, data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+};
+
+export const useCreateLabResult = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/labs', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useCreateVaccine = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/vaccines', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useCreatePathology = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/pathologies', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useCreateMentalHealthScreening = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/screenings/mental', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useCreateViolenceScreening = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/screenings/violence', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useConfirmAppointment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.patch(`/appointments/${id}/status`, { estado: 'confirmada' });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
+    },
+  });
+};
+
+export const useRescheduleAppointment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { fecha: string; hora: string; motivoReprogramacion: string } }) => {
+      const res = await api.patch(`/appointments/${id}/reschedule`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
+    },
+  });
+};

@@ -22,41 +22,82 @@ export default function GestanteChatScreen() {
   const { socket, isConnected, emit } = useSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  const conversationId = 'default';
-
-  const { isLoading } = useQuery({
-    queryKey: ['chat-history', conversationId],
+  const { isLoading: isResolvingConv } = useQuery({
+    queryKey: ['chat-conversation'],
     queryFn: async () => {
       try {
-        const res = await api.get(`/chat/history/${conversationId}`);
-        const history = res.data.data as ChatMessage[];
-        setMessages(history);
-        return history;
+        const res = await api.get('/chat/conversation');
+        const convId = res.data.data.id;
+        setConversationId(convId);
+        return res.data.data;
       } catch (error) {
-        return [];
+        console.warn('Failed to resolve conversation:', error);
+        return null;
       }
     },
   });
 
+  const { isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['chat-history', conversationId],
+    queryFn: async () => {
+      if (!conversationId) return [];
+      try {
+        const res = await api.get(`/chat/history/${conversationId}`);
+        const history = res.data.data || [];
+        const mappedHistory = history.map((m: any) => ({
+          id: m.id,
+          senderId: m.senderId,
+          text: m.contenido,
+          createdAt: m.createdAt,
+        }));
+        const sortedHistory = [...mappedHistory].reverse();
+        setMessages(sortedHistory);
+        return sortedHistory;
+      } catch (error) {
+        return [];
+      }
+    },
+    enabled: !!conversationId,
+  });
+
   useEffect(() => {
-    if (socket) {
-      socket.on('receive_message', (message: ChatMessage) => {
-        setMessages(prev => [...prev, message]);
+    if (socket && conversationId) {
+      emit('join_conversation', conversationId);
+
+      socket.on('receive_message', (message: any) => {
+        const chatMsg: ChatMessage = {
+          id: message.id,
+          senderId: message.senderId,
+          text: message.contenido,
+          createdAt: message.createdAt,
+        };
+
+        setMessages(prev => {
+          if (prev.some(m => m.id === chatMsg.id)) return prev;
+          const filtered = prev.filter(m => !(m.senderId === 'me' && m.text === chatMsg.text && m.id.length < 15));
+          return [...filtered, chatMsg];
+        });
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       });
     }
 
     return () => {
-      if (socket) socket.off('receive_message');
+      if (socket) {
+        socket.off('receive_message');
+        if (conversationId) {
+          emit('leave_conversation', conversationId);
+        }
+      }
     };
-  }, [socket]);
+  }, [socket, conversationId]);
 
   const handleSend = () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !conversationId) return;
 
-    const newMessage = { conversationId, text: inputText.trim() };
+    const newMessage = { conversationId, content: inputText.trim(), type: 'texto' };
     emit('send_message', newMessage);
 
     const optimisticMessage: ChatMessage = {
@@ -86,7 +127,7 @@ export default function GestanteChatScreen() {
     );
   };
 
-  if (isLoading) return <LoadingScreen message="Cargando chat..." />;
+  if (isResolvingConv || isLoadingHistory) return <LoadingScreen message="Cargando chat..." />;
 
   return (
     <KeyboardAvoidingView 
