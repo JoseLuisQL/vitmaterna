@@ -15,6 +15,7 @@ interface ChatMessage {
   senderId: string;
   text: string;
   createdAt: string;
+  tipo?: string;
 }
 
 export default function GestanteChatScreen() {
@@ -52,6 +53,7 @@ export default function GestanteChatScreen() {
           senderId: m.senderId,
           text: m.contenido,
           createdAt: m.createdAt,
+          tipo: m.tipo,
         }));
         const sortedHistory = [...mappedHistory].reverse();
         setMessages(sortedHistory);
@@ -73,6 +75,7 @@ export default function GestanteChatScreen() {
           senderId: message.senderId,
           text: message.contenido,
           createdAt: message.createdAt,
+          tipo: message.tipo,
         };
 
         setMessages(prev => {
@@ -114,6 +117,20 @@ export default function GestanteChatScreen() {
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMe = item.senderId === user?.id || item.senderId === 'me';
+    const isAlert = item.tipo === 'alerta_emergencia';
+
+    if (isAlert) {
+      return (
+        <View style={styles.emergencyMessageBubble}>
+          <Text style={styles.emergencyMessageText}>
+            {item.text}
+          </Text>
+          <Text style={styles.emergencyTimeText}>
+            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+      );
+    }
 
     return (
       <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther]}>
@@ -220,5 +237,35 @@ const styles = StyleSheet.create({
   sendButton: { backgroundColor: '#7C3AED', width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginLeft: 12, marginBottom: 0, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   sendButtonDisabled: { backgroundColor: '#CBD5E1', shadowOpacity: 0 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 80 },
-  emptyText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B', textAlign: 'center', paddingHorizontal: 40, lineHeight: 22 }
+  emptyText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B', textAlign: 'center', paddingHorizontal: 40, lineHeight: 22 },
+  emergencyMessageBubble: {
+    alignSelf: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#EF4444',
+    borderRadius: 16,
+    padding: 14,
+    marginVertical: 8,
+    width: '95%',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  emergencyMessageText: {
+    color: '#991B1B',
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  emergencyTimeText: {
+    color: '#EF4444',
+    fontFamily: typography.caption.fontFamily,
+    fontSize: 11,
+    fontWeight: '600',
+    alignSelf: 'flex-end',
+    marginTop: 6,
+  },
 });

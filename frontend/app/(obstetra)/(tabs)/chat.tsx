@@ -13,6 +13,7 @@ interface ChatMessage {
   senderId: string;
   text: string;
   createdAt: string;
+  tipo?: string;
 }
 
 export default function ObstetraChatScreen() {
@@ -51,6 +52,7 @@ export default function ObstetraChatScreen() {
           senderId: m.senderId,
           text: m.contenido,
           createdAt: m.createdAt,
+          tipo: m.tipo,
         }));
         const sortedHistory = [...mappedHistory].reverse();
         setMessages(sortedHistory);
@@ -73,6 +75,7 @@ export default function ObstetraChatScreen() {
           senderId: message.senderId,
           text: message.contenido,
           createdAt: message.createdAt,
+          tipo: message.tipo,
         };
 
         setMessages(prev => {
@@ -120,6 +123,20 @@ export default function ObstetraChatScreen() {
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMe = item.senderId === user?.id || item.senderId === 'me';
+    const isAlert = item.tipo === 'alerta_emergencia';
+
+    if (isAlert) {
+      return (
+        <View style={styles.emergencyMessageBubble}>
+          <Text style={styles.emergencyMessageText}>
+            {item.text}
+          </Text>
+          <Text style={styles.emergencyTimeText}>
+            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+      );
+    }
 
     return (
       <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther]}>
@@ -425,5 +442,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 15,
     lineHeight: 22,
-  }
+  },
+  emergencyMessageBubble: {
+    alignSelf: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#EF4444',
+    borderRadius: 16,
+    padding: 14,
+    marginVertical: 8,
+    width: '95%',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  emergencyMessageText: {
+    color: '#991B1B',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  emergencyTimeText: {
+    color: '#EF4444',
+    fontSize: 11,
+    fontWeight: '600',
+    alignSelf: 'flex-end',
+    marginTop: 6,
+  },
 });

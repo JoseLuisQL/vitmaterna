@@ -7,6 +7,7 @@ import {
   createEducationSchema,
   updateEducationSchema,
   approveUserSchema,
+  createUserSchema,
 } from './admin.schema.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { rbac } from '../../middleware/rbac.middleware.js';
@@ -23,10 +24,22 @@ adminRoutes.get(
   adminController.listUsers
 );
 
+adminRoutes.post(
+  '/users',
+  validate(createUserSchema),
+  adminController.createUser
+);
+
 adminRoutes.put(
   '/users/:id/approve',
   validate(approveUserSchema),
   adminController.approveUser
+);
+
+adminRoutes.put(
+  '/users/:id/toggle-active',
+  validate(approveUserSchema),
+  adminController.toggleUserActive
 );
 
 // System Config

@@ -13,7 +13,7 @@ export const createAppointment = async (req: Request, res: Response, next: NextF
 
 export const getAppointments = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await appointmentService.findAll(req.query as any);
+    const data = await appointmentService.findAll(req.query as any, req.user);
     res.json(successResponse(data));
   } catch (error) {
     next(error);

@@ -24,6 +24,21 @@ export const useApproveUser = () => {
   });
 };
 
+export const toggleUserActive = async (id: string) => {
+  const res = await api.put(`/admin/users/${id}/toggle-active`);
+  return res.data;
+};
+
+export const useToggleUserActive = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: toggleUserActive,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    },
+  });
+};
+
 // --- Admin Education Content ---
 export const createEducationContent = async (data: any) => {
   const res = await api.post('/admin/education', data);
@@ -81,5 +96,20 @@ export const exportBackup = async () => {
 export const useExportBackup = () => {
   return useMutation({
     mutationFn: exportBackup,
+  });
+};
+
+export const createUser = async (data: any) => {
+  const res = await api.post('/admin/users', data);
+  return res.data;
+};
+
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    },
   });
 };

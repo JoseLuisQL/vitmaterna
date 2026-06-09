@@ -39,15 +39,34 @@ export class AppointmentService {
     });
   }
 
-  async findAll(filters: {
-    gestanteId?: string;
-    obstetraId?: string;
-    fecha?: string;
-    estado?: EstadoCita;
-  }) {
+  async findAll(
+    filters: {
+      gestanteId?: string;
+      obstetraId?: string;
+      fecha?: string;
+      estado?: EstadoCita;
+    },
+    userContext?: any
+  ) {
     const where: any = {};
-    if (filters.gestanteId) where.gestanteId = filters.gestanteId;
-    if (filters.obstetraId) where.obstetraId = filters.obstetraId;
+
+    if (userContext?.role === 'gestante') {
+      const gestante = await prisma.gestante.findUnique({
+        where: { userId: userContext.userId }
+      });
+      where.gestanteId = gestante?.id || 'non-existent-uuid';
+    } else if (userContext?.role === 'obstetra') {
+      const obstetra = await prisma.obstetra.findUnique({
+        where: { userId: userContext.userId }
+      });
+      where.obstetraId = obstetra?.id || 'non-existent-uuid';
+      if (filters.gestanteId) where.gestanteId = filters.gestanteId;
+    } else {
+      // Admin or system query
+      if (filters.gestanteId) where.gestanteId = filters.gestanteId;
+      if (filters.obstetraId) where.obstetraId = filters.obstetraId;
+    }
+
     if (filters.fecha) where.fecha = new Date(`${filters.fecha}T00:00:00.000Z`);
     if (filters.estado) where.estado = filters.estado;
 

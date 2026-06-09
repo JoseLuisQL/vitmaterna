@@ -53,3 +53,24 @@ export const approveUserSchema = {
     id: z.string().uuid(),
   }),
 };
+
+export const createUserSchema = {
+  body: z.object({
+    dni: z.string().length(8, 'El DNI debe tener 8 dígitos').regex(/^\d{8}$/, 'El DNI debe contener solo dígitos'),
+    firstName: z.string().min(2, 'El nombre debe tener al menos 2 letras').max(100),
+    lastName: z.string().min(2, 'El apellido debe tener al menos 2 letras').max(100),
+    phone: z.string().regex(/^\+?51\d{9}$/, 'Formato de teléfono inválido (+51999999999)').optional(),
+    email: z.string().email('Formato de correo electrónico inválido').optional().or(z.literal('')),
+    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+    role: z.enum(['obstetra', 'admin', 'gestante']),
+    cop: z.string().optional(),
+  }).refine((data) => {
+    if (data.role === 'obstetra' && !data.cop) {
+      return false;
+    }
+    return true;
+  }, {
+    message: 'El COP es obligatorio para el rol obstetra',
+    path: ['cop'],
+  }),
+};

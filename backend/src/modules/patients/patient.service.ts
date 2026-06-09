@@ -293,15 +293,29 @@ export class PatientService {
 
     // 3. Process date fields
     const dateFields: any = {};
-    if (gestanteFields.fechaNacimiento) dateFields.fechaNacimiento = new Date(gestanteFields.fechaNacimiento);
-    if (gestanteFields.fum) dateFields.fum = new Date(gestanteFields.fum);
-    if (gestanteFields.fppFum) dateFields.fppFum = new Date(gestanteFields.fppFum);
-    if (gestanteFields.fppEco) dateFields.fppEco = new Date(gestanteFields.fppEco);
+    if (gestanteFields.fechaNacimiento !== undefined) {
+      if (gestanteFields.fechaNacimiento !== null) {
+        dateFields.fechaNacimiento = new Date(gestanteFields.fechaNacimiento);
+      }
+      delete gestanteFields.fechaNacimiento;
+    }
+    if (gestanteFields.fum !== undefined) {
+      dateFields.fum = gestanteFields.fum ? new Date(gestanteFields.fum) : null;
+      delete gestanteFields.fum;
+    }
+    if (gestanteFields.fppFum !== undefined) {
+      dateFields.fppFum = gestanteFields.fppFum ? new Date(gestanteFields.fppFum) : null;
+      delete gestanteFields.fppFum;
+    }
+    if (gestanteFields.fppEco !== undefined) {
+      dateFields.fppEco = gestanteFields.fppEco ? new Date(gestanteFields.fppEco) : null;
+      delete gestanteFields.fppEco;
+    }
 
     // 4. Calculate Age At Registration
     let ageAtRegistration = gestanteFields.ageAtRegistration;
-    if (gestanteFields.fechaNacimiento) {
-      const birthDate = new Date(gestanteFields.fechaNacimiento);
+    if (dateFields.fechaNacimiento) {
+      const birthDate = dateFields.fechaNacimiento;
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const m = today.getMonth() - birthDate.getMonth();
@@ -394,7 +408,7 @@ export class PatientService {
       });
 
       // If FUM is being updated or set, schedule the 8 controls
-      if (gestanteFields.fum) {
+      if (dateFields.fum) {
         const lastControl = await tx.prenatalControl.findFirst({
           where: { gestanteId: id },
           orderBy: { fecha: 'desc' },
@@ -405,7 +419,7 @@ export class PatientService {
         });
         const resolvedObstetraId = lastControl?.obstetraId || lastAppointment?.obstetraId || undefined;
 
-        await this.schedulePrenatalAppointments(tx, id, new Date(gestanteFields.fum), resolvedObstetraId);
+        await this.schedulePrenatalAppointments(tx, id, dateFields.fum, resolvedObstetraId);
       }
 
       return updatedGestante;

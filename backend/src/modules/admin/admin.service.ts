@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
+import bcrypt from 'bcrypt';
 
 export class AdminService {
   /**
@@ -20,13 +21,28 @@ export class AdminService {
           lastName: true,
           role: true,
           isActive: true,
+          phone: true,
+          email: true,
           createdAt: true,
           lastLoginAt: true,
           gestante: {
-            select: { id: true }
+            select: {
+              id: true,
+              fechaNacimiento: true,
+              nivelRiesgo: true,
+              estado: true,
+              departamento: true,
+              provincia: true,
+              distrito: true
+            }
           },
           obstetra: {
-            select: { id: true, cop: true, establecimiento: true }
+            select: {
+              id: true,
+              cop: true,
+              establecimiento: true,
+              especialidad: true
+            }
           }
         }
       }),
@@ -53,6 +69,23 @@ export class AdminService {
     const updated = await prisma.user.update({
       where: { id: userId },
       data: { isActive: true },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Toggle user active status
+   */
+  async toggleUserActive(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'User not found');
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive: !user.isActive },
     });
 
     return updated;
@@ -187,6 +220,62 @@ export class AdminService {
         healthFacilities,
       }
     };
+  }
+
+  /**
+   * Create a new user (with immediate activation and verification)
+   */
+  async createUser(data: any) {
+    const { dni, firstName, lastName, phone, email, password, role, cop } = data;
+
+    // Check if DNI already exists
+    const existing = await prisma.user.findUnique({ where: { dni } });
+    if (existing) {
+      throw new AppError(409, ErrorCodes.CONFLICT, 'Ya existe un usuario con este DNI');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    return prisma.$transaction(async (tx) => {
+      // 1. Create User
+      const user = await tx.user.create({
+        data: {
+          dni,
+          passwordHash,
+          role,
+          firstName,
+          lastName,
+          phone: phone || null,
+          email: email || null,
+          isActive: true, // Auto-active when created by admin
+          isVerified: true,
+          consentAccepted: true,
+          consentDate: new Date(),
+        },
+      });
+
+      // 2. Create profile based on role
+      if (role === 'obstetra') {
+        await tx.obstetra.create({
+          data: {
+            userId: user.id,
+            cop: cop || '00000',
+            especialidad: 'General',
+          },
+        });
+      } else if (role === 'gestante') {
+        await tx.gestante.create({
+          data: {
+            userId: user.id,
+            fechaNacimiento: new Date('1990-01-01'),
+            nivelRiesgo: 'verde',
+            estado: 'activa',
+          },
+        });
+      }
+
+      return user;
+    });
   }
 }
 

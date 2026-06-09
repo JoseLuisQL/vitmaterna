@@ -20,11 +20,17 @@ interface StatusConfig {
 }
 
 const STATUS_MAP: Record<string, StatusConfig> = {
-  // Appointment statuses
+  // Appointment statuses (English and Spanish)
   scheduled: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'Programada' },
-  confirmed: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Confirmada' },
+  programada: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'Programada' },
+  confirmed: { bg: '#F5F3FF', text: '#7C3AED', label: 'Confirmada' },
+  confirmada: { bg: '#F5F3FF', text: '#7C3AED', label: 'Confirmada' },
   completed: { bg: '#D1FAE5', text: '#047857', label: 'Completada' },
+  asistida: { bg: '#D1FAE5', text: '#047857', label: 'Asistida' },
+  no_asistida: { bg: '#FEE2E2', text: '#DC2626', label: 'No Asistida' },
+  reprogramada: { bg: '#FEF3C7', text: '#D97706', label: 'Reprogramada' },
   cancelled: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
+  cancelada: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
   pending: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Pendiente' },
   in_progress: { bg: '#DBEAFE', text: '#1D4ED8', label: 'En Progreso' },
 

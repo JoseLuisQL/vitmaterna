@@ -22,6 +22,12 @@ export class AdminController {
     return res.status(200).json(successResponse({ id: user.id, isActive: user.isActive }));
   }
 
+  async toggleUserActive(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const user = await adminService.toggleUserActive(id);
+    return res.status(200).json(successResponse({ id: user.id, isActive: user.isActive }));
+  }
+
   async listConfigs(req: Request, res: Response) {
     const configs = await adminService.listConfigs();
     return res.status(200).json(successResponse(configs));
@@ -82,6 +88,11 @@ export class AdminController {
     }
 
     return res.status(200).json(successResponse(results));
+  }
+
+  async createUser(req: Request, res: Response) {
+    const user = await adminService.createUser(req.body);
+    return res.status(201).json(successResponse(user));
   }
 }
 

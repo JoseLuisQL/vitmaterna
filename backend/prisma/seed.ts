@@ -6,6 +6,24 @@ const prisma = new PrismaClient();
 async function main(): Promise<void> {
   console.log('🌱 Starting database seed...\n');
 
+  console.log('🧹 Clearing existing clinical and appointment tables to prevent duplicates...');
+  await prisma.message.deleteMany();
+  await prisma.conversation.deleteMany();
+  await prisma.dangerSign.deleteMany();
+  await prisma.pathology.deleteMany();
+  await prisma.educationalContent.deleteMany();
+  await prisma.mentalHealthScreening.deleteMany();
+  await prisma.violenceScreening.deleteMany();
+  await prisma.vaccinationRecord.deleteMany();
+  await prisma.weightRecord.deleteMany();
+  await prisma.ultrasound.deleteMany();
+  await prisma.labResult.deleteMany();
+  await prisma.supplementLog.deleteMany();
+  await prisma.treatment.deleteMany();
+  await prisma.prenatalControl.deleteMany();
+  await prisma.appointment.deleteMany();
+  console.log('🧹 Cleanup complete.\n');
+
   // ============================================
   // 1. Common Data setup
   // ============================================
@@ -242,7 +260,48 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log(`✅ Gestantes creadas (DNIs: 33333333, 44444444, 55555555)`);
+  // Gestante 4: María Elena Quispe Ramos (DNI 77777777)
+  const gestante4User = await prisma.user.upsert({
+    where: { dni: '77777777' },
+    update: {},
+    create: {
+      dni: '77777777',
+      passwordHash: testPasswordHash,
+      role: 'gestante',
+      firstName: 'María Elena',
+      lastName: 'Quispe Ramos',
+      phone: '951753456',
+      isActive: true,
+      isVerified: true,
+      consentAccepted: true,
+    },
+  });
+
+  const gestante4 = await prisma.gestante.upsert({
+    where: { userId: gestante4User.id },
+    update: {},
+    create: {
+      userId: gestante4User.id,
+      fechaNacimiento: new Date('1995-03-17'),
+      ageAtRegistration: 31,
+      departamento: 'Apurímac',
+      provincia: 'Andahuaylas',
+      distrito: 'Talavera',
+      direccion: 'Jr. Libertad 789',
+      gestaciones: 1,
+      partosVaginales: 0,
+      abortos: 0,
+      pesoHabitual: 62.0,
+      talla: 1.58,
+      imc: 24.8,
+      grupoSanguineo: 'O',
+      factorRh: '+',
+      nivelRiesgo: 'verde',
+      estado: 'activa',
+    },
+  });
+
+  console.log(`✅ Gestantes creadas (DNIs: 33333333, 44444444, 55555555, 77777777)`);
 
   // ============================================
   // 4. Citas y Controles (Test Data)
@@ -625,6 +684,26 @@ async function main(): Promise<void> {
         createdAt: new Date()
       }
     ]
+  });
+
+  // Emergency Chat Room and alert message for María Elena Quispe Ramos
+  const conversationME = await prisma.conversation.create({
+    data: {
+      gestanteId: gestante4.id,
+      obstetraId: obstetra1.id,
+      ultimoMensaje: new Date(),
+    }
+  });
+
+  await prisma.message.create({
+    data: {
+      conversationId: conversationME.id,
+      senderId: gestante4User.id,
+      contenido: '🚨 ALERTA DE EMERGENCIA: La gestante María Elena Quispe Ramos ha presionado el botón de pánico. Ubicación: https://maps.google.com/?q=-13.654881,-73.42595',
+      tipo: 'alerta_emergencia',
+      mediaUrl: 'https://maps.google.com/?q=-13.654881,-73.42595',
+      createdAt: new Date()
+    }
   });
 
   console.log('\n🎉 Database seed completed successfully!');
