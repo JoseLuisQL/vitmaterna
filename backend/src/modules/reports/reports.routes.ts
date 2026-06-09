@@ -20,4 +20,9 @@ router.get(
   reportsController.getAttendance
 );
 
+router.get(
+  '/clinic',
+  reportsController.getClinic
+);
+
 export default router;

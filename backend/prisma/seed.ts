@@ -265,15 +265,97 @@ async function main(): Promise<void> {
     }
   });
 
-  // Historial Gestante 2 (Control pasado con presión alta)
-  const pastApp2Date = new Date();
-  pastApp2Date.setDate(pastApp2Date.getDate() - 15); // 15 days ago
+  // Tratamiento Gestante 1 (para cálculo de adherencia)
+  const treatmentG1 = await prisma.treatment.create({
+    data: {
+      gestanteId: gestante1.id,
+      obstetraId: obstetra1.id,
+      nombre: 'Hierro + Ácido Fólico',
+      tipo: 'sulfato_ferroso',
+      dosis: '1 tableta',
+      frecuencia: 'Diario',
+      viaAdministracion: 'oral',
+      indicaciones: 'Tomar con jugo de naranja en ayunas',
+      fechaInicio: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+      duracionDias: 90,
+      estado: 'activo',
+    }
+  });
 
+  // Logs Gestante 1: 20 días (18 tomados, 2 omitidos = 90% adherencia)
+  for (let d = 1; d <= 20; d++) {
+    const logDate = new Date();
+    logDate.setDate(logDate.getDate() - d);
+    logDate.setHours(0, 0, 0, 0);
+    await prisma.supplementLog.create({
+      data: {
+        treatmentId: treatmentG1.id,
+        gestanteId: gestante1.id,
+        fecha: logDate,
+        tomado: d % 10 !== 0, // 2 logs (d=10, d=20) will be false
+        notas: d % 10 === 0 ? 'Olvidó tomar por viaje' : 'Tomado a tiempo',
+      }
+    });
+  }
+
+  // Historial Gestante 2 (Tercer trimestre)
+  const pastApp2Date = new Date();
+  pastApp2Date.setDate(pastApp2Date.getDate() - 15); // 15 days ago (Control 6)
+
+  // Calcular FUM de gestante2 basándose en que su Control 6 fue en la semana 33
+  const fum2 = new Date(pastApp2Date);
+  fum2.setDate(fum2.getDate() - (33 * 7));
+
+  // Generar Controles Prenatales Anteriores (1 al 5) para que Lucía sume 6 controles
+  const controlWeeks = [12, 18, 23, 27, 31];
+  for (let i = 0; i < controlWeeks.length; i++) {
+    const week = controlWeeks[i];
+    const controlNum = i + 1;
+    const ctrlDate = new Date(fum2.getTime());
+    ctrlDate.setDate(ctrlDate.getDate() + (week * 7));
+
+    const ctrlApp = await prisma.appointment.create({
+      data: {
+        gestanteId: gestante2.id,
+        obstetraId: obstetra1.id,
+        motivo: `Control Prenatal (Control ${controlNum})`,
+        fecha: ctrlDate,
+        hora: new Date('1970-01-01T09:00:00Z'),
+        estado: 'asistida',
+        numeroControl: controlNum,
+        egSemanas: week,
+      }
+    });
+
+    await prisma.prenatalControl.create({
+      data: {
+        gestanteId: gestante2.id,
+        obstetraId: obstetra1.id,
+        appointmentId: ctrlApp.id,
+        numeroControl: controlNum,
+        fecha: ctrlDate,
+        egSemanas: week,
+        trimestre: week <= 13 ? 1 : (week <= 26 ? 2 : 3),
+        peso: 75 + (i * 1.5),
+        presionSistolica: 110 + (i * 5),
+        presionDiastolica: 70 + (i * 4),
+        pulsoMaterno: 78 + i,
+        temperatura: 36.5,
+        alturaUterina: 10 + (i * 4),
+        fcf: 142 - i,
+        movimientoFetal: 'normal',
+        presentacion: 'C',
+        observaciones: `Control ${controlNum} completado sin novedades graves.`,
+      }
+    });
+  }
+
+  // Control 6 (que ya estaba preexistente pero ahora se enlaza en el flujo)
   const pastApp = await prisma.appointment.create({
     data: {
       gestanteId: gestante2.id,
       obstetraId: obstetra1.id,
-      motivo: 'Control Prenatal',
+      motivo: 'Control Prenatal (Control 6)',
       fecha: pastApp2Date,
       hora: new Date('1970-01-01T11:30:00Z'),
       estado: 'asistida',
@@ -306,8 +388,8 @@ async function main(): Promise<void> {
     }
   });
 
-  // Tratamiento Gestante 2
-  await prisma.treatment.create({
+  // Tratamiento Gestante 2 (para hipertensión / preeclampsia)
+  const treatmentG2 = await prisma.treatment.create({
     data: {
       gestanteId: gestante2.id,
       obstetraId: obstetra1.id,
@@ -318,11 +400,28 @@ async function main(): Promise<void> {
       viaAdministracion: 'oral',
       indicaciones: 'Para controlar la presión alta',
       fechaInicio: pastApp2Date,
+      duracionDias: 30,
       estado: 'activo',
     }
   });
 
-  console.log(`✅ Citas, Controles y Tratamientos generados`);
+  // Logs Gestante 2: 15 días (9 tomados, 6 omitidos = 60% adherencia -> prioridad de atención)
+  for (let d = 1; d <= 15; d++) {
+    const logDate = new Date();
+    logDate.setDate(logDate.getDate() - d);
+    logDate.setHours(0, 0, 0, 0);
+    await prisma.supplementLog.create({
+      data: {
+        treatmentId: treatmentG2.id,
+        gestanteId: gestante2.id,
+        fecha: logDate,
+        tomado: d % 3 !== 0 && d !== 1, // 6 logs will be false (d=1, 3, 6, 9, 12, 15) -> 9/15 = 60%
+        notas: (d % 3 === 0 || d === 1) ? 'Olvidó tomar por malestar' : 'Tomado',
+      }
+    });
+  }
+
+  console.log(`✅ Citas, Controles y Tratamientos generados con adherencias de 90% (Ana) y 60% (Lucía)`);
 
   // ============================================
   // 5. Módulo Clínico (Laboratorios, Ecografías, Vacunas, Peso)

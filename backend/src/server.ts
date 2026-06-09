@@ -3,6 +3,7 @@ import { createApp } from './config/app.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { connectRedis, disconnectRedis } from './config/redis.js';
 import { logger } from './middleware/requestLogger.middleware.js';
+import { startReminderCron } from './modules/notifications/notification.service.js';
 
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -11,6 +12,9 @@ import { setupChatSockets } from './sockets/chat.socket.js';
 async function bootstrap(): Promise<void> {
   // Connect to database
   await connectDatabase();
+
+  // Start background reminder cron
+  startReminderCron();
 
   // Connect to Redis (non-blocking – continues even if Redis is unavailable)
   await connectRedis();

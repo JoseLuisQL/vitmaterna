@@ -36,3 +36,15 @@ export const getAttendance = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+
+export const getClinic = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await reportsService.getClinicReport();
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

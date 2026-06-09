@@ -97,7 +97,7 @@ api.interceptors.response.use(
           refreshToken,
         });
 
-        const { token: newToken, refreshToken: newRefreshToken } =
+        const { accessToken: newToken, refreshToken: newRefreshToken } =
           response.data.data;
 
         await storeTokens(newToken, newRefreshToken);

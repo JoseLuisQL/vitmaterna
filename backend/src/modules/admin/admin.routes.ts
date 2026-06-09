@@ -36,6 +36,11 @@ adminRoutes.get(
 );
 
 adminRoutes.put(
+  '/config',
+  adminController.updateAllConfigs
+);
+
+adminRoutes.put(
   '/config/:clave',
   validate(updateConfigSchema),
   adminController.updateConfig

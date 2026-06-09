@@ -39,7 +39,12 @@ export const useCreateEducationContent = () => {
 // --- Admin Config ---
 export const fetchSystemConfig = async () => {
   const res = await api.get('/admin/config');
-  return res.data?.data || null;
+  const arr = res.data?.data || [];
+  const configObj: Record<string, any> = {};
+  arr.forEach((item: any) => {
+    configObj[item.clave] = item.valor;
+  });
+  return configObj;
 };
 
 export const updateSystemConfig = async (data: any) => {

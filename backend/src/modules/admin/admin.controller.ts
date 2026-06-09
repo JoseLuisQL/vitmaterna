@@ -70,6 +70,19 @@ export class AdminController {
     const backup = await adminService.generateBackup();
     return res.status(200).json(successResponse(backup));
   }
+
+  async updateAllConfigs(req: Request, res: Response) {
+    const payload = req.body;
+    const userId = req.user?.userId;
+
+    const results = [];
+    for (const [clave, valor] of Object.entries(payload)) {
+      const config = await adminService.updateConfig(clave, valor, undefined, userId);
+      results.push(config);
+    }
+
+    return res.status(200).json(successResponse(results));
+  }
 }
 
 export const adminController = new AdminController();

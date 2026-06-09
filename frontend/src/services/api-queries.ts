@@ -64,7 +64,7 @@ const mapPatientProfile = (g: any) => {
   // Calcular IMC si hay datos
   let imc: string | null = null;
   if (g.pesoHabitual && g.talla) {
-    const tallaMt = g.talla / 100;
+    const tallaMt = g.talla > 3 ? g.talla / 100 : g.talla;
     imc = (g.pesoHabitual / (tallaMt * tallaMt)).toFixed(1);
   }
 
@@ -159,17 +159,19 @@ const mapPatientProfile = (g: any) => {
 
 export const fetchGestanteDashboard = async () => {
   try {
-    const [appointmentsRes, treatmentsRes] = await Promise.all([
+    const [appointmentsRes, treatmentsRes, meRes] = await Promise.all([
       api.get('/appointments', { params: { limit: 1, sort: 'asc', future: true } }),
       api.get('/clinical/treatments', { params: { today: true } }),
+      api.get('/auth/me'),
     ]);
     return {
       nextAppointment: appointmentsRes.data?.data?.[0] ? mapAppointment(appointmentsRes.data.data[0]) : null,
       todayTreatments: treatmentsRes.data?.data || [],
+      profile: meRes.data?.data?.profile || null,
     };
   } catch (e) {
     console.warn('Gestante Dashboard fetch failed:', e);
-    return { nextAppointment: null, todayTreatments: [] };
+    return { nextAppointment: null, todayTreatments: [], profile: null };
   }
 };
 

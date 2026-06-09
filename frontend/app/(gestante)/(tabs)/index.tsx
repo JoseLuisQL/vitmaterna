@@ -9,6 +9,7 @@ import {
   TextInput,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -60,6 +61,57 @@ export default function GestanteDashboard(): React.ReactElement {
     },
   });
 
+  const emergencyMutation = useMutation({
+    mutationFn: (coords: { latitude: number; longitude: number }) => {
+      return api.post('/chat/emergencia', coords);
+    },
+    onSuccess: () => {
+      Alert.alert('Alerta Enviada', 'Se ha enviado una alerta de emergencia a tu obstetra con tu ubicación GPS.');
+    },
+    onError: () => {
+      Alert.alert('Error', 'No se pudo enviar la alerta de emergencia.');
+    }
+  });
+
+  const handleEmergencyPress = () => {
+    Alert.alert(
+      '¿Enviar Alerta de Emergencia?',
+      'Se enviará tu ubicación GPS y una notificación de auxilio inmediata a tu obstetra y centro de salud.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Enviar Alerta',
+          style: 'destructive',
+          onPress: () => {
+            if (typeof navigator !== 'undefined' && navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  emergencyMutation.mutate({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                  });
+                },
+                (error) => {
+                  console.warn('Geolocation error, falling back to Talavera:', error);
+                  emergencyMutation.mutate({
+                    latitude: -13.654881,
+                    longitude: -73.425950
+                  });
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+              );
+            } else {
+              emergencyMutation.mutate({
+                latitude: -13.654881,
+                longitude: -73.425950
+              });
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (isLoading) {
     return <LoadingScreen message="Cargando tu información..." />;
   }
@@ -69,6 +121,41 @@ export default function GestanteDashboard(): React.ReactElement {
   const takenCount = todayTreatments.filter((t: any) => t.taken).length;
   const totalTreatments = todayTreatments.length;
   const treatmentPercentage = totalTreatments > 0 ? Math.round((takenCount / totalTreatments) * 100) : 0;
+
+  const profile = data?.profile;
+  const fum = profile?.fum ? new Date(profile.fum) : null;
+
+  let weeks = 0;
+  if (fum) {
+    const diffTime = Math.abs(new Date().getTime() - fum.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    weeks = Math.floor(diffDays / 7);
+    if (weeks < 0) weeks = 0;
+    if (weeks > 42) weeks = 42;
+  }
+
+  const gestationalWeekText = weeks > 0 ? `Semana ${weeks}` : 'Semana --';
+  const progressText = weeks > 0 ? `Sem. ${weeks} de 40` : 'Sem. -- de 40';
+  const progressPercent = weeks > 0 ? Math.min(100, Math.round((weeks / 40) * 100)) : 0;
+  const trimesterText = weeks > 0 ? getTrimesterText(weeks) : 'Gestación';
+
+  function getTrimesterText(w: number) {
+    if (w <= 13) return 'Primer Trimestre';
+    if (w <= 26) return 'Segundo Trimestre';
+    return 'Tercer Trimestre';
+  }
+
+  const riskLevel = profile?.nivelRiesgo || 'verde';
+  const getRiskLabel = (level: string) => {
+    if (level === 'rojo') return 'Riesgo Alto';
+    if (level === 'amarillo') return 'Riesgo Medio';
+    return 'Riesgo Bajo';
+  };
+  const getRiskVariant = (level: string) => {
+    if (level === 'rojo') return 'danger';
+    if (level === 'amarillo') return 'warning';
+    return 'success';
+  };
 
   const DANGER_SIGNS = [
     'Sangrado vaginal',
@@ -94,7 +181,7 @@ export default function GestanteDashboard(): React.ReactElement {
               </View>
               <View style={styles.weekBadge}>
                 <Heart size={16} color="#7C3AED" />
-                <Text style={styles.weekText}>Semana 24</Text>
+                <Text style={styles.weekText}>{gestationalWeekText}</Text>
               </View>
             </View>
           </SafeAreaView>
@@ -107,17 +194,17 @@ export default function GestanteDashboard(): React.ReactElement {
             <View style={styles.progressHeader}>
               <View>
                 <Text style={styles.progressTitle}>Tu Embarazo</Text>
-                <Text style={styles.progressSubtitle}>Segundo Trimestre</Text>
+                <Text style={styles.progressSubtitle}>{trimesterText}</Text>
               </View>
-              <AppBadge label="Riesgo Bajo" variant="success" />
+              <AppBadge label={getRiskLabel(riskLevel)} variant={getRiskVariant(riskLevel) as any} />
             </View>
             <View style={styles.progressBarContainer}>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: '60%', backgroundColor: '#7C3AED' }]} />
+                <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: '#7C3AED' }]} />
               </View>
               <View style={styles.progressLabels}>
                 <Text style={styles.progressLabel}>Sem. 1</Text>
-                <Text style={styles.progressLabelBold}>Sem. 24 de 40</Text>
+                <Text style={styles.progressLabelBold}>{progressText}</Text>
                 <Text style={styles.progressLabel}>Sem. 40</Text>
               </View>
             </View>
@@ -191,12 +278,12 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionSubtitle}>Signo de alarma</Text>
             </AppCard>
 
-            <AppCard style={styles.quickActionCard} onPress={() => {}}>
+            <AppCard style={styles.quickActionCard} onPress={handleEmergencyPress}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#DCFCE7' }]}>
                 <Phone size={24} color="#10B981" />
               </View>
               <Text style={styles.quickActionTitle}>Emergencia</Text>
-              <Text style={styles.quickActionSubtitle}>Llamar ahora</Text>
+              <Text style={styles.quickActionSubtitle}>Pedir Auxilio</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={() => {}}>

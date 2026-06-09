@@ -52,6 +52,7 @@ export default function RootLayout(): React.ReactElement | null {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(gestante)" />
             <Stack.Screen name="(obstetra)" />
+            <Stack.Screen name="(admin)" />
           </Stack>
       </QueryClientProvider>
     </SafeAreaProvider>
