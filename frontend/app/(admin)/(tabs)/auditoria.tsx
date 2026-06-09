@@ -1,0 +1,176 @@
+/**
+ * VITMATERNA - Admin Audit Logs Screen
+ * View audit logs and export database backup.
+ */
+import React from 'react';
+import { View, StyleSheet, Text, FlatList, RefreshControl, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ShieldAlert, Download } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { AppCard } from '../../../src/components/ui/AppCard';
+import { AppButton } from '../../../src/components/ui/AppButton';
+import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { commonColors, semanticColors } from '../../../src/theme/colors';
+import { spacing } from '../../../src/theme/spacing';
+import { typography } from '../../../src/theme/typography';
+import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
+
+export default function AuditoriaScreen(): React.ReactElement {
+  const { data: logs, isLoading, refetch } = useAuditLogs();
+  const exportMutation = useExportBackup();
+
+  const handleExportBackup = async () => {
+    exportMutation.mutate(undefined, {
+      onSuccess: async (backupData: any) => {
+        try {
+          const jsonString = typeof backupData === 'string' ? backupData : JSON.stringify(backupData, null, 2);
+          const filename = `vitmaterna_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+          const fileUri = `${FileSystem.documentDirectory}${filename}`;
+          
+          await FileSystem.writeAsStringAsync(fileUri, jsonString, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/json',
+              dialogTitle: 'Exportar Backup de BD',
+            });
+          } else {
+            Alert.alert('Éxito', 'Backup generado, pero no se puede compartir en este dispositivo.');
+          }
+        } catch (err) {
+          Alert.alert('Error', 'No se pudo guardar o compartir el archivo de backup.');
+        }
+      },
+      onError: (error: any) => {
+        Alert.alert('Error', error.response?.data?.message || 'Error al generar backup');
+      },
+    });
+  };
+
+  const renderItem = ({ item }: { item: any }) => (
+    <AppCard style={styles.card}>
+      <View style={styles.cardContent}>
+        <View style={styles.iconContainer}>
+          <ShieldAlert size={20} color={semanticColors.warning} />
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.action}>{item.action || 'Acción desconocida'}</Text>
+          <Text style={styles.details}>
+            Usuario: {item.userEmail || item.userId || 'Sistema'}
+          </Text>
+          <Text style={styles.date}>
+            {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Fecha desconocida'}
+          </Text>
+        </View>
+      </View>
+    </AppCard>
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Auditoría y Backup</Text>
+        <AppButton
+          title="Exportar Backup BD"
+          onPress={handleExportBackup}
+          variant="outline"
+          size="sm"
+          icon={Download}
+          loading={exportMutation.isPending}
+          style={styles.exportBtn}
+        />
+      </View>
+
+      {isLoading ? (
+        <LoadingScreen message="Cargando logs..." />
+      ) : !logs || logs.length === 0 ? (
+        <EmptyState
+          icon={ShieldAlert as any}
+          title="Sin registros"
+          description="No hay logs de auditoría disponibles."
+          themeColor={semanticColors.warning}
+        />
+      ) : (
+        <FlatList
+          data={logs}
+          keyExtractor={(item, index) => item.id || item._id || String(index)}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              colors={[semanticColors.info]}
+            />
+          }
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: commonColors.background,
+  },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  title: {
+    fontFamily: typography.h1.fontFamily,
+    fontSize: typography.h1.fontSize,
+    fontWeight: typography.h1.fontWeight,
+    color: commonColors.text,
+    marginBottom: spacing.md,
+  },
+  exportBtn: {
+    borderColor: semanticColors.info,
+  },
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  card: {
+    marginBottom: spacing.sm,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: semanticColors.warningLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  info: {
+    flex: 1,
+  },
+  action: {
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: typography.bodyMedium.fontSize,
+    fontWeight: '600',
+    color: commonColors.text,
+  },
+  details: {
+    fontFamily: typography.caption.fontFamily,
+    fontSize: typography.caption.fontSize,
+    color: commonColors.textSecondary,
+    marginTop: 2,
+  },
+  date: {
+    fontFamily: typography.caption.fontFamily,
+    fontSize: 10,
+    color: commonColors.textTertiary,
+    marginTop: 4,
+  },
+});

@@ -1,0 +1,841 @@
+// Prisma schema for VITMATERNA prenatal health platform
+// Based on the PRD database design (PostgreSQL 16)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Module 1: Authentication & Users
+// ============================================
+
+enum UserRole {
+  gestante
+  obstetra
+  admin
+}
+
+model User {
+  id                      String    @id @default(uuid()) @db.Uuid
+  dni                     String    @unique @db.VarChar(8)
+  passwordHash            String    @map("password_hash")
+  role                    UserRole
+  firstName               String    @map("first_name") @db.VarChar(100)
+  lastName                String    @map("last_name") @db.VarChar(100)
+  phone                   String?   @db.VarChar(15)
+  email                   String?   @db.VarChar(255)
+  isActive                Boolean   @default(true) @map("is_active")
+  isVerified              Boolean   @default(false) @map("is_verified")
+  failedLoginAttempts     Int       @default(0) @map("failed_login_attempts")
+  lockedUntil             DateTime? @map("locked_until") @db.Timestamptz()
+  lastLoginAt             DateTime? @map("last_login_at") @db.Timestamptz()
+  biometricEnabled        Boolean   @default(false) @map("biometric_enabled")
+  notificationPreferences Json      @default("{\"push\": true, \"sms\": true, \"whatsapp\": true}") @map("notification_preferences") @db.JsonB
+  consentAccepted         Boolean   @default(false) @map("consent_accepted")
+  consentDate             DateTime? @map("consent_date") @db.Timestamptz()
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt               DateTime? @map("deleted_at") @db.Timestamptz()
+
+  // Relations
+  sessions      UserSession[]
+  gestante      Gestante?
+  obstetra      Obstetra?
+  notifications Notification[]
+  sentMessages  Message[]      @relation("MessageSender")
+  auditLogs     AuditLog[]
+  systemConfigs SystemConfig[] @relation("ConfigUpdater")
+
+  @@index([dni], map: "idx_users_dni")
+  @@index([role], map: "idx_users_role")
+  @@map("users")
+}
+
+model UserSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  refreshToken String   @map("refresh_token")
+  deviceInfo   Json?    @map("device_info") @db.JsonB
+  ipAddress    String?  @map("ip_address")
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz()
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_sessions_user")
+  @@map("user_sessions")
+}
+
+// ============================================
+// Module 2: Gestante Management
+// ============================================
+
+enum NivelEstudios {
+  analfabeta
+  primaria
+  secundaria
+  superior
+  no_universitario
+}
+
+enum EstadoCivil {
+  casada
+  conviviente
+  soltera
+  otro
+}
+
+enum GestacionAnterior {
+  eutocico
+  distocico
+  aborto
+  ninguno
+}
+
+enum ExamenMamas {
+  sin_examen
+  normal
+  patologico
+}
+
+enum NivelRiesgo {
+  verde
+  amarillo
+  rojo
+}
+
+enum EstadoGestante {
+  activa
+  parto
+  puerperio
+  inactiva
+}
+
+model Gestante {
+  id                 String          @id @default(uuid()) @db.Uuid
+  userId             String          @unique @map("user_id") @db.Uuid
+  historiaClinica    String?         @map("historia_clinica") @db.VarChar(20)
+  fechaNacimiento    DateTime        @map("fecha_nacimiento") @db.Date
+  ageAtRegistration  Int?            @map("age_at_registration")
+  direccion          String?
+  localidad          String?         @db.VarChar(100)
+  departamento       String?         @default("Apurimac") @db.VarChar(50)
+  provincia          String?         @default("Andahuaylas") @db.VarChar(50)
+  distrito           String?         @default("Talavera") @db.VarChar(50)
+  establecimiento    String?         @default("C.S. Talavera") @db.VarChar(100)
+  codigoSis          String?         @map("codigo_sis") @db.VarChar(20)
+  ocupacion          String?         @db.VarChar(100)
+  nivelEstudios      NivelEstudios?  @map("nivel_estudios")
+  estadoCivil        EstadoCivil?    @map("estado_civil")
+  padreRnNombre      String?         @map("padre_rn_nombre") @db.VarChar(200)
+  padreRnDni         String?         @map("padre_rn_dni") @db.VarChar(8)
+  acompanantePhone   String?         @map("acompanante_phone") @db.VarChar(15)
+
+  // Obstetric data
+  gestaciones        Int             @default(0)
+  partosVaginales    Int             @default(0) @map("partos_vaginales")
+  cesareas           Int             @default(0)
+  abortos            Int             @default(0)
+  nacidosVivos       Int             @default(0) @map("nacidos_vivos")
+  nacidosMuertos     Int             @default(0) @map("nacidos_muertos")
+  hijosVivos         Int             @default(0) @map("hijos_vivos")
+  rnMayorPeso        Decimal?        @map("rn_mayor_peso") @db.Decimal(5, 2)
+  gestacionAnterior  GestacionAnterior? @map("gestacion_anterior")
+
+  // Anthropometric data
+  pesoHabitual       Decimal?        @map("peso_habitual") @db.Decimal(5, 2)
+  pesoActual         Decimal?        @map("peso_actual") @db.Decimal(5, 2)
+  talla              Decimal?        @db.Decimal(5, 2)
+  imc                Decimal?        @db.Decimal(5, 2)
+  clasificacionImc   String?         @map("clasificacion_imc") @db.VarChar(20)
+
+  // Blood type
+  grupoSanguineo     String?         @map("grupo_sanguineo") @db.VarChar(3)
+  factorRh           String?         @map("factor_rh") @db.VarChar(10)
+  rhSensitizado      Boolean?        @map("rh_sensitizado")
+
+  // Key dates
+  fum                DateTime?       @db.Date
+  fumDudosa          Boolean         @default(false) @map("fum_dudosa")
+  fppFum             DateTime?       @map("fpp_fum") @db.Date
+  fppEco             DateTime?       @map("fpp_eco") @db.Date
+
+  // Physical exam
+  estadoGeneral      String?         @map("estado_general") @db.VarChar(50)
+  estadoHidratacion  String?         @map("estado_hidratacion") @db.VarChar(50)
+  estadoNutricion    String?         @map("estado_nutricion") @db.VarChar(50)
+  examenMamas        ExamenMamas?    @map("examen_mamas")
+  cuelloUterino      String?         @map("cuello_uterino")
+  pelvis             String?
+  odontologia        String?
+
+  // Risk
+  nivelRiesgo        NivelRiesgo     @default(verde) @map("nivel_riesgo")
+
+  // Status
+  estado             EstadoGestante  @default(activa)
+
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt          DateTime?       @map("deleted_at") @db.Timestamptz()
+
+  // Relations
+  user                    User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  antecedentes            Antecedente[]
+  appointments            Appointment[]
+  treatments              Treatment[]
+  supplementLogs          SupplementLog[]
+  prenatalControls        PrenatalControl[]
+  labResults              LabResult[]
+  ultrasounds             Ultrasound[]
+  weightRecords           WeightRecord[]
+  vaccinationRecords      VaccinationRecord[]
+  dangerSigns             DangerSign[]
+  violenceScreenings      ViolenceScreening[]
+  mentalHealthScreenings  MentalHealthScreening[]
+  pathologies             Pathology[]
+  nutritionalCounselings  NutritionalCounseling[]
+  dentalRecords           DentalRecord[]
+  conversations           Conversation[]
+
+  @@index([userId], map: "idx_gestantes_user")
+  @@map("gestantes")
+}
+
+enum TipoAntecedente {
+  familiar
+  personal
+}
+
+model Antecedente {
+  id          String           @id @default(uuid()) @db.Uuid
+  gestanteId  String           @map("gestante_id") @db.Uuid
+  tipo        TipoAntecedente
+  condicion   String           @db.VarChar(100)
+  detalle     String?
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id], onDelete: Cascade)
+
+  @@index([gestanteId], map: "idx_antecedentes_gestante")
+  @@map("antecedentes")
+}
+
+model Obstetra {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  cop             String   @db.VarChar(20)
+  especialidad    String?  @db.VarChar(100)
+  establecimiento String?  @default("C.S. Talavera") @db.VarChar(100)
+  turno           String?  @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments       Appointment[]
+  treatments         Treatment[]
+  prenatalControls   PrenatalControl[]
+  labResults         LabResult[]
+  dangerSignResponses DangerSign[]
+  violenceScreenings ViolenceScreening[]
+  mentalHealthScreenings MentalHealthScreening[]
+  nutritionalCounselings NutritionalCounseling[]
+  conversations      Conversation[]
+
+  @@index([userId], map: "idx_obstetras_user")
+  @@map("obstetras")
+}
+
+// ============================================
+// Module 3: Appointments
+// ============================================
+
+enum EstadoCita {
+  programada
+  confirmada
+  asistida
+  no_asistida
+  reprogramada
+  cancelada
+}
+
+model Appointment {
+  id                    String     @id @default(uuid()) @db.Uuid
+  gestanteId            String     @map("gestante_id") @db.Uuid
+  obstetraId            String?    @map("obstetra_id") @db.Uuid
+  motivo                String     @default("Control prenatal") @db.VarChar(200)
+  fecha                 DateTime   @db.Date
+  hora                  DateTime   @db.Time()
+  estado                EstadoCita @default(programada)
+  numeroControl         Int?       @map("numero_control")
+  egSemanas             Int?       @map("eg_semanas")
+  motivoReprogramacion  String?    @map("motivo_reprogramacion")
+  fechaReprogramada     DateTime?  @map("fecha_reprogramada") @db.Date
+  horaReprogramada      DateTime?  @map("hora_reprogramada") @db.Time()
+  observaciones         String?
+  esAutoGenerada        Boolean    @default(false) @map("es_auto_generada")
+  recordatorio3d        Boolean    @default(false) @map("recordatorio_3d")
+  recordatorio1d        Boolean    @default(false) @map("recordatorio_1d")
+  recordatorio2h        Boolean    @default(false) @map("recordatorio_2h")
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime?  @map("deleted_at") @db.Timestamptz()
+
+  // Relations
+  gestante        Gestante          @relation(fields: [gestanteId], references: [id])
+  obstetra        Obstetra?         @relation(fields: [obstetraId], references: [id])
+  prenatalControls PrenatalControl[]
+
+  @@index([gestanteId, fecha], map: "idx_appointments_gestante")
+  @@index([obstetraId, fecha], map: "idx_appointments_obstetra")
+  @@index([estado], map: "idx_appointments_estado")
+  @@map("appointments")
+}
+
+// ============================================
+// Module 4: Treatments & Supplementation
+// ============================================
+
+enum TipoTratamiento {
+  acido_folico
+  sulfato_ferroso
+  calcio
+  otro
+}
+
+enum EstadoTratamiento {
+  activo
+  suspendido
+  completado
+}
+
+model Treatment {
+  id                String            @id @default(uuid()) @db.Uuid
+  gestanteId        String            @map("gestante_id") @db.Uuid
+  obstetraId        String?           @map("obstetra_id") @db.Uuid
+  nombre            String            @db.VarChar(200)
+  tipo              TipoTratamiento?
+  dosis             String            @db.VarChar(100)
+  frecuencia        String            @db.VarChar(50)
+  viaAdministracion String            @default("oral") @map("via_administracion") @db.VarChar(30)
+  horaToma          DateTime?         @map("hora_toma") @db.Time()
+  indicaciones      String?
+  fechaInicio       DateTime          @map("fecha_inicio") @db.Date
+  fechaFin          DateTime?         @map("fecha_fin") @db.Date
+  duracionDias      Int?              @map("duracion_dias")
+  estado            EstadoTratamiento @default(activo)
+  motivoSuspension  String?           @map("motivo_suspension")
+  adherenciaPct     Decimal           @default(0) @map("adherencia_pct") @db.Decimal(5, 2)
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  gestante       Gestante        @relation(fields: [gestanteId], references: [id])
+  obstetra       Obstetra?       @relation(fields: [obstetraId], references: [id])
+  supplementLogs SupplementLog[]
+
+  @@index([gestanteId], map: "idx_treatments_gestante")
+  @@map("treatments")
+}
+
+model SupplementLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  treatmentId  String   @map("treatment_id") @db.Uuid
+  gestanteId   String   @map("gestante_id") @db.Uuid
+  fecha        DateTime @db.Date
+  horaRegistro DateTime @default(now()) @map("hora_registro") @db.Timestamptz()
+  tomado       Boolean  @default(true)
+  notas        String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+  gestante  Gestante  @relation(fields: [gestanteId], references: [id])
+
+  @@unique([treatmentId, fecha], map: "uq_supplement_treatment_fecha")
+  @@index([treatmentId, fecha], map: "idx_supplement_logs_treatment")
+  @@map("supplement_logs")
+}
+
+// ============================================
+// Module 5: Clinical Follow-up
+// ============================================
+
+model PrenatalControl {
+  id                    String   @id @default(uuid()) @db.Uuid
+  gestanteId            String   @map("gestante_id") @db.Uuid
+  obstetraId            String   @map("obstetra_id") @db.Uuid
+  appointmentId         String?  @map("appointment_id") @db.Uuid
+  numeroControl         Int      @map("numero_control")
+  fecha                 DateTime @db.Timestamptz()
+  egSemanas             Int      @map("eg_semanas")
+  trimestre             Int?
+  peso                  Decimal? @db.Decimal(5, 2)
+  temperatura           Decimal? @db.Decimal(4, 1)
+  presionSistolica      Int?     @map("presion_sistolica")
+  presionDiastolica     Int?     @map("presion_diastolica")
+  pulsoMaterno          Int?     @map("pulso_materno")
+  alturaUterina         Decimal? @map("altura_uterina") @db.Decimal(4, 1)
+  situacion             String?  @db.VarChar(5) // L, T, NA
+  presentacion          String?  @db.VarChar(5) // C, P, NA
+  posicion              String?  @db.VarChar(5) // D, I, NA
+  fcf                   Int?
+  movimientoFetal       String?  @map("movimiento_fetal") @db.VarChar(10)
+  proteinuria           String?  @db.VarChar(10)
+  edema                 String?  @db.VarChar(10)
+  reflejoOsteotendinoso Int?     @map("reflejo_osteotendinoso")
+  examenPezon           String?  @map("examen_pezon") @db.VarChar(20)
+  indicacionHierro      String?  @map("indicacion_hierro")
+  indicacionCalcio      String?  @map("indicacion_calcio")
+  indicacionAcidoFolico String?  @map("indicacion_acido_folico")
+  orientacion           String[] @default([])
+  ecografiaControl      String?  @map("ecografia_control")
+  perfilBiofisico       String?  @map("perfil_biofisico") @db.VarChar(20)
+  visitaDomiciliaria    Boolean? @map("visita_domiciliaria")
+  planParto             String?  @map("plan_parto") @db.VarChar(20)
+  proximaCita           DateTime? @map("proxima_cita") @db.Date
+  establecimiento       String?  @db.VarChar(100)
+  responsable           String?  @db.VarChar(200)
+  nroFormatoSis         String?  @map("nro_formato_sis") @db.VarChar(30)
+  observaciones         String?
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  gestante    Gestante     @relation(fields: [gestanteId], references: [id])
+  obstetra    Obstetra     @relation(fields: [obstetraId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([gestanteId], map: "idx_prenatal_controls_gestante")
+  @@map("prenatal_controls")
+}
+
+model LabResult {
+  id             String   @id @default(uuid()) @db.Uuid
+  gestanteId     String   @map("gestante_id") @db.Uuid
+  obstetraId     String?  @map("obstetra_id") @db.Uuid
+  tipoExamen     String   @map("tipo_examen") @db.VarChar(50)
+  numeroToma     Int      @default(1) @map("numero_toma")
+  valor          String?  @db.VarChar(50)
+  valorNumerico  Decimal? @map("valor_numerico") @db.Decimal(10, 2)
+  valorCorregido Decimal? @map("valor_corregido") @db.Decimal(10, 2)
+  unidad         String?  @db.VarChar(20)
+  resultado      String?  @db.VarChar(30)
+  fechaExamen    DateTime @map("fecha_examen") @db.Date
+  egSemanas      Int?     @map("eg_semanas")
+  observaciones  String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante  @relation(fields: [gestanteId], references: [id])
+  obstetra Obstetra? @relation(fields: [obstetraId], references: [id])
+
+  @@index([gestanteId], map: "idx_lab_results_gestante")
+  @@map("lab_results")
+}
+
+enum TipoEcografia {
+  genetica
+  morfologica
+  bienestar_fetal
+}
+
+model Ultrasound {
+  id         String        @id @default(uuid()) @db.Uuid
+  gestanteId String        @map("gestante_id") @db.Uuid
+  tipo       TipoEcografia
+  numero     Int?
+  egSemanas  Int?          @map("eg_semanas")
+  egPorEco   Int?          @map("eg_por_eco")
+  fecha      DateTime      @db.Date
+  resultado  String?
+  hallazgos  String?
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+
+  @@index([gestanteId], map: "idx_ultrasounds_gestante")
+  @@map("ultrasounds")
+}
+
+enum ClasificacionPeso {
+  bajo
+  adecuado
+  alto
+}
+
+model WeightRecord {
+  id            String            @id @default(uuid()) @db.Uuid
+  gestanteId    String            @map("gestante_id") @db.Uuid
+  fecha         DateTime          @db.Date
+  egSemanas     Int               @map("eg_semanas")
+  peso          Decimal           @db.Decimal(5, 2)
+  gananciaTotal Decimal?          @map("ganancia_total") @db.Decimal(5, 2)
+  clasificacion ClasificacionPeso?
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+
+  @@index([gestanteId], map: "idx_weight_records_gestante")
+  @@map("weight_records")
+}
+
+enum EstadoVacuna {
+  pendiente
+  aplicada
+  no_aplica
+}
+
+model VaccinationRecord {
+  id                   String       @id @default(uuid()) @db.Uuid
+  gestanteId           String       @map("gestante_id") @db.Uuid
+  vacuna               String       @db.VarChar(50)
+  dosisNumero          Int          @default(1) @map("dosis_numero")
+  egSemanasAplicacion  Int?         @map("eg_semanas_aplicacion")
+  fechaAplicacion      DateTime?    @map("fecha_aplicacion") @db.Date
+  estado               EstadoVacuna @default(pendiente)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+
+  @@index([gestanteId], map: "idx_vaccination_records_gestante")
+  @@map("vaccination_records")
+}
+
+enum SeveridadSigno {
+  leve
+  moderado
+  grave
+}
+
+enum EstadoSignoAlarma {
+  pendiente
+  atendido
+  derivado
+}
+
+model DangerSign {
+  id                 String             @id @default(uuid()) @db.Uuid
+  gestanteId         String             @map("gestante_id") @db.Uuid
+  tipoSigno          String             @map("tipo_signo") @db.VarChar(100)
+  descripcion        String?
+  severidad          SeveridadSigno?
+  accionTomada       String?            @map("accion_tomada")
+  respondidoPor      String?            @map("respondido_por") @db.Uuid
+  tiempoRespuestaMin Int?               @map("tiempo_respuesta_min")
+  estado             EstadoSignoAlarma  @default(pendiente)
+  fechaReporte       DateTime           @default(now()) @map("fecha_reporte") @db.Timestamptz()
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  gestante    Gestante  @relation(fields: [gestanteId], references: [id])
+  respondedor Obstetra? @relation(fields: [respondidoPor], references: [id])
+
+  @@index([gestanteId], map: "idx_danger_signs_gestante")
+  @@map("danger_signs")
+}
+
+model ViolenceScreening {
+  id                String   @id @default(uuid()) @db.Uuid
+  gestanteId        String   @map("gestante_id") @db.Uuid
+  obstetraId        String   @map("obstetra_id") @db.Uuid
+  respuestas        Json     @db.JsonB
+  puntajeTotal      Int      @map("puntaje_total")
+  tamizajePositivo  Boolean  @map("tamizaje_positivo")
+  derivacion        Boolean  @default(false)
+  observaciones     String?
+  fecha             DateTime @db.Date
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+  obstetra Obstetra @relation(fields: [obstetraId], references: [id])
+
+  @@index([gestanteId], map: "idx_violence_screenings_gestante")
+  @@map("violence_screenings")
+}
+
+model MentalHealthScreening {
+  id            String   @id @default(uuid()) @db.Uuid
+  gestanteId    String   @map("gestante_id") @db.Uuid
+  obstetraId    String   @map("obstetra_id") @db.Uuid
+  respuestas    Json     @db.JsonB
+  puntajeP1_18  Int?     @map("puntaje_p1_18")
+  puntajeP19_22 Int?     @map("puntaje_p19_22")
+  pregunta23    Boolean? @map("pregunta_23")
+  puntajeP24_28 Int?     @map("puntaje_p24_28")
+  resultado     String?  @db.VarChar(30)
+  derivacion    Boolean  @default(false)
+  observaciones String?
+  fecha         DateTime @db.Date
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+  obstetra Obstetra @relation(fields: [obstetraId], references: [id])
+
+  @@index([gestanteId], map: "idx_mental_health_screenings_gestante")
+  @@map("mental_health_screenings")
+}
+
+enum EstadoPatologia {
+  activa
+  resuelta
+  seguimiento
+}
+
+model Pathology {
+  id               String          @id @default(uuid()) @db.Uuid
+  gestanteId       String          @map("gestante_id") @db.Uuid
+  codigoCie10      String          @map("codigo_cie10") @db.VarChar(10)
+  descripcion      String?         @db.VarChar(200)
+  fechaDiagnostico DateTime        @map("fecha_diagnostico") @db.Date
+  estado           EstadoPatologia @default(activa)
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+
+  @@index([gestanteId], map: "idx_pathologies_gestante")
+  @@map("pathologies")
+}
+
+model NutritionalCounseling {
+  id                     String   @id @default(uuid()) @db.Uuid
+  gestanteId             String   @map("gestante_id") @db.Uuid
+  obstetraId             String   @map("obstetra_id") @db.Uuid
+  historialAlimentario   String?  @map("historial_alimentario")
+  frecuenciaAlimentacion Int?     @map("frecuencia_alimentacion")
+  consumoAnimales        Boolean? @map("consumo_animales")
+  consumoMenestras       Boolean? @map("consumo_menestras")
+  consumoFrutas          Boolean? @map("consumo_frutas")
+  salYodada              Boolean? @map("sal_yodada")
+  acuerdos               String?
+  sesionDemostrativa     Boolean  @default(false) @map("sesion_demostrativa")
+  fechaSesionDemo        DateTime? @map("fecha_sesion_demo") @db.Date
+  responsableDemo        String?   @map("responsable_demo") @db.VarChar(200)
+  fecha                  DateTime  @db.Date
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+  obstetra Obstetra @relation(fields: [obstetraId], references: [id])
+
+  @@index([gestanteId], map: "idx_nutritional_counseling_gestante")
+  @@map("nutritional_counseling")
+}
+
+model DentalRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  gestanteId  String   @map("gestante_id") @db.Uuid
+  estadoBucal String?  @map("estado_bucal") @db.VarChar(50)
+  caries      String?
+  tratamientos String?
+  codigoCie10 String?  @map("codigo_cie10") @db.VarChar(10)
+  fecha       DateTime @db.Date
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante @relation(fields: [gestanteId], references: [id])
+
+  @@index([gestanteId], map: "idx_dental_records_gestante")
+  @@map("dental_records")
+}
+
+// ============================================
+// Module 6: Educational Content
+// ============================================
+
+enum TipoContenido {
+  articulo
+  infografia
+  video
+  audio
+  faq
+}
+
+enum CategoriaContenido {
+  nutricion
+  suplementos
+  signos_alarma
+  parto
+  lactancia
+  cuidado_bebe
+  salud_mental
+  general
+}
+
+model EducationalContent {
+  id           String             @id @default(uuid()) @db.Uuid
+  titulo       String             @db.VarChar(200)
+  contenido    String
+  tipo         TipoContenido?
+  categoria    CategoriaContenido?
+  trimestre    Int?
+  semanaInicio Int?               @map("semana_inicio")
+  semanaFin    Int?               @map("semana_fin")
+  idioma       String             @default("es") @db.VarChar(10)
+  mediaUrl     String?            @map("media_url")
+  thumbnailUrl String?            @map("thumbnail_url")
+  duracionMin  Int?               @map("duracion_min")
+  orden        Int                @default(0)
+  activo       Boolean            @default(true)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([categoria, activo], map: "idx_educational_content_category")
+  @@map("educational_content")
+}
+
+// ============================================
+// Module 7: Notifications
+// ============================================
+
+enum CanalNotificacion {
+  push
+  sms
+  whatsapp
+}
+
+enum EstadoNotificacion {
+  pendiente
+  enviada
+  entregada
+  leida
+  fallida
+}
+
+model Notification {
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @map("user_id") @db.Uuid
+  tipo            String              @db.VarChar(50)
+  canal           CanalNotificacion
+  titulo          String?             @db.VarChar(200)
+  mensaje         String
+  datos           Json?               @db.JsonB
+  estado          EstadoNotificacion  @default(pendiente)
+  programadaPara  DateTime?           @map("programada_para") @db.Timestamptz()
+  enviadaAt       DateTime?           @map("enviada_at") @db.Timestamptz()
+  leidaAt         DateTime?           @map("leida_at") @db.Timestamptz()
+  errorDetalle    String?             @map("error_detalle")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_notifications_user")
+  @@map("notifications")
+}
+
+// ============================================
+// Module 8: Messaging
+// ============================================
+
+model Conversation {
+  id             String    @id @default(uuid()) @db.Uuid
+  gestanteId     String    @map("gestante_id") @db.Uuid
+  obstetraId     String    @map("obstetra_id") @db.Uuid
+  ultimoMensaje  DateTime? @map("ultimo_mensaje") @db.Timestamptz()
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  gestante Gestante  @relation(fields: [gestanteId], references: [id])
+  obstetra Obstetra  @relation(fields: [obstetraId], references: [id])
+  messages Message[]
+
+  @@index([gestanteId], map: "idx_conversations_gestante")
+  @@index([obstetraId], map: "idx_conversations_obstetra")
+  @@map("conversations")
+}
+
+enum TipoMensaje {
+  texto
+  imagen
+  alerta_emergencia
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  senderId       String      @map("sender_id") @db.Uuid
+  contenido      String
+  tipo           TipoMensaje @default(texto)
+  mediaUrl       String?     @map("media_url")
+  leido          Boolean     @default(false)
+  leidoAt        DateTime?   @map("leido_at") @db.Timestamptz()
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt], map: "idx_messages_conversation")
+  @@map("messages")
+}
+
+// ============================================
+// Module 9: Audit & System
+// ============================================
+
+model AuditLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  accion          String   @db.VarChar(50)
+  entidad         String   @db.VarChar(50)
+  entidadId       String?  @map("entidad_id") @db.Uuid
+  datosAnteriores Json?    @map("datos_anteriores") @db.JsonB
+  datosNuevos     Json?    @map("datos_nuevos") @db.JsonB
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_audit_user")
+  @@map("audit_logs")
+}
+
+model HealthFacility {
+  id           String   @id @default(uuid()) @db.Uuid
+  nombre       String   @db.VarChar(200)
+  codigo       String?  @db.VarChar(20)
+  direccion    String?
+  telefono     String?  @db.VarChar(15)
+  horarios     Json?    @db.JsonB
+  servicios    String[] @default([])
+  altitudMsnm  Int      @default(2926) @map("altitud_msnm")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("health_facilities")
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  clave       String   @unique @db.VarChar(100)
+  valor       Json     @db.JsonB
+  descripcion String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  updater User? @relation("ConfigUpdater", fields: [updatedBy], references: [id])
+
+  @@map("system_config")
+}

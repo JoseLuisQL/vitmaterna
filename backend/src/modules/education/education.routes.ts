@@ -1,0 +1,23 @@
+import { Router } from 'express';
+import { authenticate } from '../../middleware/auth.middleware.js';
+import * as educationController from './education.controller.js';
+
+const router = Router();
+
+router.use(authenticate);
+
+/**
+ * @swagger
+ * /v1/education:
+ *   get:
+ *     summary: Get educational content filtered by trimester
+ *     tags: [Education]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Educational content list
+ */
+router.get('/', educationController.getEducation);
+
+export default router;
