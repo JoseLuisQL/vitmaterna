@@ -223,6 +223,25 @@ export class ClinicalService {
     });
   }
 
+  async getDangerSigns(estado?: string | any) {
+    const whereCondition: any = {};
+    if (estado) {
+      whereCondition.estado = estado;
+    }
+
+    return prisma.dangerSign.findMany({
+      where: whereCondition,
+      include: {
+        gestante: {
+          include: {
+            user: { select: { firstName: true, lastName: true, phone: true } },
+          },
+        },
+      },
+      orderBy: { fechaReporte: 'desc' },
+    });
+  }
+
   async createDangerSign(gestanteId: string, data: any) {
     const dangerSign = await prisma.dangerSign.create({
       data: {

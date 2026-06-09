@@ -4,7 +4,7 @@ import { successResponse } from '../../utils/responseHelper.js';
 
 export const createAppointment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await appointmentService.create(req.body);
+    const data = await appointmentService.create(req.body, req.user);
     res.status(201).json(successResponse(data));
   } catch (error) {
     next(error);

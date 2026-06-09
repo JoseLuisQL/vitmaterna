@@ -18,8 +18,27 @@ interface DangerSign {
   createdAt: string;
 }
 
+import api from '../../../src/services/api';
+
 const fetchDangerSigns = async (): Promise<DangerSign[]> => {
-  return [] as DangerSign[];
+  try {
+    const res = await api.get('/clinical/danger-signs', { params: { estado: 'pendiente' } });
+    if (!res.data?.data) return [];
+    
+    return res.data.data.map((item: any) => ({
+      id: item.id || item._id,
+      patientId: item.gestante?.id,
+      patientName: item.gestante?.user ? `${item.gestante.user.firstName} ${item.gestante.user.lastName}` : 'Paciente',
+      sign: item.tipoSigno || 'Signo no especificado',
+      notes: item.descripcion || '',
+      severity: item.severidad || 'amarillo',
+      status: item.estado,
+      createdAt: item.createdAt || new Date().toISOString(),
+    }));
+  } catch (error) {
+    console.error('Error fetching danger signs:', error);
+    return [];
+  }
 };
 
 export default function AlertasScreen(): React.ReactElement {
@@ -30,25 +49,29 @@ export default function AlertasScreen(): React.ReactElement {
 
   const getSeverityColor = (severity?: string) => {
     switch (severity?.toLowerCase()) {
-      case 'rojo': case 'high': return '#EF4444';
-      case 'amarillo': case 'medium': return '#F59E0B';
-      case 'verde': case 'low': return '#10B981';
+      case 'rojo': case 'high': case 'grave': return '#EF4444';
+      case 'amarillo': case 'medium': case 'moderado': return '#F59E0B';
+      case 'verde': case 'low': case 'leve': return '#10B981';
       default: return '#94A3B8';
     }
   };
 
   const getSeverityLabel = (severity?: string) => {
     switch (severity?.toLowerCase()) {
-      case 'rojo': case 'high': return 'Alta';
-      case 'amarillo': case 'medium': return 'Media';
-      case 'verde': case 'low': return 'Baja';
+      case 'rojo': case 'high': case 'grave': return 'Grave';
+      case 'amarillo': case 'medium': case 'moderado': return 'Moderado';
+      case 'verde': case 'low': case 'leve': return 'Leve';
       default: return 'Desconocida';
     }
   };
 
   const sortedData = React.useMemo(() => {
     if (!data) return [];
-    const severityOrder: Record<string, number> = { 'rojo': 1, 'high': 1, 'amarillo': 2, 'medium': 2, 'verde': 3, 'low': 3 };
+    const severityOrder: Record<string, number> = { 
+      'rojo': 1, 'high': 1, 'grave': 1,
+      'amarillo': 2, 'medium': 2, 'moderado': 2,
+      'verde': 3, 'low': 3, 'leve': 3 
+    };
     return [...data].sort((a, b) => {
       const orderA = severityOrder[a.severity?.toLowerCase() || ''] || 4;
       const orderB = severityOrder[b.severity?.toLowerCase() || ''] || 4;

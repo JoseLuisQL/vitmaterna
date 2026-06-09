@@ -95,6 +95,12 @@ export const createDangerSignSchema = {
   }),
 };
 
+export const getDangerSignsSchema = {
+  query: z.object({
+    estado: z.enum(['pendiente', 'atendido', 'derivado']).optional(),
+  }),
+};
+
 export const createLabResultSchema = {
   body: z.object({
     gestanteId: z.string().uuid(),

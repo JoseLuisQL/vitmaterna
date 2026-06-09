@@ -12,7 +12,7 @@ export class AppointmentService {
     numeroControl?: number;
     egSemanas?: number;
     observaciones?: string;
-  }) {
+  }, userContext?: any) {
     // Verificar si la gestante existe
     const gestante = await prisma.gestante.findUnique({
       where: { id: data.gestanteId },
@@ -21,13 +21,25 @@ export class AppointmentService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
     }
 
+    let obstetraIdToSave = data.obstetraId;
+
+    // Use Context to find Obstetra ID if it's not provided and the user is an obstetra
+    if (!obstetraIdToSave && userContext?.role === 'obstetra') {
+      const obstetra = await prisma.obstetra.findUnique({
+        where: { userId: userContext.userId }
+      });
+      if (obstetra) {
+        obstetraIdToSave = obstetra.id;
+      }
+    }
+
     const fechaObj = new Date(`${data.fecha}T00:00:00.000Z`);
     const horaObj = new Date(`1970-01-01T${data.hora}:00.000Z`);
 
     return prisma.appointment.create({
       data: {
         gestanteId: data.gestanteId,
-        obstetraId: data.obstetraId,
+        obstetraId: obstetraIdToSave,
         motivo: data.motivo || 'Control prenatal',
         fecha: fechaObj,
         hora: horaObj,

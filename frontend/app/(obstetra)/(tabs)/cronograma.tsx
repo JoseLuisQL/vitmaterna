@@ -62,12 +62,24 @@ export default function CronogramaScreen(): React.ReactElement {
   const renderItem = ({ item }: { item: any }) => {
     // Map status from API to variant
     const statusMap: Record<string, 'default' | 'success' | 'warning' | 'danger'> = {
-      'confirmed': 'success',
-      'pending': 'warning',
-      'cancelled': 'danger'
+      'programada': 'warning',
+      'confirmada': 'success',
+      'asistida': 'success',
+      'reprogramada': 'warning',
+      'no_asistida': 'danger',
+      'cancelada': 'danger'
     };
     const variant = statusMap[item.status] || 'default';
-    const statusText = item.status === 'confirmed' ? 'Asistida' : item.status === 'pending' ? 'Programada' : 'Cancelada';
+    
+    const labelMap: Record<string, string> = {
+      'programada': 'Programada',
+      'confirmada': 'Confirmada',
+      'asistida': 'Asistida',
+      'reprogramada': 'Reprogramada',
+      'no_asistida': 'No Asistió',
+      'cancelada': 'Cancelada'
+    };
+    const statusText = labelMap[item.status] || 'Desconocido';
 
     return (
       <TouchableOpacity style={styles.appointmentCard} activeOpacity={0.7}>

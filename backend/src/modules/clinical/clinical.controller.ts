@@ -89,6 +89,16 @@ export const createDangerSign = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const getDangerSigns = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const estado = req.query.estado as string;
+    const data = await clinicalService.getDangerSigns(estado);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createLabResult = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await clinicalService.createLabResult(req.body, req.user?.userId);

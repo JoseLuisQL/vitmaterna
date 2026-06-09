@@ -46,6 +46,12 @@ clinicalRoutes.post(
   controller.createDangerSign
 );
 
+clinicalRoutes.get(
+  '/danger-signs',
+  validate(schema.getDangerSignsSchema),
+  controller.getDangerSigns
+);
+
 // Labs
 clinicalRoutes.post(
   '/labs',
