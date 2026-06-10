@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  Modal,
+  TextInput
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +23,7 @@ import api from '../../../src/services/api';
 interface Appointment {
   id: string;
   appointmentDate: string;
+  appointmentTime?: string;
   type: string;
   status: string;
   notes?: string;
@@ -41,12 +44,35 @@ export default function AppointmentsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
+  
+  // Reschedule Modal state
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [rescheduleData, setRescheduleData] = useState({
+    fecha: '',
+    hora: '',
+    motivoReprogramacion: ''
+  });
 
   const fetchAppointments = async () => {
     try {
-      const response = await api.get('/appointments/my-appointments');
+      const response = await api.get('/appointments');
       if (response.data?.data) {
-        setAppointments(response.data.data);
+        const mapped = response.data.data.map((app: any) => ({
+          id: app.id,
+          appointmentDate: app.fecha,
+          appointmentTime: app.hora,
+          type: app.motivo,
+          status: app.estado ? app.estado.toUpperCase() : 'PROGRAMADA',
+          notes: app.observaciones,
+          professional: app.obstetra?.user ? {
+            firstName: app.obstetra.user.firstName,
+            lastName: app.obstetra.user.lastName,
+            specialty: 'Obstetra'
+          } : undefined,
+          clinic: app.clinic || { name: 'Consultorio Principal' }
+        }));
+        setAppointments(mapped);
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -69,11 +95,26 @@ export default function AppointmentsScreen() {
 
   const handleConfirmAppointment = async (id: string) => {
     try {
-      await api.patch(`/appointments/${id}/status`, { status: 'CONFIRMADA' });
+      await api.patch(`/appointments/${id}/status`, { estado: 'confirmada' });
       fetchAppointments();
+      alert('Cita confirmada correctamente.');
     } catch (error) {
       console.error('Error confirming appointment:', error);
       alert('Hubo un error al confirmar la cita.');
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!selectedAppointmentId) return;
+    try {
+      await api.patch(`/appointments/${selectedAppointmentId}/reschedule`, rescheduleData);
+      setRescheduleModalVisible(false);
+      setRescheduleData({ fecha: '', hora: '', motivoReprogramacion: '' });
+      fetchAppointments();
+      alert('Tu cita ha sido reprogramada exitosamente.');
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+      alert('Hubo un error al reprogramar la cita. Verifica el formato Fecha(YYYY-MM-DD) y Hora(HH:MM)');
     }
   };
 
@@ -93,7 +134,7 @@ export default function AppointmentsScreen() {
 
   const historyAppointments = useMemo(() => {
     return sortedAppointments.filter(
-      (app) => app.status === 'COMPLETADA' || app.status === 'CANCELADA' || app.status === 'NO_ASISTIO'
+      (app) => app.status === 'ASISTIDA' || app.status === 'CANCELADA' || app.status === 'NO_ASISTIDA'
     );
   }, [sortedAppointments]);
 
@@ -108,10 +149,10 @@ export default function AppointmentsScreen() {
         return { bg: '#E3F2FD', text: '#1976D2', icon: 'calendar-outline' };
       case 'CONFIRMADA':
         return { bg: '#E8F5E9', text: '#2E7D32', icon: 'checkmark-circle-outline' };
-      case 'COMPLETADA':
+      case 'ASISTIDA':
         return { bg: '#F3E5F5', text: '#7B1FA2', icon: 'flag-outline' };
       case 'CANCELADA':
-      case 'NO_ASISTIO':
+      case 'NO_ASISTIDA':
         return { bg: '#FFEBEE', text: '#D32F2F', icon: 'close-circle-outline' };
       case 'REPROGRAMADA':
         return { bg: '#FFF3E0', text: '#F57C00', icon: 'time-outline' };
@@ -186,7 +227,7 @@ export default function AppointmentsScreen() {
           
           <View style={styles.cardHeaderRight}>
             <Text style={styles.timeText}>
-              <Ionicons name="time-outline" size={14} color="#64748B" /> {formatTime(item.appointmentDate)}
+              <Ionicons name="time-outline" size={14} color="#64748B" /> {formatTime(item.appointmentTime || item.appointmentDate)}
             </Text>
             <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
               <Ionicons name={statusInfo.icon as any} size={12} color={statusInfo.text} />
@@ -227,7 +268,10 @@ export default function AppointmentsScreen() {
           <View style={styles.cardActions}>
             <TouchableOpacity 
               style={styles.btnReschedule}
-              onPress={() => alert('Para reprogramar tu cita, por favor contacta directamente a tu centro de salud o mediante la sección de Mensajes.')}
+              onPress={() => {
+                setSelectedAppointmentId(item.id);
+                setRescheduleModalVisible(true);
+              }}
             >
               <Text style={styles.btnRescheduleText}>Reprogramar</Text>
             </TouchableOpacity>
@@ -305,6 +349,66 @@ export default function AppointmentsScreen() {
           />
         }
       />
+
+      <Modal
+        visible={rescheduleModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setRescheduleModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reprogramar Cita</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nueva Fecha (YYYY-MM-DD)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Ej. 2026-06-15"
+                value={rescheduleData.fecha}
+                onChangeText={(text) => setRescheduleData({...rescheduleData, fecha: text})}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nueva Hora (HH:MM)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Ej. 10:30"
+                value={rescheduleData.hora}
+                onChangeText={(text) => setRescheduleData({...rescheduleData, hora: text})}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Motivo de Reprogramación</Text>
+              <TextInput
+                style={[styles.modalInput, { height: 80 }]}
+                placeholder="Agrega el motivo brevemente"
+                multiline
+                value={rescheduleData.motivoReprogramacion}
+                onChangeText={(text) => setRescheduleData({...rescheduleData, motivoReprogramacion: text})}
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.modalBtnCancel} 
+                onPress={() => setRescheduleModalVisible(false)}
+              >
+                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalBtnSubmit} 
+                onPress={handleReschedule}
+              >
+                <Text style={styles.modalBtnSubmitText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -575,5 +679,77 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#0F172A',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#475569',
+    marginBottom: 8,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 12,
+  },
+  modalBtnCancel: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  modalBtnCancelText: {
+    color: '#475569',
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+  },
+  modalBtnSubmit: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#EC4899',
+    alignItems: 'center',
+  },
+  modalBtnSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
   },
 });

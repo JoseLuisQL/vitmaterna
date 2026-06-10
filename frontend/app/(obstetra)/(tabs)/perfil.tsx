@@ -29,7 +29,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
 export default function ObstetraPerfilScreen(): React.ReactElement {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  
+
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)/login');
@@ -67,15 +67,15 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         {/* Menu Items */}
         <Text style={styles.sectionTitle}>General</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<User size={20} color="#BE185D" />} title="Datos Profesionales" onPress={() => {}} />
+          <MenuItem icon={<User size={20} color="#BE185D" />} title="Datos Profesionales" onPress={() => { }} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color="#BE185D" />} title="Notificaciones" onPress={() => {}} />
+          <MenuItem icon={<Bell size={20} color="#BE185D" />} title="Notificaciones" onPress={() => { }} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Settings size={20} color="#BE185D" />} title="Configuración" onPress={() => {}} />
+          <MenuItem icon={<Settings size={20} color="#BE185D" />} title="Configuración" onPress={() => { }} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color="#BE185D" />} title="Privacidad y Seguridad" onPress={() => {}} />
+          <MenuItem icon={<Shield size={20} color="#BE185D" />} title="Privacidad y Seguridad" onPress={() => { }} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color="#BE185D" />} title="Ayuda y Soporte" onPress={() => {}} />
+          <MenuItem icon={<HelpCircle size={20} color="#BE185D" />} title="Ayuda y Soporte" onPress={() => { }} />
         </View>
 
         <View style={[styles.menuCard, { marginTop: 24 }]}>

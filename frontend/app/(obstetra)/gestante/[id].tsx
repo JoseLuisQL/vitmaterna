@@ -14,7 +14,7 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
-import { usePatientProfile, useCreateLabResult, useCreateVaccine } from '../../../src/services/api-queries';
+import { usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment } from '../../../src/services/api-queries';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -158,6 +158,7 @@ export default function PatientProfileScreen(): React.ReactElement {
   // Modal and Form States
   const [isLabModalVisible, setIsLabModalVisible] = useState(false);
   const [isVaxModalVisible, setIsVaxModalVisible] = useState(false);
+  const [isTreatModalVisible, setIsTreatModalVisible] = useState(false);
 
   // Form states for Lab Result
   const [labTipo, setLabTipo] = useState('');
@@ -174,9 +175,17 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [vaxSemana, setVaxSemana] = useState('');
   const [vaxEstado, setVaxEstado] = useState('aplicada');
 
+  // Form states for Treatment
+  const [treatNombre, setTreatNombre] = useState('');
+  const [treatDosis, setTreatDosis] = useState('1 tableta');
+  const [treatFrecuencia, setTreatFrecuencia] = useState('Diario');
+  const [treatHora, setTreatHora] = useState('08:00');
+  const [treatDuracion, setTreatDuracion] = useState('30');
+
   // Mutations
   const { mutate: createLabResult, isPending: isSavingLab } = useCreateLabResult();
   const { mutate: createVaccine, isPending: isSavingVax } = useCreateVaccine();
+  const { mutate: createTreatment, isPending: isSavingTreat } = useCreateTreatment();
 
   const handleSaveLab = () => {
     if (!labTipo) return Alert.alert('Error', 'El tipo de examen es requerido.');
@@ -232,6 +241,35 @@ export default function PatientProfileScreen(): React.ReactElement {
       },
       onError: () => {
         Alert.alert('Error', 'No se pudo registrar la vacuna.');
+      }
+    });
+  };
+
+  const handleSaveTreat = () => {
+    if (!treatNombre) return Alert.alert('Error', 'El nombre del medicamento es requerido.');
+    if (!patient) return;
+
+    createTreatment({
+      gestanteId: patient.id,
+      nombre: treatNombre,
+      dosis: treatDosis,
+      frecuencia: treatFrecuencia,
+      horaToma: treatHora || undefined,
+      duracionDias: parseInt(treatDuracion, 10) || 30,
+      fechaInicio: new Date().toISOString().split('T')[0],
+      viaAdministracion: 'oral',
+    }, {
+      onSuccess: () => {
+        Alert.alert('Éxito', 'Tratamiento asignado correctamente.');
+        setIsTreatModalVisible(false);
+        setTreatNombre('');
+        setTreatDosis('1 tableta');
+        setTreatFrecuencia('Diario');
+        setTreatHora('08:00');
+        setTreatDuracion('30');
+      },
+      onError: () => {
+        Alert.alert('Error', 'No se pudo asignar el tratamiento.');
       }
     });
   };
@@ -470,39 +508,52 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── TAB: TRATAMIENTO ── */}
           {activeTab === 'tratamiento' && (
             <View style={styles.section}>
-              {suplementos.length > 0 ? suplementos.map((sup: any) => {
-                const tomados = sup.diasTomados?.length || 0;
-                const total = sup.totalDias || 30;
-                const pct = total > 0 ? Math.round((tomados / total) * 100) : 0;
-                const isGood = pct >= 80;
+              <View style={[styles.card, designTokens.cardShadow]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Esquema de Tratamiento</Text>
+                  <TouchableOpacity 
+                    style={styles.primaryActionBtn}
+                    onPress={() => setIsTreatModalVisible(true)}
+                  >
+                    <Plus size={16} color="#FFF" />
+                    <Text style={styles.primaryActionText}>Recetar</Text>
+                  </TouchableOpacity>
+                </View>
                 
-                return (
-                  <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.cardShadow]}>
-                    <View style={styles.pillIconBox}>
-                      <Pill size={24} color="#BE185D" />
-                    </View>
-                    <View style={styles.pillInfo}>
-                      <Text style={styles.pillName}>{sup.nombre}</Text>
-                      <Text style={styles.pillDosis}>{sup.dosis} • {sup.frecuencia}</Text>
-                      
-                      <View style={styles.progressWrap}>
-                        <View style={styles.progressTrack}>
-                          <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: isGood ? '#10B981' : '#F59E0B' }]} />
-                        </View>
-                        <Text style={[styles.progressPct, { color: isGood ? '#059669' : '#D97706' }]}>{pct}%</Text>
+                {suplementos.length > 0 ? suplementos.map((sup: any) => {
+                  const tomados = sup.diasTomados?.length || 0;
+                  const total = sup.totalDias || 30;
+                  const pct = total > 0 ? Math.round((tomados / total) * 100) : 0;
+                  const isGood = pct >= 80;
+                  
+                  return (
+                    <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.glassShadow]}>
+                      <View style={styles.pillIconBox}>
+                        <Pill size={24} color="#BE185D" />
                       </View>
-                      <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
+                      <View style={styles.pillInfo}>
+                        <Text style={styles.pillName}>{sup.nombre}</Text>
+                        <Text style={styles.pillDosis}>{sup.dosis} • {sup.frecuencia}</Text>
+                        
+                        <View style={styles.progressWrap}>
+                          <View style={styles.progressTrack}>
+                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: isGood ? '#10B981' : '#F59E0B' }]} />
+                          </View>
+                          <Text style={[styles.progressPct, { color: isGood ? '#059669' : '#D97706' }]}>{pct}%</Text>
+                        </View>
+                        <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
+                      </View>
                     </View>
-                  </View>
-                );
-              }) : (
-                <EmptyState
-                  icon={Pill as any}
-                  title="Sin medicación"
-                  description="No hay suplementos o tratamientos activos."
-                  themeColor="#9D174D"
-                />
-              )}
+                  );
+                }) : (
+                  <EmptyState
+                    icon={Pill as any}
+                    title="Sin medicación"
+                    description="No hay suplementos o tratamientos activos."
+                    themeColor="#9D174D"
+                  />
+                )}
+              </View>
             </View>
           )}
 
@@ -755,6 +806,86 @@ export default function PatientProfileScreen(): React.ReactElement {
                   <ActivityIndicator color="#FFF" size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── MODAL: REGISTRAR TRATAMIENTO ── */}
+      <Modal
+        visible={isTreatModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsTreatModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>Asignar Tratamiento</Text>
+            
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Medicamento</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. Sulfato Ferroso + Ácido Fólico"
+                  value={treatNombre}
+                  onChangeText={setTreatNombre}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Dosis</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 1 tableta, 60mg"
+                  value={treatDosis}
+                  onChangeText={setTreatDosis}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Frecuencia</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. Diario, Cada 8 horas"
+                  value={treatFrecuencia}
+                  onChangeText={setTreatFrecuencia}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Horario de Recordatorio</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 08:00"
+                  value={treatHora}
+                  onChangeText={setTreatHora}
+                />
+              </View>
+
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Duración (Días)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej. 30"
+                  keyboardType="numeric"
+                  value={treatDuracion}
+                  onChangeText={setTreatDuracion}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsTreatModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveTreat} disabled={isSavingTreat}>
+                {isSavingTreat ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Asignar</Text>
                 )}
               </TouchableOpacity>
             </View>

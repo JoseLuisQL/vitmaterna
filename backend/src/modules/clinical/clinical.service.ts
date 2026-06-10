@@ -573,6 +573,85 @@ export class ClinicalService {
       orderBy: { fecha: 'desc' },
     });
   }
+
+  async createNutritionalCounseling(data: any, authenticatedUserId?: string) {
+    const { gestanteId, fecha, fechaSesionDemo, ...counselingData } = data;
+    
+    let resolvedObstetraId = data.obstetraId;
+    if (!resolvedObstetraId && authenticatedUserId) {
+      const obstetra = await prisma.obstetra.findUnique({ where: { userId: authenticatedUserId } });
+      resolvedObstetraId = obstetra?.id;
+    }
+
+    return prisma.nutritionalCounseling.create({
+      data: {
+        ...counselingData,
+        gestanteId,
+        obstetraId: resolvedObstetraId,
+        fecha: new Date(fecha || new Date()),
+        fechaSesionDemo: fechaSesionDemo ? new Date(fechaSesionDemo) : null,
+      }
+    });
+  }
+
+  async getNutritionalCounseling(gestanteId: string) {
+    return prisma.nutritionalCounseling.findMany({
+      where: { gestanteId },
+      orderBy: { fecha: 'desc' },
+    });
+  }
+
+  async createWeightRecord(data: any) {
+    const { gestanteId, fecha, egSemanas, peso } = data;
+
+    // Fetch gestante to calculate ganancia total and classification
+    const gestante = await prisma.gestante.findUnique({ where: { id: gestanteId }});
+    
+    let gananciaTotal = null;
+    let clasificacion: any = null;
+
+    if (gestante && gestante.pesoHabitual) {
+      gananciaTotal = Number(peso) - Number(gestante.pesoHabitual);
+      
+      // Simple logic based on pre-gestational BMI
+      // This refers to IOM 2009 guidelines (RF-5.06)
+      if (gestante.clasificacionImc) {
+        if (gestante.clasificacionImc === 'bajo_peso' && gananciaTotal < 12.5) clasificacion = 'bajo';
+        else if (gestante.clasificacionImc === 'bajo_peso' && gananciaTotal > 18) clasificacion = 'alto';
+        else if (gestante.clasificacionImc === 'bajo_peso') clasificacion = 'adecuado';
+        
+        else if (gestante.clasificacionImc === 'normal' && gananciaTotal < 11.5) clasificacion = 'bajo';
+        else if (gestante.clasificacionImc === 'normal' && gananciaTotal > 16) clasificacion = 'alto';
+        else if (gestante.clasificacionImc === 'normal') clasificacion = 'adecuado';
+
+        else if (gestante.clasificacionImc === 'sobrepeso' && gananciaTotal < 7) clasificacion = 'bajo';
+        else if (gestante.clasificacionImc === 'sobrepeso' && gananciaTotal > 11.5) clasificacion = 'alto';
+        else if (gestante.clasificacionImc === 'sobrepeso') clasificacion = 'adecuado';
+
+        else if (gestante.clasificacionImc === 'obesidad' && gananciaTotal < 5) clasificacion = 'bajo';
+        else if (gestante.clasificacionImc === 'obesidad' && gananciaTotal > 9) clasificacion = 'alto';
+        else if (gestante.clasificacionImc === 'obesidad') clasificacion = 'adecuado';
+      }
+    }
+
+    return prisma.weightRecord.create({
+      data: {
+        gestanteId,
+        fecha: new Date(fecha || new Date()),
+        egSemanas,
+        peso,
+        gananciaTotal,
+        clasificacion,
+      }
+    });
+  }
+
+  async getWeightRecords(gestanteId: string) {
+    return prisma.weightRecord.findMany({
+      where: { gestanteId },
+      orderBy: { fecha: 'asc' },
+    });
+  }
 }
 
 export const clinicalService = new ClinicalService();

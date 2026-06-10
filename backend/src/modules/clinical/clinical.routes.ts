@@ -135,3 +135,27 @@ clinicalRoutes.get(
   validate(schema.getDentalRecordsSchema),
   controller.getDentalRecords
 );
+
+// Nutritional Counseling
+clinicalRoutes.post(
+  '/nutritional-counseling',
+  validate(schema.createNutritionalCounselingSchema),
+  controller.createNutritionalCounseling
+);
+clinicalRoutes.get(
+  '/nutritional-counseling/:gestanteId',
+  validate(schema.getNutritionalCounselingSchema),
+  controller.getNutritionalCounseling
+);
+
+// Weight Records
+clinicalRoutes.post(
+  '/weight-records',
+  validate(schema.createWeightRecordSchema),
+  controller.createWeightRecord
+);
+clinicalRoutes.get(
+  '/weight-records/:gestanteId',
+  validate(schema.getWeightRecordsSchema),
+  controller.getWeightRecords
+);

@@ -22,6 +22,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
   const [gestanteId, setGestanteId] = useState('');
   const [gestanteName, setGestanteName] = useState('');
   const [motivo, setMotivo] = useState('Control Prenatal');
+  const [observaciones, setObservaciones] = useState('');
   const [date, setDate] = useState(new Date());
   const [dateStr, setDateStr] = useState(new Date().toISOString().split('T')[0]);
   const [timeStr, setTimeStr] = useState('10:00');
@@ -47,6 +48,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     setGestanteId('');
     setGestanteName('');
     setMotivo('Control Prenatal');
+    setObservaciones('');
     setDate(new Date());
     setStep('form');
     setSearch('');
@@ -72,7 +74,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
         fecha,
         hora,
         motivo,
-        observaciones: '',
+        observaciones: observaciones || null, // Guardar observaciones en bd
       });
       handleClose();
     } catch (e: any) {
@@ -159,6 +161,19 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
                     />
                   </View>
                 </View>
+              </View>
+
+              <Text style={styles.label}>Descripción / Consultorio</Text>
+              <View style={[styles.inputBox, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
+                 <FileText size={18} color="#64748B" style={{ marginTop: 2 }} />
+                 <TextInput 
+                   style={[styles.inputTextNative, { textAlignVertical: 'top' }]} 
+                   value={observaciones} 
+                   onChangeText={setObservaciones}
+                   placeholder="Ej: Traer resultados / Consultorio 103"
+                   placeholderTextColor="#94A3B8"
+                   multiline
+                 />
               </View>
 
               {/* Removed native pickers */}

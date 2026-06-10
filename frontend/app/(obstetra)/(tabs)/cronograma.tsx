@@ -8,27 +8,36 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { typography } from '../../../src/theme/typography';
-import { useTodayAppointments } from '../../../src/services/api-queries';
+import { useAppointments, useUpdateAppointmentStatus } from '../../../src/services/api-queries';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
 
 export default function CronogramaScreen(): React.ReactElement {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [filterMode, setFilterMode] = useState<'todas' | 'hoy' | 'proximas'>('hoy');
   const [modalVisible, setModalVisible] = useState(false);
-  
-  const { data: appointments, isLoading, refetch, isRefetching } = useTodayAppointments();
 
-  const handlePrevDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() - 1);
-    setSelectedDate(newDate);
-  };
+  const { data: allAppointments, isLoading, refetch, isRefetching } = useAppointments();
+  const { mutate: updateStatus } = useUpdateAppointmentStatus();
 
-  const handleNextDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() + 1);
-    setSelectedDate(newDate);
-  };
+  // Filter Logic natively matching backend returned data
+  const processedAppointments = React.useMemo(() => {
+    if (!allAppointments) return [];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    return allAppointments.filter((app: any) => {
+      const appDateStr = new Date(app.date).toISOString().split('T')[0];
+
+      switch (filterMode) {
+        case 'hoy':
+          return appDateStr === todayStr;
+        case 'proximas':
+          return appDateStr >= todayStr && (app.status === 'programada' || app.status === 'confirmada' || app.status === 'reprogramada');
+        case 'todas':
+        default:
+          return true;
+      }
+    }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [allAppointments, filterMode]);
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -36,25 +45,31 @@ export default function CronogramaScreen(): React.ReactElement {
       <View style={styles.headerWrapper}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <Text style={styles.headerTitle}>Cronograma</Text>
-          <Text style={styles.headerSubtitle}>Tus citas programadas</Text>
+          <Text style={styles.headerSubtitle}>Gestión de citas y pacientes</Text>
         </SafeAreaView>
       </View>
 
-      <View style={styles.dateSelectorContainer}>
-        <View style={styles.dateSelector}>
-          <TouchableOpacity onPress={handlePrevDay} style={styles.iconButton} activeOpacity={0.7}>
-            <ChevronLeft size={24} color="#64748B" />
-          </TouchableOpacity>
-          <View style={styles.dateTextContainer}>
-            <CalendarIcon size={16} color="#BE185D" />
-            <Text style={styles.currentDateText}>
-              {selectedDate.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={handleNextDay} style={styles.iconButton} activeOpacity={0.7}>
-            <ChevronRight size={24} color="#64748B" />
-          </TouchableOpacity>
-        </View>
+      <View style={styles.tabsWrapper}>
+        <TouchableOpacity
+          style={[styles.tabButton, filterMode === 'todas' && styles.tabButtonActive]}
+          onPress={() => setFilterMode('todas')}
+        >
+          <Text style={[styles.tabText, filterMode === 'todas' && styles.tabTextActive]}>Todas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabButton, filterMode === 'hoy' && styles.tabButtonActive]}
+          onPress={() => setFilterMode('hoy')}
+        >
+          <Text style={[styles.tabText, filterMode === 'hoy' && styles.tabTextActive]}>Hoy</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabButton, filterMode === 'proximas' && styles.tabButtonActive]}
+          onPress={() => setFilterMode('proximas')}
+        >
+          <Text style={[styles.tabText, filterMode === 'proximas' && styles.tabTextActive]}>Próximas</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -70,7 +85,7 @@ export default function CronogramaScreen(): React.ReactElement {
       'cancelada': 'danger'
     };
     const variant = statusMap[item.status] || 'default';
-    
+
     const labelMap: Record<string, string> = {
       'programada': 'Programada',
       'confirmada': 'Confirmada',
@@ -81,8 +96,14 @@ export default function CronogramaScreen(): React.ReactElement {
     };
     const statusText = labelMap[item.status] || 'Desconocido';
 
+    const handleStatusUpdate = (id: string, newStatus: 'asistida' | 'no_asistida') => {
+      updateStatus({ id, status: newStatus });
+    };
+
+    const showActions = item.status === 'programada' || item.status === 'confirmada';
+
     return (
-      <TouchableOpacity style={styles.appointmentCard} activeOpacity={0.7}>
+      <View style={styles.appointmentCard}>
         <View style={styles.timeLine}>
           <Text style={styles.timeText}>
             {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
@@ -91,19 +112,37 @@ export default function CronogramaScreen(): React.ReactElement {
             {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
           </Text>
         </View>
+
         <View style={styles.appointmentContent}>
           <View style={styles.appointmentHeaderRow}>
             <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
-            <AppBadge label={statusText} variant={variant} />
+            {!showActions && <AppBadge label={statusText} variant={variant} />}
           </View>
           <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
           <View style={styles.infoRow}>
             <MapPin size={12} color="#94A3B8" />
             <Text style={styles.infoText}>{item.location || 'Consultorio 102'}</Text>
           </View>
+
+          {showActions && (
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.btnAsistio]}
+                onPress={() => handleStatusUpdate(item.id, 'asistida')}
+              >
+                <Text style={styles.btnAsistioText}>Asistió</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.btnNoAsistio]}
+                onPress={() => handleStatusUpdate(item.id, 'no_asistida')}
+              >
+                <Text style={styles.btnNoAsistioText}>No asistió</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-        <ChevronRightSmall size={20} color="#CBD5E1" />
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -125,7 +164,7 @@ export default function CronogramaScreen(): React.ReactElement {
   return (
     <View style={styles.container}>
       <FlatList
-        data={appointments}
+        data={processedAppointments}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
@@ -135,17 +174,17 @@ export default function CronogramaScreen(): React.ReactElement {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#BE185D" />}
       />
 
-      <TouchableOpacity 
-        style={styles.fab} 
+      <TouchableOpacity
+        style={styles.fab}
         activeOpacity={0.8}
         onPress={() => setModalVisible(true)}
       >
         <Plus size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      <NuevaCitaModal 
-        visible={modalVisible} 
-        onClose={() => setModalVisible(false)} 
+      <NuevaCitaModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
       />
     </View>
   );
@@ -163,27 +202,33 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), fontSize: 32, fontWeight: '800', color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 },
   headerSubtitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), fontSize: 16, color: '#64748B' },
-  dateSelectorContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  dateSelector: {
+  tabsWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 64,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.06,
-    shadowRadius: 24,
-    elevation: 8,
+    paddingHorizontal: 20,
+    marginTop: 8,
+    gap: 12,
   },
-  iconButton: { padding: 8 },
-  dateTextContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  currentDateText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  tabButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  tabButtonActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  tabText: {
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+  },
   listContent: { paddingBottom: 100 },
   appointmentCard: {
     flexDirection: 'row',
@@ -215,8 +260,43 @@ const styles = StyleSheet.create({
   appointmentHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   patientName: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 8 },
   appointmentType: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B' },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 4 },
   infoText: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8' },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  btnAsistio: {
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  btnAsistioText: {
+    color: '#166534',
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  btnNoAsistio: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  btnNoAsistioText: {
+    color: '#991B1B',
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   fab: {
     position: 'absolute',
     bottom: 32,

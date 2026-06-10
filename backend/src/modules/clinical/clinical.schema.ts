@@ -233,3 +233,43 @@ export const getDentalRecordsSchema = {
     gestanteId: z.string().uuid(),
   }),
 };
+
+export const createNutritionalCounselingSchema = {
+  body: z.object({
+    gestanteId: z.string().uuid(),
+    obstetraId: z.string().uuid().optional(),
+    historialAlimentario: z.string().optional(),
+    frecuenciaAlimentacion: z.number().int().optional(),
+    consumoAnimales: z.boolean().optional(),
+    consumoMenestras: z.boolean().optional(),
+    consumoFrutas: z.boolean().optional(),
+    salYodada: z.boolean().optional(),
+    acuerdos: z.string().optional(),
+    sesionDemostrativa: z.boolean().optional(),
+    fechaSesionDemo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    responsableDemo: z.string().optional(),
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  }),
+};
+
+export const getNutritionalCounselingSchema = {
+  params: z.object({
+    gestanteId: z.string().uuid(),
+  }),
+};
+
+export const createWeightRecordSchema = {
+  body: z.object({
+    gestanteId: z.string().uuid(),
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    egSemanas: z.number().int().nonnegative(),
+    peso: z.number().positive(),
+  }),
+};
+
+export const getWeightRecordsSchema = {
+  params: z.object({
+    gestanteId: z.string().uuid(),
+  }),
+};
+

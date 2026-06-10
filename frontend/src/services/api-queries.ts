@@ -22,7 +22,8 @@ const mapAppointment = (appt: any) => ({
   patientName: appt.gestante?.user ? `${appt.gestante.user.firstName} ${appt.gestante.user.lastName}` : 'Paciente',
   type: appt.motivo || 'Control Prenatal',
   status: appt.estado || 'programada',
-  location: 'Consultorio 102',
+  location: appt.observaciones || 'Consultorio 102',
+  gestanteId: appt.gestanteId,
   riskLevel: appt.gestante?.nivelRiesgo === 'rojo' ? 'Alto' : appt.gestante?.nivelRiesgo === 'amarillo' ? 'Medio' : 'Bajo',
 });
 
@@ -393,6 +394,22 @@ export const useCreateVaccine = () => {
   });
 };
 
+export const useCreateTreatment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/treatments', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      if (variables.gestanteId) {
+        queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['treatments'] });
+    },
+  });
+};
+
 export const useCreatePathology = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -432,6 +449,32 @@ export const useCreateViolenceScreening = () => {
   });
 };
 
+export const useCreateNutritionalCounseling = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/nutritional-counseling', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useCreateWeightRecord = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/weight-records', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
 export const useConfirmAppointment = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -446,16 +489,18 @@ export const useConfirmAppointment = () => {
   });
 };
 
-export const useRescheduleAppointment = () => {
+export const useUpdateAppointmentStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { fecha: string; hora: string; motivoReprogramacion: string } }) => {
-      const res = await api.patch(`/appointments/${id}/reschedule`, data);
+    mutationFn: async ({ id, status }: { id: string; status: 'asistida' | 'no_asistida' | 'cancelada' | 'reprogramada' }) => {
+      const res = await api.patch(`/appointments/${id}/status`, { estado: status });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['todayAppointments'] });
       queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
     },
   });
 };

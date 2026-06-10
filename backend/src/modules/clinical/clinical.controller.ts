@@ -224,3 +224,39 @@ export const getDentalRecords = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+export const createNutritionalCounseling = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.createNutritionalCounseling(req.body, req.user?.userId);
+    res.status(201).json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getNutritionalCounseling = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.getNutritionalCounseling(req.params.gestanteId as string);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createWeightRecord = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.createWeightRecord(req.body);
+    res.status(201).json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getWeightRecords = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.getWeightRecords(req.params.gestanteId as string);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
