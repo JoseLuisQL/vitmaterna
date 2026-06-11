@@ -114,3 +114,44 @@ export const useCreateUser = () => {
     },
   });
 };
+
+// --- Establecimientos de salud (RF-10.02) ---
+export const fetchFacilities = async () => {
+  const res = await api.get('/admin/facilities');
+  return res.data?.data || [];
+};
+
+export const useFacilities = () => useQuery({ queryKey: ['adminFacilities'], queryFn: fetchFacilities });
+
+export const useCreateFacility = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/admin/facilities', data);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminFacilities'] }),
+  });
+};
+
+export const useUpdateFacility = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await api.put(`/admin/facilities/${id}`, data);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminFacilities'] }),
+  });
+};
+
+export const useDeleteFacility = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/admin/facilities/${id}`);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminFacilities'] }),
+  });
+};

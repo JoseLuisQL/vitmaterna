@@ -277,6 +277,56 @@ export class AdminService {
       return user;
     });
   }
+
+  // ── Establecimientos de salud (RF-10.02) ──
+
+  async listFacilities() {
+    return prisma.healthFacility.findMany({ orderBy: { nombre: 'asc' } });
+  }
+
+  async createFacility(data: any) {
+    return prisma.healthFacility.create({
+      data: {
+        nombre: data.nombre,
+        codigo: data.codigo ?? null,
+        direccion: data.direccion ?? null,
+        telefono: data.telefono ?? null,
+        horarios: data.horarios ?? undefined,
+        servicios: data.servicios ?? [],
+        altitudMsnm: data.altitudMsnm ?? 2926,
+        activo: data.activo ?? true,
+      },
+    });
+  }
+
+  async updateFacility(id: string, data: any) {
+    const existing = await prisma.healthFacility.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Establecimiento no encontrado');
+    }
+    return prisma.healthFacility.update({
+      where: { id },
+      data: {
+        ...(data.nombre !== undefined && { nombre: data.nombre }),
+        ...(data.codigo !== undefined && { codigo: data.codigo }),
+        ...(data.direccion !== undefined && { direccion: data.direccion }),
+        ...(data.telefono !== undefined && { telefono: data.telefono }),
+        ...(data.horarios !== undefined && { horarios: data.horarios }),
+        ...(data.servicios !== undefined && { servicios: data.servicios }),
+        ...(data.altitudMsnm !== undefined && { altitudMsnm: data.altitudMsnm }),
+        ...(data.activo !== undefined && { activo: data.activo }),
+      },
+    });
+  }
+
+  async deleteFacility(id: string) {
+    const existing = await prisma.healthFacility.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Establecimiento no encontrado');
+    }
+    await prisma.healthFacility.delete({ where: { id } });
+    return { id };
+  }
 }
 
 export const adminService = new AdminService();

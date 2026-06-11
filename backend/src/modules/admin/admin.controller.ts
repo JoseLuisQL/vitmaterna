@@ -94,6 +94,28 @@ export class AdminController {
     const user = await adminService.createUser(req.body);
     return res.status(201).json(successResponse(user));
   }
+
+  // ── Establecimientos de salud (RF-10.02) ──
+
+  async listFacilities(_req: Request, res: Response) {
+    const facilities = await adminService.listFacilities();
+    return res.status(200).json(successResponse(facilities));
+  }
+
+  async createFacility(req: Request, res: Response) {
+    const facility = await adminService.createFacility(req.body);
+    return res.status(201).json(successResponse(facility));
+  }
+
+  async updateFacility(req: Request, res: Response) {
+    const facility = await adminService.updateFacility(req.params.id as string, req.body);
+    return res.status(200).json(successResponse(facility));
+  }
+
+  async deleteFacility(req: Request, res: Response) {
+    const result = await adminService.deleteFacility(req.params.id as string);
+    return res.status(200).json(successResponse(result));
+  }
 }
 
 export const adminController = new AdminController();

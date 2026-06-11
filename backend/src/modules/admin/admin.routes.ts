@@ -8,6 +8,9 @@ import {
   updateEducationSchema,
   approveUserSchema,
   createUserSchema,
+  createFacilitySchema,
+  updateFacilitySchema,
+  deleteFacilitySchema,
 } from './admin.schema.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { rbac } from '../../middleware/rbac.middleware.js';
@@ -89,3 +92,9 @@ adminRoutes.get(
   '/backup',
   adminController.getBackup
 );
+
+// Establecimientos de salud (RF-10.02)
+adminRoutes.get('/facilities', adminController.listFacilities);
+adminRoutes.post('/facilities', validate(createFacilitySchema), adminController.createFacility);
+adminRoutes.put('/facilities/:id', validate(updateFacilitySchema), adminController.updateFacility);
+adminRoutes.delete('/facilities/:id', validate(deleteFacilitySchema), adminController.deleteFacility);

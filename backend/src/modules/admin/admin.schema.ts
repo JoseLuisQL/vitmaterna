@@ -74,3 +74,27 @@ export const createUserSchema = {
     path: ['cop'],
   }),
 };
+
+// ── Establecimientos de salud (RF-10.02) ──
+
+const facilityBody = z.object({
+  nombre: z.string().min(2, 'El nombre es obligatorio').max(200),
+  codigo: z.string().max(20).optional().nullable(),
+  direccion: z.string().optional().nullable(),
+  telefono: z.string().max(15).optional().nullable(),
+  horarios: z.any().optional(),
+  servicios: z.array(z.string()).optional(),
+  altitudMsnm: z.number().int().min(0).max(6000).optional(),
+  activo: z.boolean().optional(),
+});
+
+export const createFacilitySchema = { body: facilityBody };
+
+export const updateFacilitySchema = {
+  params: z.object({ id: z.string().uuid() }),
+  body: facilityBody.partial(),
+};
+
+export const deleteFacilitySchema = {
+  params: z.object({ id: z.string().uuid() }),
+};
