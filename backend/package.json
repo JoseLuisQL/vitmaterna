@@ -20,6 +20,7 @@
     "perf": "node scripts/perf-test.mjs",
     "chat:e2e": "node scripts/chat-e2e.mjs",
     "e2e": "node scripts/integration-e2e.mjs",
+    "simulate": "node scripts/full-simulation.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"
