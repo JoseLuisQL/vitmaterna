@@ -9,7 +9,8 @@ import type { User, UserSession } from '@prisma/client';
 import type { RegisterInput, UpdateProfileInput } from './auth.schema.js';
 
 const MAX_FAILED_ATTEMPTS = 5;
-const LOCK_DURATION_MINUTES = 30;
+// RF-1.08: bloqueo de 15 minutos tras 5 intentos fallidos.
+const LOCK_DURATION_MINUTES = 15;
 
 // ============================================
 // Password Utilities

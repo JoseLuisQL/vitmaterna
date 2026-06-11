@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../../config/database.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
+import { classifyImc } from '../../utils/imcClassification.js';
 
 export class PatientService {
   async findAll(filters: {
@@ -335,13 +336,7 @@ export class PatientService {
       const t = Number(talla);
       if (t > 0) {
         calculatedImc = p / (t * t);
-        if (calculatedImc < 18.5) {
-          classification = 'bajo';
-        } else if (calculatedImc < 25) {
-          classification = 'adecuado';
-        } else {
-          classification = 'alto';
-        }
+        classification = classifyImc(calculatedImc);
       }
     }
 

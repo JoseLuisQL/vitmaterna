@@ -89,7 +89,8 @@ export const useAuditLogs = () => useQuery({ queryKey: ['adminAuditLogs'], query
 
 // --- Admin Backup ---
 export const exportBackup = async () => {
-  const res = await api.post('/admin/backup');
+  // El endpoint de respaldo es de lectura (GET), genera un dump JSON.
+  const res = await api.get('/admin/backup');
   return res.data?.data || res.data;
 };
 
