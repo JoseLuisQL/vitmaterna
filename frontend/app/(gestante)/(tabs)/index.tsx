@@ -27,7 +27,7 @@ import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { AppModal, useToast } from '../../../src/components/ui';
 import { useAuthStore } from '../../../src/store/authStore';
-import { useGestanteDashboard } from '../../../src/services/api-queries';
+import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
@@ -45,6 +45,7 @@ export default function GestanteDashboard(): React.ReactElement {
   const { data, isLoading, refetch } = useGestanteDashboard();
   const toast = useToast();
   useRefetchOnFocus([refetch]);
+  const confirmMutation = useConfirmAppointment();
 
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [selectedSign, setSelectedSign] = React.useState('');
@@ -120,10 +121,6 @@ export default function GestanteDashboard(): React.ReactElement {
     );
   };
 
-  if (isLoading) {
-    return <LoadingScreen message="Cargando tu información..." />;
-  }
-
   const nextAppointment = data?.nextAppointment;
   const todayTreatments = data?.todayTreatments || [];
   const takenCount = todayTreatments.filter((t: any) => t.taken).length;
@@ -131,26 +128,43 @@ export default function GestanteDashboard(): React.ReactElement {
   const treatmentPercentage = totalTreatments > 0 ? Math.round((takenCount / totalTreatments) * 100) : 0;
 
   const profile = data?.profile;
-  const fum = profile?.fum ? new Date(profile.fum) : null;
 
-  let weeks = 0;
-  if (fum) {
-    const diffTime = Math.abs(new Date().getTime() - fum.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    weeks = Math.floor(diffDays / 7);
-    if (weeks < 0) weeks = 0;
-    if (weeks > 42) weeks = 42;
-  }
+  // Cálculo memoizado de semanas de gestación (evita recálculo por render).
+  const weeks = React.useMemo(() => {
+    if (!profile?.fum) return 0;
+    const fum = new Date(profile.fum);
+    const diffDays = Math.ceil(Math.abs(Date.now() - fum.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.min(42, Math.max(0, Math.floor(diffDays / 7)));
+  }, [profile?.fum]);
 
   const gestationalWeekText = weeks > 0 ? `Semana ${weeks}` : 'Semana --';
   const progressText = weeks > 0 ? `Sem. ${weeks} de 40` : 'Sem. -- de 40';
   const progressPercent = weeks > 0 ? Math.min(100, Math.round((weeks / 40) * 100)) : 0;
-  const trimesterText = weeks > 0 ? getTrimesterText(weeks) : 'Gestación';
 
   function getTrimesterText(w: number) {
     if (w <= 13) return 'Primer Trimestre';
     if (w <= 26) return 'Segundo Trimestre';
     return 'Tercer Trimestre';
+  }
+  const trimesterText = weeks > 0 ? getTrimesterText(weeks) : 'Gestación';
+
+  // Datos de la próxima cita normalizados.
+  const nextStatus: string = nextAppointment?.status || 'programada';
+  const canConfirmNext = nextStatus === 'programada';
+
+  const handleConfirmNext = () => {
+    if (!nextAppointment?.id) return;
+    confirmMutation.mutate(nextAppointment.id, {
+      onSuccess: () => {
+        toast.success('Cita confirmada', 'Tu obstetra fue notificada.');
+        refetch();
+      },
+      onError: () => toast.error('No se pudo confirmar', 'Inténtalo nuevamente.'),
+    });
+  };
+
+  if (isLoading) {
+    return <LoadingScreen message="Cargando tu información..." />;
   }
 
   const riskLevel = profile?.nivelRiesgo || 'verde';
@@ -219,14 +233,14 @@ export default function GestanteDashboard(): React.ReactElement {
           </AppCard>
 
           {/* Next Appointment */}
-          <AppCard style={styles.sectionCard}>
+          <AppCard style={styles.sectionCard} onPress={() => router.push('/(gestante)/(tabs)/citas')}>
             <View style={styles.cardHeader}>
               <View style={[styles.cardIconCircle, { backgroundColor: gestanteColors.primaryLight }]}>
                 <Calendar size={22} color={BRAND} />
               </View>
               <View style={styles.cardHeaderText}>
                 <Text style={styles.cardTitle}>Próxima Cita</Text>
-                <Text style={styles.cardSubtitle}>Control Prenatal</Text>
+                <Text style={styles.cardSubtitle}>{nextAppointment?.type || 'Control Prenatal'}</Text>
               </View>
               <ChevronRight size={20} color={commonColors.textTertiary} />
             </View>
@@ -246,8 +260,17 @@ export default function GestanteDashboard(): React.ReactElement {
                   <View style={styles.divider} />
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Estado:</Text>
-                    <StatusChip status={nextAppointment.status || 'confirmed'} />
+                    <StatusChip status={nextStatus} />
                   </View>
+                  {canConfirmNext && (
+                    <AppButton
+                      title={confirmMutation.isPending ? 'Confirmando...' : 'Confirmar asistencia'}
+                      onPress={handleConfirmNext}
+                      disabled={confirmMutation.isPending}
+                      themeColor={BRAND}
+                      style={{ marginTop: spacing.md }}
+                    />
+                  )}
                 </>
               ) : (
                 <Text style={styles.emptyText}>No tienes citas programadas próximamente.</Text>
@@ -256,14 +279,16 @@ export default function GestanteDashboard(): React.ReactElement {
           </AppCard>
 
           {/* Today's Treatment */}
-          <AppCard style={styles.sectionCard}>
+          <AppCard style={styles.sectionCard} onPress={() => router.push('/(gestante)/(tabs)/tratamiento')}>
             <View style={styles.cardHeader}>
               <View style={[styles.cardIconCircle, { backgroundColor: semanticColors.infoLight }]}>
                 <Pill size={22} color={semanticColors.info} />
               </View>
               <View style={styles.cardHeaderText}>
                 <Text style={styles.cardTitle}>Tratamiento del Día</Text>
-                <Text style={styles.cardSubtitle}>{takenCount} de {totalTreatments} medicamentos tomados</Text>
+                <Text style={styles.cardSubtitle}>
+                  {totalTreatments > 0 ? `${takenCount} de ${totalTreatments} medicamentos tomados` : 'Sin tratamientos para hoy'}
+                </Text>
               </View>
               <ChevronRight size={20} color={commonColors.textTertiary} />
             </View>

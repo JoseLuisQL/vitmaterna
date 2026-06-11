@@ -28,6 +28,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   completed: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Completada' },
   asistida: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Asistida' },
   no_asistida: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'No Asistida' },
+  solicitud_reprogramacion: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Solicitud enviada' },
   reprogramada: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Reprogramada' },
   cancelled: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
   cancelada: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
