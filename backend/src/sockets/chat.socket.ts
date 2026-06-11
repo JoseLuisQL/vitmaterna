@@ -44,7 +44,10 @@ export const setupChatSockets = (io: Server) => {
       try {
         const { conversationId, content, type = 'texto' } = data;
 
-        // Verify conversation exists and user is part of it
+        // Verificar que la conversación existe y que el usuario participa.
+        // Nota: conversation.gestanteId / obstetraId son IDs de los perfiles
+        // (Gestante/Obstetra), no del usuario; hay que resolver el perfil del
+        // usuario autenticado para compararlos correctamente.
         const conversation = await prisma.conversation.findUnique({
           where: { id: conversationId },
         });
@@ -54,11 +57,6 @@ export const setupChatSockets = (io: Server) => {
           return;
         }
 
-        const isParticipant =
-          conversation.gestanteId === user.userId || conversation.obstetraId === user.userId;
-        
-        // Wait, User has gestante or obstetra ID differently, userId is the User table ID.
-        // Let's check User relation to Gestante/Obstetra
         let userIsParticipant = false;
         if (user.role === 'gestante') {
           const gestante = await prisma.gestante.findUnique({ where: { userId: user.userId } });
@@ -68,12 +66,10 @@ export const setupChatSockets = (io: Server) => {
           if (obstetra && obstetra.id === conversation.obstetraId) userIsParticipant = true;
         }
 
-        if (!userIsParticipant) {
-           // Allow admin or maybe we just check if it's the sender
-           if (user.role !== 'admin') {
-              socket.emit('error', { message: 'Not a participant of this conversation' });
-              return;
-           }
+        // Los administradores pueden participar (p. ej. mensajes masivos).
+        if (!userIsParticipant && user.role !== 'admin') {
+          socket.emit('error', { message: 'Not a participant of this conversation' });
+          return;
         }
 
         // Save message
