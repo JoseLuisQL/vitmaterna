@@ -370,12 +370,60 @@ export async function scanLowAdherence() {
   }
 }
 
+/**
+ * RF-7.12: alerta de FPP próxima en hitos (30, 15, 7 y 3 días antes).
+ * Envía a la gestante (y al acompañante) un aviso por cada hito alcanzado,
+ * una sola vez por hito (deduplicado por Notification).
+ */
+export async function scanUpcomingFPP() {
+  const now = new Date();
+  const hitos = [30, 15, 7, 3];
+
+  const gestantes = await prisma.gestante.findMany({
+    where: { estado: 'activa', OR: [{ fppFum: { not: null } }, { fppEco: { not: null } }] },
+    include: { user: true },
+  });
+
+  for (const g of gestantes) {
+    const fpp = g.fppEco || g.fppFum;
+    if (!fpp || !g.user) continue;
+    const diasRestantes = Math.ceil((new Date(fpp).getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+    if (diasRestantes < 0) continue;
+
+    // Hito más cercano alcanzado (el menor hito >= diasRestantes).
+    const hito = hitos.find((h) => diasRestantes <= h && diasRestantes > (hitos[hitos.indexOf(h) + 1] ?? -1));
+    if (hito === undefined) continue;
+
+    const yaAvisado = await prisma.notification.findFirst({
+      where: {
+        userId: g.user.id,
+        tipo: 'fpp_proxima',
+        datos: { path: ['hito'], equals: hito },
+      },
+    });
+    if (yaAvisado) continue;
+
+    const mensaje = `Hola ${g.user.firstName}, tu fecha probable de parto se acerca (faltan ~${diasRestantes} días). Prepara tu plan de parto y tus cosas para el bebé.`;
+    if (g.user.phone) {
+      await sendSmsAndWhatsApp(g.user.phone, mensaje);
+    }
+    if (g.acompanantePhone) {
+      await sendSmsAndWhatsApp(
+        g.acompanantePhone,
+        `VITMATERNA: la fecha probable de parto de ${g.user.firstName} ${g.user.lastName} se acerca (faltan ~${diasRestantes} días). Mantente atento(a).`,
+      );
+    }
+    await notifyUser(g.user.id, 'fpp_proxima', 'Tu parto se acerca', mensaje, { hito, diasRestantes });
+  }
+}
+
 export function startReminderCron() {
   const runAll = async () => {
     await scanAndSendReminders();
     await scanSupplementReminders();
     await scanMissedAppointments();
     await scanLowAdherence();
+    await scanUpcomingFPP();
   };
   runAll().catch((err) => console.error('[REMINDER CRON ERROR]', err));
 

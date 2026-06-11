@@ -542,6 +542,40 @@ export class ClinicalService {
       }
 
       return labResult;
+    }).then(async (labResult) => {
+      // RF-7.10: notificar a la gestante que sus resultados están disponibles.
+      try {
+        const gestante = await prisma.gestante.findUnique({
+          where: { id: gestanteId },
+          include: { user: true },
+        });
+        const prefs = gestante?.user?.notificationPreferences as Record<string, any> | null;
+        if (prefs?.expoPushToken) {
+          await sendPushNotification(
+            [prefs.expoPushToken],
+            'Resultados disponibles',
+            `Tu resultado de ${labData.tipoExamen} ya está disponible. Consúltalo con tu obstetra.`,
+            { gestanteId, labResultId: labResult.id },
+          );
+        }
+        if (gestante?.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: gestante.userId,
+              tipo: 'resultado_laboratorio',
+              canal: 'push',
+              titulo: 'Resultados de laboratorio',
+              mensaje: `Tu resultado de ${labData.tipoExamen} ya está disponible.`,
+              datos: { gestanteId, labResultId: labResult.id },
+              estado: 'enviada',
+              enviadaAt: new Date(),
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Error notificando resultado de laboratorio:', err);
+      }
+      return labResult;
     });
   }
 
