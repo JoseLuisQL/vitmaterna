@@ -17,6 +17,7 @@
     "test:unit": "node --experimental-vm-modules node_modules/.bin/jest --config jest.config.mjs tests/unit",
     "test:integration": "node --experimental-vm-modules node_modules/.bin/jest --config jest.config.mjs tests/integration",
     "smoke": "node scripts/smoke-test.mjs",
+    "perf": "node scripts/perf-test.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"
@@ -53,6 +54,7 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
+    "autocannon": "^8.0.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.9",
     "prisma": "^6.19.3",
