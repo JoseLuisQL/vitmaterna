@@ -119,10 +119,11 @@ export default function ChatbotScreen(): React.ReactElement {
     if (s.urgencia !== 'leve') {
       alertaMutation.mutate(s, {
         onSuccess: () => {
-          setMensajes((prev) => [
-            ...prev,
-            { tipo: 'bot', texto: 'He avisado a tu obstetra sobre este síntoma para que pueda dar seguimiento.' },
-          ]);
+          const aviso =
+            s.urgencia === 'grave'
+              ? 'He enviado una alerta URGENTE a tu obstetra y la dejé en tu chat para que te contacte de inmediato.'
+              : 'He avisado a tu obstetra sobre este síntoma para que pueda dar seguimiento.';
+          setMensajes((prev) => [...prev, { tipo: 'bot', texto: aviso }]);
           scrollAbajo();
         },
         onError: () => {

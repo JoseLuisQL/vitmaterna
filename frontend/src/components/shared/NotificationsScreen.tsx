@@ -37,6 +37,8 @@ function metaFor(tipo: string): { icon: keyof typeof Ionicons.glyphMap; color: s
       return { icon: 'calendar', color: semanticColors.success, bg: semanticColors.successLight };
     case 'reprogramacion_rechazada':
       return { icon: 'close-circle', color: semanticColors.danger, bg: semanticColors.dangerLight };
+    case 'signo_alarma':
+      return { icon: 'warning', color: semanticColors.danger, bg: semanticColors.dangerLight };
     case 'inasistencia':
       return { icon: 'alert-circle', color: semanticColors.danger, bg: semanticColors.dangerLight };
     case 'baja_adherencia':

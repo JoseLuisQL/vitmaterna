@@ -1,7 +1,11 @@
 import { prisma } from '../../config/database.js';
 import { calculateRiskLevel } from '../../utils/riskCalculator.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
-import { sendPushNotification } from '../notifications/notification.service.js';
+import {
+  sendPushNotification,
+  notifyUser,
+  findObstetraUserIdForGestante,
+} from '../notifications/notification.service.js';
 
 export class ClinicalService {
   async createPrenatalControl(data: any, authenticatedUserId?: string) {
@@ -381,41 +385,80 @@ export class ClinicalService {
       }
     });
 
-    // Attempt to find the assigned/recent Obstetra
-    let obstetraUser = null;
-
-    const lastControl = await prisma.prenatalControl.findFirst({
-      where: { gestanteId },
-      orderBy: { fecha: 'desc' },
-      include: { obstetra: { include: { user: true } } }
+    // Datos de la gestante para personalizar la alerta.
+    const gestante = await prisma.gestante.findUnique({
+      where: { id: gestanteId },
+      include: { user: { select: { firstName: true, lastName: true } } },
     });
+    const nombre = gestante?.user
+      ? `${gestante.user.firstName} ${gestante.user.lastName}`
+      : 'Una gestante';
 
-    if (lastControl?.obstetra) {
-      obstetraUser = lastControl.obstetra.user;
-    } else {
-      const lastAppointment = await prisma.appointment.findFirst({
-        where: { gestanteId, obstetraId: { not: null } },
-        orderBy: { fecha: 'desc' },
-        include: { obstetra: { include: { user: true } } }
-      });
-      if (lastAppointment?.obstetra) {
-        obstetraUser = lastAppointment.obstetra.user;
-      }
-    }
+    const esGrave = data.severidad === 'grave';
 
-    if (obstetraUser && obstetraUser.notificationPreferences) {
-      const prefs = obstetraUser.notificationPreferences as Record<string, any>;
-      if (prefs.expoPushToken) {
-        await sendPushNotification(
-          [prefs.expoPushToken],
-          'Signo de Alarma Reportado',
-          `Una gestante ha reportado un signo de alarma: ${data.tipo_signo}`,
-          { gestanteId, dangerSignId: dangerSign.id }
-        );
+    // RF-9.02: alerta automática al obstetra responsable. Se crea una
+    // notificación in-app persistente (visible en la campana) + push.
+    const obstetraUserId = await findObstetraUserIdForGestante(gestanteId);
+    if (obstetraUserId) {
+      await notifyUser(
+        obstetraUserId,
+        'signo_alarma',
+        esGrave ? '🚨 Signo de alarma GRAVE' : 'Signo de alarma reportado',
+        `${nombre} reportó: ${data.tipo_signo}.${esGrave ? ' Requiere atención inmediata.' : ' Da seguimiento cuando puedas.'}`,
+        { gestanteId, dangerSignId: dangerSign.id, severidad: data.severidad },
+      );
+
+      // En casos graves, además se inserta un mensaje automático del sistema
+      // en la conversación gestante↔obstetra para que quede en el chat clínico.
+      if (esGrave) {
+        await this.postSystemChatAlert(gestanteId, obstetraUserId, nombre, data.tipo_signo);
       }
     }
 
     return dangerSign;
+  }
+
+  /**
+   * Inserta un mensaje de alerta del sistema en la conversación
+   * gestante↔obstetra (creándola si no existe). El emisor es la propia
+   * gestante para mantener la coherencia del hilo clínico.
+   */
+  private async postSystemChatAlert(
+    gestanteId: string,
+    obstetraUserId: string,
+    nombreGestante: string,
+    tipoSigno: string,
+  ): Promise<void> {
+    try {
+      const gestante = await prisma.gestante.findUnique({ where: { id: gestanteId } });
+      const obstetra = await prisma.obstetra.findUnique({ where: { userId: obstetraUserId } });
+      if (!gestante || !obstetra) return;
+
+      let conversation = await prisma.conversation.findFirst({
+        where: { gestanteId, obstetraId: obstetra.id },
+      });
+      if (!conversation) {
+        conversation = await prisma.conversation.create({
+          data: { gestanteId, obstetraId: obstetra.id },
+        });
+      }
+
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: gestante.userId,
+          contenido: `🚨 ALERTA AUTOMÁTICA: ${nombreGestante} reportó un signo de alarma GRAVE: "${tipoSigno}". Por favor, contáctala de inmediato.`,
+          tipo: 'alerta_emergencia',
+        },
+      });
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { ultimoMensaje: new Date() },
+      });
+    } catch (err) {
+      // No bloquear el reporte del signo si falla el mensaje de chat.
+      console.error('[DANGER SIGN CHAT ALERT ERROR]', err);
+    }
   }
 
   /**
