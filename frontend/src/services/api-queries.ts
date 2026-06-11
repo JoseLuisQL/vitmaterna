@@ -98,6 +98,13 @@ const mapPatientProfile = (g: any) => {
     abortos: g.abortos ?? null,
     // Antecedentes como texto
     background: (g.antecedentes || []).map((a: any) => `${a.tipo}: ${a.condicion} ${a.detalle ? `(${a.detalle})` : ''}`),
+    // Antecedentes estructurados (para gestionar/eliminar desde la ficha)
+    antecedentes: (g.antecedentes || []).map((a: any) => ({
+      id: a.id,
+      tipo: a.tipo,
+      condicion: a.condicion,
+      detalle: a.detalle || null,
+    })),
     // Controles prenatales
     controls: (g.prenatalControls || []).map((c: any) => ({
       id: c.id,
@@ -144,6 +151,8 @@ const mapPatientProfile = (g: any) => {
       nombre: t.nombre,
       dosis: t.dosis,
       frecuencia: t.frecuencia,
+      estado: t.estado || 'activo',
+      indicaciones: t.indicaciones || null,
       diasTomados: (t.supplementLogs || [])
         .filter((l: any) => l.tomado)
         .map((l: any) => l.fecha?.split('T')[0] || ''),
@@ -578,6 +587,56 @@ export const useUpdateAppointmentStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['todayAppointments'] });
       queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
       queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
+    },
+  });
+};
+
+// ── Antecedentes (RF-2.03) ──
+
+export const useCreateAntecedente = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { gestanteId: string; tipo: 'familiar' | 'personal'; condicion: string; detalle?: string }) => {
+      const res = await api.post('/clinical/antecedentes', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['antecedentes', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+};
+
+export const useDeleteAntecedente = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; gestanteId: string }) => {
+      const res = await api.delete(`/clinical/antecedentes/${id}`);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['antecedentes', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+};
+
+// ── Modificar / suspender tratamiento (RF-4.10) ──
+
+export const useUpdateTreatment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ treatmentId, data }: { treatmentId: string; gestanteId?: string; data: any }) => {
+      const res = await api.patch(`/clinical/treatments/${treatmentId}`, data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      if (variables.gestanteId) {
+        queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['treatments'] });
     },
   });
 };

@@ -6,17 +6,20 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Check, Plus, ClipboardList
+  Syringe, AlertTriangle, Activity, Check, Plus, ClipboardList, Trash2, MoreVertical
 } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { AppModal, AppButton } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
-import { usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment } from '../../../src/services/api-queries';
+import {
+  usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
+  useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment,
+} from '../../../src/services/api-queries';
 
 const { width: screenWidth } = Dimensions.get('window');
 const BRAND = obstetraColors.primary;
@@ -179,10 +182,89 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [treatHora, setTreatHora] = useState('08:00');
   const [treatDuracion, setTreatDuracion] = useState('30');
 
+  // Antecedentes (RF-2.03)
+  const [isAntModalVisible, setIsAntModalVisible] = useState(false);
+  const [antTipo, setAntTipo] = useState<'familiar' | 'personal'>('personal');
+  const [antCondicion, setAntCondicion] = useState('');
+  const [antDetalle, setAntDetalle] = useState('');
+
+  // Editar/suspender tratamiento (RF-4.10)
+  const [editTreat, setEditTreat] = useState<any | null>(null);
+  const [editDosis, setEditDosis] = useState('');
+  const [editFrecuencia, setEditFrecuencia] = useState('');
+  const [editIndicaciones, setEditIndicaciones] = useState('');
+  const [suspendTreat, setSuspendTreat] = useState<any | null>(null);
+  const [motivoSuspension, setMotivoSuspension] = useState('');
+
+  const toast = useToast();
+
   // Mutations
   const { mutate: createLabResult, isPending: isSavingLab } = useCreateLabResult();
   const { mutate: createVaccine, isPending: isSavingVax } = useCreateVaccine();
   const { mutate: createTreatment, isPending: isSavingTreat } = useCreateTreatment();
+  const { mutate: createAntecedente, isPending: isSavingAnt } = useCreateAntecedente();
+  const { mutate: deleteAntecedente } = useDeleteAntecedente();
+  const { mutate: updateTreatment, isPending: isUpdatingTreat } = useUpdateTreatment();
+
+  const handleSaveAntecedente = () => {
+    if (!antCondicion.trim()) return toast.error('Falta la condición', 'Indica la condición del antecedente.');
+    if (!patient) return;
+    createAntecedente(
+      { gestanteId: patient.id, tipo: antTipo, condicion: antCondicion.trim(), detalle: antDetalle || undefined },
+      {
+        onSuccess: () => {
+          toast.success('Antecedente registrado');
+          setIsAntModalVisible(false);
+          setAntCondicion(''); setAntDetalle(''); setAntTipo('personal');
+        },
+        onError: () => toast.error('Error', 'No se pudo registrar el antecedente.'),
+      },
+    );
+  };
+
+  const confirmDeleteAntecedente = (ant: any) => {
+    if (!patient) return;
+    Alert.alert('Eliminar antecedente', `¿Eliminar "${ant.condicion}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive',
+        onPress: () => deleteAntecedente(
+          { id: ant.id, gestanteId: patient.id },
+          { onSuccess: () => toast.success('Antecedente eliminado'), onError: () => toast.error('Error', 'No se pudo eliminar.') },
+        ),
+      },
+    ]);
+  };
+
+  const openEditTreat = (sup: any) => {
+    setEditTreat(sup);
+    setEditDosis(sup.dosis || '');
+    setEditFrecuencia(sup.frecuencia || '');
+    setEditIndicaciones(sup.indicaciones || '');
+  };
+
+  const handleSaveEditTreat = () => {
+    if (!editTreat || !patient) return;
+    updateTreatment(
+      { treatmentId: editTreat.id, gestanteId: patient.id, data: { dosis: editDosis, frecuencia: editFrecuencia, indicaciones: editIndicaciones || undefined } },
+      {
+        onSuccess: () => { toast.success('Tratamiento actualizado'); setEditTreat(null); },
+        onError: () => toast.error('Error', 'No se pudo actualizar el tratamiento.'),
+      },
+    );
+  };
+
+  const handleSuspendTreat = () => {
+    if (!suspendTreat || !patient) return;
+    if (!motivoSuspension.trim()) return toast.error('Falta el motivo', 'Indica la justificación clínica.');
+    updateTreatment(
+      { treatmentId: suspendTreat.id, gestanteId: patient.id, data: { estado: 'suspendido', motivoSuspension: motivoSuspension.trim() } },
+      {
+        onSuccess: () => { toast.warning('Tratamiento suspendido'); setSuspendTreat(null); setMotivoSuspension(''); },
+        onError: () => toast.error('Error', 'No se pudo suspender el tratamiento.'),
+      },
+    );
+  };
 
   const handleSaveLab = () => {
     if (!labTipo) return Alert.alert('Error', 'El tipo de examen es requerido.');
@@ -415,6 +497,34 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <Fila label="Abortos (A)" value={patient.abortos} isLast />
               </View>
 
+              {/* Antecedentes familiares/personales (RF-2.03) */}
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderText}>Antecedentes Familiares / Personales</Text>
+                <TouchableOpacity style={styles.addChip} onPress={() => setIsAntModalVisible(true)}>
+                  <Plus size={14} color={obstetraColors.onPrimary} />
+                  <Text style={styles.addChipText}>Añadir</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.insetGroup, designTokens.cardShadow]}>
+                {(patient.antecedentes || []).length > 0 ? (
+                  patient.antecedentes.map((ant: any, idx: number) => (
+                    <View key={ant.id} style={[styles.antRow, idx < patient.antecedentes.length - 1 && styles.antRowBorder]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.antCondicion}>{ant.condicion}</Text>
+                        <Text style={styles.antMeta}>
+                          {ant.tipo === 'familiar' ? 'Familiar' : 'Personal'}{ant.detalle ? ` · ${ant.detalle}` : ''}
+                        </Text>
+                      </View>
+                      <TouchableOpacity onPress={() => confirmDeleteAntecedente(ant)} hitSlop={10} style={styles.antDeleteBtn}>
+                        <Trash2 size={18} color={semanticColors.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.antEmpty}>Sin antecedentes registrados.</Text>
+                )}
+              </View>
+
               <Seccion titulo="Datos del Embarazo" />
               <View style={[styles.insetGroup, designTokens.cardShadow]}>
                 <Fila label="FUM" value={patient.fum} />
@@ -548,13 +658,17 @@ export default function PatientProfileScreen(): React.ReactElement {
                   const pct = total > 0 ? Math.round((tomados / total) * 100) : 0;
                   const isGood = pct >= 80;
                   
+                  const suspendido = sup.estado === 'suspendido';
                   return (
-                    <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.glassShadow]}>
+                    <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.glassShadow, suspendido && { opacity: 0.6 }]}>
                       <View style={styles.pillIconBox}>
                         <Pill size={24} color={BRAND} />
                       </View>
                       <View style={styles.pillInfo}>
-                        <Text style={styles.pillName}>{sup.nombre}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={styles.pillName}>{sup.nombre}</Text>
+                          {suspendido && <Text style={styles.suspendBadge}>Suspendido</Text>}
+                        </View>
                         <Text style={styles.pillDosis}>{sup.dosis} • {sup.frecuencia}</Text>
                         
                         <View style={styles.progressWrap}>
@@ -564,6 +678,17 @@ export default function PatientProfileScreen(): React.ReactElement {
                           <Text style={[styles.progressPct, { color: isGood ? semanticColors.success : semanticColors.warning }]}>{pct}%</Text>
                         </View>
                         <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
+
+                        {!suspendido && (
+                          <View style={styles.treatActionsRow}>
+                            <TouchableOpacity style={styles.treatActionBtn} onPress={() => openEditTreat(sup)}>
+                              <Text style={styles.treatActionText}>Editar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.treatActionBtn, styles.treatSuspendBtn]} onPress={() => setSuspendTreat(sup)}>
+                              <Text style={[styles.treatActionText, { color: semanticColors.danger }]}>Suspender</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   );
@@ -883,6 +1008,118 @@ export default function PatientProfileScreen(): React.ReactElement {
               keyboardType="numeric"
               value={treatDuracion}
               onChangeText={setTreatDuracion}
+            />
+          </View>
+        </View>
+      </AppModal>
+
+      {/* ── MODAL: ANTECEDENTE (RF-2.03) ── */}
+      <AppModal
+        visible={isAntModalVisible}
+        onClose={() => setIsAntModalVisible(false)}
+        title="Registrar antecedente"
+        subtitle="Antecedente familiar o personal de la gestante."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsAntModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSaveAntecedente} style={{ flex: 1 }} themeColor={BRAND} loading={isSavingAnt} />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          <View>
+            <Text style={styles.inputLabel}>Tipo</Text>
+            <View style={styles.segmentRow}>
+              {(['personal', 'familiar'] as const).map((tipo) => (
+                <TouchableOpacity
+                  key={tipo}
+                  style={[styles.segment, antTipo === tipo && styles.segmentActive]}
+                  onPress={() => setAntTipo(tipo)}
+                >
+                  <Text style={[styles.segmentText, antTipo === tipo && styles.segmentTextActive]}>
+                    {tipo === 'personal' ? 'Personal' : 'Familiar'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View>
+            <Text style={styles.inputLabel}>Condición</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Diabetes, Hipertensión, Preeclampsia..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={antCondicion}
+              onChangeText={setAntCondicion}
+            />
+          </View>
+          <View>
+            <Text style={styles.inputLabel}>Detalle (opcional)</Text>
+            <TextInput
+              style={[styles.textInput, { height: 70 }]}
+              placeholder="Notas adicionales..."
+              placeholderTextColor={commonColors.textTertiary}
+              multiline
+              value={antDetalle}
+              onChangeText={setAntDetalle}
+            />
+          </View>
+        </View>
+      </AppModal>
+
+      {/* ── MODAL: EDITAR TRATAMIENTO (RF-4.10) ── */}
+      <AppModal
+        visible={!!editTreat}
+        onClose={() => setEditTreat(null)}
+        title="Editar tratamiento"
+        subtitle={editTreat?.nombre}
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setEditTreat(null)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSaveEditTreat} style={{ flex: 1 }} themeColor={BRAND} loading={isUpdatingTreat} />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          <View>
+            <Text style={styles.inputLabel}>Dosis</Text>
+            <TextInput style={styles.textInput} value={editDosis} onChangeText={setEditDosis} placeholderTextColor={commonColors.textTertiary} />
+          </View>
+          <View>
+            <Text style={styles.inputLabel}>Frecuencia</Text>
+            <TextInput style={styles.textInput} value={editFrecuencia} onChangeText={setEditFrecuencia} placeholderTextColor={commonColors.textTertiary} />
+          </View>
+          <View>
+            <Text style={styles.inputLabel}>Indicaciones (opcional)</Text>
+            <TextInput style={[styles.textInput, { height: 70 }]} multiline value={editIndicaciones} onChangeText={setEditIndicaciones} placeholderTextColor={commonColors.textTertiary} />
+          </View>
+        </View>
+      </AppModal>
+
+      {/* ── MODAL: SUSPENDER TRATAMIENTO (RF-4.10) ── */}
+      <AppModal
+        visible={!!suspendTreat}
+        onClose={() => { setSuspendTreat(null); setMotivoSuspension(''); }}
+        title="Suspender tratamiento"
+        subtitle={suspendTreat?.nombre}
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => { setSuspendTreat(null); setMotivoSuspension(''); }} style={{ flex: 1 }} />
+            <AppButton title="Suspender" onPress={handleSuspendTreat} style={{ flex: 1, backgroundColor: semanticColors.danger }} loading={isUpdatingTreat} />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          <Text style={styles.suspendHint}>Esta acción detiene el tratamiento. Se requiere una justificación clínica.</Text>
+          <View>
+            <Text style={styles.inputLabel}>Motivo de suspensión</Text>
+            <TextInput
+              style={[styles.textInput, { height: 90 }]}
+              placeholder="Ej. Reacción adversa, cambio de esquema..."
+              placeholderTextColor={commonColors.textTertiary}
+              multiline
+              value={motivoSuspension}
+              onChangeText={setMotivoSuspension}
             />
           </View>
         </View>
@@ -1392,4 +1629,57 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: obstetraColors.onPrimary,
   },
+
+  // Antecedentes + acciones de tratamiento
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  sectionHeaderText: {
+    ...typography.overline,
+    color: commonColors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  addChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: BRAND,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  addChipText: { ...typography.micro, color: obstetraColors.onPrimary, textTransform: 'uppercase' },
+  antRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
+  antRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  antCondicion: { ...typography.bodyMedium, color: commonColors.text },
+  antMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  antDeleteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: semanticColors.dangerLight },
+  antEmpty: { ...typography.bodySmall, color: commonColors.textSecondary, padding: 16 },
+  segmentRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  segment: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', backgroundColor: commonColors.surface },
+  segmentActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
+  segmentText: { ...typography.bodySmall, color: commonColors.textSecondary },
+  segmentTextActive: { color: BRAND, fontFamily: typography.label.fontFamily },
+  suspendBadge: {
+    ...typography.micro,
+    color: semanticColors.danger,
+    backgroundColor: semanticColors.dangerLight,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    textTransform: 'uppercase',
+    overflow: 'hidden',
+  },
+  treatActionsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  treatActionBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', backgroundColor: commonColors.surface },
+  treatSuspendBtn: { borderColor: semanticColors.dangerLight, backgroundColor: semanticColors.dangerLight },
+  treatActionText: { ...typography.buttonSmall, color: commonColors.text },
+  suspendHint: { ...typography.bodySmall, color: commonColors.textSecondary, lineHeight: 20 },
 });
