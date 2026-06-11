@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
@@ -35,6 +35,15 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
     router.replace('/(auth)/login');
   };
 
+  const proximamente = (titulo: string) =>
+    Alert.alert(titulo, 'Esta sección estará disponible en una próxima actualización.');
+
+  const verDatosProfesionales = () =>
+    Alert.alert(
+      'Datos Profesionales',
+      `Nombre: ${user?.firstName || ''} ${user?.lastName || ''}\nDNI: ${user?.dni || '—'}\nRol: Obstetra`
+    );
+
   const displayName = user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Obstetra';
   const initials = (user?.firstName?.charAt(0) || '') + (user?.lastName?.charAt(0) || '') || 'O';
 
@@ -67,15 +76,15 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         {/* Menu Items */}
         <Text style={styles.sectionTitle}>General</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<User size={20} color="#BE185D" />} title="Datos Profesionales" onPress={() => { }} />
+          <MenuItem icon={<User size={20} color="#BE185D" />} title="Datos Profesionales" onPress={verDatosProfesionales} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color="#BE185D" />} title="Notificaciones" onPress={() => { }} />
+          <MenuItem icon={<Bell size={20} color="#BE185D" />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Settings size={20} color="#BE185D" />} title="Configuración" onPress={() => { }} />
+          <MenuItem icon={<Settings size={20} color="#BE185D" />} title="Configuración" onPress={() => proximamente('Configuración')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color="#BE185D" />} title="Privacidad y Seguridad" onPress={() => { }} />
+          <MenuItem icon={<Shield size={20} color="#BE185D" />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color="#BE185D" />} title="Ayuda y Soporte" onPress={() => { }} />
+          <MenuItem icon={<HelpCircle size={20} color="#BE185D" />} title="Ayuda y Soporte" onPress={() => proximamente('Ayuda y Soporte')} />
         </View>
 
         <View style={[styles.menuCard, { marginTop: 24 }]}>

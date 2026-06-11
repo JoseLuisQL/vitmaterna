@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Check, Plus, Settings, ClipboardList
+  Syringe, AlertTriangle, Activity, Check, Plus, ClipboardList
 } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
@@ -318,8 +318,14 @@ export default function PatientProfileScreen(): React.ReactElement {
             <ChevronLeft size={24} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Historia Clínica</Text>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Settings size={22} color="#0F172A" />
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => router.push({
+              pathname: '/(obstetra)/gestante/tamizajes',
+              params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
+            } as any)}
+          >
+            <ClipboardList size={22} color="#0F172A" />
           </TouchableOpacity>
         </View>
 

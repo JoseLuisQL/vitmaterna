@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, Platform
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, Users, AlertCircle, CheckCircle, TrendingUp, ChevronRight, Activity } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
@@ -10,6 +11,7 @@ import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { typography } from '../../../src/theme/typography';
 
 export default function ObstetraDashboard(): React.ReactElement {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const displayName = user?.lastName ? `Dra. ${user.lastName}` : 'Obstetra';
 
@@ -107,7 +109,7 @@ export default function ObstetraDashboard(): React.ReactElement {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Próximas Citas</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')}>
             <Text style={styles.sectionLink}>Ver todas</Text>
           </TouchableOpacity>
         </View>
@@ -136,7 +138,11 @@ export default function ObstetraDashboard(): React.ReactElement {
         refreshing={isRefetching}
         onRefresh={onRefresh}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.appointmentCard} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.appointmentCard}
+            activeOpacity={0.7}
+            onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
+          >
             <View style={styles.timeLine}>
               <Text style={styles.timeText}>
                 {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}

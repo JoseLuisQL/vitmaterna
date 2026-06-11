@@ -51,6 +51,15 @@ export default function PerfilScreen(): React.ReactElement {
     router.replace('/(auth)/login');
   };
 
+  const proximamente = (titulo: string) =>
+    Alert.alert(titulo, 'Esta sección estará disponible en una próxima actualización.');
+
+  const mostrarAyuda = () =>
+    Alert.alert(
+      'Ayuda y Soporte',
+      'Para consultas comunícate con tu obstetra desde el chat de la app.\n\nCentro de Salud Talavera\nTeléfono: 083 - 421800'
+    );
+
   const openEditModal = () => {
     if (!profileData) {
       return Alert.alert('Cargando', 'Los datos del perfil se están descargando. Intenta en un momento.');
@@ -171,16 +180,16 @@ export default function PerfilScreen(): React.ReactElement {
           <View style={styles.menuDivider} />
           <MenuItem icon={<Activity size={20} color="#7C3AED" />} title="Mi Progreso" onPress={() => router.push('/(gestante)/(tabs)/mi-progreso')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color="#7C3AED" />} title="Notificaciones" onPress={() => {}} />
+          <MenuItem icon={<Bell size={20} color="#7C3AED" />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
         </View>
 
         <Text style={styles.sectionTitle}>Preferencias</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<Settings size={20} color="#7C3AED" />} title="Configuración" onPress={() => {}} />
+          <MenuItem icon={<Settings size={20} color="#7C3AED" />} title="Configuración" onPress={() => proximamente('Configuración')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color="#7C3AED" />} title="Privacidad y Seguridad" onPress={() => {}} />
+          <MenuItem icon={<Shield size={20} color="#7C3AED" />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color="#7C3AED" />} title="Ayuda y Soporte" onPress={() => {}} />
+          <MenuItem icon={<HelpCircle size={20} color="#7C3AED" />} title="Ayuda y Soporte" onPress={mostrarAyuda} />
         </View>
 
         <View style={[styles.menuCard, { marginTop: 12 }]}>
