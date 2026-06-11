@@ -61,10 +61,10 @@ const VARIANT_STYLES: Record<
   },
   secondary: {
     bg: gestanteColors.primaryLight,
-    text: gestanteColors.primary,
+    text: gestanteColors.primaryDark,
     border: 'transparent',
-    bgPressed: '#DDD6FE',
-    loadingColor: gestanteColors.primary,
+    bgPressed: gestanteColors.primaryLight,
+    loadingColor: gestanteColors.primaryDark,
   },
   outline: {
     bg: 'transparent',
@@ -84,7 +84,7 @@ const VARIANT_STYLES: Record<
     bg: 'transparent',
     text: commonColors.text,
     border: 'transparent',
-    bgPressed: commonColors.borderLight,
+    bgPressed: commonColors.surfaceAlt,
     loadingColor: commonColors.text,
   },
 };
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999, // Pill shape
+    borderRadius: 14,
     minWidth: 48,
   },
   fullWidth: {

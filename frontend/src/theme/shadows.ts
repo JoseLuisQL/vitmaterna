@@ -1,6 +1,9 @@
 /**
- * VITMATERNA Shadow System
- * Cross-platform shadow presets for elevation hierarchy.
+ * VITMATERNA — Elevación (minimalista)
+ *
+ * Sombras muy sutiles: la jerarquía se logra con espacio, borde y superficie,
+ * no con sombras pesadas. En Android se usa una elevación mínima; en iOS y web
+ * una sombra tenue. Para tarjetas se prefiere borde 1px + superficie.
  */
 import { Platform, ViewStyle } from 'react-native';
 
@@ -18,40 +21,25 @@ const createShadow = (
   opacity: number,
   elevation: number,
 ): ShadowPreset => ({
-  shadowColor: '#000000',
+  shadowColor: '#1C1B19',
   shadowOffset: { width: 0, height: offsetY },
-  shadowOpacity: Platform.OS === 'ios' ? opacity : 0,
-  shadowRadius: Platform.OS === 'ios' ? radius : 0,
+  shadowOpacity: Platform.OS === 'android' ? 0 : opacity,
+  shadowRadius: Platform.OS === 'android' ? 0 : radius,
   elevation: Platform.OS === 'android' ? elevation : 0,
 });
 
 export const shadows = {
-  /** No shadow */
   none: createShadow(0, 0, 0, 0),
-
-  /** Subtle lift for interactive elements */
-  xs: createShadow(1, 2, 0.05, 1),
-
-  /** Default card shadow */
-  sm: createShadow(1, 3, 0.1, 2),
-
-  /** Elevated card shadow */
-  md: createShadow(4, 6, 0.1, 4),
-
-  /** Modal/overlay shadow */
-  lg: createShadow(10, 15, 0.12, 8),
-
-  /** Floating action button shadow */
-  xl: createShadow(20, 25, 0.15, 12),
-
-  /** Button press shadow (reduced) */
-  buttonPressed: createShadow(1, 2, 0.06, 1),
-
-  /** Button default shadow */
-  button: createShadow(2, 4, 0.1, 3),
+  /** Tarjetas: elevación apenas perceptible */
+  xs: createShadow(1, 2, 0.04, 1),
+  sm: createShadow(2, 4, 0.05, 2),
+  /** Elementos flotantes (FAB, modales) */
+  md: createShadow(4, 10, 0.08, 4),
+  lg: createShadow(8, 20, 0.10, 6),
+  // Alias de compatibilidad
+  xl: createShadow(8, 20, 0.10, 6),
+  button: createShadow(0, 0, 0, 0),
+  buttonPressed: createShadow(0, 0, 0, 0),
 } as const;
 
-/** Helper to apply shadow as ViewStyle */
-export const applyShadow = (preset: ShadowPreset): ViewStyle => ({
-  ...preset,
-});
+export const applyShadow = (preset: ShadowPreset): ViewStyle => ({ ...preset });

@@ -83,14 +83,9 @@ export const AppCard: React.FC<AppCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: 24, // softer, more modern
-    borderWidth: 0, // removed harsh border
-    // Added a very subtle default shadow even for non-elevated to give it a "floating" feel on light backgrounds
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: commonColors.border,
     overflow: 'hidden',
   },
 });

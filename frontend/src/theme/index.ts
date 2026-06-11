@@ -1,8 +1,15 @@
 /**
  * VITMATERNA Theme - Barrel Export
  */
-export { colors, gestanteColors, obstetraColors, commonColors, semanticColors, riskColors } from './colors';
-export { typography } from './typography';
+export {
+  colors,
+  gestanteColors,
+  obstetraColors,
+  commonColors,
+  semanticColors,
+  riskColors,
+} from './colors';
+export { typography, fontFamilies } from './typography';
 export type { TypographyStyle } from './typography';
 export { spacing, borderRadius, layout } from './spacing';
 export { shadows, applyShadow } from './shadows';

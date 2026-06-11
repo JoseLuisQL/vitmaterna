@@ -23,7 +23,7 @@ const VARIANT_COLORS: Record<BadgeVariant, { bg: string; text: string }> = {
   warning: { bg: semanticColors.warningLight, text: semanticColors.warning },
   danger: { bg: semanticColors.dangerLight, text: semanticColors.danger },
   info: { bg: semanticColors.infoLight, text: semanticColors.info },
-  default: { bg: commonColors.borderLight, text: commonColors.textSecondary },
+  default: { bg: commonColors.surfaceAlt, text: commonColors.textSecondary },
 };
 
 export const AppBadge: React.FC<AppBadgeProps> = ({

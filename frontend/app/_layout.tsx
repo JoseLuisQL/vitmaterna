@@ -7,6 +7,13 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { useAuthStore } from '../src/store/authStore';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
@@ -28,13 +35,20 @@ export default function RootLayout(): React.ReactElement | null {
   const loadStoredAuth = useAuthStore((s) => s.loadStoredAuth);
   const isInitialized = useAuthStore((s) => s.isInitialized);
 
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
   useEffect(() => {
     loadStoredAuth();
     initializeDatabase();
   }, [loadStoredAuth]);
 
-  if (!isInitialized) {
-    return null; // Splash screen will show while loading
+  if (!isInitialized || !fontsLoaded) {
+    return null; // La pantalla splash se muestra mientras carga
   }
 
   return (
