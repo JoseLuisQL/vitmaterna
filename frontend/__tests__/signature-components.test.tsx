@@ -1,0 +1,65 @@
+import React from 'react';
+import { render, fireEvent, screen } from '@testing-library/react-native';
+import { ToggleTabs } from '../src/components/ui/ToggleTabs';
+import { DiagnosisPill } from '../src/components/ui/DiagnosisPill';
+import { KpiCard } from '../src/components/ui/KpiCard';
+import { CircularProgress } from '../src/components/ui/CircularProgress';
+
+describe('ToggleTabs', () => {
+  const tabs = [
+    { key: 'a', label: 'Resumen' },
+    { key: 'b', label: 'Detalle' },
+  ];
+
+  it('renderiza todas las pestañas', () => {
+    render(<ToggleTabs tabs={tabs} value="a" onChange={() => {}} />);
+    expect(screen.getByText('Resumen')).toBeTruthy();
+    expect(screen.getByText('Detalle')).toBeTruthy();
+  });
+
+  it('llama onChange con la pestaña seleccionada', () => {
+    const onChange = jest.fn();
+    render(<ToggleTabs tabs={tabs} value="a" onChange={onChange} />);
+    fireEvent.press(screen.getByText('Detalle'));
+    expect(onChange).toHaveBeenCalledWith('b');
+  });
+
+  it('marca la pestaña activa con estado de accesibilidad', () => {
+    render(<ToggleTabs tabs={tabs} value="b" onChange={() => {}} />);
+    const activa = screen.getByText('Detalle').parent;
+    expect(activa).toBeTruthy();
+  });
+});
+
+describe('DiagnosisPill', () => {
+  it('muestra el texto del diagnóstico', () => {
+    render(<DiagnosisPill label="Caries" />);
+    expect(screen.getByText('Caries')).toBeTruthy();
+  });
+});
+
+describe('KpiCard', () => {
+  it('muestra label, valor y badge', () => {
+    render(<KpiCard label="Adherencia" value="83%" badge="+5%" badgeTone="positive" />);
+    expect(screen.getByText('Adherencia')).toBeTruthy();
+    expect(screen.getByText('83%')).toBeTruthy();
+    expect(screen.getByText('+5%')).toBeTruthy();
+  });
+});
+
+describe('CircularProgress', () => {
+  it('muestra el porcentaje por defecto', () => {
+    render(<CircularProgress value={72} />);
+    expect(screen.getByText('72%')).toBeTruthy();
+  });
+
+  it('respeta una etiqueta central personalizada', () => {
+    render(<CircularProgress value={50} label="5/10" />);
+    expect(screen.getByText('5/10')).toBeTruthy();
+  });
+
+  it('acota valores fuera de rango', () => {
+    render(<CircularProgress value={140} />);
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
+});

@@ -5,9 +5,11 @@ export {
   colors,
   gestanteColors,
   obstetraColors,
+  accentColors,
   commonColors,
   semanticColors,
   riskColors,
+  dentalColors,
 } from './colors';
 export { typography, fontFamilies } from './typography';
 export type { TypographyStyle } from './typography';

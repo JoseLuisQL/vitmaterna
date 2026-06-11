@@ -42,23 +42,27 @@ const make = (
 });
 
 export const typography = {
-  // Títulos
-  display: make(fontFamilies.bold, 32, 40, '700', -0.4),
-  h1: make(fontFamilies.bold, 26, 34, '700', -0.3),
+  // Números/títulos destacados (24–36)
+  displayLg: make(fontFamilies.bold, 36, 42, '700', -0.5),
+  display: make(fontFamilies.bold, 30, 38, '700', -0.4),
+  h1: make(fontFamilies.bold, 24, 32, '700', -0.3),
   h2: make(fontFamilies.semibold, 22, 30, '600', -0.2),
-  h3: make(fontFamilies.semibold, 18, 26, '600', -0.1),
+  // Subtítulos (17)
+  h3: make(fontFamilies.semibold, 17, 24, '600', -0.1),
 
-  // Cuerpo
-  body: make(fontFamilies.regular, 16, 24, '400', 0),
-  bodyMedium: make(fontFamilies.medium, 16, 24, '500', 0),
-  bodySmall: make(fontFamilies.regular, 14, 20, '400', 0),
+  // Cuerpo (14)
+  body: make(fontFamilies.regular, 14, 22, '400', 0),
+  bodyMedium: make(fontFamilies.medium, 14, 22, '500', 0),
+  bodyLarge: make(fontFamilies.regular, 16, 24, '400', 0),
+  bodySmall: make(fontFamilies.regular, 13, 19, '400', 0),
 
   // Apoyos
-  caption: make(fontFamilies.regular, 13, 18, '400', 0.1),
-  label: make(fontFamilies.medium, 14, 20, '500', 0.1),
-  overline: make(fontFamilies.semibold, 12, 16, '600', 0.6),
+  caption: make(fontFamilies.regular, 12, 16, '400', 0.1), // meta (12)
+  label: make(fontFamilies.medium, 13, 18, '500', 0.1),
+  overline: make(fontFamilies.semibold, 11, 15, '600', 0.6),
+  micro: make(fontFamilies.semibold, 9, 12, '600', 0.4), // etiquetas mínimas (9)
 
   // Botones
-  button: make(fontFamilies.semibold, 16, 22, '600', 0.1),
-  buttonSmall: make(fontFamilies.semibold, 14, 20, '600', 0.1),
+  button: make(fontFamilies.semibold, 15, 22, '600', 0.1),
+  buttonSmall: make(fontFamilies.semibold, 13, 18, '600', 0.1),
 } as const;

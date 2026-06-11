@@ -1,79 +1,95 @@
 /**
- * VITMATERNA — Sistema de Color (minimalista y accesible)
+ * VITMATERNA — Sistema de Color (estilo SaaS limpio)
  *
- * Filosofía: base neutra cálida + un único acento sobrio por rol.
- * Sin gradientes ni saturación excesiva. Contraste WCAG AA verificado
- * (texto normal ≥ 4.5:1, texto grande ≥ 3:1) sobre los fondos definidos.
+ * Base blanca con superficies en gris muy claro. Un acento por rol más un
+ * CTA teal compartido. Semánticos verde/naranja/rojo. Paleta alineada a las
+ * guías de diseño de referencia (app dental + app de performance).
  *
- * - Gestante: acento teal sobrio (#0E7C86)
- * - Obstetra: acento ciruela sobrio (#9D2B63)
- * - Admin: reutiliza el neutro + acento obstetra
+ * - Gestante: acento púrpura (#7C3AED)
+ * - Obstetra: acento azul (#4A7AFF)
+ * - Admin: reutiliza el neutro + acento azul
  */
 
-/** Neutros cálidos compartidos (la base de toda la app) */
+/** Neutros compartidos (la base de toda la app) */
 export const commonColors = {
-  background: '#F7F6F3', // fondo principal (cálido, casi blanco)
-  surface: '#FFFFFF', // tarjetas y contenedores
-  surfaceAlt: '#F2F1ED', // superficie secundaria / chips
-  text: '#1C1B19', // texto principal (15.8:1 sobre background)
-  textSecondary: '#5C5A54', // texto secundario (6.9:1)
-  textTertiary: '#8A887F', // texto terciario / placeholders (3.6:1, solo grande)
-  border: '#E2E0DA', // bordes y divisores
-  borderLight: '#EDEBE6', // divisores muy suaves (alias de compatibilidad)
-  borderStrong: '#CFCCC4', // bordes con más presencia
-  disabled: '#C9C7C0',
-  overlay: 'rgba(28, 27, 25, 0.45)',
+  background: '#FFFFFF', // fondo principal blanco puro
+  surface: '#F8F8F8', // tarjetas y superficies (gris muy claro)
+  surfaceAlt: '#F2F2F2', // superficie secundaria / chips / toggle track
+  text: '#1A1A1A', // texto principal
+  textSecondary: '#6B6B6B', // texto secundario
+  textTertiary: '#9A9A9A', // texto terciario / placeholders
+  border: '#E8E8E8', // bordes de tarjetas y divisores
+  borderLight: '#F0F0F0', // divisores muy suaves
+  borderStrong: '#D8D8D8', // bordes con más presencia
+  disabled: '#CFCFCF',
+  overlay: 'rgba(26, 26, 26, 0.30)', // dimmed 30% detrás de modales
   transparent: 'transparent',
   white: '#FFFFFF',
-  black: '#1C1B19',
+  black: '#1A1A1A',
 } as const;
 
-/** Acento del rol gestante (teal sobrio) */
+/** Acento del rol gestante (púrpura, estilo performance) */
 export const gestanteColors = {
-  primary: '#0E7C86',
-  primaryDark: '#0A5A62', // hover / estados activos (texto en claro)
-  primaryLight: '#E3F0F1', // fondos suaves del acento
+  primary: '#7C3AED',
+  primaryDark: '#6D28D9', // hover / estados activos
+  primaryLight: '#EDE7FE', // fondos suaves del acento
   onPrimary: '#FFFFFF',
 } as const;
 
-/** Acento del rol obstetra (ciruela sobrio) */
+/** Acento del rol obstetra (azul, estilo dental) */
 export const obstetraColors = {
-  primary: '#9D2B63',
-  primaryDark: '#7A1F4C',
-  primaryLight: '#F6E7EF',
+  primary: '#4A7AFF',
+  primaryDark: '#2F5FE0',
+  primaryLight: '#E5ECFF',
   onPrimary: '#FFFFFF',
 } as const;
 
-/** Colores semánticos (usar solo cuando el contenido lo exige) */
+/** CTA secundario compartido (teal) */
+export const accentColors = {
+  teal: '#06B6D4',
+  tealDark: '#0891B2',
+  tealLight: '#CFFAFE',
+} as const;
+
+/** Colores semánticos */
 export const semanticColors = {
-  success: '#3F7D34',
-  successLight: '#E6F0E2',
-  warning: '#9A5B1A',
-  warningLight: '#F6EBDD',
-  danger: '#B0203A',
-  dangerLight: '#F7E3E6',
-  info: '#1F5E8C',
-  infoLight: '#E2ECF4',
+  success: '#16A34A',
+  successLight: '#DCFCE7',
+  warning: '#F97316',
+  warningLight: '#FFEDD5',
+  danger: '#DC2626',
+  dangerLight: '#FEE2E2',
+  info: '#4A7AFF',
+  infoLight: '#E5ECFF',
 } as const;
 
 /**
- * Semáforo de riesgo gestacional. Se mantienen colores reconocibles
- * (verde/ámbar/rojo) pero atenuados para integrarse con la base neutra.
+ * Semáforo de riesgo gestacional (verde/ámbar/rojo).
  * Nunca se usan solos: siempre acompañados de etiqueta de texto.
  */
 export const riskColors = {
-  riskGreen: '#3F7D34',
-  riskGreenLight: '#E6F0E2',
-  riskYellow: '#9A5B1A',
-  riskYellowLight: '#F6EBDD',
-  riskRed: '#B0203A',
-  riskRedLight: '#F7E3E6',
+  riskGreen: '#22C55E',
+  riskGreenLight: '#DCFCE7',
+  riskYellow: '#FFC045',
+  riskYellowLight: '#FFF4D6',
+  riskRed: '#DC2626',
+  riskRedLight: '#FEE2E2',
+} as const;
+
+/** Colores de odontograma / mapa dental */
+export const dentalColors = {
+  treated: '#4A7AFF', // dientes con tratamiento previo
+  pending: '#FFC045', // dientes recomendados para tratar
+  done: '#22C55E',
+  toDo: '#F97316',
 } as const;
 
 export const colors = {
   gestante: gestanteColors,
   obstetra: obstetraColors,
+  accent: accentColors,
   common: commonColors,
   semantic: semanticColors,
   risk: riskColors,
+  dental: dentalColors,
 } as const;
