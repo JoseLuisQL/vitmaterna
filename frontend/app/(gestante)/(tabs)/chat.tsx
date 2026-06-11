@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Keyboard
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import api from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { Send } from 'lucide-react-native';
+import { Send, Bot } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 import { typography } from '../../../src/theme/typography';
@@ -19,6 +20,7 @@ interface ChatMessage {
 }
 
 export default function GestanteChatScreen() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { socket, isConnected, emit } = useSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -154,8 +156,16 @@ export default function GestanteChatScreen() {
     >
       <View style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Consultas</Text>
-          <Text style={styles.headerSubtitle}>Habla con tu obstetra</Text>
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Consultas</Text>
+              <Text style={styles.headerSubtitle}>Habla con tu obstetra</Text>
+            </View>
+            <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/chatbot')} activeOpacity={0.8}>
+              <Bot size={20} color="#7C3AED" />
+              <Text style={styles.botBtnText}>Asistente 24/7</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </View>
       
@@ -218,8 +228,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { fontFamily: typography.h1.fontFamily, fontSize: 28, fontWeight: '800', color: '#0F172A', marginBottom: 4 },
   headerSubtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: '#64748B' },
+  botBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5F3FF', borderRadius: 99, paddingHorizontal: 14, paddingVertical: 10 },
+  botBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 13, fontWeight: '700', color: '#7C3AED' },
   offlineBanner: { backgroundColor: '#F1F5F9', padding: 8, alignItems: 'center' },
   offlineText: { fontFamily: typography.caption.fontFamily, fontSize: 12, color: '#64748B' },
   listContent: { padding: 20, paddingBottom: 24 },

@@ -16,6 +16,7 @@ export default function GestanteLayout(): React.ReactElement {
     >
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="alarmas" options={{ animation: 'slide_from_bottom', presentation: 'card' }} />
+      <Stack.Screen name="chatbot" options={{ animation: 'slide_from_bottom', presentation: 'card' }} />
     </Stack>
   );
 }
