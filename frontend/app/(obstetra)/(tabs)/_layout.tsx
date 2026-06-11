@@ -1,7 +1,7 @@
 /**
  * VITMATERNA - Obstetra Tabs Layout
  * Bottom tab navigator with 5 tabs using Lucide icons.
- * Active color: Pink (#DB2777)
+ * Active color: obstetraColors.primary (ciruela)
  */
 import React from 'react';
 import { StyleSheet, Platform } from 'react-native';
@@ -105,9 +105,8 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   tabLabel: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 11,
-    fontWeight: '600',
+    ...typography.overline,
+    letterSpacing: 0.1,
   },
   tabItem: {
     paddingVertical: 4,

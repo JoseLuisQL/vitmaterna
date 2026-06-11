@@ -11,10 +11,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
-import { commonColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useCreateEducationContent } from '../../../src/services/admin-queries';
+
+const BRAND = obstetraColors.primary;
 
 const schema = z.object({
   title: z.string().min(1, 'El título es requerido'),
@@ -70,7 +72,7 @@ export default function ContenidoScreen(): React.ReactElement {
           label="Título"
           placeholder="Ej. Cuidados en el primer trimestre"
           error={errors.title?.message}
-          themeColor={semanticColors.info}
+          themeColor={BRAND}
         />
         
         <AppInput
@@ -79,7 +81,7 @@ export default function ContenidoScreen(): React.ReactElement {
           label="Descripción"
           placeholder="Breve descripción del contenido"
           error={errors.description?.message}
-          themeColor={semanticColors.info}
+          themeColor={BRAND}
           multiline
           numberOfLines={3}
           containerStyle={{ minHeight: 100 }}
@@ -98,7 +100,7 @@ export default function ContenidoScreen(): React.ReactElement {
                     title={t.charAt(0).toUpperCase() + t.slice(1)}
                     onPress={() => onChange(t)}
                     variant={value === t ? 'primary' : 'outline'}
-                    style={[{ flex: 1, marginHorizontal: 4 }, value === t ? { backgroundColor: semanticColors.info } : {}] as any}
+                    style={[{ flex: 1, marginHorizontal: 4 }, value === t ? { backgroundColor: BRAND } : {}] as any}
                     size="sm"
                   />
                 ))}
@@ -114,7 +116,7 @@ export default function ContenidoScreen(): React.ReactElement {
           placeholder="https://..."
           leftIcon={LinkIcon as any}
           error={errors.url?.message}
-          themeColor={semanticColors.info}
+          themeColor={BRAND}
         />
 
         <AppInput
@@ -124,7 +126,7 @@ export default function ContenidoScreen(): React.ReactElement {
           placeholder="https://..."
           leftIcon={ImageIcon as any}
           error={errors.thumbnailUrl?.message}
-          themeColor={semanticColors.info}
+          themeColor={BRAND}
         />
 
         <AppInput
@@ -135,7 +137,7 @@ export default function ContenidoScreen(): React.ReactElement {
           leftIcon={Clock as any}
           keyboardType="numeric"
           error={errors.duration?.message}
-          themeColor={semanticColors.info}
+          themeColor={BRAND}
         />
 
         <AppButton
@@ -161,9 +163,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   title: {
-    fontFamily: typography.h1.fontFamily,
-    fontSize: typography.h1.fontSize,
-    fontWeight: typography.h1.fontWeight,
+    ...typography.h1,
     color: commonColors.text,
   },
   formContainer: {
@@ -171,9 +171,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   label: {
-    fontFamily: typography.label.fontFamily,
-    fontSize: typography.label.fontSize,
-    fontWeight: typography.label.fontWeight,
+    ...typography.label,
     color: commonColors.text,
     marginBottom: spacing.xs,
   },
@@ -187,6 +185,6 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: spacing.lg,
-    backgroundColor: semanticColors.info,
+    backgroundColor: BRAND,
   },
 });

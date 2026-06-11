@@ -7,13 +7,11 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
-  Platform,
   StatusBar,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Calendar,
   Pill,
@@ -32,8 +30,11 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard } from '../../../src/services/api-queries';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
-import { semanticColors } from '../../../src/theme/colors';
+import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
 
 export default function GestanteDashboard(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
@@ -184,7 +185,7 @@ export default function GestanteDashboard(): React.ReactElement {
                 <Text style={styles.name}>{displayName}</Text>
               </View>
               <View style={styles.weekBadge}>
-                <Heart size={16} color="#7C3AED" />
+                <Heart size={16} color={BRAND} />
                 <Text style={styles.weekText}>{gestationalWeekText}</Text>
               </View>
             </View>
@@ -204,7 +205,7 @@ export default function GestanteDashboard(): React.ReactElement {
             </View>
             <View style={styles.progressBarContainer}>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: '#7C3AED' }]} />
+                <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: BRAND }]} />
               </View>
               <View style={styles.progressLabels}>
                 <Text style={styles.progressLabel}>Sem. 1</Text>
@@ -217,14 +218,14 @@ export default function GestanteDashboard(): React.ReactElement {
           {/* Next Appointment */}
           <AppCard style={styles.sectionCard}>
             <View style={styles.cardHeader}>
-              <View style={[styles.cardIconCircle, { backgroundColor: '#F5F3FF' }]}>
-                <Calendar size={22} color="#7C3AED" />
+              <View style={[styles.cardIconCircle, { backgroundColor: gestanteColors.primaryLight }]}>
+                <Calendar size={22} color={BRAND} />
               </View>
               <View style={styles.cardHeaderText}>
                 <Text style={styles.cardTitle}>Próxima Cita</Text>
                 <Text style={styles.cardSubtitle}>Control Prenatal</Text>
               </View>
-              <ChevronRight size={20} color="#94A3B8" />
+              <ChevronRight size={20} color={commonColors.textTertiary} />
             </View>
             
             <View style={styles.cardDetails}>
@@ -254,14 +255,14 @@ export default function GestanteDashboard(): React.ReactElement {
           {/* Today's Treatment */}
           <AppCard style={styles.sectionCard}>
             <View style={styles.cardHeader}>
-              <View style={[styles.cardIconCircle, { backgroundColor: '#EFF6FF' }]}>
-                <Pill size={22} color="#2563EB" />
+              <View style={[styles.cardIconCircle, { backgroundColor: semanticColors.infoLight }]}>
+                <Pill size={22} color={semanticColors.info} />
               </View>
               <View style={styles.cardHeaderText}>
                 <Text style={styles.cardTitle}>Tratamiento del Día</Text>
                 <Text style={styles.cardSubtitle}>{takenCount} de {totalTreatments} medicamentos tomados</Text>
               </View>
-              <ChevronRight size={20} color="#94A3B8" />
+              <ChevronRight size={20} color={commonColors.textTertiary} />
             </View>
             <View style={styles.treatmentProgress}>
               <View style={styles.treatmentTrack}>
@@ -275,24 +276,24 @@ export default function GestanteDashboard(): React.ReactElement {
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
           <View style={styles.quickActions}>
             <AppCard style={styles.quickActionCard} onPress={() => setIsModalVisible(true)}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#FEF2F2' }]}>
-                <AlertTriangle size={24} color="#EF4444" />
+              <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.dangerLight }]}>
+                <AlertTriangle size={24} color={semanticColors.danger} />
               </View>
               <Text style={styles.quickActionTitle}>Reportar</Text>
               <Text style={styles.quickActionSubtitle}>Signo de alarma</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={handleEmergencyPress}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#DCFCE7' }]}>
-                <Phone size={24} color="#10B981" />
+              <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.successLight }]}>
+                <Phone size={24} color={semanticColors.success} />
               </View>
               <Text style={styles.quickActionTitle}>Emergencia</Text>
               <Text style={styles.quickActionSubtitle}>Pedir Auxilio</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#F5F3FF' }]}>
-                <Activity size={24} color="#7C3AED" />
+              <View style={[styles.quickActionIcon, { backgroundColor: gestanteColors.primaryLight }]}>
+                <Activity size={24} color={BRAND} />
               </View>
               <Text style={styles.quickActionTitle}>Mis Signos</Text>
               <Text style={styles.quickActionSubtitle}>Reportar varios</Text>
@@ -309,7 +310,7 @@ export default function GestanteDashboard(): React.ReactElement {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Reportar Alarma</Text>
-              <AlertTriangle size={24} color="#EF4444" />
+              <AlertTriangle size={24} color={semanticColors.danger} />
             </View>
             <Text style={styles.modalDescription}>Selecciona el síntoma que estás experimentando. Si es muy grave, acude a emergencia inmediatamente.</Text>
 
@@ -337,8 +338,8 @@ export default function GestanteDashboard(): React.ReactElement {
             </ScrollView>
 
             <View style={styles.modalActions}>
-              <AppButton title="Cancelar" variant="outline" onPress={() => setIsModalVisible(false)} style={{ flex: 1, marginRight: 12 }} disabled={reportMutation.isPending} />
-              <AppButton title={reportMutation.isPending ? "Enviando..." : "Enviar"} onPress={() => reportMutation.mutate()} style={{ flex: 1, backgroundColor: '#EF4444' }} disabled={!selectedSign || reportMutation.isPending} />
+              <AppButton title="Cancelar" variant="outline" onPress={() => setIsModalVisible(false)} style={{ flex: 1, marginRight: spacing.sm + 4 }} disabled={reportMutation.isPending} />
+              <AppButton title={reportMutation.isPending ? "Enviando..." : "Enviar"} onPress={() => reportMutation.mutate()} style={{ flex: 1, backgroundColor: semanticColors.danger }} disabled={!selectedSign || reportMutation.isPending} />
             </View>
           </View>
         </View>
@@ -348,14 +349,14 @@ export default function GestanteDashboard(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: 24,
-    marginBottom: 8,
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerRow: {
     flexDirection: 'row',
@@ -363,106 +364,94 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   greeting: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }),
-    fontSize: 18,
-    color: '#64748B',
+    ...typography.h3,
+    color: commonColors.textSecondary,
     marginBottom: 4,
   },
   name: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }),
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
+    ...typography.display,
+    color: commonColors.text,
   },
   weekBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    backgroundColor: commonColors.surface,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    borderRadius: 99,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   weekText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#7C3AED',
+    ...typography.label,
+    color: BRAND,
   },
   contentWrapper: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
   progressCard: {
-    marginBottom: 20,
-    padding: 24,
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   progressTitle: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
   },
   progressSubtitle: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 14,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     marginTop: 4,
   },
-  progressBarContainer: { gap: 12 },
+  progressBarContainer: { gap: spacing.sm + 4 },
   progressTrack: {
     height: 12,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 99,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.full,
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', borderRadius: 99 },
+  progressFill: { height: '100%', borderRadius: borderRadius.full },
   progressLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  progressLabel: { fontFamily: typography.caption.fontFamily, fontSize: 12, color: '#94A3B8' },
-  progressLabelBold: { fontFamily: typography.caption.fontFamily, fontSize: 12, fontWeight: '700', color: '#7C3AED' },
-  sectionCard: { marginBottom: 20, padding: 20 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
+  progressLabel: { ...typography.overline, color: commonColors.textTertiary },
+  progressLabelBold: { ...typography.overline, color: BRAND },
+  sectionCard: { marginBottom: spacing.lg, padding: spacing.lg },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   cardIconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   cardHeaderText: { flex: 1 },
-  cardTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  cardSubtitle: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#64748B', marginTop: 2 },
-  cardDetails: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 16 },
+  cardTitle: { ...typography.h3, color: commonColors.text },
+  cardSubtitle: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  cardDetails: { backgroundColor: commonColors.background, borderRadius: borderRadius.lg, padding: spacing.md },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  divider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 8 },
-  detailLabel: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#64748B' },
-  detailValue: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '600', color: '#0F172A' },
-  emptyText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#94A3B8', textAlign: 'center', paddingVertical: 8 },
-  treatmentProgress: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 4 },
-  treatmentTrack: { flex: 1, height: 12, backgroundColor: '#F1F5F9', borderRadius: 99, overflow: 'hidden' },
-  treatmentFill: { height: '100%', backgroundColor: '#2563EB', borderRadius: 99 },
-  treatmentPercentage: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700', color: '#2563EB', minWidth: 40, textAlign: 'right' },
-  sectionTitle: { fontFamily: typography.h3.fontFamily, fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 16, marginTop: 8 },
-  quickActions: { flexDirection: 'row', gap: 12 },
-  quickActionCard: { flex: 1, alignItems: 'center', padding: 16, gap: 12 },
+  divider: { height: 1, backgroundColor: commonColors.border, marginVertical: spacing.sm },
+  detailLabel: { ...typography.bodySmall, color: commonColors.textSecondary },
+  detailValue: { ...typography.label, color: commonColors.text },
+  emptyText: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.sm },
+  treatmentProgress: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 4 },
+  treatmentTrack: { flex: 1, height: 12, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.full, overflow: 'hidden' },
+  treatmentFill: { height: '100%', backgroundColor: semanticColors.info, borderRadius: borderRadius.full },
+  treatmentPercentage: { ...typography.label, color: semanticColors.info, minWidth: 40, textAlign: 'right' },
+  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md, marginTop: spacing.sm },
+  quickActions: { flexDirection: 'row', gap: spacing.sm + 4 },
+  quickActionCard: { flex: 1, alignItems: 'center', padding: spacing.md, gap: spacing.sm + 4 },
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  quickActionTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700', color: '#0F172A', textAlign: 'center' },
-  quickActionSubtitle: { fontFamily: typography.caption.fontFamily, fontSize: 11, color: '#64748B', textAlign: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontFamily: typography.h2.fontFamily, fontSize: 22, fontWeight: '800', color: '#0F172A' },
-  modalDescription: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B', marginBottom: 24, lineHeight: 22 },
-  signsList: { marginBottom: 24 },
-  signOption: { padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 12 },
-  signOptionSelected: { borderColor: '#EF4444', backgroundColor: '#FEF2F2', borderWidth: 2 },
-  signOptionText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: '#334155' },
-  signOptionTextSelected: { fontWeight: '700', color: '#EF4444' },
-  notesInput: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, padding: 16, fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', minHeight: 100, textAlignVertical: 'top', marginTop: 12, backgroundColor: '#F8FAFC' },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 20 },
+  quickActionTitle: { ...typography.label, color: commonColors.text, textAlign: 'center' },
+  quickActionSubtitle: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary, textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: commonColors.overlay, justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: commonColors.surface, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, padding: spacing.lg, maxHeight: '90%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  modalTitle: { ...typography.h2, color: commonColors.text },
+  modalDescription: { ...typography.bodyMedium, color: commonColors.textSecondary, marginBottom: spacing.lg },
+  signsList: { marginBottom: spacing.lg },
+  signOption: { padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: commonColors.border, marginBottom: spacing.sm + 4 },
+  signOptionSelected: { borderColor: semanticColors.danger, backgroundColor: semanticColors.dangerLight, borderWidth: 2 },
+  signOptionText: { ...typography.bodyMedium, color: commonColors.textSecondary },
+  signOptionTextSelected: { fontFamily: typography.bodyMedium.fontFamily, fontWeight: '700', color: semanticColors.danger },
+  notesInput: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, padding: spacing.md, ...typography.bodyMedium, color: commonColors.text, minHeight: 100, textAlignVertical: 'top', marginTop: spacing.sm + 4, backgroundColor: commonColors.background },
+  modalActions: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing.lg },
 });

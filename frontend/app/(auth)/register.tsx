@@ -24,12 +24,13 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { useAuthStore } from '../../src/store/authStore';
 import type { UserRole, RegisterRequest } from '../../src/types/user';
+import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
+import { spacing, borderRadius } from '../../src/theme/spacing';
 
 const registerSchema = z
   .object({
@@ -73,8 +74,7 @@ export default function RegisterScreen(): React.ReactElement {
 
   // Dynamic Theme
   const isGestante = selectedRole === 'gestante';
-  const themeColor = isGestante ? '#7C3AED' : '#BE185D'; // Violet vs Pink
-  const gradientColors = isGestante ? ['#312E81', '#7C3AED'] as const : ['#4C1D95', '#BE185D'] as const;
+  const themeColor = isGestante ? gestanteColors.primary : obstetraColors.primary;
 
   const {
     control,
@@ -125,7 +125,7 @@ export default function RegisterScreen(): React.ReactElement {
           
           <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
-              <ChevronLeft size={28} color="#0F172A" />
+              <ChevronLeft size={28} color={commonColors.text} />
             </Pressable>
             <Text style={styles.headerTitle}>Crear Cuenta</Text>
             <View style={styles.headerSpacer} />
@@ -144,14 +144,14 @@ export default function RegisterScreen(): React.ReactElement {
                   onPress={() => setSelectedRole('gestante')}
                   style={[styles.roleOption, isGestante && styles.roleOptionActive]}
                 >
-                  <Baby size={20} color={isGestante ? '#7C3AED' : '#64748B'} />
+                  <Baby size={20} color={isGestante ? gestanteColors.primary : commonColors.textSecondary} />
                   <Text style={[styles.roleText, isGestante && styles.roleTextActive]}>Gestante</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setSelectedRole('obstetra')}
                   style={[styles.roleOption, !isGestante && styles.roleOptionActive]}
                 >
-                  <Stethoscope size={20} color={!isGestante ? '#BE185D' : '#64748B'} />
+                  <Stethoscope size={20} color={!isGestante ? obstetraColors.primary : commonColors.textSecondary} />
                   <Text style={[styles.roleText, !isGestante && styles.roleTextActive]}>Obstetra</Text>
                 </Pressable>
               </View>
@@ -201,7 +201,7 @@ export default function RegisterScreen(): React.ReactElement {
               />
 
               <Pressable onPress={() => setConsentAccepted(!consentAccepted)} style={styles.consentRow} hitSlop={8}>
-                {consentAccepted ? <CheckSquare size={24} color={themeColor} /> : <Square size={24} color="#94A3B8" />}
+                {consentAccepted ? <CheckSquare size={24} color={themeColor} /> : <Square size={24} color={commonColors.textTertiary} />}
                 <Text style={styles.consentText}>
                   Acepto los <Text style={[styles.consentLink, { color: themeColor }]}>Términos y Condiciones</Text> y la <Text style={[styles.consentLink, { color: themeColor }]}>Política de Privacidad</Text>
                 </Text>
@@ -233,15 +233,15 @@ export default function RegisterScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   safeArea: { flex: 1 },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   backButton: {
     width: 44,
@@ -250,83 +250,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
   },
   headerSpacer: { width: 44 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontFamily: typography.display?.fontFamily || typography.h1.fontFamily,
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
+    ...typography.display,
+    color: commonColors.text,
     marginBottom: 4,
   },
   tagline: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 16,
-    color: '#64748B',
+    ...typography.bodyMedium,
+    color: commonColors.textSecondary,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 8,
-    marginBottom: 24,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   roleSelector: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 16,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.lg,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   roleOption: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: borderRadius.md,
+    gap: spacing.sm,
   },
   roleOptionActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: commonColors.surface,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   roleText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#64748B',
+    ...typography.label,
+    color: commonColors.textSecondary,
   },
   roleTextActive: {
-    color: '#0F172A',
+    color: commonColors.text,
   },
   formRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.md,
   },
   halfInput: {
     flex: 1,
@@ -334,19 +318,18 @@ const styles = StyleSheet.create({
   consentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 16,
-    paddingRight: 24,
+    gap: spacing.sm + 4,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+    paddingRight: spacing.lg,
   },
   consentText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 20,
+    ...typography.caption,
+    color: commonColors.textSecondary,
   },
   consentLink: {
-    fontWeight: '700',
+    fontFamily: typography.label.fontFamily,
+    fontWeight: typography.label.fontWeight,
   },
   loginSection: {
     flexDirection: 'row',
@@ -354,13 +337,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   loginLink: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
-    fontWeight: '700',
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
+    fontWeight: typography.label.fontWeight,
   },
 });

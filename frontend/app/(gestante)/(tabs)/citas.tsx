@@ -14,11 +14,15 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../../src/store/authStore';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import api from '../../../src/services/api';
+import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
+import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
 
 interface Appointment {
   id: string;
@@ -146,18 +150,18 @@ export default function AppointmentsScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PROGRAMADA':
-        return { bg: '#E3F2FD', text: '#1976D2', icon: 'calendar-outline' };
+        return { bg: semanticColors.infoLight, text: semanticColors.info, icon: 'calendar-outline' };
       case 'CONFIRMADA':
-        return { bg: '#E8F5E9', text: '#2E7D32', icon: 'checkmark-circle-outline' };
+        return { bg: semanticColors.successLight, text: semanticColors.success, icon: 'checkmark-circle-outline' };
       case 'ASISTIDA':
-        return { bg: '#F3E5F5', text: '#7B1FA2', icon: 'flag-outline' };
+        return { bg: gestanteColors.primaryLight, text: gestanteColors.primary, icon: 'flag-outline' };
       case 'CANCELADA':
       case 'NO_ASISTIDA':
-        return { bg: '#FFEBEE', text: '#D32F2F', icon: 'close-circle-outline' };
+        return { bg: semanticColors.dangerLight, text: semanticColors.danger, icon: 'close-circle-outline' };
       case 'REPROGRAMADA':
-        return { bg: '#FFF3E0', text: '#F57C00', icon: 'time-outline' };
+        return { bg: semanticColors.warningLight, text: semanticColors.warning, icon: 'time-outline' };
       default:
-        return { bg: '#F5F5F5', text: '#757575', icon: 'information-circle-outline' };
+        return { bg: commonColors.surfaceAlt, text: commonColors.textSecondary, icon: 'information-circle-outline' };
     }
   };
 
@@ -179,7 +183,7 @@ export default function AppointmentsScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="calendar-clear-outline" size={64} color="#CBD5E1" />
+      <Ionicons name="calendar-clear-outline" size={64} color={commonColors.textTertiary} />
       <Text style={styles.emptyTitle}>
         {activeTab === 'upcoming' ? 'No tienes citas próximas' : 'No hay historial de citas'}
       </Text>
@@ -205,14 +209,9 @@ export default function AppointmentsScreen() {
     return (
       <View style={[styles.card, isNext && styles.cardNext]}>
         {isNext && (
-          <LinearGradient
-            colors={['#EC4899', '#F43F5E']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.nextBadge}
-          >
+          <View style={styles.nextBadge}>
             <Text style={styles.nextBadgeText}>Siguiente Control</Text>
-          </LinearGradient>
+          </View>
         )}
         
         <View style={styles.cardHeader}>
@@ -227,7 +226,7 @@ export default function AppointmentsScreen() {
           
           <View style={styles.cardHeaderRight}>
             <Text style={styles.timeText}>
-              <Ionicons name="time-outline" size={14} color="#64748B" /> {formatTime(item.appointmentTime || item.appointmentDate)}
+              <Ionicons name="time-outline" size={14} color={commonColors.textSecondary} /> {formatTime(item.appointmentTime || item.appointmentDate)}
             </Text>
             <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
               <Ionicons name={statusInfo.icon as any} size={12} color={statusInfo.text} />
@@ -245,14 +244,14 @@ export default function AppointmentsScreen() {
           
           <View style={styles.infoRow}>
             <View style={styles.iconBox}>
-              <Ionicons name="person-outline" size={16} color="#EC4899" />
+              <Ionicons name="person-outline" size={16} color={BRAND} />
             </View>
             <Text style={styles.infoText}>{professionalName}</Text>
           </View>
           
           <View style={styles.infoRow}>
             <View style={styles.iconBox}>
-              <Ionicons name="location-outline" size={16} color="#EC4899" />
+              <Ionicons name="location-outline" size={16} color={BRAND} />
             </View>
             <Text style={styles.infoText}>{clinicName}</Text>
           </View>
@@ -291,7 +290,7 @@ export default function AppointmentsScreen() {
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#EC4899" />
+        <ActivityIndicator size="large" color={BRAND} />
         <Text style={styles.loadingText}>Cargando tus citas...</Text>
       </View>
     );
@@ -344,8 +343,8 @@ export default function AppointmentsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#EC4899']}
-            tintColor="#EC4899"
+            colors={[BRAND]}
+            tintColor={BRAND}
           />
         }
       />
@@ -416,125 +415,115 @@ export default function AppointmentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#64748B',
-    fontFamily: 'Inter-Medium',
+    marginTop: spacing.sm + 4,
+    ...typography.bodyMedium,
+    color: commonColors.textSecondary,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    backgroundColor: commonColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: commonColors.border,
   },
   headerTitle: {
-    fontSize: 28,
-    color: '#0F172A',
-    fontFamily: 'Inter-Bold',
+    ...typography.h1,
+    color: commonColors.text,
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: '#64748B',
-    fontFamily: 'Inter-Regular',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: commonColors.background,
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginRight: 12,
-    borderRadius: 24,
-    backgroundColor: '#F1F5F9',
+    paddingHorizontal: spacing.lg,
+    marginRight: spacing.sm + 4,
+    borderRadius: borderRadius.xl,
+    backgroundColor: commonColors.surfaceAlt,
   },
   activeTab: {
-    backgroundColor: '#EC4899',
+    backgroundColor: BRAND,
   },
   tabText: {
-    fontSize: 15,
-    color: '#64748B',
-    fontFamily: 'Inter-SemiBold',
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
+    fontWeight: typography.label.fontWeight,
+    color: commonColors.textSecondary,
   },
   activeTabText: {
-    color: '#FFFFFF',
+    color: commonColors.surface,
   },
   badge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   badgeActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   badgeInactive: {
-    backgroundColor: '#E2E8F0',
+    backgroundColor: commonColors.border,
   },
   badgeText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Bold',
+    ...typography.overline,
+    letterSpacing: 0,
   },
   badgeTextActive: {
-    color: '#FFFFFF',
+    color: commonColors.surface,
   },
   badgeTextInactive: {
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   listContainer: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   cardNext: {
-    borderColor: '#FCE7F3',
+    borderColor: BRAND,
     borderWidth: 2,
-    shadowColor: '#EC4899',
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
   },
   nextBadge: {
     position: 'absolute',
     top: -12,
-    right: 20,
-    paddingHorizontal: 16,
+    right: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
+    backgroundColor: BRAND,
     zIndex: 1,
   },
   nextBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontFamily: 'Inter-Bold',
+    ...typography.overline,
+    color: commonColors.surface,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -545,31 +534,32 @@ const styles = StyleSheet.create({
   },
   dateContainer: {
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
+    backgroundColor: commonColors.background,
+    borderRadius: borderRadius.lg,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     minWidth: 70,
   },
   dateMonth: {
-    fontSize: 13,
-    color: '#64748B',
-    fontFamily: 'Inter-Bold',
+    ...typography.caption,
+    fontFamily: typography.overline.fontFamily,
+    fontWeight: typography.overline.fontWeight,
+    color: commonColors.textSecondary,
     marginBottom: 2,
   },
   dateDay: {
-    fontSize: 24,
-    color: '#0F172A',
-    fontFamily: 'Inter-Black',
+    ...typography.h2,
+    color: commonColors.text,
   },
   cardHeaderRight: {
     alignItems: 'flex-end',
   },
   timeText: {
-    fontSize: 15,
-    color: '#475569',
-    fontFamily: 'Inter-SemiBold',
-    marginBottom: 8,
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
+    fontWeight: typography.label.fontWeight,
+    color: commonColors.textSecondary,
+    marginBottom: spacing.sm,
     display: 'flex',
     alignItems: 'center',
   },
@@ -578,178 +568,169 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
   },
   statusText: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
+    ...typography.overline,
+    letterSpacing: 0,
     marginLeft: 4,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 16,
+    backgroundColor: commonColors.border,
+    marginVertical: spacing.md,
   },
   cardBody: {},
   appointmentType: {
-    fontSize: 18,
-    color: '#0F172A',
-    fontFamily: 'Inter-Bold',
-    marginBottom: 16,
+    ...typography.h3,
+    color: commonColors.text,
+    marginBottom: spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.sm + 4,
   },
   iconBox: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#FDF2F8',
+    backgroundColor: gestanteColors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.sm + 4,
   },
   infoText: {
-    fontSize: 15,
-    color: '#475569',
-    fontFamily: 'Inter-Medium',
+    ...typography.bodySmall,
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontWeight: typography.bodyMedium.fontWeight,
+    color: commonColors.textSecondary,
     flex: 1,
   },
   notesContainer: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    marginTop: spacing.sm,
+    padding: spacing.sm + 4,
+    backgroundColor: commonColors.background,
+    borderRadius: borderRadius.md,
     borderLeftWidth: 3,
-    borderLeftColor: '#CBD5E1',
+    borderLeftColor: commonColors.borderStrong,
   },
   notesText: {
-    fontSize: 14,
-    color: '#64748B',
-    fontFamily: 'Inter-Regular',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     fontStyle: 'italic',
   },
   cardActions: {
     flexDirection: 'row',
-    marginTop: 20,
-    gap: 12,
+    marginTop: spacing.lg,
+    gap: spacing.sm + 4,
   },
   btnReschedule: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    borderRadius: borderRadius.md,
+    backgroundColor: commonColors.surfaceAlt,
     alignItems: 'center',
   },
   btnRescheduleText: {
-    color: '#475569',
+    color: commonColors.textSecondary,
+    ...typography.button,
     fontSize: 15,
-    fontFamily: 'Inter-SemiBold',
   },
   btnConfirm: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#EC4899',
+    borderRadius: borderRadius.md,
+    backgroundColor: BRAND,
     alignItems: 'center',
   },
   btnConfirmText: {
-    color: '#FFFFFF',
+    color: commonColors.surface,
+    ...typography.button,
     fontSize: 15,
-    fontFamily: 'Inter-SemiBold',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
-    fontSize: 18,
-    color: '#334155',
-    fontFamily: 'Inter-Bold',
-    marginTop: 16,
-    marginBottom: 8,
+    ...typography.h3,
+    color: commonColors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   emptyText: {
-    fontSize: 15,
-    color: '#64748B',
-    fontFamily: 'Inter-Regular',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: commonColors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     width: '90%',
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 8,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   modalTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: '#0F172A',
-    marginBottom: 20,
+    ...typography.h3,
+    color: commonColors.text,
+    marginBottom: spacing.lg,
     textAlign: 'center',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   inputLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#475569',
-    marginBottom: 8,
+    ...typography.label,
+    color: commonColors.textSecondary,
+    marginBottom: spacing.sm,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 12,
+    borderColor: commonColors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm + 4,
+    ...typography.bodySmall,
     fontSize: 15,
-    fontFamily: 'Inter-Regular',
-    color: '#0F172A',
-    backgroundColor: '#F8FAFC',
+    color: commonColors.text,
+    backgroundColor: commonColors.background,
   },
   modalActions: {
     flexDirection: 'row',
-    marginTop: 8,
-    gap: 12,
+    marginTop: spacing.sm,
+    gap: spacing.sm + 4,
   },
   modalBtnCancel: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    borderRadius: borderRadius.md,
+    backgroundColor: commonColors.surfaceAlt,
     alignItems: 'center',
   },
   modalBtnCancelText: {
-    color: '#475569',
+    color: commonColors.textSecondary,
+    ...typography.button,
     fontSize: 15,
-    fontFamily: 'Inter-SemiBold',
   },
   modalBtnSubmit: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#EC4899',
+    borderRadius: borderRadius.md,
+    backgroundColor: BRAND,
     alignItems: 'center',
   },
   modalBtnSubmitText: {
-    color: '#FFFFFF',
+    color: commonColors.surface,
+    ...typography.button,
     fontSize: 15,
-    fontFamily: 'Inter-SemiBold',
   },
 });

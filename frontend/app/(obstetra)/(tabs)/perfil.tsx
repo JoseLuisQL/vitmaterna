@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+
+const BRAND = obstetraColors.primary;
 
 interface MenuItemProps {
   icon: React.ReactElement;
@@ -17,12 +19,12 @@ interface MenuItemProps {
 const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}>
     <View style={styles.menuItemLeft}>
-      <View style={[styles.menuIconWrap, danger && { backgroundColor: '#FEF2F2' }]}>
+      <View style={[styles.menuIconWrap, danger && { backgroundColor: semanticColors.dangerLight }]}>
         {icon}
       </View>
       <Text style={[styles.menuItemTitle, danger && styles.menuItemDanger]}>{title}</Text>
     </View>
-    <ChevronRight size={20} color="#94A3B8" />
+    <ChevronRight size={20} color={commonColors.textTertiary} />
   </Pressable>
 );
 
@@ -65,7 +67,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
           </View>
           <Text style={styles.profileName}>{displayName}</Text>
           <View style={styles.roleRow}>
-            <Stethoscope size={16} color="#BE185D" />
+            <Stethoscope size={16} color={BRAND} />
             <Text style={styles.profileRole}>Obstetra</Text>
           </View>
           {user?.dni && (
@@ -76,19 +78,19 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         {/* Menu Items */}
         <Text style={styles.sectionTitle}>General</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<User size={20} color="#BE185D" />} title="Datos Profesionales" onPress={verDatosProfesionales} />
+          <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Profesionales" onPress={verDatosProfesionales} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color="#BE185D" />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
+          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Settings size={20} color="#BE185D" />} title="Configuración" onPress={() => proximamente('Configuración')} />
+          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={() => proximamente('Configuración')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color="#BE185D" />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
+          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color="#BE185D" />} title="Ayuda y Soporte" onPress={() => proximamente('Ayuda y Soporte')} />
+          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={() => proximamente('Ayuda y Soporte')} />
         </View>
 
         <View style={[styles.menuCard, { marginTop: 24 }]}>
-          <MenuItem icon={<LogOut size={20} color="#EF4444" />} title="Cerrar Sesión" danger onPress={handleLogout} />
+          <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
         </View>
       </View>
     </View>
@@ -96,7 +98,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: 24,
   },
@@ -104,53 +106,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  headerTitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), fontSize: 32, fontWeight: '800', color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 },
-  headerSubtitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), fontSize: 16, color: '#64748B' },
+  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
   profileCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.02,
-    shadowRadius: 16,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FDF2F8',
+    backgroundColor: obstetraColors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
-  avatarText: { fontFamily: typography.h1.fontFamily, fontSize: 28, fontWeight: '800', color: '#BE185D' },
-  profileName: { fontFamily: typography.h2.fontFamily, fontSize: 22, fontWeight: '800', color: '#0F172A', marginBottom: 4 },
+  avatarText: { ...typography.h1, color: BRAND },
+  profileName: { ...typography.h2, color: commonColors.text, marginBottom: 4 },
   roleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  profileRole: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '600', color: '#BE185D' },
-  profileDni: { fontFamily: typography.caption.fontFamily, fontSize: 14, color: '#64748B' },
-  sectionTitle: { fontFamily: typography.caption.fontFamily, fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 12, marginLeft: 16, letterSpacing: 0.5 },
+  profileRole: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '600', color: BRAND },
+  profileDni: { ...typography.bodySmall, color: commonColors.textSecondary },
+  sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', marginBottom: 12, marginLeft: 16, letterSpacing: 0.5 },
   menuCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
-  menuItemPressed: { backgroundColor: '#F8FAFC' },
+  menuItemPressed: { backgroundColor: commonColors.surfaceAlt },
   menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  menuIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FDF2F8', alignItems: 'center', justifyContent: 'center' },
-  menuItemTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '600', color: '#0F172A' },
-  menuItemDanger: { color: '#EF4444' },
-  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginLeft: 76 },
+  menuIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  menuItemTitle: { ...typography.bodyMedium, color: commonColors.text },
+  menuItemDanger: { color: semanticColors.danger },
+  menuDivider: { height: 1, backgroundColor: commonColors.borderLight, marginLeft: 76 },
 });

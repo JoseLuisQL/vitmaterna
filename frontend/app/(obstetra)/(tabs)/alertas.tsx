@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, StyleSheet, Text, FlatList, ActivityIndicator, Platform, StatusBar, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, FlatList, ActivityIndicator, StatusBar, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, AlertTriangle, User, Clock, CheckCircle, Share2 } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+
+const BRAND = obstetraColors.primary;
 
 interface DangerSign {
   id: string;
@@ -87,10 +89,10 @@ export default function AlertasScreen(): React.ReactElement {
 
   const getSeverityColor = (severity?: string) => {
     switch (severity?.toLowerCase()) {
-      case 'rojo': case 'high': case 'grave': return '#EF4444';
-      case 'amarillo': case 'medium': case 'moderado': return '#F59E0B';
-      case 'verde': case 'low': case 'leve': return '#10B981';
-      default: return '#94A3B8';
+      case 'rojo': case 'high': case 'grave': return riskColors.riskRed;
+      case 'amarillo': case 'medium': case 'moderado': return riskColors.riskYellow;
+      case 'verde': case 'low': case 'leve': return riskColors.riskGreen;
+      default: return commonColors.textTertiary;
     }
   };
 
@@ -135,7 +137,7 @@ export default function AlertasScreen(): React.ReactElement {
       <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: color }]}>
         <View style={styles.cardHeader}>
           <View style={styles.patientInfo}>
-            <User size={16} color="#64748B" />
+            <User size={16} color={commonColors.textSecondary} />
             <Text style={styles.patientName}>{item.patientName || 'Paciente'}</Text>
           </View>
           <View style={[styles.severityBadge, { backgroundColor: color + '15' }]}>
@@ -154,7 +156,7 @@ export default function AlertasScreen(): React.ReactElement {
         </View>
 
         <View style={styles.cardFooter}>
-          <Clock size={14} color="#94A3B8" />
+          <Clock size={14} color={commonColors.textTertiary} />
           <Text style={styles.timeText}>
             {new Date(item.createdAt).toLocaleString()}
           </Text>
@@ -167,8 +169,8 @@ export default function AlertasScreen(): React.ReactElement {
             disabled={updateMutation.isPending}
             activeOpacity={0.7}
           >
-            <Share2 size={16} color="#B45309" />
-            <Text style={[styles.actionText, { color: '#B45309' }]}>Derivar</Text>
+            <Share2 size={16} color={semanticColors.warning} />
+            <Text style={[styles.actionText, { color: semanticColors.warning }]}>Derivar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionAttend]}
@@ -176,8 +178,8 @@ export default function AlertasScreen(): React.ReactElement {
             disabled={updateMutation.isPending}
             activeOpacity={0.7}
           >
-            <CheckCircle size={16} color="#047857" />
-            <Text style={[styles.actionText, { color: '#047857' }]}>Atender</Text>
+            <CheckCircle size={16} color={semanticColors.success} />
+            <Text style={[styles.actionText, { color: semanticColors.success }]}>Atender</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -187,20 +189,20 @@ export default function AlertasScreen(): React.ReactElement {
   const renderEmpty = () => (
     <View style={{ marginTop: 60, paddingHorizontal: 20 }}>
       {isLoading ? (
-        <ActivityIndicator size="large" color="#BE185D" />
+        <ActivityIndicator size="large" color={BRAND} />
       ) : isError ? (
         <EmptyState
           icon={Bell as any}
           title="Error al cargar"
           description="Hubo un problema al obtener las alertas."
-          themeColor="#BE185D"
+          themeColor={BRAND}
         />
       ) : (
         <EmptyState
           icon={Bell as any}
           title="Sin alertas pendientes"
           description="Aquí recibirás alertas de signos de alarma reportados por tus gestantes."
-          themeColor="#BE185D"
+          themeColor={BRAND}
         />
       )}
     </View>
@@ -224,7 +226,7 @@ export default function AlertasScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: 24,
     marginBottom: 8,
@@ -233,36 +235,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  headerTitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), fontSize: 32, fontWeight: '800', color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 },
-  headerSubtitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), fontSize: 16, color: '#64748B' },
+  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
   listContent: { paddingBottom: 100 },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   patientInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  patientName: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  patientName: { ...typography.bodyMedium, color: commonColors.text },
   severityBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99 },
-  severityText: { fontFamily: typography.caption.fontFamily, fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
-  signInfo: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, marginBottom: 16 },
+  severityText: { ...typography.overline, textTransform: 'uppercase' },
+  signInfo: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: commonColors.surfaceAlt, padding: 16, borderRadius: 16, marginBottom: 16 },
   signIcon: { marginTop: 2, marginRight: 12 },
   signTextContainer: { flex: 1 },
-  signTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A', marginBottom: 4 },
-  signNotes: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B', lineHeight: 20 },
+  signTitle: { ...typography.bodyMedium, color: commonColors.text, marginBottom: 4 },
+  signNotes: { ...typography.bodySmall, color: commonColors.textSecondary },
   cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  timeText: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8' },
+  timeText: { ...typography.caption, color: commonColors.textTertiary },
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 14 },
-  actionDerive: { backgroundColor: '#FEF3C7' },
-  actionAttend: { backgroundColor: '#D1FAE5' },
-  actionText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700' },
+  actionDerive: { backgroundColor: semanticColors.warningLight },
+  actionAttend: { backgroundColor: semanticColors.successLight },
+  actionText: { ...typography.label, fontWeight: '700' },
 });

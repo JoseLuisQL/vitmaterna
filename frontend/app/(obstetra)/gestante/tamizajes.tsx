@@ -15,9 +15,10 @@ import {
   useCreateNutritionalCounseling,
   useCreateWeightRecord,
 } from '../../../src/services/api-queries';
+import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 
-const PINK = '#BE185D';
+const PINK = obstetraColors.primary;
 const hoy = () => new Date().toISOString().split('T')[0];
 
 type FormKey = 'patologia' | 'mental' | 'violencia' | 'nutricion' | 'peso';
@@ -155,11 +156,11 @@ export default function TamizajesScreen(): React.ReactElement {
     nutrition.isPending || weight.isPending;
 
   const CARDS: { key: FormKey; label: string; desc: string; icon: any; color: string; bg: string }[] = [
-    { key: 'mental', label: 'Tamizaje SRQ-18', desc: 'Salud mental', icon: Brain, color: '#7C3AED', bg: '#F5F3FF' },
-    { key: 'violencia', label: 'Tamizaje de violencia', desc: 'Detección y derivación', icon: ShieldAlert, color: '#DC2626', bg: '#FEF2F2' },
-    { key: 'patologia', label: 'Patología (CIE-10)', desc: 'Diagnóstico materno', icon: Stethoscope, color: '#2563EB', bg: '#EFF6FF' },
-    { key: 'nutricion', label: 'Consejería nutricional', desc: 'Hábitos y acuerdos', icon: Apple, color: '#059669', bg: '#ECFDF5' },
-    { key: 'peso', label: 'Registro de peso', desc: 'Ganancia por semana', icon: Scale, color: '#D97706', bg: '#FFFBEB' },
+    { key: 'mental', label: 'Tamizaje SRQ-18', desc: 'Salud mental', icon: Brain, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
+    { key: 'violencia', label: 'Tamizaje de violencia', desc: 'Detección y derivación', icon: ShieldAlert, color: semanticColors.danger, bg: semanticColors.dangerLight },
+    { key: 'patologia', label: 'Patología (CIE-10)', desc: 'Diagnóstico materno', icon: Stethoscope, color: semanticColors.info, bg: semanticColors.infoLight },
+    { key: 'nutricion', label: 'Consejería nutricional', desc: 'Hábitos y acuerdos', icon: Apple, color: semanticColors.success, bg: semanticColors.successLight },
+    { key: 'peso', label: 'Registro de peso', desc: 'Ganancia por semana', icon: Scale, color: semanticColors.warning, bg: semanticColors.warningLight },
   ];
 
   return (
@@ -168,7 +169,7 @@ export default function TamizajesScreen(): React.ReactElement {
       <SafeAreaView edges={['top']}>
         <View style={styles.headerNav}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <ChevronLeft size={24} color="#0F172A" />
+            <ChevronLeft size={24} color={commonColors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Tamizajes y registros</Text>
           <View style={{ width: 40 }} />
@@ -188,7 +189,7 @@ export default function TamizajesScreen(): React.ReactElement {
               <Text style={styles.cardTitle}>{label}</Text>
               <Text style={styles.cardDesc}>{desc}</Text>
             </View>
-            <Plus size={20} color="#94A3B8" />
+            <Plus size={20} color={commonColors.textTertiary} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -305,7 +306,7 @@ export default function TamizajesScreen(): React.ReactElement {
                   else if (openForm === 'peso') guardarPeso();
                 }}
               >
-                {isSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Guardar</Text>}
+                {isSaving ? <ActivityIndicator color={obstetraColors.onPrimary} size="small" /> : <Text style={styles.saveBtnText}>Guardar</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -325,29 +326,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
-  headerTitle: { fontFamily: typography.h3.fontFamily, fontSize: 18, fontWeight: '800', color: '#0F172A' },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surface },
+  headerTitle: { ...typography.h3, color: commonColors.text },
   content: { padding: 20, paddingBottom: 48 },
-  patientName: { fontFamily: typography.h2.fontFamily, fontSize: 22, fontWeight: '800', color: '#0F172A', marginBottom: 4 },
-  subtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B', marginBottom: 20 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: '#FFFFFF', borderRadius: 20, padding: 18, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
+  patientName: { ...typography.h2, color: commonColors.text, marginBottom: 4 },
+  subtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: 20 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: commonColors.surface, borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: commonColors.border },
   cardIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A' },
-  cardDesc: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, color: '#64748B', marginTop: 2 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, maxHeight: '85%' },
-  modalHeader: { fontFamily: typography.h3.fontFamily, fontSize: 18, fontWeight: '800', color: '#0F172A', marginBottom: 20 },
-  helper: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, color: '#64748B', lineHeight: 19 },
+  cardTitle: { ...typography.bodyMedium, color: commonColors.text },
+  cardDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  modalOverlay: { flex: 1, backgroundColor: commonColors.overlay, justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: commonColors.surface, borderRadius: 24, padding: 24, maxHeight: '85%' },
+  modalHeader: { ...typography.h3, color: commonColors.text, marginBottom: 20 },
+  helper: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 19 },
   fieldGroup: { gap: 6 },
-  inputLabel: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '600', color: '#334155' },
-  input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', backgroundColor: '#F8FAFC' },
+  inputLabel: { ...typography.label, fontWeight: '600', color: commonColors.textSecondary },
+  input: { borderWidth: 1, borderColor: commonColors.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, ...typography.bodySmall, fontSize: 15, color: commonColors.text, backgroundColor: commonColors.surfaceAlt },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
-  switchLabel: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#334155', marginRight: 12 },
+  switchLabel: { flex: 1, ...typography.bodySmall, color: commonColors.textSecondary, marginRight: 12 },
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F1F5F9' },
-  cancelBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '700', color: '#475569' },
+  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: commonColors.surfaceAlt },
+  cancelBtnText: { ...typography.button, fontSize: 15, color: commonColors.textSecondary },
   saveBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: PINK },
-  saveBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  saveBtnText: { ...typography.button, fontSize: 15, color: obstetraColors.onPrimary },
 });

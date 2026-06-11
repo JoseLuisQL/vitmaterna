@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  TextInput, Linking, Platform, StatusBar
+  TextInput, Linking, StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   BookOpen, AlertTriangle, Calculator, Phone,
   Pill, Heart, Activity, Baby, Wind, ClipboardList,
   Frown, Thermometer, Droplets, Droplet, Zap, Eye,
   AlertCircle, Clock, Users, HeartPulse,
 } from 'lucide-react-native';
+import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
+
+const BRAND = gestanteColors.primary;
 
 // Asigna un icono según la categoría del contenido publicado por el admin
 function iconoPorCategoria(categoria?: string, tipo?: string): string {
@@ -47,7 +50,7 @@ const CONTENIDO: Record<1 | 2 | 3, { titulo: string; icono: string; descripcion:
 const GRUPOS_ALARMAS = [
   {
     titulo: 'Durante el embarazo',
-    color: '#DC2626', bg: '#FEF2F2', border: '#FECACA',
+    color: semanticColors.danger, bg: semanticColors.dangerLight, border: semanticColors.danger,
     signos: [
       { icono: 'Frown', texto: 'Vómitos frecuentes e intensos' },
       { icono: 'Thermometer', texto: 'Dolor de cabeza fuerte, fiebre o calentura' },
@@ -99,7 +102,7 @@ function CalculadoraEG() {
           value={fum}
           onChangeText={setFum}
           placeholder="2025-10-15"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={commonColors.textTertiary}
           keyboardType="numeric"
           maxLength={10}
         />
@@ -132,21 +135,21 @@ function CalculadoraEG() {
 }
 
 const calcStyles = StyleSheet.create({
-  label: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A', marginBottom: 4 },
-  hint: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#64748B', marginBottom: 16 },
-  row: { flexDirection: 'row', gap: 12 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, paddingHorizontal: 16, height: 52, fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: '#0F172A', backgroundColor: '#F8FAFC' },
-  btn: { backgroundColor: '#7C3AED', borderRadius: 16, paddingHorizontal: 24, justifyContent: 'center' },
-  btnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  results: { marginTop: 24, gap: 16 },
-  resultGrid: { flexDirection: 'row', gap: 16 },
-  resultItem: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 20, padding: 20, alignItems: 'center' },
-  resultValue: { fontFamily: typography.h1.fontFamily, fontSize: 32, fontWeight: '800', color: '#7C3AED' },
-  resultLabel: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, color: '#64748B', marginTop: 4 },
-  fppBox: { backgroundColor: '#F5F3FF', borderRadius: 20, padding: 20, alignItems: 'center' },
-  fppLabel: { fontFamily: typography.caption.fontFamily, fontSize: 12, fontWeight: '700', color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.5 },
-  fppDate: { fontFamily: typography.h2.fontFamily, fontSize: 24, fontWeight: '800', color: '#0F172A', marginTop: 8 },
-  fppDays: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B', marginTop: 4 },
+  label: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, fontWeight: '700', color: commonColors.text, marginBottom: 4 },
+  hint: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.md },
+  row: { flexDirection: 'row', gap: spacing.sm + 4 },
+  input: { flex: 1, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 52, ...typography.bodyMedium, color: commonColors.text, backgroundColor: commonColors.background },
+  btn: { backgroundColor: BRAND, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, justifyContent: 'center' },
+  btnText: { ...typography.button, color: commonColors.surface },
+  results: { marginTop: spacing.lg, gap: spacing.md },
+  resultGrid: { flexDirection: 'row', gap: spacing.md },
+  resultItem: { flex: 1, backgroundColor: commonColors.background, borderRadius: borderRadius.lg, padding: spacing.lg, alignItems: 'center' },
+  resultValue: { ...typography.display, color: BRAND },
+  resultLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 4 },
+  fppBox: { backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.lg, alignItems: 'center' },
+  fppLabel: { ...typography.overline, color: BRAND, textTransform: 'uppercase', letterSpacing: 0.5 },
+  fppDate: { ...typography.h2, color: commonColors.text, marginTop: spacing.sm },
+  fppDays: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 4 },
 });
 
 type Seccion = 'contenido' | 'alarmas' | 'calculadora';
@@ -194,7 +197,7 @@ export default function EducacionScreen(): React.ReactElement {
             style={[styles.seccionBtn, seccion === key && styles.seccionBtnActive]}
             onPress={() => setSeccion(key as Seccion)}
           >
-            <Icon size={16} color={seccion === key ? '#FFFFFF' : '#64748B'} />
+            <Icon size={16} color={seccion === key ? commonColors.surface : commonColors.textSecondary} />
             <Text style={[styles.seccionBtnText, seccion === key && styles.seccionBtnTextActive]}>{label}</Text>
           </TouchableOpacity>
         ))}
@@ -218,7 +221,7 @@ export default function EducacionScreen(): React.ReactElement {
             {contenidoMostrado.map((item, i) => (
               <View key={i} style={styles.card}>
                 <View style={styles.contenidoIconWrap}>
-                  <DynIcon name={item.icono} size={24} color="#7C3AED" />
+                  <DynIcon name={item.icono} size={24} color={BRAND} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.contenidoTitle}>{item.titulo}</Text>
@@ -245,7 +248,7 @@ export default function EducacionScreen(): React.ReactElement {
 
             <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
               <View style={styles.emergencyIconWrap}>
-                <Phone size={24} color="#FFFFFF" />
+                <Phone size={24} color={commonColors.surface} />
               </View>
               <View style={styles.emergencyInfo}>
                 <Text style={styles.emergencyLabel}>Hospital / Centro de Salud</Text>
@@ -262,77 +265,66 @@ export default function EducacionScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.lg,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerTitle: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }),
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    ...typography.display,
+    color: commonColors.text,
+    marginBottom: spacing.sm,
   },
   seccionBar: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 99,
+    marginHorizontal: spacing.lg,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.full,
     padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   seccionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 99,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: borderRadius.full,
   },
-  seccionBtnActive: { backgroundColor: '#7C3AED' },
-  seccionBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 13, fontWeight: '700', color: '#64748B' },
-  seccionBtnTextActive: { color: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48 },
-  trimestreRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  trimestreBtn: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: '#E2E8F0', alignItems: 'center' },
-  trimestreBtnActive: { backgroundColor: '#F5F3FF' },
-  trimestreBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700', color: '#64748B' },
-  trimestreBtnTextActive: { color: '#7C3AED' },
+  seccionBtnActive: { backgroundColor: BRAND },
+  seccionBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.textSecondary },
+  seccionBtnTextActive: { color: commonColors.surface },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  trimestreRow: { flexDirection: 'row', gap: spacing.sm + 4, marginBottom: spacing.lg },
+  trimestreBtn: { flex: 1, paddingVertical: spacing.sm + 4, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, alignItems: 'center' },
+  trimestreBtnActive: { backgroundColor: gestanteColors.primaryLight },
+  trimestreBtnText: { ...typography.label, color: commonColors.textSecondary },
+  trimestreBtnTextActive: { color: BRAND },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 4,
-    gap: 16,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    gap: spacing.md,
   },
-  contenidoIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F5F3FF', alignItems: 'center', justifyContent: 'center' },
-  contenidoTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '800', color: '#0F172A', marginBottom: 4 },
-  contenidoDesc: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B', lineHeight: 22 },
-  alarmaCard: { borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1 },
-  alarmaHeaderText: { fontFamily: typography.h2.fontFamily, fontSize: 18, fontWeight: '800', marginBottom: 16 },
-  signoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  signoText: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '600' },
-  emergencyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EF4444', borderRadius: 24, padding: 20, gap: 16 },
+  contenidoIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: gestanteColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  contenidoTitle: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, fontWeight: '700', color: commonColors.text, marginBottom: 4 },
+  contenidoDesc: { ...typography.bodySmall, color: commonColors.textSecondary, lineHeight: 22 },
+  alarmaCard: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1 },
+  alarmaHeaderText: { ...typography.h3, marginBottom: spacing.md },
+  signoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, marginBottom: spacing.sm + 4 },
+  signoText: { flex: 1, ...typography.bodySmall, fontFamily: typography.bodyMedium.fontFamily, fontWeight: '600' },
+  emergencyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: semanticColors.danger, borderRadius: borderRadius.xl, padding: spacing.lg, gap: spacing.md },
   emergencyIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   emergencyInfo: { flex: 1 },
-  emergencyLabel: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#FECACA' },
-  emergencyPhone: { fontFamily: typography.h2.fontFamily, fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginTop: 4 },
+  emergencyLabel: { ...typography.bodySmall, color: semanticColors.dangerLight },
+  emergencyPhone: { ...typography.h2, color: commonColors.surface, marginTop: 4 },
 });

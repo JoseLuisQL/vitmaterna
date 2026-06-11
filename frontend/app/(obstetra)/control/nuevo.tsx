@@ -9,7 +9,10 @@ import { ChevronLeft, Activity, Baby, Stethoscope } from 'lucide-react-native';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { useCreateControl } from '../../../src/services/api-queries';
+import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+
+const BRAND = obstetraColors.primary;
 
 const controlSchema = z.object({
   week: z.string().min(1, 'La semana es obligatoria'),
@@ -45,7 +48,7 @@ export default function NuevoControlScreen(): React.ReactElement {
       <SafeAreaView edges={['top']} style={styles.headerContainer}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ChevronLeft size={28} color="#0F172A" />
+            <ChevronLeft size={28} color={commonColors.text} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Nuevo Control</Text>
@@ -57,7 +60,7 @@ export default function NuevoControlScreen(): React.ReactElement {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Activity size={20} color="#BE185D" /></View>
+            <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
             <Text style={styles.sectionTitle}>Signos Vitales y Medidas</Text>
           </View>
           <View style={styles.formGroup}>
@@ -69,7 +72,7 @@ export default function NuevoControlScreen(): React.ReactElement {
 
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Baby size={20} color="#BE185D" /></View>
+            <View style={styles.sectionIconWrap}><Baby size={20} color={BRAND} /></View>
             <Text style={styles.sectionTitle}>Datos Fetales</Text>
           </View>
           <View style={styles.formGroup}>
@@ -80,7 +83,7 @@ export default function NuevoControlScreen(): React.ReactElement {
 
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Stethoscope size={20} color="#BE185D" /></View>
+            <View style={styles.sectionIconWrap}><Stethoscope size={20} color={BRAND} /></View>
             <Text style={styles.sectionTitle}>Indicaciones</Text>
           </View>
           <View style={styles.formGroup}>
@@ -95,23 +98,23 @@ export default function NuevoControlScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerContainer: { 
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: commonColors.border,
     paddingBottom: 16,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 8 },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   headerTitleContainer: { flex: 1 },
-  headerTitle: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '700', color: '#0F172A' },
-  headerSubtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 13, color: '#64748B' },
+  headerTitle: { ...typography.h3, color: commonColors.text },
+  headerSubtitle: { ...typography.caption, color: commonColors.textSecondary },
   scrollContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
-  sectionCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16 },
+  sectionCard: { backgroundColor: commonColors.surface, borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: commonColors.border },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
-  sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FCE7F3', alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { ...typography.bodyMedium, color: commonColors.text },
   formGroup: { gap: 16 },
-  submitBtn: { backgroundColor: '#BE185D', borderRadius: 99, paddingVertical: 16, marginTop: 12 },
+  submitBtn: { backgroundColor: BRAND, borderRadius: 99, paddingVertical: 16, marginTop: 12 },
 });

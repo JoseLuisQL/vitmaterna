@@ -4,7 +4,6 @@ import {
   Alert, Linking, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
@@ -13,7 +12,9 @@ import {
   Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse, ArrowLeft,
 } from 'lucide-react-native';
 import api from '../../src/services/api';
+import { commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
+import { spacing, borderRadius } from '../../src/theme/spacing';
 
 const SIGNOS_EMBARAZO = [
   { icono: 'Frown', texto: 'Vómitos frecuentes e intensos' },
@@ -102,7 +103,7 @@ export default function AlarmScreen(): React.ReactElement {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.confirmContainer}>
           <View style={styles.confirmIconWrap}>
-            <CheckCircle size={48} color="#10B981" />
+            <CheckCircle size={48} color={semanticColors.success} />
           </View>
           <Text style={styles.confirmTitle}>Alerta enviada</Text>
           <Text style={styles.confirmSubtitle}>Tu obstetra ha sido notificada y se pondrá en contacto contigo a la brevedad.</Text>
@@ -111,7 +112,7 @@ export default function AlarmScreen(): React.ReactElement {
             <Text style={styles.confirmListLabel}>Síntomas reportados:</Text>
             {seleccionados.map((i) => (
               <View key={i} style={styles.confirmItem}>
-                <SignoIcon name={TODOS_LOS_SIGNOS[i].icono} color="#64748B" />
+                <SignoIcon name={TODOS_LOS_SIGNOS[i].icono} color={commonColors.textSecondary} />
                 <Text style={styles.confirmItemText}>{TODOS_LOS_SIGNOS[i].texto}</Text>
               </View>
             ))}
@@ -119,7 +120,7 @@ export default function AlarmScreen(): React.ReactElement {
 
           <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
             <View style={styles.emergencyIconWrap}>
-              <Phone size={24} color="#FFFFFF" />
+              <Phone size={24} color={commonColors.surface} />
             </View>
             <View style={styles.emergencyInfo}>
               <Text style={styles.emergencyLabel}>Si es urgente</Text>
@@ -141,22 +142,22 @@ export default function AlarmScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#EF4444', '#B91C1C']} style={styles.headerGradient}>
+      <View style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ArrowLeft size={24} color="#FFFFFF" />
+            <ArrowLeft size={24} color={commonColors.surface} />
           </TouchableOpacity>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <AlertTriangle size={32} color="#FFFFFF" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 }}>
+            <AlertTriangle size={32} color={commonColors.surface} />
             <Text style={styles.headerTitle}>Reportar Alarma</Text>
           </View>
           <Text style={styles.headerSubtitle}>Selecciona los síntomas que presentas</Text>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.groupTitle}>Durante el Embarazo</Text>
@@ -166,9 +167,9 @@ export default function AlarmScreen(): React.ReactElement {
             return (
               <TouchableOpacity key={i} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(i)} activeOpacity={0.7}>
                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <CheckCircle size={18} color="#FFFFFF" />}
+                  {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
                 </View>
-                <SignoIcon name={signo.icono} color={isSelected ? '#EF4444' : '#64748B'} />
+                <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
                 <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
               </TouchableOpacity>
             );
@@ -183,9 +184,9 @@ export default function AlarmScreen(): React.ReactElement {
             return (
               <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <CheckCircle size={18} color="#FFFFFF" />}
+                  {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
                 </View>
-                <SignoIcon name={signo.icono} color={isSelected ? '#EF4444' : '#64748B'} />
+                <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
                 <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
               </TouchableOpacity>
             );
@@ -200,9 +201,9 @@ export default function AlarmScreen(): React.ReactElement {
             return (
               <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <CheckCircle size={18} color="#FFFFFF" />}
+                  {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
                 </View>
-                <SignoIcon name={signo.icono} color={isSelected ? '#EF4444' : '#64748B'} />
+                <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
                 <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
               </TouchableOpacity>
             );
@@ -217,7 +218,7 @@ export default function AlarmScreen(): React.ReactElement {
           multiline
           numberOfLines={4}
           placeholder="Describa con más detalle cómo se siente..."
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={commonColors.textTertiary}
           textAlignVertical="top"
         />
 
@@ -228,13 +229,13 @@ export default function AlarmScreen(): React.ReactElement {
         )}
 
         <TouchableOpacity style={[styles.sendBtn, isPending && styles.sendBtnDisabled]} onPress={handleEnviar} disabled={isPending}>
-          <Send size={20} color="#FFFFFF" />
+          <Send size={20} color={commonColors.surface} />
           <Text style={styles.sendBtnText}>{isPending ? 'Enviando...' : 'Enviar alerta a mi obstetra'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
           <View style={styles.emergencyIconWrap}>
-            <Phone size={24} color="#FFFFFF" />
+            <Phone size={24} color={commonColors.surface} />
           </View>
           <View style={styles.emergencyInfo}>
             <Text style={styles.emergencyLabel}>Emergencia — Centro de Salud</Text>
@@ -247,40 +248,40 @@ export default function AlarmScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  headerGradient: { paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
-  safeAreaHeader: { paddingHorizontal: 24, paddingTop: 16 },
-  backBtn: { marginBottom: 12 },
-  headerTitle: { fontFamily: typography.h1.fontFamily, fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
-  headerSubtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, marginTop: -24 },
-  groupTitle: { fontFamily: typography.caption.fontFamily, fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 16, marginLeft: 16 },
-  signosCard: { backgroundColor: '#FFFFFF', borderRadius: 24, paddingVertical: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 4 },
-  signoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  signoRowSelected: { backgroundColor: '#FEF2F2' },
-  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
-  checkboxSelected: { backgroundColor: '#EF4444', borderColor: '#EF4444' },
-  signoText: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A' },
-  signoTextSelected: { color: '#B91C1C', fontWeight: '600' },
-  textArea: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 24, padding: 20, fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', minHeight: 120, marginTop: 8 },
-  countBox: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 16, marginTop: 24 },
-  countText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#B91C1C', fontWeight: '600', textAlign: 'center' },
-  sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#EF4444', borderRadius: 99, paddingVertical: 16, marginTop: 24, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  container: { flex: 1, backgroundColor: commonColors.background },
+  headerGradient: { paddingBottom: spacing.xl, borderBottomLeftRadius: borderRadius.xl, borderBottomRightRadius: borderRadius.xl, backgroundColor: semanticColors.danger },
+  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  backBtn: { marginBottom: spacing.sm + 4 },
+  headerTitle: { ...typography.h1, color: commonColors.surface },
+  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl, marginTop: -24 },
+  groupTitle: { ...typography.overline, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.md, marginLeft: spacing.md },
+  signosCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, paddingVertical: spacing.sm, borderWidth: 1, borderColor: commonColors.border },
+  signoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, paddingHorizontal: spacing.lg, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  signoRowSelected: { backgroundColor: semanticColors.dangerLight },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: commonColors.border, alignItems: 'center', justifyContent: 'center' },
+  checkboxSelected: { backgroundColor: semanticColors.danger, borderColor: semanticColors.danger },
+  signoText: { flex: 1, ...typography.bodySmall, fontSize: 15, color: commonColors.text },
+  signoTextSelected: { color: semanticColors.danger, fontWeight: '600' },
+  textArea: { backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.xl, padding: spacing.lg, ...typography.bodySmall, fontSize: 15, color: commonColors.text, minHeight: 120, marginTop: spacing.sm },
+  countBox: { backgroundColor: semanticColors.dangerLight, borderWidth: 1, borderColor: semanticColors.danger, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.lg },
+  countText: { ...typography.bodySmall, color: semanticColors.danger, fontWeight: '600', textAlign: 'center' },
+  sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm + 4, backgroundColor: semanticColors.danger, borderRadius: borderRadius.full, paddingVertical: spacing.md, marginTop: spacing.lg },
   sendBtnDisabled: { opacity: 0.7 },
-  sendBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  emergencyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A', borderRadius: 24, padding: 20, marginTop: 16, gap: 16 },
+  sendBtnText: { ...typography.button, color: commonColors.surface },
+  emergencyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.text, borderRadius: borderRadius.xl, padding: spacing.lg, marginTop: spacing.md, gap: spacing.md },
   emergencyIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   emergencyInfo: { flex: 1 },
-  emergencyLabel: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8' },
-  emergencyPhone: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginTop: 2 },
-  confirmContainer: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 20 },
-  confirmIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' },
-  confirmTitle: { fontFamily: typography.h1.fontFamily, fontSize: 28, fontWeight: '800', color: '#0F172A', textAlign: 'center' },
-  confirmSubtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: '#64748B', textAlign: 'center', lineHeight: 24 },
-  confirmList: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, width: '100%', gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 4 },
-  confirmListLabel: { fontFamily: typography.caption.fontFamily, fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 8 },
-  confirmItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  confirmItemText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', flex: 1 },
-  resetBtn: { marginTop: 16, padding: 12 },
-  resetBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B', textDecorationLine: 'underline' },
+  emergencyLabel: { ...typography.caption, color: commonColors.textTertiary },
+  emergencyPhone: { ...typography.h3, color: commonColors.surface, marginTop: 2 },
+  confirmContainer: { flex: 1, padding: spacing.lg, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+  confirmIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: semanticColors.successLight, alignItems: 'center', justifyContent: 'center' },
+  confirmTitle: { ...typography.h1, color: commonColors.text, textAlign: 'center' },
+  confirmSubtitle: { ...typography.body, color: commonColors.textSecondary, textAlign: 'center' },
+  confirmList: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, width: '100%', gap: spacing.sm + 4, borderWidth: 1, borderColor: commonColors.border },
+  confirmListLabel: { ...typography.overline, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', marginBottom: spacing.sm },
+  confirmItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
+  confirmItemText: { ...typography.bodySmall, fontSize: 15, color: commonColors.text, flex: 1 },
+  resetBtn: { marginTop: spacing.md, padding: spacing.sm + 4 },
+  resetBtnText: { ...typography.bodySmall, fontSize: 15, color: commonColors.textSecondary, textDecorationLine: 'underline' },
 });

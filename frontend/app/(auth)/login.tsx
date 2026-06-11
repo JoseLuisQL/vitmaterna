@@ -8,23 +8,21 @@ import {
   Platform,
   Pressable,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { CreditCard, Lock } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { useAuthStore } from '../../src/store/authStore';
 import { VitMaternaLogo } from '../../src/components/ui/VitMaternaLogo';
-import { gestanteColors, commonColors } from '../../src/theme/colors';
+import { obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing } from '../../src/theme/spacing';
 
-const { width } = Dimensions.get('window');
+const BRAND = obstetraColors.primary;
 
 const loginSchema = z.object({
   dni: z
@@ -84,8 +82,8 @@ export default function LoginScreen(): React.ReactElement {
                   <VitMaternaLogo size={160} color="pink" />
                 </View>
                 <Text style={styles.title}>
-                  <Text style={{ fontWeight: '800', color: '#BE185D' }}>Vit</Text>
-                  <Text style={{ fontWeight: '300', color: '#0F172A' }}>Materna</Text>
+                  <Text style={styles.titleBrand}>Vit</Text>
+                  <Text style={styles.titleRest}>Materna</Text>
                 </Text>
                 <Text style={styles.tagline}>Tu salud prenatal, siempre contigo</Text>
               </View>
@@ -103,7 +101,7 @@ export default function LoginScreen(): React.ReactElement {
                 keyboardType="number-pad"
                 maxLength={8}
                 error={errors.dni?.message}
-                themeColor="#BE185D"
+                themeColor={BRAND}
                 autoCapitalize="none"
               />
 
@@ -115,7 +113,7 @@ export default function LoginScreen(): React.ReactElement {
                 leftIcon={Lock}
                 secureTextEntry
                 error={errors.password?.message}
-                themeColor="#BE185D"
+                themeColor={BRAND}
                 autoCapitalize="none"
               />
 
@@ -129,7 +127,7 @@ export default function LoginScreen(): React.ReactElement {
                 loading={isLoading}
                 fullWidth
                 size="lg"
-                themeColor="#BE185D"
+                themeColor={BRAND}
                 style={{ marginTop: 8 }}
               />
             </View>
@@ -149,18 +147,18 @@ export default function LoginScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   safeArea: { flex: 1 },
   flex: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xl,
   },
   header: {
     alignItems: 'center',
@@ -169,48 +167,40 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }),
-    fontSize: 42,
-    letterSpacing: -0.5,
+    ...typography.display,
+    fontSize: 40,
     marginBottom: 4,
   },
+  titleBrand: { color: BRAND },
+  titleRest: { color: commonColors.text },
   tagline: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }),
-    fontSize: 15,
-    color: '#64748B',
-    letterSpacing: 0.5,
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
+    letterSpacing: 0.3,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 12,
-    marginBottom: 24,
+    backgroundColor: commonColors.surface,
+    borderRadius: 20,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
   },
   formTitle: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 24,
+    ...typography.h2,
+    color: commonColors.text,
+    marginBottom: spacing.lg,
     textAlign: 'center',
   },
   forgotButton: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
-    marginTop: -8,
+    marginBottom: spacing.lg,
+    marginTop: -spacing.sm,
   },
   forgotText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 14,
-    color: '#BE185D',
-    fontWeight: '700',
+    ...typography.bodySmall,
+    color: BRAND,
+    fontFamily: typography.label.fontFamily,
   },
   registerSection: {
     flexDirection: 'row',
@@ -218,14 +208,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   registerLink: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
-    color: '#BE185D',
-    fontWeight: '700',
+    ...typography.bodySmall,
+    color: BRAND,
+    fontFamily: typography.label.fontFamily,
   },
 });

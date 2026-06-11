@@ -3,7 +3,7 @@
  * Displays gestante profile menu and allows editing personal/clinical data (FUM, dates).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform, StatusBar, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity, X
@@ -11,7 +11,11 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient } from '../../../src/services/api-queries';
+import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
 
 interface MenuItemProps {
   icon: React.ReactElement;
@@ -26,7 +30,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
       {icon}
       <Text style={[styles.menuItemTitle, danger && styles.menuItemDanger]}>{title}</Text>
     </View>
-    <ChevronRight size={18} color="#94A3B8" />
+    <ChevronRight size={18} color={commonColors.textTertiary} />
   </Pressable>
 );
 
@@ -160,7 +164,7 @@ export default function PerfilScreen(): React.ReactElement {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isProfileLoading ? (
           <View style={styles.loadingCard}>
-            <ActivityIndicator size="small" color="#7C3AED" />
+            <ActivityIndicator size="small" color={BRAND} />
             <Text style={styles.loadingText}>Cargando datos de perfil...</Text>
           </View>
         ) : (
@@ -176,24 +180,24 @@ export default function PerfilScreen(): React.ReactElement {
 
         <Text style={styles.sectionTitle}>Cuenta</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<User size={20} color="#7C3AED" />} title="Datos Personales y FUM" onPress={openEditModal} />
+          <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Activity size={20} color="#7C3AED" />} title="Mi Progreso" onPress={() => router.push('/(gestante)/(tabs)/mi-progreso')} />
+          <MenuItem icon={<Activity size={20} color={BRAND} />} title="Mi Progreso" onPress={() => router.push('/(gestante)/(tabs)/mi-progreso')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color="#7C3AED" />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
+          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
         </View>
 
         <Text style={styles.sectionTitle}>Preferencias</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<Settings size={20} color="#7C3AED" />} title="Configuración" onPress={() => proximamente('Configuración')} />
+          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={() => proximamente('Configuración')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color="#7C3AED" />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
+          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color="#7C3AED" />} title="Ayuda y Soporte" onPress={mostrarAyuda} />
+          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={mostrarAyuda} />
         </View>
 
-        <View style={[styles.menuCard, { marginTop: 12 }]}>
-          <MenuItem icon={<LogOut size={20} color="#EF4444" />} title="Cerrar Sesión" danger onPress={handleLogout} />
+        <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>
+          <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
         </View>
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -210,7 +214,7 @@ export default function PerfilScreen(): React.ReactElement {
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalHeader}>Modificar Perfil y FUM</Text>
               <TouchableOpacity onPress={() => setIsEditModalVisible(false)} style={styles.closeBtn}>
-                <X size={24} color="#64748B" />
+                <X size={24} color={commonColors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -296,7 +300,7 @@ export default function PerfilScreen(): React.ReactElement {
                 disabled={isSaving}
               >
                 {isSaving ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={commonColors.surface} size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>Guardar Datos</Text>
                 )}
@@ -310,186 +314,169 @@ export default function PerfilScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.lg,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerTitle: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }),
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
+    ...typography.display,
+    color: commonColors.text,
   },
-  content: { paddingHorizontal: 20 },
+  content: { paddingHorizontal: spacing.lg },
   loadingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
     padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   loadingText: {
     marginTop: 10,
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: gestanteColors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
-  avatarText: { fontFamily: typography.h1.fontFamily, fontSize: 32, fontWeight: '800', color: '#7C3AED' },
-  profileName: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 4, textAlign: 'center' },
-  profileRole: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B' },
-  profileDni: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8', marginTop: 8 },
-  sectionTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: 16, marginBottom: 8 },
+  avatarText: { ...typography.display, color: BRAND },
+  profileName: { ...typography.h3, color: commonColors.text, marginBottom: 4, textAlign: 'center' },
+  profileRole: { ...typography.bodySmall, color: commonColors.textSecondary },
+  profileDni: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.sm },
+  sectionTitle: { ...typography.label, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: spacing.md, marginBottom: spacing.sm },
   menuCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
     overflow: 'hidden',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
-  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20 },
-  menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  menuItemTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '600', color: '#0F172A' },
-  menuItemDanger: { color: '#EF4444' },
-  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginLeft: 56 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg },
+  menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  menuItemTitle: { ...typography.bodyMedium, color: commonColors.text },
+  menuItemDanger: { color: semanticColors.danger },
+  menuDivider: { height: 1, backgroundColor: commonColors.border, marginLeft: 56 },
 
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: commonColors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.lg,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
     width: '100%',
     maxHeight: '85%',
-    padding: 24,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    padding: spacing.lg,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   modalHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 16,
+    borderBottomColor: commonColors.border,
+    paddingBottom: spacing.md,
   },
   modalHeader: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inputFieldGroup: {
     gap: 6,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   inputLabel: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '600',
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   textInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderColor: commonColors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    ...typography.bodySmall,
     fontSize: 15,
-    color: '#0F172A',
+    color: commonColors.text,
   },
   hintText: {
-    fontSize: 12,
-    color: '#64748B',
+    ...typography.overline,
+    fontWeight: typography.caption.fontWeight,
+    letterSpacing: 0,
+    color: commonColors.textSecondary,
     lineHeight: 18,
     marginTop: 2,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 16,
+    gap: spacing.sm + 4,
+    marginTop: spacing.md,
   },
   cancelBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
+    ...typography.label,
+    color: commonColors.textSecondary,
   },
   saveBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#BE185D', // Pink matching gestante branding
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: borderRadius.md,
+    backgroundColor: BRAND,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 120,
   },
   saveBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
+    ...typography.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: commonColors.surface,
   },
 });

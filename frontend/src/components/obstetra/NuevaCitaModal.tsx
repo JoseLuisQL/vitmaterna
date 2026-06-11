@@ -4,9 +4,13 @@ import {
   Platform, Alert, FlatList, TextInput, ScrollView, Dimensions 
 } from 'react-native';
 import { Calendar, Clock, User as UserIcon, X, Search, Check, FileText } from 'lucide-react-native';
+import { commonColors, obstetraColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { shadows } from '../../theme/shadows';
 import { usePatients, useCreateAppointment } from '../../services/api-queries';
 import { AppButton } from '../ui/AppButton';
+
+const BRAND = obstetraColors.primary;
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -106,7 +110,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
               {step === 'form' ? 'Programar Cita' : 'Seleccionar Paciente'}
             </Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-              <X size={20} color="#64748B" />
+              <X size={20} color={commonColors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -115,8 +119,8 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
               
               <Text style={styles.label}>Gestante</Text>
               <TouchableOpacity style={styles.selector} onPress={() => setStep('patients')}>
-                <View style={styles.iconBox}><UserIcon size={20} color="#BE185D" /></View>
-                <Text style={[styles.selectorText, !gestanteId && { color: '#94A3B8' }]}>
+                <View style={styles.iconBox}><UserIcon size={20} color={BRAND} /></View>
+                <Text style={[styles.selectorText, !gestanteId && { color: commonColors.textTertiary }]}>
                   {gestanteId ? gestanteName : 'Tocar para seleccionar paciente...'}
                 </Text>
               </TouchableOpacity>
@@ -138,26 +142,26 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={styles.label}>Fecha (YYYY-MM-DD)</Text>
                   <View style={styles.inputBox}>
-                    <Calendar size={18} color="#64748B" />
+                    <Calendar size={18} color={commonColors.textSecondary} />
                     <TextInput 
                       style={styles.inputTextNative} 
                       value={dateStr} 
                       onChangeText={handleDateChange} 
                       placeholder="2026-06-08"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={commonColors.textTertiary}
                     />
                   </View>
                 </View>
                 <View style={{ flex: 1, marginLeft: 8 }}>
                   <Text style={styles.label}>Hora (HH:MM)</Text>
                   <View style={styles.inputBox}>
-                    <Clock size={18} color="#64748B" />
+                    <Clock size={18} color={commonColors.textSecondary} />
                     <TextInput 
                       style={styles.inputTextNative} 
                       value={timeStr} 
                       onChangeText={handleTimeChange}
                       placeholder="14:30"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={commonColors.textTertiary}
                     />
                   </View>
                 </View>
@@ -165,13 +169,13 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
 
               <Text style={styles.label}>Descripción / Consultorio</Text>
               <View style={[styles.inputBox, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
-                 <FileText size={18} color="#64748B" style={{ marginTop: 2 }} />
+                 <FileText size={18} color={commonColors.textSecondary} style={{ marginTop: 2 }} />
                  <TextInput 
                    style={[styles.inputTextNative, { textAlignVertical: 'top' }]} 
                    value={observaciones} 
                    onChangeText={setObservaciones}
                    placeholder="Ej: Traer resultados / Consultorio 103"
-                   placeholderTextColor="#94A3B8"
+                   placeholderTextColor={commonColors.textTertiary}
                    multiline
                  />
               </View>
@@ -189,11 +193,11 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
           ) : (
             <View style={{ flex: 1, padding: 20 }}>
               <View style={styles.searchBox}>
-                <Search size={18} color="#94A3B8" />
+                <Search size={18} color={commonColors.textTertiary} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Buscar por nombre o DNI..."
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={commonColors.textTertiary}
                   value={search}
                   onChangeText={setSearch}
                   autoFocus
@@ -216,7 +220,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
                       <Text style={styles.patientName}>{item.firstName} {item.lastName}</Text>
                       <Text style={styles.patientDoc}>DNI: {item.documentNumber}</Text>
                     </View>
-                    {gestanteId === item.id && <Check size={20} color="#BE185D" />}
+                    {gestanteId === item.id && <Check size={20} color={BRAND} />}
                   </TouchableOpacity>
                 )}
                 ListEmptyComponent={
@@ -233,23 +237,19 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15, 23, 42, 0.6)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: commonColors.overlay },
   bottomSheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     maxHeight: SCREEN_HEIGHT * 0.9,
     minHeight: SCREEN_HEIGHT * 0.6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 24,
+    ...shadows.lg,
   },
   dragPill: {
     width: 48,
     height: 4,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: commonColors.border,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
@@ -262,64 +262,64 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: commonColors.borderLight,
   },
-  title: { fontFamily: typography.h3.fontFamily, fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  closeBtn: { padding: 4, backgroundColor: '#F8FAFC', borderRadius: 20 },
+  title: { ...typography.h3, color: commonColors.text },
+  closeBtn: { padding: 4, backgroundColor: commonColors.surfaceAlt, borderRadius: 20 },
   content: { padding: 24 },
-  label: { fontFamily: typography.caption.fontFamily, fontSize: 13, fontWeight: '600', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
+  label: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
   
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
   },
-  iconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FCE7F3', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  selectorText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '600', color: '#0F172A', flex: 1 },
+  iconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  selectorText: { ...typography.bodyMedium, color: commonColors.text, flex: 1 },
 
   motivoScroll: { flexDirection: 'row', marginBottom: 8 },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     marginRight: 8,
   },
   chipActive: {
-    backgroundColor: '#FCE7F3',
-    borderColor: '#FBCFE8',
+    backgroundColor: obstetraColors.primaryLight,
+    borderColor: BRAND,
   },
-  chipText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#64748B', fontWeight: '500' },
-  chipTextActive: { color: '#BE185D', fontWeight: '700' },
+  chipText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '500' },
+  chipTextActive: { color: BRAND, fontWeight: '700' },
 
   row: { flexDirection: 'row' },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     borderRadius: 16,
     paddingHorizontal: 16,
     height: 52,
     gap: 8,
   },
-  inputText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', fontWeight: '500' },
-  inputTextNative: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', fontWeight: '500' },
+  inputText: { ...typography.bodyMedium, color: commonColors.text },
+  inputTextNative: { flex: 1, ...typography.bodyMedium, fontSize: 15, color: commonColors.text },
 
   // Patients Step
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, paddingHorizontal: 16, height: 48, marginBottom: 16 },
-  searchInput: { flex: 1, marginLeft: 8, fontFamily: typography.body.fontFamily, fontSize: 15, color: '#0F172A' },
-  patientItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#64748B' },
-  patientName: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '600', color: '#0F172A' },
-  patientDoc: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8' },
-  emptyText: { textAlign: 'center', marginTop: 40, fontFamily: typography.bodyMedium.fontFamily, color: '#94A3B8' },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: 16, paddingHorizontal: 16, height: 48, marginBottom: 16 },
+  searchInput: { flex: 1, marginLeft: 8, ...typography.body, fontSize: 15, color: commonColors.text },
+  patientItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  avatarText: { ...typography.bodyMedium, color: commonColors.textSecondary },
+  patientName: { ...typography.bodyMedium, color: commonColors.text },
+  patientDoc: { ...typography.caption, color: commonColors.textTertiary },
+  emptyText: { textAlign: 'center', marginTop: 40, ...typography.bodyMedium, color: commonColors.textTertiary },
 });

@@ -1,7 +1,7 @@
 /**
  * VITMATERNA - Gestante Tabs Layout
  * Bottom tab navigator with 5 tabs using Lucide icons.
- * Active color: Violet (#7C3AED)
+ * Active color: gestanteColors.primary (teal)
  */
 import React from 'react';
 import { StyleSheet, Platform } from 'react-native';
@@ -103,9 +103,10 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   tabLabel: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 0.1,
   },
   tabItem: {
     paddingVertical: 4,

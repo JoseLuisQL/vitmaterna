@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, FlatList, RefreshControl,
-  TouchableOpacity, Alert, Platform, StatusBar
+  TouchableOpacity, Alert, StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Pill, CheckCircle, Clock, Info } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
+import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
 
 const INDICACIONES: Record<string, string> = {
   Sulfato: 'Tomar con jugo de naranja para mejor absorción. No tomar con leche o té.',
@@ -24,7 +27,7 @@ function getIndicacion(nombre: string): string {
 }
 
 function AdherenciaBar({ pct }: { pct: number }) {
-  const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+  const color = pct >= 80 ? semanticColors.success : pct >= 50 ? semanticColors.warning : semanticColors.danger;
   return (
     <View>
       <View style={adhStyles.track}>
@@ -36,9 +39,9 @@ function AdherenciaBar({ pct }: { pct: number }) {
 }
 
 const adhStyles = StyleSheet.create({
-  track: { height: 12, backgroundColor: '#F1F5F9', borderRadius: 99, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 99 },
-  pctLabel: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, fontWeight: '700', marginTop: 8 },
+  track: { height: 12, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.full, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: borderRadius.full },
+  pctLabel: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', marginTop: spacing.sm },
 });
 
 function CalendarioConsumo({ diasTomados, diasOmitidos }: { diasTomados: string[]; diasOmitidos?: string[] }) {
@@ -71,15 +74,15 @@ function CalendarioConsumo({ diasTomados, diasOmitidos }: { diasTomados: string[
       </View>
       <View style={calStyles.legend}>
         <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: '#10B981' }]} />
+          <View style={[calStyles.legendDot, { backgroundColor: semanticColors.success }]} />
           <Text style={calStyles.legendText}>Tomado</Text>
         </View>
         <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: '#FEE2E2' }]} />
+          <View style={[calStyles.legendDot, { backgroundColor: semanticColors.dangerLight }]} />
           <Text style={calStyles.legendText}>Omitido</Text>
         </View>
         <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: '#F1F5F9' }]} />
+          <View style={[calStyles.legendDot, { backgroundColor: commonColors.surfaceAlt }]} />
           <Text style={calStyles.legendText}>Sin dato</Text>
         </View>
       </View>
@@ -88,18 +91,18 @@ function CalendarioConsumo({ diasTomados, diasOmitidos }: { diasTomados: string[
 }
 
 const calStyles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm + 4 },
   day: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  dayTaken: { backgroundColor: '#10B981' },
-  dayMissed: { backgroundColor: '#FEE2E2' },
-  dayEmpty: { backgroundColor: '#F1F5F9' },
-  dayText: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, fontWeight: '600' },
-  dayTextTaken: { color: '#FFFFFF' },
-  dayTextOther: { color: '#64748B' },
-  legend: { flexDirection: 'row', gap: 16, marginTop: 16 },
+  dayTaken: { backgroundColor: semanticColors.success },
+  dayMissed: { backgroundColor: semanticColors.dangerLight },
+  dayEmpty: { backgroundColor: commonColors.surfaceAlt },
+  dayText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '600' },
+  dayTextTaken: { color: commonColors.surface },
+  dayTextOther: { color: commonColors.textSecondary },
+  legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 12, height: 12, borderRadius: 6 },
-  legendText: { fontFamily: typography.caption.fontFamily, fontSize: 12, color: '#64748B' },
+  legendText: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary },
 });
 
 export default function TratamientoScreen(): React.ReactElement {
@@ -134,7 +137,7 @@ export default function TratamientoScreen(): React.ReactElement {
       <View style={styles.contentWrapper}>
         {semanaGestacional && (
           <View style={styles.infoBanner}>
-            <Info size={20} color="#2563EB" />
+            <Info size={20} color={semanticColors.info} />
             <Text style={styles.infoBannerText}>
               {semanaGestacional < 14
                 ? 'Está tomando Ácido Fólico para proteger el sistema nervioso del bebé.'
@@ -164,14 +167,14 @@ export default function TratamientoScreen(): React.ReactElement {
       <View style={styles.card}>
         <View style={styles.cardTop}>
           <View style={styles.pillIcon}>
-            <Pill size={24} color="#7C3AED" />
+            <Pill size={24} color={BRAND} />
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.medName}>{nombre}</Text>
             <Text style={styles.medDosis}>{dosis} · {frecuencia}</Text>
             {hora ? (
               <View style={styles.horaRow}>
-                <Clock size={14} color="#64748B" />
+                <Clock size={14} color={commonColors.textSecondary} />
                 <Text style={styles.horaText}>{hora}</Text>
               </View>
             ) : null}
@@ -181,7 +184,7 @@ export default function TratamientoScreen(): React.ReactElement {
             onPress={() => handleRegistrar(id, nombre)}
             disabled={yaRegistrado || isLogging}
           >
-            <CheckCircle size={18} color={yaRegistrado ? '#10B981' : '#FFFFFF'} />
+            <CheckCircle size={18} color={yaRegistrado ? semanticColors.success : commonColors.surface} />
             <Text style={[styles.registerBtnText, yaRegistrado && styles.registerBtnTextDone]}>
               {yaRegistrado ? 'Registrado' : 'Tomé hoy'}
             </Text>
@@ -201,7 +204,7 @@ export default function TratamientoScreen(): React.ReactElement {
         </View>
 
         <View style={styles.indicacionRow}>
-          <Info size={16} color="#64748B" />
+          <Info size={16} color={commonColors.textSecondary} />
           <Text style={styles.indicacionText}>{getIndicacion(nombre)}</Text>
         </View>
       </View>
@@ -214,7 +217,7 @@ export default function TratamientoScreen(): React.ReactElement {
         icon={Pill}
         title="Sin tratamiento activo"
         description="Tu plan de tratamiento aparecerá aquí una vez prescrito por tu obstetra."
-        themeColor="#7C3AED"
+        themeColor={BRAND}
       />
     </View>
   );
@@ -229,155 +232,134 @@ export default function TratamientoScreen(): React.ReactElement {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#7C3AED" />}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={BRAND} />}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.lg,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerTitle: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }),
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.display,
+    color: commonColors.text,
     marginBottom: 4,
-    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }),
-    fontSize: 16,
-    color: '#64748B',
+    ...typography.body,
+    color: commonColors.textSecondary,
   },
   contentWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 4,
+    gap: spacing.md,
+    backgroundColor: semanticColors.infoLight,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
   },
   infoBannerText: {
     flex: 1,
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#1E3A8A',
-    lineHeight: 20,
+    ...typography.bodySmall,
+    color: semanticColors.info,
   },
   listContent: {
-    paddingBottom: 40,
+    paddingBottom: spacing.xl,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 8,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   pillIcon: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: gestanteColors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardInfo: { flex: 1 },
   medName: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
     marginBottom: 4,
   },
   medDosis: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   horaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   horaText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 13,
-    color: '#64748B',
+    ...typography.caption,
+    color: commonColors.textSecondary,
   },
   registerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#7C3AED',
-    borderRadius: 99,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    backgroundColor: BRAND,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
   },
-  registerBtnDone: { backgroundColor: '#DCFCE7' },
+  registerBtnDone: { backgroundColor: semanticColors.successLight },
   registerBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: commonColors.surface,
   },
-  registerBtnTextDone: { color: '#10B981' },
+  registerBtnTextDone: { color: semanticColors.success },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 20,
+    backgroundColor: commonColors.border,
+    marginVertical: spacing.lg,
   },
-  adherenciaWrap: { marginBottom: 20 },
+  adherenciaWrap: { marginBottom: spacing.lg },
   adherenciaDays: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 13,
-    color: '#64748B',
+    ...typography.caption,
+    color: commonColors.textSecondary,
     marginTop: 4,
   },
-  calendarioSection: { marginBottom: 20 },
+  calendarioSection: { marginBottom: spacing.lg },
   calendarioTitle: {
+    ...typography.bodyMedium,
     fontFamily: typography.h3.fontFamily,
-    fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: commonColors.text,
     marginBottom: 4,
   },
   indicacionRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
+    gap: spacing.sm + 4,
+    backgroundColor: commonColors.background,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
   },
   indicacionText: {
     flex: 1,
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 20,
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   emptyContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
   },
 });

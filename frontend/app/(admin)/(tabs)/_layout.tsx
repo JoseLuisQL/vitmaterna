@@ -11,16 +11,18 @@ import {
   Settings,
   ShieldAlert,
 } from 'lucide-react-native';
-import { commonColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
+
+const BRAND = obstetraColors.primary;
 
 export default function AdminTabsLayout(): React.ReactElement {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: semanticColors.info,
+        tabBarActiveTintColor: BRAND,
         tabBarInactiveTintColor: commonColors.textSecondary,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: styles.tabBar,
@@ -78,9 +80,8 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   tabLabel: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 11,
-    fontWeight: '600',
+    ...typography.overline,
+    letterSpacing: 0.1,
   },
   tabItem: {
     paddingVertical: 4,

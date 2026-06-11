@@ -54,10 +54,10 @@ const VARIANT_STYLES: Record<
 > = {
   primary: {
     bg: gestanteColors.primary,
-    text: '#FFFFFF',
+    text: commonColors.white,
     border: 'transparent',
     bgPressed: gestanteColors.primaryDark,
-    loadingColor: '#FFFFFF',
+    loadingColor: commonColors.white,
   },
   secondary: {
     bg: gestanteColors.primaryLight,
@@ -75,10 +75,10 @@ const VARIANT_STYLES: Record<
   },
   danger: {
     bg: semanticColors.danger,
-    text: '#FFFFFF',
+    text: commonColors.white,
     border: 'transparent',
-    bgPressed: '#B91C1C',
-    loadingColor: '#FFFFFF',
+    bgPressed: semanticColors.danger,
+    loadingColor: commonColors.white,
   },
   ghost: {
     bg: 'transparent',

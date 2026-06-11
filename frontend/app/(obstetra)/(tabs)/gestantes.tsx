@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Baby, Search, ChevronRight, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { usePatients } from '../../../src/services/api-queries';
+import { commonColors, obstetraColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { shadows } from '../../../src/theme/shadows';
+
+const BRAND = obstetraColors.primary;
 
 export default function GestantesScreen(): React.ReactElement {
   const [search, setSearch] = useState('');
@@ -55,13 +58,13 @@ export default function GestantesScreen(): React.ReactElement {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
-          <Search size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+          <Search size={20} color={commonColors.textTertiary} style={{ marginRight: 12 }} />
           <TextInput
             placeholder="Buscar por nombre o DNI..."
             value={search}
             onChangeText={setSearch}
             style={styles.searchInput}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={commonColors.textTertiary}
           />
         </View>
       </View>
@@ -79,7 +82,7 @@ export default function GestantesScreen(): React.ReactElement {
             style={[styles.tabButton, filterMode === 'bajo' && styles.tabButtonActive]}
             onPress={() => setFilterMode('bajo')}
           >
-            <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
+            <View style={[styles.dot, { backgroundColor: riskColors.riskGreen }]} />
             <Text style={[styles.tabText, filterMode === 'bajo' && styles.tabTextActive]}>Sin riesgo</Text>
           </TouchableOpacity>
 
@@ -87,7 +90,7 @@ export default function GestantesScreen(): React.ReactElement {
             style={[styles.tabButton, filterMode === 'medio' && styles.tabButtonActive]}
             onPress={() => setFilterMode('medio')}
           >
-            <View style={[styles.dot, { backgroundColor: '#F59E0B' }]} />
+            <View style={[styles.dot, { backgroundColor: riskColors.riskYellow }]} />
             <Text style={[styles.tabText, filterMode === 'medio' && styles.tabTextActive]}>Moderado</Text>
           </TouchableOpacity>
 
@@ -95,7 +98,7 @@ export default function GestantesScreen(): React.ReactElement {
             style={[styles.tabButton, filterMode === 'alto' && styles.tabButtonActive]}
             onPress={() => setFilterMode('alto')}
           >
-            <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
+            <View style={[styles.dot, { backgroundColor: riskColors.riskRed }]} />
             <Text style={[styles.tabText, filterMode === 'alto' && styles.tabTextActive]}>Alto</Text>
           </TouchableOpacity>
         </View>
@@ -130,7 +133,7 @@ export default function GestantesScreen(): React.ReactElement {
               <View style={[styles.riskBadge,
               item.riskLevel === 'Alto' ? styles.riskBadgeHigh :
                 item.riskLevel === 'Medio' ? styles.riskBadgeMedium : styles.riskBadgeLow]}>
-                <View style={[styles.dotSm, { backgroundColor: item.riskLevel === 'Alto' ? '#EF4444' : item.riskLevel === 'Medio' ? '#F59E0B' : '#10B981' }]} />
+                <View style={[styles.dotSm, { backgroundColor: item.riskLevel === 'Alto' ? riskColors.riskRed : item.riskLevel === 'Medio' ? riskColors.riskYellow : riskColors.riskGreen }]} />
                 <Text style={[styles.riskBadgeText,
                 item.riskLevel === 'Alto' ? styles.riskBadgeTextHigh :
                   item.riskLevel === 'Medio' ? styles.riskBadgeTextMedium : styles.riskBadgeTextLow]}>
@@ -149,13 +152,10 @@ export default function GestantesScreen(): React.ReactElement {
               <Text style={styles.fppText}>FPP: {new Date(item.estimatedDueDate).toISOString().split('T')[0]}</Text>
             )}
           </View>
-          <ChevronRight size={20} color="#94A3B8" />
+          <ChevronRight size={20} color={commonColors.textTertiary} />
         </View>
         <View style={styles.riskBarContainer}>
-          <LinearGradient
-            colors={['#10B981', '#F59E0B', '#EF4444']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <View
             style={[styles.riskBar, { width: `${Math.min(((item.currentWeek || 0) / 40) * 100, 100)}%` }]}
           />
         </View>
@@ -172,7 +172,7 @@ export default function GestantesScreen(): React.ReactElement {
           icon={Baby as any}
           title="Sin resultados"
           description={search ? "No se encontraron pacientes con esa búsqueda." : "Aún no tienes pacientes asignadas a tu cargo."}
-          themeColor="#BE185D"
+          themeColor={BRAND}
         />
       )}
     </View>
@@ -188,18 +188,18 @@ export default function GestantesScreen(): React.ReactElement {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#BE185D" />}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={BRAND} />}
       />
 
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)}>
-        <Plus size={28} color="#FFFFFF" />
+        <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: 24,
   },
@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  headerTitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), fontSize: 32, fontWeight: '800', color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 },
-  headerSubtitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), fontSize: 16, color: '#64748B' },
+  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
   searchContainer: {
     paddingHorizontal: 20,
     marginBottom: 8,
@@ -216,17 +216,14 @@ const styles = StyleSheet.create({
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     paddingHorizontal: 20,
     height: 56,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
-  searchInput: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: '#0F172A' },
+  searchInput: { flex: 1, ...typography.bodyMedium, color: commonColors.text },
   filtersScrollWrapper: {
     paddingHorizontal: 20,
     marginTop: 8,
@@ -241,22 +238,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
   },
   tabButtonActive: {
-    backgroundColor: '#1E293B',
-    borderColor: '#1E293B',
+    backgroundColor: BRAND,
+    borderColor: BRAND,
   },
   tabText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '600',
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFFFFF',
+    color: obstetraColors.onPrimary,
   },
   dot: {
     width: 6,
@@ -265,27 +262,21 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   resultsCount: {
-    color: '#64748B',
-    fontFamily: typography.body.fontFamily,
-    fontSize: 13,
+    color: commonColors.textSecondary,
+    ...typography.caption,
     marginHorizontal: 20,
     marginTop: 16,
     marginBottom: -8,
   },
   listContent: { paddingBottom: 100 },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 16,
     paddingTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
     overflow: 'hidden',
   },
   cardContent: { flexDirection: 'row', alignItems: 'flex-start', paddingBottom: 12, paddingHorizontal: 16 },
@@ -293,15 +284,15 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FDF2F8',
+    backgroundColor: obstetraColors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
   },
-  avatarText: { fontFamily: typography.h3.fontFamily, fontSize: 16, fontWeight: '800', color: '#BE185D' },
+  avatarText: { ...typography.h3, color: BRAND },
   info: { flex: 1, marginRight: 12 },
-  name: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A', marginBottom: 2 },
-  details: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#64748B', marginBottom: 8 },
+  name: { ...typography.bodyMedium, color: commonColors.text, marginBottom: 2 },
+  details: { ...typography.caption, color: commonColors.textSecondary, marginBottom: 8 },
   cardBadges: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
   riskBadge: {
     flexDirection: 'row',
@@ -310,41 +301,41 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 4,
   },
-  riskBadgeLow: { backgroundColor: '#ECFDF5' },
-  riskBadgeMedium: { backgroundColor: '#FEF3C7' },
-  riskBadgeHigh: { backgroundColor: '#FEF2F2' },
+  riskBadgeLow: { backgroundColor: riskColors.riskGreenLight },
+  riskBadgeMedium: { backgroundColor: riskColors.riskYellowLight },
+  riskBadgeHigh: { backgroundColor: riskColors.riskRedLight },
   dotSm: { width: 4, height: 4, borderRadius: 2, marginRight: 4 },
-  riskBadgeText: { fontFamily: typography.caption.fontFamily, fontSize: 12, fontWeight: '600' },
-  riskBadgeTextLow: { color: '#047857' },
-  riskBadgeTextMedium: { color: '#B45309' },
-  riskBadgeTextHigh: { color: '#B91C1C' },
+  riskBadgeText: { ...typography.overline, letterSpacing: 0.1 },
+  riskBadgeTextLow: { color: riskColors.riskGreen },
+  riskBadgeTextMedium: { color: riskColors.riskYellow },
+  riskBadgeTextHigh: { color: riskColors.riskRed },
   gestationalBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: commonColors.surfaceAlt,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   gestationalBadgeText: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '600'
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
   },
   fppText: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 12,
-    color: '#64748B',
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
   },
   riskBarContainer: {
     height: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: commonColors.surfaceAlt,
     width: '100%',
     overflow: 'hidden',
   },
   riskBar: {
     height: '100%',
+    backgroundColor: BRAND,
   },
-  loadingText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#94A3B8', textAlign: 'center' },
+  loadingText: { ...typography.bodyMedium, color: commonColors.textTertiary, textAlign: 'center' },
   fab: {
     position: 'absolute',
     bottom: 32,
@@ -352,13 +343,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#BE185D',
+    backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#BE185D',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    ...shadows.md,
   },
 });

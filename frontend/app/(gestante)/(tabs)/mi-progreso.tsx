@@ -1,12 +1,27 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { ProgressChart, LineChart } from 'react-native-chart-kit';
+import { gestanteColors, commonColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
+
+/** Convierte un color hex (#RRGGBB) a una función rgba para react-native-chart-kit. */
+const hexToRgba = (hex: string) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (opacity = 1) => `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
+const brandColor = hexToRgba(gestanteColors.primary);
+const textColor = hexToRgba(commonColors.text);
+const textSecondaryColor = hexToRgba(commonColors.textSecondary);
 
 interface AdherenceReport {
   adherencePercentage: number;
@@ -45,7 +60,7 @@ export default function MiProgresoScreen() {
     datasets: [
       {
         data: history.slice(-7).map(h => h.taken > 0 ? (h.taken / h.total) * 100 : 0),
-        color: (opacity = 1) => `rgba(124, 58, 237, ${opacity})`,
+        color: brandColor,
         strokeWidth: 3
       }
     ],
@@ -64,7 +79,7 @@ export default function MiProgresoScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#7C3AED" />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
       >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Adherencia General</Text>
@@ -76,11 +91,11 @@ export default function MiProgresoScreen() {
               strokeWidth={20}
               radius={80}
               chartConfig={{
-                backgroundColor: '#ffffff',
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
-                color: (opacity = 1) => `rgba(124, 58, 237, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(15, 23, 42, ${opacity})`,
+                backgroundColor: commonColors.surface,
+                backgroundGradientFrom: commonColors.surface,
+                backgroundGradientTo: commonColors.surface,
+                color: brandColor,
+                labelColor: textColor,
                 propsForLabels: {
                   fontFamily: typography.bodyMedium.fontFamily,
                   fontSize: 14,
@@ -107,17 +122,17 @@ export default function MiProgresoScreen() {
                 withInnerLines={false}
                 withOuterLines={true}
                 chartConfig={{
-                  backgroundColor: '#ffffff',
-                  backgroundGradientFrom: '#ffffff',
-                  backgroundGradientTo: '#ffffff',
+                  backgroundColor: commonColors.surface,
+                  backgroundGradientFrom: commonColors.surface,
+                  backgroundGradientTo: commonColors.surface,
                   decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(124, 58, 237, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                  color: brandColor,
+                  labelColor: textSecondaryColor,
                   propsForLabels: { fontFamily: typography.caption.fontFamily },
-                  propsForDots: { r: '5', strokeWidth: '2', stroke: '#7C3AED', fill: '#FFFFFF' }
+                  propsForDots: { r: '5', strokeWidth: '2', stroke: gestanteColors.primary, fill: commonColors.surface }
                 }}
                 bezier
-                style={{ marginVertical: 8, borderRadius: 16 }}
+                style={{ marginVertical: spacing.sm, borderRadius: borderRadius.lg }}
               />
             </View>
           </View>
@@ -128,43 +143,35 @@ export default function MiProgresoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerGradient: {
-    paddingBottom: 40,
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 16,
-    elevation: 4,
+    paddingBottom: spacing.xl,
+    backgroundColor: commonColors.surface,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+    borderBottomWidth: 1,
+    borderColor: commonColors.border,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerTitle: {
-    fontFamily: typography.h1.fontFamily,
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h1,
+    color: commonColors.text,
   },
-  content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, marginTop: -32 },
+  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xl, marginTop: -32 },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 8,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
-  cardTitle: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 24, textAlign: 'center' },
+  cardTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.lg, textAlign: 'center' },
   chartContainer: { alignItems: 'center' },
-  summaryBox: { backgroundColor: '#F5F3FF', borderRadius: 20, padding: 16, alignItems: 'center', marginTop: 16 },
-  summaryValue: { fontFamily: typography.h1.fontFamily, fontSize: 32, fontWeight: '800', color: '#7C3AED' },
-  summaryLabel: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#64748B', marginTop: 4 },
+  summaryBox: { backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.md, alignItems: 'center', marginTop: spacing.md },
+  summaryValue: { ...typography.display, color: BRAND },
+  summaryLabel: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 4 },
 });

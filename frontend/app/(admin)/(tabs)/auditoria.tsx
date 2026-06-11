@@ -12,10 +12,12 @@ import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { commonColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
+
+const BRAND = obstetraColors.primary;
 
 export default function AuditoriaScreen(): React.ReactElement {
   const { data: logs, isLoading, refetch } = useAuditLogs();
@@ -104,7 +106,7 @@ export default function AuditoriaScreen(): React.ReactElement {
             <RefreshControl
               refreshing={isLoading}
               onRefresh={refetch}
-              colors={[semanticColors.info]}
+              colors={[BRAND]}
             />
           }
         />
@@ -123,14 +125,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   title: {
-    fontFamily: typography.h1.fontFamily,
-    fontSize: typography.h1.fontSize,
-    fontWeight: typography.h1.fontWeight,
+    ...typography.h1,
     color: commonColors.text,
     marginBottom: spacing.md,
   },
   exportBtn: {
-    borderColor: semanticColors.info,
+    borderColor: BRAND,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
@@ -156,20 +156,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   action: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: typography.bodyMedium.fontSize,
-    fontWeight: '600',
+    ...typography.bodyMedium,
     color: commonColors.text,
   },
   details: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: typography.caption.fontSize,
+    ...typography.caption,
     color: commonColors.textSecondary,
     marginTop: 2,
   },
   date: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 10,
+    ...typography.overline,
+    letterSpacing: 0,
     color: commonColors.textTertiary,
     marginTop: 4,
   },

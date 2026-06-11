@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { commonColors, semanticColors } from '../../theme/colors';
+import { commonColors, gestanteColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 
@@ -23,16 +23,16 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   // Appointment statuses (English and Spanish)
   scheduled: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'Programada' },
   programada: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'Programada' },
-  confirmed: { bg: '#F5F3FF', text: '#7C3AED', label: 'Confirmada' },
-  confirmada: { bg: '#F5F3FF', text: '#7C3AED', label: 'Confirmada' },
-  completed: { bg: '#D1FAE5', text: '#047857', label: 'Completada' },
-  asistida: { bg: '#D1FAE5', text: '#047857', label: 'Asistida' },
-  no_asistida: { bg: '#FEE2E2', text: '#DC2626', label: 'No Asistida' },
-  reprogramada: { bg: '#FEF3C7', text: '#D97706', label: 'Reprogramada' },
+  confirmed: { bg: gestanteColors.primaryLight, text: gestanteColors.primary, label: 'Confirmada' },
+  confirmada: { bg: gestanteColors.primaryLight, text: gestanteColors.primary, label: 'Confirmada' },
+  completed: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Completada' },
+  asistida: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Asistida' },
+  no_asistida: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'No Asistida' },
+  reprogramada: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Reprogramada' },
   cancelled: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
   cancelada: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
   pending: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Pendiente' },
-  in_progress: { bg: '#DBEAFE', text: '#1D4ED8', label: 'En Progreso' },
+  in_progress: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'En Progreso' },
 
   // Treatment statuses
   active: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Activo' },
@@ -40,7 +40,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   finished: { bg: commonColors.borderLight, text: commonColors.textSecondary, label: 'Finalizado' },
 
   // Risk levels
-  bajo: { bg: '#D1FAE5', text: '#047857', label: 'Bajo' },
+  bajo: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Bajo' },
   medio: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Medio' },
   alto: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Alto' },
 };

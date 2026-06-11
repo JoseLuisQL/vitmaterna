@@ -7,7 +7,11 @@ import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Bot, Phone, AlertTriangle, MessageCircle } from 'lucide-react-native';
 import api from '../../src/services/api';
+import { gestanteColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
+import { spacing, borderRadius } from '../../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
 
 const TEL_EMERGENCIA = '083421800';
 
@@ -75,7 +79,7 @@ interface BurbujaBot {
 }
 
 const colorUrgencia = (u: Urgencia) =>
-  u === 'grave' ? '#DC2626' : u === 'moderada' ? '#D97706' : '#059669';
+  u === 'grave' ? semanticColors.danger : u === 'moderada' ? semanticColors.warning : semanticColors.success;
 
 const etiquetaUrgencia = (u: Urgencia) =>
   u === 'grave' ? 'URGENTE' : u === 'moderada' ? 'ATENCIÓN PRONTA' : 'LEVE';
@@ -146,10 +150,10 @@ export default function ChatbotScreen(): React.ReactElement {
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-              <ArrowLeft size={24} color="#FFFFFF" />
+              <ArrowLeft size={24} color={commonColors.surface} />
             </TouchableOpacity>
             <View style={styles.headerTitleWrap}>
-              <Bot size={22} color="#FFFFFF" />
+              <Bot size={22} color={commonColors.surface} />
               <Text style={styles.headerTitle}>Asistente 24/7</Text>
             </View>
             <View style={{ width: 40 }} />
@@ -193,7 +197,7 @@ export default function ChatbotScreen(): React.ReactElement {
         {/* Botón de llamada cuando hay urgencia grave/moderada */}
         {seleccionado && seleccionado.urgencia !== 'leve' && (
           <TouchableOpacity style={styles.callCard} onPress={() => Linking.openURL(`tel:${TEL_EMERGENCIA}`)}>
-            <View style={styles.callIcon}><Phone size={22} color="#FFFFFF" /></View>
+            <View style={styles.callIcon}><Phone size={22} color={commonColors.surface} /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.callLabel}>Llamar al Centro de Salud</Text>
               <Text style={styles.callPhone}>083 – 421800</Text>
@@ -208,7 +212,7 @@ export default function ChatbotScreen(): React.ReactElement {
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 260 }}>
             {SINTOMAS.map((s) => (
               <TouchableOpacity key={s.texto} style={styles.optionBtn} onPress={() => elegir(s)} activeOpacity={0.7}>
-                <MessageCircle size={16} color="#7C3AED" />
+                <MessageCircle size={16} color={BRAND} />
                 <Text style={styles.optionText}>{s.texto}</Text>
               </TouchableOpacity>
             ))}
@@ -227,32 +231,32 @@ export default function ChatbotScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { backgroundColor: '#7C3AED', borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
-  safeAreaHeader: { paddingHorizontal: 16, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  container: { flex: 1, backgroundColor: commonColors.background },
+  header: { backgroundColor: BRAND, borderBottomLeftRadius: borderRadius.xl, borderBottomRightRadius: borderRadius.xl },
+  safeAreaHeader: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '800', color: '#FFFFFF' },
-  headerSubtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 4 },
-  chatContent: { padding: 20, paddingBottom: 12 },
-  bubble: { maxWidth: '85%', padding: 14, borderRadius: 20, marginBottom: 12 },
-  bubbleBot: { alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  bubbleBotText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', lineHeight: 22 },
-  bubbleUser: { alignSelf: 'flex-end', backgroundColor: '#7C3AED', borderBottomRightRadius: 4 },
-  bubbleUserText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#FFFFFF', lineHeight: 22 },
-  resultCard: { backgroundColor: '#FFFFFF', borderRadius: 16, borderLeftWidth: 4, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  urgenciaBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, marginBottom: 8 },
-  urgenciaText: { fontFamily: typography.caption.fontFamily, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
-  resultText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#0F172A', lineHeight: 22 },
-  callCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#DC2626', borderRadius: 18, padding: 16, marginBottom: 8 },
+  headerTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerTitle: { ...typography.h3, color: commonColors.surface },
+  headerSubtitle: { ...typography.bodySmall, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 4 },
+  chatContent: { padding: spacing.lg, paddingBottom: spacing.sm + 4 },
+  bubble: { maxWidth: '85%', padding: 14, borderRadius: borderRadius.lg, marginBottom: spacing.sm + 4 },
+  bubbleBot: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: commonColors.border },
+  bubbleBotText: { ...typography.bodySmall, fontSize: 15, color: commonColors.text, lineHeight: 22 },
+  bubbleUser: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: 4 },
+  bubbleUserText: { ...typography.bodySmall, fontSize: 15, color: commonColors.surface, lineHeight: 22 },
+  resultCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, borderLeftWidth: 4, padding: spacing.md, marginBottom: spacing.sm + 4, borderWidth: 1, borderColor: commonColors.border },
+  urgenciaBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full, marginBottom: spacing.sm },
+  urgenciaText: { ...typography.overline, fontWeight: '800', letterSpacing: 0.5 },
+  resultText: { ...typography.bodySmall, fontSize: 15, color: commonColors.text, lineHeight: 22 },
+  callCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: semanticColors.danger, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm },
   callIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  callLabel: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
-  callPhone: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginTop: 2 },
-  optionsWrap: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 28, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 8 },
-  optionBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F5F3FF', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8 },
-  optionText: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '600', color: '#0F172A' },
-  resetBtn: { backgroundColor: '#7C3AED', borderRadius: 99, paddingVertical: 14, alignItems: 'center' },
-  resetBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  disclaimer: { fontFamily: typography.caption.fontFamily, fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 12, lineHeight: 17 },
+  callLabel: { ...typography.caption, color: 'rgba(255,255,255,0.85)' },
+  callPhone: { ...typography.h3, color: commonColors.surface, marginTop: 2 },
+  optionsWrap: { backgroundColor: commonColors.surface, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.lg, borderTopWidth: 1, borderColor: commonColors.border },
+  optionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 14, marginBottom: spacing.sm },
+  optionText: { flex: 1, ...typography.label, color: commonColors.text },
+  resetBtn: { backgroundColor: BRAND, borderRadius: borderRadius.full, paddingVertical: 14, alignItems: 'center' },
+  resetBtnText: { ...typography.button, fontSize: 15, color: commonColors.surface },
+  disclaimer: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0, color: commonColors.textTertiary, textAlign: 'center', marginTop: spacing.sm + 4, lineHeight: 17 },
 });

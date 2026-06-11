@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { commonColors, gestanteColors } from '../../theme/colors';
+import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
@@ -15,7 +15,7 @@ interface LoadingScreenProps {
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   message = 'Cargando...',
-  themeColor = gestanteColors.primary,
+  themeColor = commonColors.textSecondary,
 }) => {
   return (
     <View style={styles.container}>

@@ -8,6 +8,11 @@ import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { Send, ChevronLeft, User, MessageSquare, Megaphone } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { typography } from '../../../src/theme/typography';
+import { shadows } from '../../../src/theme/shadows';
+
+const BRAND = obstetraColors.primary;
 
 interface ChatMessage {
   id: string;
@@ -166,7 +171,7 @@ export default function ObstetraChatScreen() {
         onPress={() => setActiveConv(item)}
       >
         <View style={styles.convAvatar}>
-          <User size={22} color="#9D174D" />
+          <User size={22} color={BRAND} />
         </View>
         <View style={styles.convInfo}>
           <View style={styles.convHeaderRow}>
@@ -195,7 +200,7 @@ export default function ObstetraChatScreen() {
           onRefresh={refetchConvs}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MessageSquare size={48} color="#9CA3AF" style={{ marginBottom: 16 }} />
+              <MessageSquare size={48} color={commonColors.textTertiary} style={{ marginBottom: 16 }} />
               <Text style={styles.emptyText}>No tienes consultas o chats activos con gestantes en este momento.</Text>
             </View>
           }
@@ -205,7 +210,7 @@ export default function ObstetraChatScreen() {
           onPress={() => router.push('/(obstetra)/mensaje-masivo')}
           activeOpacity={0.85}
         >
-          <Megaphone size={20} color="#FFFFFF" />
+          <Megaphone size={20} color={obstetraColors.onPrimary} />
           <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
         </TouchableOpacity>
       </View>
@@ -224,7 +229,7 @@ export default function ObstetraChatScreen() {
     >
       <View style={styles.activeChatHeader}>
         <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-          <ChevronLeft size={24} color="#0F172A" />
+          <ChevronLeft size={24} color={commonColors.text} />
         </TouchableOpacity>
         <View style={styles.activeHeaderTitleWrap}>
           <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
@@ -258,7 +263,7 @@ export default function ObstetraChatScreen() {
           value={inputText}
           onChangeText={setInputText}
           placeholder="Escribe tu mensaje..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={commonColors.textTertiary}
           multiline
           maxLength={500}
         />
@@ -267,7 +272,7 @@ export default function ObstetraChatScreen() {
           onPress={handleSend}
           disabled={!inputText.trim()}
         >
-          <Send size={20} color="#FFFFFF" />
+          <Send size={20} color={obstetraColors.onPrimary} />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -277,7 +282,7 @@ export default function ObstetraChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
   },
   listContent: {
     padding: 16,
@@ -285,19 +290,19 @@ const styles = StyleSheet.create({
   },
   convItem: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     alignItems: 'center',
   },
   convAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FCE7F3',
+    backgroundColor: obstetraColors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -312,33 +317,34 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   convName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.bodyMedium,
+    color: commonColors.text,
     flex: 1,
     marginRight: 8,
   },
   convTime: {
-    fontSize: 12,
-    color: '#94A3B8',
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textTertiary,
   },
   convDni: {
-    fontSize: 12,
-    color: '#64748B',
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
     marginBottom: 4,
   },
   convLastMsg: {
-    fontSize: 14,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   activeChatHeader: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     paddingTop: Platform.OS === 'ios' ? 44 : 20,
     paddingBottom: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: commonColors.border,
     alignItems: 'center',
   },
   backBtn: {
@@ -349,23 +355,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activeHeaderTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
   },
   activeHeaderSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
     marginTop: 1,
   },
   offlineBanner: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: commonColors.surfaceAlt,
     padding: 8,
     alignItems: 'center',
   },
   offlineText: {
-    fontSize: 12,
-    color: '#64748B',
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -375,60 +382,61 @@ const styles = StyleSheet.create({
   },
   messageMe: {
     alignSelf: 'flex-end',
-    backgroundColor: '#DB2777',
+    backgroundColor: BRAND,
     borderBottomRightRadius: 4,
   },
   messageOther: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     borderBottomLeftRadius: 4,
   },
   messageText: {
+    ...typography.bodySmall,
     fontSize: 15,
     marginBottom: 4,
-    lineHeight: 20,
   },
   messageTextMe: {
-    color: '#FFFFFF',
+    color: obstetraColors.onPrimary,
   },
   messageTextOther: {
-    color: '#0F172A',
+    color: commonColors.text,
   },
   timeText: {
-    fontSize: 10,
+    fontSize: 12,
     alignSelf: 'flex-end',
   },
   timeTextMe: {
-    color: '#FBCFE8',
+    color: obstetraColors.primaryLight,
   },
   timeTextOther: {
-    color: '#94A3B8',
+    color: commonColors.textTertiary,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderTopWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     alignItems: 'flex-end',
     paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
   input: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
     minHeight: 40,
     maxHeight: 120,
+    ...typography.bodySmall,
     fontSize: 15,
-    color: '#0F172A',
+    color: commonColors.text,
   },
   sendButton: {
-    backgroundColor: '#DB2777',
+    backgroundColor: BRAND,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -438,7 +446,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   sendButtonDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: commonColors.disabled,
   },
   emptyContainer: {
     flex: 1,
@@ -448,9 +456,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyText: {
-    color: '#64748B',
-    textAlign: 'center',
+    ...typography.bodySmall,
     fontSize: 15,
+    color: commonColors.textSecondary,
+    textAlign: 'center',
     lineHeight: 22,
   },
   broadcastFab: {
@@ -460,42 +469,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#BE185D',
+    backgroundColor: BRAND,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 99,
-    shadowColor: '#BE185D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    ...shadows.md,
   },
-  broadcastFabText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  broadcastFabText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
   emergencyMessageBubble: {
     alignSelf: 'center',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: semanticColors.dangerLight,
     borderWidth: 1.5,
-    borderColor: '#EF4444',
+    borderColor: semanticColors.danger,
     borderRadius: 16,
     padding: 14,
     marginVertical: 8,
     width: '95%',
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
   },
   emergencyMessageText: {
-    color: '#991B1B',
+    ...typography.bodySmall,
     fontSize: 15,
     fontWeight: '700',
+    color: semanticColors.danger,
     lineHeight: 22,
   },
   emergencyTimeText: {
-    color: '#EF4444',
-    fontSize: 11,
-    fontWeight: '600',
+    color: semanticColors.danger,
+    ...typography.overline,
+    letterSpacing: 0.1,
     alignSelf: 'flex-end',
     marginTop: 6,
   },

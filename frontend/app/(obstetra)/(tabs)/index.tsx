@@ -1,14 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, Users, AlertCircle, CheckCircle, TrendingUp, ChevronRight, Activity } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+
+const BRAND = obstetraColors.primary;
 
 export default function ObstetraDashboard(): React.ReactElement {
   const router = useRouter();
@@ -32,7 +34,7 @@ export default function ObstetraDashboard(): React.ReactElement {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.headerWrapper}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
@@ -57,17 +59,17 @@ export default function ObstetraDashboard(): React.ReactElement {
               </Text>
             </View>
             <View style={styles.iconCircle}>
-              <TrendingUp size={20} color="#BE185D" />
+              <TrendingUp size={20} color={BRAND} />
             </View>
           </View>
         </View>
 
         <View style={styles.statsGrid}>
           {[
-            { id: 'citas', label: 'Citas Hoy', value: appointmentsToday, icon: Calendar, color: '#BE185D', bg: '#FDF2F8' },
-            { id: 'pacientes', label: 'Pacientes', value: totalPatients, icon: Users, color: '#2563EB', bg: '#EFF6FF' },
-            { id: 'alertas', label: 'Alertas', value: alerts, icon: AlertCircle, color: '#EF4444', bg: '#FEF2F2' },
-            { id: 'completadas', label: 'Completadas', value: completed, icon: CheckCircle, color: '#10B981', bg: '#ECFDF5' },
+            { id: 'citas', label: 'Citas Hoy', value: appointmentsToday, icon: Calendar, color: BRAND, bg: obstetraColors.primaryLight },
+            { id: 'pacientes', label: 'Pacientes', value: totalPatients, icon: Users, color: semanticColors.info, bg: semanticColors.infoLight },
+            { id: 'alertas', label: 'Alertas', value: alerts, icon: AlertCircle, color: semanticColors.danger, bg: semanticColors.dangerLight },
+            { id: 'completadas', label: 'Completadas', value: completed, icon: CheckCircle, color: semanticColors.success, bg: semanticColors.successLight },
           ].map((item) => (
             <View key={item.id} style={styles.statCard}>
               <View style={styles.statTop}>
@@ -85,25 +87,25 @@ export default function ObstetraDashboard(): React.ReactElement {
         <View style={styles.riskCard}>
           <View style={styles.riskRow}>
             <View style={styles.riskItem}>
-              <View style={[styles.riskDot, { backgroundColor: '#10B981' }]} />
+              <View style={[styles.riskDot, { backgroundColor: riskColors.riskGreen }]} />
               <Text style={styles.riskCount}>{riskDistribution.low || 0}</Text>
               <Text style={styles.riskLabel}>Bajo</Text>
             </View>
             <View style={styles.riskItem}>
-              <View style={[styles.riskDot, { backgroundColor: '#F59E0B' }]} />
+              <View style={[styles.riskDot, { backgroundColor: riskColors.riskYellow }]} />
               <Text style={styles.riskCount}>{riskDistribution.medium || 0}</Text>
               <Text style={styles.riskLabel}>Medio</Text>
             </View>
             <View style={styles.riskItem}>
-              <View style={[styles.riskDot, { backgroundColor: '#EF4444' }]} />
+              <View style={[styles.riskDot, { backgroundColor: riskColors.riskRed }]} />
               <Text style={styles.riskCount}>{riskDistribution.high || 0}</Text>
               <Text style={styles.riskLabel}>Alto</Text>
             </View>
           </View>
           <View style={styles.riskBarContainer}>
-            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 1), backgroundColor: '#10B981' }]} />
-            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 1), backgroundColor: '#F59E0B' }]} />
-            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 1), backgroundColor: '#EF4444' }]} />
+            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 1), backgroundColor: riskColors.riskGreen }]} />
+            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 1), backgroundColor: riskColors.riskYellow }]} />
+            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 1), backgroundColor: riskColors.riskRed }]} />
           </View>
         </View>
 
@@ -120,7 +122,7 @@ export default function ObstetraDashboard(): React.ReactElement {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconWrap}>
-        <Activity size={32} color="#94A3B8" />
+        <Activity size={32} color={commonColors.textTertiary} />
       </View>
       <Text style={styles.emptyText}>No tienes citas programadas para hoy.</Text>
     </View>
@@ -158,7 +160,7 @@ export default function ObstetraDashboard(): React.ReactElement {
               </View>
               <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
             </View>
-            <ChevronRight size={20} color="#CBD5E1" />
+            <ChevronRight size={20} color={commonColors.textTertiary} />
           </TouchableOpacity>
         )}
       />
@@ -167,7 +169,7 @@ export default function ObstetraDashboard(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   flatListContent: { paddingBottom: 100 },
   headerContainer: { marginBottom: 12 },
   headerWrapper: {
@@ -178,94 +180,80 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), fontSize: 16, color: '#64748B', marginBottom: 4 },
-  name: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), fontSize: 32, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
-  avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: typography.h2.fontFamily, fontSize: 24, fontWeight: '800', color: '#BE185D' },
+  greeting: { ...typography.body, color: commonColors.textSecondary, marginBottom: 4 },
+  name: { ...typography.display, color: commonColors.text },
+  avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { ...typography.h2, color: BRAND },
   topCardsWrapper: { paddingHorizontal: 20 },
   todayCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 24,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.06,
-    shadowRadius: 24,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  todayTitle: { fontFamily: typography.h2.fontFamily, fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 4 },
-  todayDate: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#64748B', textTransform: 'capitalize' },
-  iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FDF2F8', alignItems: 'center', justifyContent: 'center' },
+  todayTitle: { ...typography.h3, color: commonColors.text, marginBottom: 4 },
+  todayDate: { ...typography.bodySmall, color: commonColors.textSecondary, textTransform: 'capitalize' },
+  iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24, gap: 12 },
   statCard: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   statTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   statIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontFamily: typography.h2.fontFamily, fontSize: 26, fontWeight: '800', color: '#0F172A' },
-  statLabel: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 13, fontWeight: '600', color: '#64748B' },
+  statValue: { ...typography.h1, color: commonColors.text },
+  statLabel: { ...typography.caption, color: commonColors.textSecondary },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
-  sectionTitle: { fontFamily: typography.h3.fontFamily, fontSize: 18, fontWeight: '800', color: '#0F172A', marginBottom: 16 },
-  sectionLink: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700', color: '#BE185D' },
+  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: 16 },
+  sectionLink: { ...typography.label, color: BRAND },
   riskCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   riskItem: { alignItems: 'center', flex: 1 },
   riskDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
-  riskCount: { fontFamily: typography.h2.fontFamily, fontSize: 24, fontWeight: '800', color: '#0F172A', marginBottom: 2 },
-  riskLabel: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 },
+  riskCount: { ...typography.h2, color: commonColors.text, marginBottom: 2 },
+  riskLabel: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
   riskBarContainer: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
   riskBarSegment: { height: '100%' },
   appointmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 16,
     marginHorizontal: 20,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 1,
     borderWidth: 1,
-    borderColor: '#F8FAFC',
+    borderColor: commonColors.border,
   },
   timeLine: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingRight: 16,
     borderRightWidth: 1,
-    borderRightColor: '#F1F5F9',
+    borderRightColor: commonColors.borderLight,
     minWidth: 70,
   },
-  timeText: { fontFamily: typography.h3.fontFamily, fontSize: 18, fontWeight: '800', color: '#BE185D' },
-  timeAmPm: { fontFamily: typography.caption.fontFamily, fontSize: 11, fontWeight: '700', color: '#94A3B8', marginTop: 2 },
+  timeText: { ...typography.h3, color: BRAND },
+  timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
   appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
   appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  patientName: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 8 },
-  appointmentType: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B' },
+  patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1, marginRight: 8 },
+  appointmentType: { ...typography.bodySmall, color: commonColors.textSecondary },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  emptyText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B' },
+  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyText: { ...typography.bodyMedium, color: commonColors.textSecondary },
 });

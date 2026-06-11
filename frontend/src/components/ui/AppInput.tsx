@@ -21,7 +21,7 @@ import Animated, {
   interpolateColor,
 } from 'react-native-reanimated';
 import { Control, Controller, FieldValues, Path } from 'react-hook-form';
-import { commonColors, gestanteColors } from '../../theme/colors';
+import { commonColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 
@@ -53,7 +53,7 @@ export function AppInput<T extends FieldValues>({
   secureTextEntry = false,
   disabled = false,
   helperText,
-  themeColor = gestanteColors.primary,
+  themeColor = commonColors.borderStrong,
   containerStyle,
   ...textInputProps
 }: AppInputProps<T>): React.ReactElement {
@@ -70,11 +70,11 @@ export function AppInput<T extends FieldValues>({
 
   const animatedBorderStyle = useAnimatedStyle(() => {
     const borderColor = error
-      ? '#DC2626'
+      ? semanticColors.danger
       : interpolateColor(
           focusAnim.value,
           [0, 1],
-          ['#E2E8F0', themeColor],
+          [commonColors.border, themeColor],
         );
     return {
       borderColor,
@@ -103,7 +103,7 @@ export function AppInput<T extends FieldValues>({
             {LeftIcon && (
               <LeftIcon
                 size={20}
-                color={error ? '#DC2626' : commonColors.textSecondary}
+                color={error ? semanticColors.danger : commonColors.textSecondary}
                 style={styles.leftIcon}
               />
             )}
@@ -182,15 +182,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   labelError: {
-    color: '#DC2626',
+    color: semanticColors.danger,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC', // slate-50
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0', // visible border for contrast
+    borderColor: commonColors.border, // visible border for contrast
     minHeight: 52, // increased height for better touch target
   },
   input: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: typography.caption.fontFamily,
     fontSize: typography.caption.fontSize,
-    color: '#DC2626',
+    color: semanticColors.danger,
     marginTop: spacing.xs,
   },
   helperText: {

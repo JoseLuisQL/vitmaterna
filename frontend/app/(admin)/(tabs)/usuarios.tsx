@@ -3,16 +3,19 @@
  * Fetch and display all users with options to view detail and activate/deactivate.
  */
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TextInput, Modal, ScrollView, ActivityIndicator, Alert, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TextInput, Modal, ScrollView, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, X, LogOut } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { commonColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
+import { shadows } from '../../../src/theme/shadows';
 import { useAdminUsers, useCreateUser, useToggleUserActive } from '../../../src/services/admin-queries';
+
+const BRAND = obstetraColors.primary;
 import { useAuthStore } from '../../../src/store/authStore';
 import { useRouter } from 'expo-router';
 
@@ -37,23 +40,18 @@ const detailRowStyles = StyleSheet.create({
   },
   border: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9', // slate-100
+    borderBottomColor: commonColors.borderLight,
   },
   label: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#64748B', // slate-500
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     flex: 1,
-    lineHeight: 20,
   },
   value: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A', // slate-900
+    ...typography.label,
+    color: commonColors.text,
     flex: 1.5,
     textAlign: 'right',
-    lineHeight: 20,
   },
 });
 
@@ -203,7 +201,7 @@ export default function UsuariosScreen(): React.ReactElement {
               <Text style={styles.headerSubtitle}>Administra los accesos y roles de la plataforma</Text>
             </View>
             <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-              <LogOut size={22} color="#EF4444" />
+              <LogOut size={22} color={semanticColors.danger} />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -211,13 +209,13 @@ export default function UsuariosScreen(): React.ReactElement {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
-          <Search size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+          <Search size={20} color={commonColors.textTertiary} style={{ marginRight: 12 }} />
           <TextInput
             placeholder="Buscar por nombre o DNI..."
             value={search}
             onChangeText={setSearch}
             style={styles.searchInput}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={commonColors.textTertiary}
           />
         </View>
       </View>
@@ -254,7 +252,7 @@ export default function UsuariosScreen(): React.ReactElement {
           variant={item.isActive ? 'success' : 'danger'} 
           size="sm" 
         />
-        <ChevronRight size={20} color="#94A3B8" style={{ marginLeft: 12 }} />
+        <ChevronRight size={20} color={commonColors.textTertiary} style={{ marginLeft: 12 }} />
       </View>
     </TouchableOpacity>
   );
@@ -286,7 +284,7 @@ export default function UsuariosScreen(): React.ReactElement {
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalHeader}>Detalle de Usuario</Text>
               <TouchableOpacity onPress={() => setIsDetailModalVisible(false)} style={styles.closeBtn}>
-                <X size={24} color="#64748B" />
+                <X size={24} color={commonColors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -369,7 +367,7 @@ export default function UsuariosScreen(): React.ReactElement {
                 activeOpacity={0.8}
               >
                 {toggleUserActiveMutation.isPending ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <ActivityIndicator color={commonColors.white} size="small" />
                 ) : (
                   <Text style={[
                     styles.statusToggleButtonText,
@@ -411,7 +409,7 @@ export default function UsuariosScreen(): React.ReactElement {
         onPress={() => setIsCreateModalVisible(true)}
         activeOpacity={0.8}
       >
-        <Plus size={28} color="#FFFFFF" />
+        <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
 
       {/* MODAL: CREATE USER */}
@@ -426,7 +424,7 @@ export default function UsuariosScreen(): React.ReactElement {
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalHeader}>Crear Nuevo Usuario</Text>
               <TouchableOpacity onPress={() => setIsCreateModalVisible(false)} style={styles.closeBtn}>
-                <X size={24} color="#64748B" />
+                <X size={24} color={commonColors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -542,7 +540,7 @@ export default function UsuariosScreen(): React.ReactElement {
                 disabled={isCreating}
               >
                 {isCreating ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={commonColors.white} size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>Guardar Usuario</Text>
                 )}
@@ -561,7 +559,7 @@ export default function UsuariosScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
   },
   headerWrapper: {
     paddingBottom: 24,
@@ -570,18 +568,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  headerTitle: { 
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), 
-    fontSize: 32, 
-    fontWeight: '800', 
-    color: '#0F172A', 
-    marginBottom: 4, 
-    letterSpacing: -0.5 
+  headerTitle: {
+    ...typography.display,
+    color: commonColors.text,
+    marginBottom: 4,
   },
-  headerSubtitle: { 
-    fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), 
-    fontSize: 15, 
-    color: '#64748B' 
+  headerSubtitle: {
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -590,36 +584,29 @@ const styles = StyleSheet.create({
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     paddingHorizontal: 20,
     height: 56,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
-  searchInput: { 
-    flex: 1, 
-    fontFamily: typography.bodyMedium.fontFamily, 
-    fontSize: 16, 
-    color: '#0F172A' 
+  searchInput: {
+    flex: 1,
+    ...typography.bodyMedium,
+    color: commonColors.text,
   },
   listContent: { 
     paddingBottom: 120 
   },
   userCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   cardContent: { 
     flexDirection: 'row', 
@@ -635,43 +622,40 @@ const styles = StyleSheet.create({
   },
   // Distinct avatar styles per role
   avatarAdmin: {
-    backgroundColor: '#F3E8FF',
+    backgroundColor: semanticColors.infoLight,
   },
   avatarObstetra: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: obstetraColors.primaryLight,
   },
   avatarGestante: {
-    backgroundColor: '#FDF2F8',
+    backgroundColor: gestanteColors.primaryLight,
   },
   avatarText: {
-    fontFamily: typography.h3.fontFamily,
+    ...typography.h3,
     fontSize: 16,
-    fontWeight: '800',
   },
   avatarTextAdmin: {
-    color: '#7C3AED',
+    color: semanticColors.info,
   },
   avatarTextObstetra: {
-    color: '#2563EB',
+    color: obstetraColors.primary,
   },
   avatarTextGestante: {
-    color: '#BE185D',
+    color: gestanteColors.primary,
   },
   info: { 
     flex: 1, 
     marginRight: 12 
   },
-  name: { 
-    fontFamily: typography.bodyMedium.fontFamily, 
-    fontSize: 16, 
-    fontWeight: '700', 
-    color: '#0F172A', 
-    marginBottom: 4 
+  name: {
+    ...typography.bodyMedium,
+    fontFamily: typography.h3.fontFamily,
+    color: commonColors.text,
+    marginBottom: 4,
   },
-  details: { 
-    fontFamily: typography.caption.fontFamily, 
-    fontSize: 13, 
-    color: '#64748B' 
+  details: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
   },
   fab: {
     position: 'absolute',
@@ -680,55 +664,47 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#2563EB', // Blue matching admin styling
+    backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    ...shadows.md,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: commonColors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 32,
     width: '100%',
     maxHeight: '85%',
     padding: 24,
     gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    ...shadows.md,
   },
   modalHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: commonColors.borderLight,
     paddingBottom: 16,
   },
   modalHeader: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h2,
+    color: commonColors.text,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -737,20 +713,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputLabel: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
+    ...typography.label,
+    color: commonColors.textSecondary,
   },
   textInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 15,
-    color: '#0F172A',
+    ...typography.bodySmall,
+    color: commonColors.text,
   },
   roleTabs: {
     flexDirection: 'row',
@@ -761,24 +735,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
   },
   roleTabActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: BRAND,
+    borderColor: BRAND,
   },
   roleTabText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    color: '#475569',
-    fontWeight: '700',
-    fontSize: 12,
+    ...typography.overline,
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
   },
   roleTabTextActive: {
-    color: '#FFFFFF',
+    color: obstetraColors.onPrimary,
   },
   modalActions: {
     flexDirection: 'row',
@@ -791,40 +764,36 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
+    ...typography.label,
+    color: commonColors.textSecondary,
   },
   saveBtn: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#2563EB',
+    backgroundColor: BRAND,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 120,
   },
   saveBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    ...typography.label,
+    color: obstetraColors.onPrimary,
   },
   // Detail Modal specific styles
   detailUserSummaryCard: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   detailAvatarCircle: {
     width: 80,
@@ -835,15 +804,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailAvatarText: {
-    fontFamily: typography.h1.fontFamily,
+    ...typography.h1,
     fontSize: 28,
-    fontWeight: '800',
   },
   detailName: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h2,
+    color: commonColors.text,
     marginBottom: 8,
     textAlign: 'center',
     paddingHorizontal: 16,
@@ -854,26 +820,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionLabel: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94A3B8',
+    ...typography.overline,
+    color: commonColors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 6,
     paddingLeft: 4,
   },
   detailCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 2,
   },
   statusToggleButton: {
     width: '100%',
@@ -884,31 +843,30 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   statusToggleButtonDeactivate: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: semanticColors.dangerLight,
     borderWidth: 1,
-    borderColor: '#FEE2E2',
+    borderColor: semanticColors.dangerLight,
   },
   statusToggleButtonActivate: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: semanticColors.successLight,
     borderWidth: 1,
-    borderColor: '#D1FAE5',
+    borderColor: semanticColors.successLight,
   },
   statusToggleButtonText: {
-    fontFamily: typography.bodyMedium.fontFamily,
+    ...typography.label,
     fontSize: 15,
-    fontWeight: '700',
   },
   statusToggleButtonTextDeactivate: {
-    color: '#EF4444',
+    color: semanticColors.danger,
   },
   statusToggleButtonTextActivate: {
-    color: '#10B981',
+    color: semanticColors.success,
   },
   logoutBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: semanticColors.dangerLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,

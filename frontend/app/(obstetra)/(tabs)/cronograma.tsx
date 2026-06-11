@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { shadows } from '../../../src/theme/shadows';
 import { useAppointments, useUpdateAppointmentStatus } from '../../../src/services/api-queries';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
+
+const BRAND = obstetraColors.primary;
 
 export default function CronogramaScreen(): React.ReactElement {
   const router = useRouter();
@@ -120,7 +123,7 @@ export default function CronogramaScreen(): React.ReactElement {
           </View>
           <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
           <View style={styles.infoRow}>
-            <MapPin size={12} color="#94A3B8" />
+            <MapPin size={12} color={commonColors.textTertiary} />
             <Text style={styles.infoText}>{item.location || 'Consultorio 102'}</Text>
           </View>
 
@@ -155,7 +158,7 @@ export default function CronogramaScreen(): React.ReactElement {
           icon={CalendarIcon as any}
           title="Sin citas programadas"
           description="No tienes citas agendadas para este día."
-          themeColor="#BE185D"
+          themeColor={BRAND}
         />
       )}
     </View>
@@ -171,7 +174,7 @@ export default function CronogramaScreen(): React.ReactElement {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#BE185D" />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
       />
 
       <TouchableOpacity
@@ -179,7 +182,7 @@ export default function CronogramaScreen(): React.ReactElement {
         activeOpacity={0.8}
         onPress={() => setModalVisible(true)}
       >
-        <Plus size={28} color="#FFFFFF" />
+        <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
 
       <NuevaCitaModal
@@ -191,7 +194,7 @@ export default function CronogramaScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerContainer: { marginBottom: 12 },
   headerWrapper: {
     paddingBottom: 24,
@@ -200,8 +203,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  headerTitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'System' }), fontSize: 32, fontWeight: '800', color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 },
-  headerSubtitle: { fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-light', default: 'System' }), fontSize: 16, color: '#64748B' },
+  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
   tabsWrapper: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -212,56 +215,50 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
   },
   tabButtonActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: BRAND,
+    borderColor: BRAND,
   },
   tabText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
+    ...typography.label,
     fontWeight: '600',
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFFFFF',
+    color: obstetraColors.onPrimary,
   },
   listContent: { paddingBottom: 100 },
   appointmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 16,
     marginHorizontal: 20,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 1,
     borderWidth: 1,
-    borderColor: '#F8FAFC',
+    borderColor: commonColors.border,
   },
   timeLine: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingRight: 16,
     borderRightWidth: 1,
-    borderRightColor: '#F1F5F9',
+    borderRightColor: commonColors.borderLight,
     minWidth: 70,
   },
-  timeText: { fontFamily: typography.h3.fontFamily, fontSize: 18, fontWeight: '800', color: '#BE185D' },
-  timeAmPm: { fontFamily: typography.caption.fontFamily, fontSize: 11, fontWeight: '700', color: '#94A3B8', marginTop: 2 },
+  timeText: { ...typography.h3, color: BRAND },
+  timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
   appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
   appointmentHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  patientName: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 8 },
-  appointmentType: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B' },
+  patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1, marginRight: 8 },
+  appointmentType: { ...typography.bodySmall, color: commonColors.textSecondary },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 4 },
-  infoText: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8' },
+  infoText: { ...typography.caption, color: commonColors.textTertiary },
   actionButtonsContainer: {
     flexDirection: 'row',
     gap: 8,
@@ -276,25 +273,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   btnAsistio: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: semanticColors.successLight,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: semanticColors.success,
   },
   btnAsistioText: {
-    color: '#166534',
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    color: semanticColors.success,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
   },
   btnNoAsistio: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: semanticColors.dangerLight,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: semanticColors.danger,
   },
   btnNoAsistioText: {
-    color: '#991B1B',
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    color: semanticColors.danger,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
   },
   fab: {
@@ -304,14 +301,10 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#BE185D',
+    backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#BE185D',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    ...shadows.md,
     zIndex: 999,
   },
 });

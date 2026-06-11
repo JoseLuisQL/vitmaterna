@@ -9,6 +9,9 @@ import { Heart } from 'lucide-react-native';
 import { useAuthStore } from '../src/store/authStore';
 import { gestanteColors, commonColors } from '../src/theme/colors';
 import { typography } from '../src/theme/typography';
+import { spacing } from '../src/theme/spacing';
+
+const BRAND = gestanteColors.primary;
 
 export default function IndexScreen(): React.ReactElement {
   const router = useRouter();
@@ -54,13 +57,13 @@ export default function IndexScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: gestanteColors.primary,
+    backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.sm + 4,
   },
   iconCircle: {
     width: 80,
@@ -69,18 +72,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontFamily: typography.display.fontFamily,
+    ...typography.display,
     fontSize: 36,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    color: commonColors.surface,
     letterSpacing: 2,
   },
   subtitle: {
-    fontFamily: typography.body.fontFamily,
-    fontSize: typography.body.fontSize,
+    ...typography.body,
     color: 'rgba(255, 255, 255, 0.8)',
     letterSpacing: 0.5,
   },

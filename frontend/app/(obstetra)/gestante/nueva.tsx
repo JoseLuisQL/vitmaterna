@@ -7,8 +7,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { useCreatePatient, useUpdatePatient } from '../../../src/services/api-queries';
+
+const BRAND = obstetraColors.primary;
 
 const STEPS = [
   { id: 1, title: 'Datos Personales' },
@@ -150,7 +153,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
         return (
           <View key={step.id} style={styles.stepWrapper}>
             <View style={[styles.stepCircle, isActive && styles.stepActive, isCompleted && styles.stepCompleted]}>
-              {isCompleted ? <Check size={16} color="#FFF" /> : <Text style={[styles.stepNumber, isActive && styles.stepNumberActive]}>{step.id}</Text>}
+              {isCompleted ? <Check size={16} color={obstetraColors.onPrimary} /> : <Text style={[styles.stepNumber, isActive && styles.stepNumberActive]}>{step.id}</Text>}
             </View>
             <Text style={[styles.stepText, (isActive || isCompleted) && styles.stepTextActive]}>{step.title}</Text>
             {index < STEPS.length - 1 && <View style={[styles.stepLine, isCompleted && styles.stepLineCompleted]} />}
@@ -165,7 +168,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
       <SafeAreaView edges={['top']} style={styles.headerContainer}>
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#0F172A" />
+            <ArrowLeft size={24} color={commonColors.text} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Registrar Nueva Gestante</Text>
@@ -234,7 +237,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                    activeOpacity={0.7}
                  >
                    <View style={[styles.checkbox, watch('fumDudosa') && styles.checkboxActive]}>
-                     {watch('fumDudosa') && <Check size={14} color="#FFF" />}
+                     {watch('fumDudosa') && <Check size={14} color={obstetraColors.onPrimary} />}
                    </View>
                    <Text style={styles.checkboxText}>Hay duda sobre la FUM (se confirmará por ecografía)</Text>
                  </TouchableOpacity>
@@ -258,7 +261,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                   onPress={handleSubmit(onSubmit)}
                   disabled={isPending}
                 >
-                  <Check size={18} color="#FFF" style={{ marginRight: 8 }} />
+                  <Check size={18} color={obstetraColors.onPrimary} style={{ marginRight: 8 }} />
                   <Text style={styles.btnSuccessText}>{isPending ? 'Guardando...' : 'Registrar gestante'}</Text>
                 </TouchableOpacity>
               )}
@@ -272,15 +275,15 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   headerContainer: { 
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.background,
     paddingBottom: 24,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, marginTop: 16 },
   backButton: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center', paddingRight: 10 },
   headerTitleContainer: { flex: 1 },
-  headerTitle: { fontFamily: typography.h2.fontFamily, fontSize: 22, fontWeight: '700', color: '#334155' },
+  headerTitle: { ...typography.h2, color: commonColors.text },
   
   stepperContainer: {
     flexDirection: 'row',
@@ -297,35 +300,35 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: commonColors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
     zIndex: 2,
   },
   stepActive: {
-    backgroundColor: '#1E293B',
+    backgroundColor: BRAND,
   },
   stepCompleted: {
-    backgroundColor: '#10B981',
+    backgroundColor: semanticColors.success,
   },
   stepNumber: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#64748B',
+    ...typography.label,
+    color: commonColors.textSecondary,
     fontWeight: '700',
   },
   stepNumberActive: {
-    color: '#FFF',
+    color: obstetraColors.onPrimary,
   },
   stepText: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 11,
-    color: '#94A3B8',
+    letterSpacing: 0.1,
+    color: commonColors.textTertiary,
     textAlign: 'center',
   },
   stepTextActive: {
-    color: '#334155',
+    color: commonColors.text,
     fontWeight: '500',
   },
   stepLine: {
@@ -334,25 +337,25 @@ const styles = StyleSheet.create({
     left: 45,
     width: 100, // Approximate width
     height: 2,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: commonColors.border,
     zIndex: 1,
   },
   stepLineCompleted: {
-    backgroundColor: '#10B981',
+    backgroundColor: semanticColors.success,
   },
 
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#E2E8F0' },
-  sectionTitle: { fontFamily: typography.h3.fontFamily, fontSize: 16, color: '#334155', fontWeight: '700', marginBottom: 24 },
-  subTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#475569', fontWeight: '600', marginBottom: 16 },
+  card: { backgroundColor: commonColors.surface, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: commonColors.border },
+  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: 24 },
+  subTitle: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, color: commonColors.textSecondary, fontWeight: '600', marginBottom: 16 },
   
   formGrid: { gap: 16 },
   row: { flexDirection: 'row' },
   
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  checkboxActive: { backgroundColor: '#334155', borderColor: '#334155' },
-  checkboxText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, color: '#475569' },
+  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 1, borderColor: commonColors.borderStrong, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  checkboxActive: { backgroundColor: BRAND, borderColor: BRAND },
+  checkboxText: { ...typography.bodySmall, color: commonColors.textSecondary },
   
   footerActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
   btnSecondary: {
@@ -360,30 +363,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+    borderColor: commonColors.border,
+    backgroundColor: commonColors.surface,
     alignSelf: 'flex-start',
   },
-  btnSecondaryText: { color: '#475569', fontFamily: typography.bodyMedium.fontFamily, fontWeight: '600', fontSize: 14 },
+  btnSecondaryText: { color: commonColors.textSecondary, ...typography.label, fontWeight: '600' },
   btnPrimary: {
     flex: 1,
     marginLeft: 16,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#BE185D',
+    backgroundColor: BRAND,
     alignItems: 'center',
   },
-  btnPrimaryText: { color: '#FFF', fontFamily: typography.bodyMedium.fontFamily, fontWeight: '600', fontSize: 15 },
+  btnPrimaryText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
   btnSuccess: {
     flex: 1,
     marginLeft: 16,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: BRAND,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnSuccessText: { color: '#FFF', fontFamily: typography.bodyMedium.fontFamily, fontWeight: '600', fontSize: 15 },
+  btnSuccessText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
 });
 

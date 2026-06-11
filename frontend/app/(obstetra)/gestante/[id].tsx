@@ -11,12 +11,23 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
+import { shadows } from '../../../src/theme/shadows';
 import { usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment } from '../../../src/services/api-queries';
 
 const { width: screenWidth } = Dimensions.get('window');
+const BRAND = obstetraColors.primary;
+
+/** Convierte un color hex (#RRGGBB) a rgba() para react-native-chart-kit. */
+const hexToRgba = (hex: string, opacity = 1): string => {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -29,20 +40,8 @@ const TABS = [
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const designTokens = {
-  cardShadow: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
-  },
-  glassShadow: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  }
+  cardShadow: shadows.xs,
+  glassShadow: shadows.sm,
 };
 
 // ─── UTILS & SUBCOMPONENTS ────────────────────────────────────────────────────
@@ -66,20 +65,19 @@ const filaStyles = StyleSheet.create({
   },
   border: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9', // slate-100
+    borderBottomColor: commonColors.borderLight,
   },
   label: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
-    color: '#64748B', // slate-500
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     flex: 1,
     lineHeight: 20,
   },
   value: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '600',
-    color: '#0F172A', // slate-900
+    color: commonColors.text,
     flex: 1.5,
     textAlign: 'right',
     lineHeight: 20,
@@ -101,21 +99,19 @@ const seccionStyles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94A3B8', // slate-400
+    ...typography.overline,
+    color: commonColors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   }
 });
 
 function CustomBadge({ label, riskLevel }: { label: string; riskLevel: string }) {
-  let bg = '#F1F5F9';
-  let text = '#64748B';
-  if (riskLevel === 'Alto') { bg = '#FEF2F2'; text = '#E11D48'; } // Rose
-  else if (riskLevel === 'Medio') { bg = '#FFFBEB'; text = '#D97706'; } // Amber
-  else if (riskLevel === 'Bajo') { bg = '#F0FDF4'; text = '#16A34A'; } // Emerald
+  let bg: string = commonColors.surfaceAlt;
+  let text: string = commonColors.textSecondary;
+  if (riskLevel === 'Alto') { bg = riskColors.riskRedLight; text = riskColors.riskRed; }
+  else if (riskLevel === 'Medio') { bg = riskColors.riskYellowLight; text = riskColors.riskYellow; }
+  else if (riskLevel === 'Bajo') { bg = riskColors.riskGreenLight; text = riskColors.riskGreen; }
 
   return (
     <View style={[badgeStyles.container, { backgroundColor: bg, borderWidth: 1, borderColor: text + '20' }]}>
@@ -140,7 +136,7 @@ const badgeStyles = StyleSheet.create({
     marginRight: 6,
   },
   text: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -315,7 +311,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       <View style={styles.headerContainer}>
         <View style={styles.headerNav}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <ChevronLeft size={24} color="#0F172A" />
+            <ChevronLeft size={24} color={commonColors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Historia Clínica</Text>
           <TouchableOpacity
@@ -325,7 +321,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
             } as any)}
           >
-            <ClipboardList size={22} color="#0F172A" />
+            <ClipboardList size={22} color={commonColors.text} />
           </TouchableOpacity>
         </View>
 
@@ -381,7 +377,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                   isActive && styles.tabLineActive
                 ]}
               >
-                <Icon size={16} color={isActive ? '#BE185D' : '#64748B'} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={16} color={isActive ? BRAND : commonColors.textSecondary} strokeWidth={isActive ? 2.5 : 2} />
                 <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
                   {label}
                 </Text>
@@ -438,13 +434,13 @@ export default function PatientProfileScreen(): React.ReactElement {
                 activeOpacity={0.7}
               >
                 <View style={styles.tamizajesIcon}>
-                  <ClipboardList size={22} color="#BE185D" />
+                  <ClipboardList size={22} color={BRAND} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.tamizajesTitle}>SRQ-18, violencia, patologías y más</Text>
                   <Text style={styles.tamizajesDesc}>Registrar tamizajes, consejería nutricional y peso</Text>
                 </View>
-                <Plus size={20} color="#94A3B8" />
+                <Plus size={20} color={commonColors.textTertiary} />
               </TouchableOpacity>
             </View>
           )}
@@ -458,18 +454,18 @@ export default function PatientProfileScreen(): React.ReactElement {
                   <LineChart
                     data={{
                       labels: weekLabels,
-                      datasets: [{ data: weightData, color: () => '#9D174D', strokeWidth: 3 }],
+                      datasets: [{ data: weightData, color: () => BRAND, strokeWidth: 3 }],
                     }}
                     width={screenWidth - 72}
                     height={180}
                     chartConfig={{
-                      backgroundColor: '#ffffff',
-                      backgroundGradientFrom: '#ffffff',
-                      backgroundGradientTo: '#ffffff',
+                      backgroundColor: commonColors.surface,
+                      backgroundGradientFrom: commonColors.surface,
+                      backgroundGradientTo: commonColors.surface,
                       decimalPlaces: 1,
-                      color: (opacity = 1) => `rgba(157, 23, 77, ${opacity})`,
-                      labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                      propsForDots: { r: '4', strokeWidth: '2', stroke: '#BE185D' },
+                      color: (opacity = 1) => hexToRgba(BRAND, opacity),
+                      labelColor: (opacity = 1) => hexToRgba(commonColors.textSecondary, opacity),
+                      propsForDots: { r: '4', strokeWidth: '2', stroke: BRAND },
                     }}
                     bezier
                     style={{ marginLeft: -10, marginTop: 10 }}
@@ -483,7 +479,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                   style={[styles.primaryActionBtn, designTokens.glassShadow]}
                   onPress={() => router.push({ pathname: '/(obstetra)/control/nuevo', params: { patientId: patient.id } } as any)}
                 >
-                  <Plus size={16} color="#FFF" />
+                  <Plus size={16} color={obstetraColors.onPrimary} />
                   <Text style={styles.primaryActionText}>Nuevo Control</Text>
                 </TouchableOpacity>
               </View>
@@ -524,7 +520,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                   icon={Activity as any}
                   title="Sin controles"
                   description="Aún no se ha registrado ningún control para esta gestante."
-                  themeColor="#9D174D"
+                  themeColor={BRAND}
                 />
               )}
             </View>
@@ -540,7 +536,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                     style={styles.primaryActionBtn}
                     onPress={() => setIsTreatModalVisible(true)}
                   >
-                    <Plus size={16} color="#FFF" />
+                    <Plus size={16} color={obstetraColors.onPrimary} />
                     <Text style={styles.primaryActionText}>Recetar</Text>
                   </TouchableOpacity>
                 </View>
@@ -554,7 +550,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                   return (
                     <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.glassShadow]}>
                       <View style={styles.pillIconBox}>
-                        <Pill size={24} color="#BE185D" />
+                        <Pill size={24} color={BRAND} />
                       </View>
                       <View style={styles.pillInfo}>
                         <Text style={styles.pillName}>{sup.nombre}</Text>
@@ -562,9 +558,9 @@ export default function PatientProfileScreen(): React.ReactElement {
                         
                         <View style={styles.progressWrap}>
                           <View style={styles.progressTrack}>
-                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: isGood ? '#10B981' : '#F59E0B' }]} />
+                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: isGood ? semanticColors.success : semanticColors.warning }]} />
                           </View>
-                          <Text style={[styles.progressPct, { color: isGood ? '#059669' : '#D97706' }]}>{pct}%</Text>
+                          <Text style={[styles.progressPct, { color: isGood ? semanticColors.success : semanticColors.warning }]}>{pct}%</Text>
                         </View>
                         <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
                       </View>
@@ -575,7 +571,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                     icon={Pill as any}
                     title="Sin medicación"
                     description="No hay suplementos o tratamientos activos."
-                    themeColor="#9D174D"
+                    themeColor={BRAND}
                   />
                 )}
               </View>
@@ -591,14 +587,14 @@ export default function PatientProfileScreen(): React.ReactElement {
                   style={styles.primaryActionBtn}
                   onPress={() => setIsLabModalVisible(true)}
                 >
-                  <Plus size={16} color="#FFF" />
+                  <Plus size={16} color={obstetraColors.onPrimary} />
                   <Text style={styles.primaryActionText}>Registrar</Text>
                 </TouchableOpacity>
               </View>
               
               {lab.hemoglobina1 && lab.hemoglobina1 < 11 && (
                 <View style={styles.alertBanner}>
-                  <AlertTriangle size={20} color="#E11D48" />
+                  <AlertTriangle size={20} color={semanticColors.danger} />
                   <View style={styles.alertBannerTextWrap}>
                     <Text style={styles.alertBannerTitle}>Alerta de Anemia</Text>
                     <Text style={styles.alertBannerDesc}>Hemoglobina baja ({lab.hemoglobina1} g/dL). Monitorear suplementación.</Text>
@@ -627,14 +623,14 @@ export default function PatientProfileScreen(): React.ReactElement {
                   style={styles.primaryActionBtn}
                   onPress={() => setIsVaxModalVisible(true)}
                 >
-                  <Plus size={16} color="#FFF" />
+                  <Plus size={16} color={obstetraColors.onPrimary} />
                   <Text style={styles.primaryActionText}>Registrar</Text>
                 </TouchableOpacity>
               </View>
               {vacunas.length > 0 ? vacunas.map((v: any, i: number) => (
                 <View key={i} style={[styles.vaxRow, i < vacunas.length - 1 && styles.vaxBorder]}>
                   <View style={styles.vaxIconBox}>
-                    <Syringe size={20} color={v.aplicada ? '#10B981' : '#94A3B8'} />
+                    <Syringe size={20} color={v.aplicada ? semanticColors.success : commonColors.textTertiary} />
                   </View>
                   <View style={styles.vaxInfo}>
                     <Text style={styles.vaxName}>{v.nombre}</Text>
@@ -746,7 +742,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveLab} disabled={isSavingLab}>
                 {isSavingLab ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>Guardar</Text>
                 )}
@@ -809,11 +805,11 @@ export default function PatientProfileScreen(): React.ReactElement {
                       style={[
                         styles.textInput,
                         { flex: 1, alignItems: 'center' },
-                        vaxEstado === est && { borderColor: '#BE185D', backgroundColor: '#FDF2F8' }
+                        vaxEstado === est && { borderColor: BRAND, backgroundColor: obstetraColors.primaryLight }
                       ]}
                       onPress={() => setVaxEstado(est)}
                     >
-                      <Text style={[vaxEstado === est && { color: '#BE185D', fontWeight: 'bold' }]}>
+                      <Text style={[vaxEstado === est && { color: BRAND, fontWeight: 'bold' }]}>
                         {est.toUpperCase()}
                       </Text>
                     </TouchableOpacity>
@@ -828,7 +824,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveVax} disabled={isSavingVax}>
                 {isSavingVax ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>Guardar</Text>
                 )}
@@ -908,7 +904,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveTreat} disabled={isSavingTreat}>
                 {isSavingTreat ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
                 ) : (
                   <Text style={styles.saveBtnText}>Asignar</Text>
                 )}
@@ -925,7 +921,7 @@ export default function PatientProfileScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // slate-50
+    backgroundColor: commonColors.background,
   },
   
   // Header Minimalista
@@ -933,9 +929,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 40,
     paddingBottom: 24,
     paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    borderBottomColor: commonColors.border,
   },
   headerNav: {
     flexDirection: 'row',
@@ -950,10 +946,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   headerTitle: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
   },
   headerContent: {
     flexDirection: 'row',
@@ -962,34 +956,28 @@ const styles = StyleSheet.create({
   avatarWrap: {
     width: 56, height: 56,
     borderRadius: 28,
-    backgroundColor: '#FDF2F8',
+    backgroundColor: obstetraColors.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     marginRight: 16,
     borderWidth: 1,
-    borderColor: '#FCE7F3',
+    borderColor: commonColors.border,
   },
   avatarText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#BE185D',
+    ...typography.h3,
+    color: BRAND,
   },
   headerInfo: {
     flex: 1,
     marginRight: 12,
   },
   patientName: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h2,
+    color: commonColors.text,
     marginBottom: 2,
-    letterSpacing: -0.5,
   },
   patientSub: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
-    color: '#64748B',
+    ...typography.caption,
+    color: commonColors.textSecondary,
   },
 
   // KPIs
@@ -1004,25 +992,24 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   kpiValue: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
     marginBottom: 2,
   },
   kpiLabel: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 10,
-    fontWeight: '600',
-    color: '#64748B',
+    color: commonColors.textSecondary,
     textTransform: 'uppercase',
   },
 
@@ -1034,7 +1021,7 @@ const styles = StyleSheet.create({
   tabsWrapper: {
     maxHeight: 50,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: commonColors.borderLight,
   },
   tabsScrollContent: {
     paddingHorizontal: 16,
@@ -1050,17 +1037,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabLineActive: {
-    borderBottomColor: '#BE185D',
+    borderBottomColor: BRAND,
   },
   tabText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: commonColors.textTertiary,
     marginLeft: 6,
   },
   tabTextActive: {
-    color: '#BE185D',
+    color: BRAND,
   },
   scrollArea: {
     padding: 16,
@@ -1070,9 +1057,11 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   insetGroup: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   section: {
     gap: 16,
@@ -1080,15 +1069,15 @@ const styles = StyleSheet.create({
 
   // Cards
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     padding: 24,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   cardHeader: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.h3,
+    color: commonColors.text,
     marginBottom: 8,
   },
 
@@ -1104,41 +1093,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   tamizajesIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FDF2F8',
+    backgroundColor: obstetraColors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tamizajesTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '700', color: '#0F172A' },
-  tamizajesDesc: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, color: '#64748B', marginTop: 2 },
+  tamizajesTitle: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.text },
+  tamizajesDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   primaryActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#BE185D',
+    backgroundColor: BRAND,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
     gap: 6,
   },
   primaryActionText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
-    color: '#FFF',
+    color: obstetraColors.onPrimary,
   },
 
   controlCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   ctrlHeader: {
     flexDirection: 'row',
@@ -1146,48 +1139,43 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ctrlDateBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 12,
     width: 52,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
     marginRight: 16,
   },
   ctrlDay: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '800',
-    color: '#9D174D',
+    color: BRAND,
     lineHeight: 22,
   },
   ctrlMonth: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 10,
-    fontWeight: '700',
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   ctrlTitleWrap: {
     flex: 1,
   },
   ctrlTitle: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.bodyMedium,
+    color: commonColors.text,
   },
   ctrlSubtitle: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 13,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     marginTop: 2,
   },
   ctrlMetrics: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 16,
     padding: 16,
   },
@@ -1195,32 +1183,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ctrlMetricVal: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
-    color: '#0F172A',
+    color: commonColors.text,
   },
   ctrlMetricLbl: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 11,
-    color: '#64748B',
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
     marginTop: 4,
   },
 
   // Treatments specific
   pillCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 20,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
   pillIconBox: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#FCE7F3', // pink-100
+    backgroundColor: obstetraColors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -1229,15 +1220,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pillName: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.bodyMedium,
+    color: commonColors.text,
   },
   pillDosis: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 13,
-    color: '#64748B',
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
     marginTop: 2,
     marginBottom: 12,
   },
@@ -1248,7 +1236,7 @@ const styles = StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: commonColors.surfaceAlt,
     borderRadius: 3,
     marginRight: 12,
   },
@@ -1257,44 +1245,44 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressPct: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
   },
   progressHint: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 11,
-    color: '#94A3B8',
+    letterSpacing: 0.1,
+    color: commonColors.textTertiary,
     marginTop: 6,
   },
 
   // Lab specific
   alertBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: semanticColors.dangerLight,
     padding: 16,
     borderRadius: 16,
     marginBottom: 20,
     marginTop: 8,
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: semanticColors.danger,
   },
   alertBannerTextWrap: {
     marginLeft: 12,
     flex: 1,
   },
   alertBannerTitle: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '700',
-    color: '#BE123C',
+    color: semanticColors.danger,
     marginBottom: 4,
   },
   alertBannerDesc: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: 13,
-    color: '#9F1239',
+    ...typography.bodySmall,
+    color: semanticColors.danger,
     lineHeight: 18,
   },
 
@@ -1306,13 +1294,13 @@ const styles = StyleSheet.create({
   },
   vaxBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: commonColors.borderLight,
   },
   vaxIconBox: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -1321,15 +1309,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vaxName: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
+    ...typography.bodySmall,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '600',
-    color: '#0F172A',
+    color: commonColors.text,
   },
   vaxWeek: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 12,
-    color: '#64748B',
+    letterSpacing: 0.1,
+    color: commonColors.textSecondary,
     marginTop: 2,
   },
   vaxStatus: {
@@ -1337,31 +1326,32 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  vaxStatusOk: { backgroundColor: '#DCFCE7' },
-  vaxStatusPending: { backgroundColor: '#F1F5F9' },
+  vaxStatusOk: { backgroundColor: semanticColors.successLight },
+  vaxStatusPending: { backgroundColor: commonColors.surfaceAlt },
   vaxStatusText: {
-    fontFamily: typography.caption.fontFamily,
+    ...typography.overline,
     fontSize: 11,
+    letterSpacing: 0.1,
     fontWeight: '700',
   },
-  vaxStatusTextOk: { color: '#16A34A' },
-  vaxStatusTextPending: { color: '#64748B' },
+  vaxStatusTextOk: { color: semanticColors.success },
+  vaxStatusTextPending: { color: commonColors.textSecondary },
   
   emptyTextInfo: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    color: '#64748B',
+    ...typography.bodyMedium,
+    color: commonColors.textSecondary,
     fontStyle: 'italic',
     marginTop: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: commonColors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: commonColors.surface,
     borderRadius: 24,
     width: '100%',
     maxHeight: '85%',
@@ -1369,10 +1359,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   modalHeader: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...typography.h2,
+    color: commonColors.text,
     marginBottom: 8,
   },
   inputFieldGroup: {
@@ -1380,20 +1368,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputLabel: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 13,
+    ...typography.caption,
+    fontFamily: typography.label.fontFamily,
     fontWeight: '600',
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   textInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    ...typography.bodySmall,
     fontSize: 15,
-    color: '#0F172A',
+    color: commonColors.text,
   },
   modalActions: {
     flexDirection: 'row',
@@ -1406,29 +1395,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: commonColors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
+    ...typography.label,
     fontWeight: '600',
-    color: '#64748B',
+    color: commonColors.textSecondary,
   },
   saveBtn: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#BE185D',
+    backgroundColor: BRAND,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 100,
   },
   saveBtnText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 14,
+    ...typography.label,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: obstetraColors.onPrimary,
   },
 });

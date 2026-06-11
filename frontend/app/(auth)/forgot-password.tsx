@@ -14,11 +14,14 @@ import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { ChevronLeft, CreditCard, Mail, CheckCircle, ArrowLeft } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import api from '../../src/services/api';
+import { obstetraColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
+import { spacing, borderRadius } from '../../src/theme/spacing';
+
+const BRAND = obstetraColors.primary;
 
 const forgotSchema = z.object({
   dni: z
@@ -67,7 +70,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
           
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
-              <ArrowLeft size={24} color="#0F172A" />
+              <ArrowLeft size={24} color={commonColors.text} />
               <Text style={styles.backText}>Volver</Text>
             </Pressable>
 
@@ -80,7 +83,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
               <View style={styles.card}>
                 <View style={styles.successContainer}>
                   <View style={styles.successIcon}>
-                    <CheckCircle size={48} color="#10B981" />
+                    <CheckCircle size={48} color={semanticColors.success} />
                   </View>
                   <Text style={styles.successTitle}>Solicitud enviada</Text>
                   <Text style={styles.successDescription}>
@@ -92,7 +95,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                     variant="primary"
                     fullWidth
                     size="lg"
-                    themeColor="#BE185D"
+                    themeColor={BRAND}
                   />
                 </View>
               </View>
@@ -107,8 +110,8 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                   keyboardType="number-pad"
                   maxLength={8}
                   error={errors.dni?.message}
-                  themeColor="#BE185D"
-                  containerStyle={{ marginBottom: 24 }}
+                  themeColor={BRAND}
+                  containerStyle={{ marginBottom: spacing.lg }}
                 />
 
                 <AppButton
@@ -117,7 +120,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                   loading={isSubmitting}
                   fullWidth
                   size="lg"
-                  themeColor="#BE185D"
+                  themeColor={BRAND}
                 />
               </View>
             )}
@@ -129,83 +132,67 @@ export default function ForgotPasswordScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: commonColors.background },
   safeArea: { flex: 1 },
   flex: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    marginBottom: 32,
-    gap: 8,
+    marginBottom: spacing.xl,
+    gap: spacing.sm,
   },
   backText: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 16,
-    color: '#0F172A',
-    fontWeight: '600',
+    ...typography.bodyMedium,
+    color: commonColors.text,
   },
   headerSection: {
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    ...typography.display,
+    color: commonColors.text,
+    marginBottom: spacing.sm,
   },
   tagline: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 16,
-    color: '#64748B',
-    lineHeight: 24,
+    ...typography.bodyMedium,
+    color: commonColors.textSecondary,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 8,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: commonColors.border,
   },
   successContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: spacing.lg,
   },
   successIcon: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: semanticColors.successLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   successTitle: {
-    fontFamily: typography.h2.fontFamily,
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 12,
+    ...typography.h2,
+    color: commonColors.text,
+    marginBottom: spacing.sm + 4,
     textAlign: 'center',
   },
   successDescription: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: 15,
-    color: '#64748B',
+    ...typography.bodyMedium,
+    color: commonColors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
 });

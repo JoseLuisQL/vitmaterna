@@ -12,10 +12,12 @@ import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { commonColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useSystemConfig, useUpdateSystemConfig } from '../../../src/services/admin-queries';
+
+const BRAND = obstetraColors.primary;
 
 const schema = z.object({
   maxPatientsPerObstetra: z.string().min(1, 'Requerido'),
@@ -86,7 +88,7 @@ export default function ConfigScreen(): React.ReactElement {
             label="Máx. Pacientes por Obstetra"
             keyboardType="numeric"
             error={errors.maxPatientsPerObstetra?.message}
-            themeColor={semanticColors.info}
+            themeColor={BRAND}
           />
           
           <View style={styles.switchRow}>
@@ -101,8 +103,8 @@ export default function ConfigScreen(): React.ReactElement {
                 <Switch
                   value={value}
                   onValueChange={onChange}
-                  trackColor={{ false: commonColors.border, true: semanticColors.infoLight }}
-                  thumbColor={value ? semanticColors.info : commonColors.textSecondary}
+                  trackColor={{ false: commonColors.border, true: obstetraColors.primaryLight }}
+                  thumbColor={value ? BRAND : commonColors.textSecondary}
                 />
               )}
             />
@@ -135,7 +137,7 @@ export default function ConfigScreen(): React.ReactElement {
             control={control}
             label="Email de Soporte"
             error={errors.supportEmail?.message}
-            themeColor={semanticColors.info}
+            themeColor={BRAND}
             autoCapitalize="none"
           />
         </View>
@@ -163,9 +165,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   title: {
-    fontFamily: typography.h1.fontFamily,
-    fontSize: typography.h1.fontSize,
-    fontWeight: typography.h1.fontWeight,
+    ...typography.h1,
     color: commonColors.text,
   },
   formContainer: {
@@ -181,9 +181,7 @@ const styles = StyleSheet.create({
     borderColor: commonColors.border,
   },
   sectionTitle: {
-    fontFamily: typography.h3.fontFamily,
-    fontSize: typography.h3.fontSize,
-    fontWeight: typography.h3.fontWeight,
+    ...typography.h3,
     color: commonColors.text,
     marginBottom: spacing.md,
   },
@@ -197,19 +195,16 @@ const styles = StyleSheet.create({
     borderBottomColor: commonColors.borderLight,
   },
   switchLabel: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: typography.bodyMedium.fontSize,
-    fontWeight: typography.bodyMedium.fontWeight,
+    ...typography.bodyMedium,
     color: commonColors.text,
   },
   switchDesc: {
-    fontFamily: typography.caption.fontFamily,
-    fontSize: typography.caption.fontSize,
+    ...typography.caption,
     color: commonColors.textSecondary,
     maxWidth: 250,
   },
   submitBtn: {
     marginTop: spacing.md,
-    backgroundColor: semanticColors.info,
+    backgroundColor: BRAND,
   },
 });
