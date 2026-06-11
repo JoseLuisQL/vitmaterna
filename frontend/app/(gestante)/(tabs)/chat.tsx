@@ -5,9 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import api from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { Send, Bot } from 'lucide-react-native';
+import { useToast } from '../../../src/components/ui';
+import { Send, Bot, MessageCircle } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
+import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
@@ -25,10 +27,12 @@ interface ChatMessage {
 export default function GestanteChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [obstetra, setObstetra] = useState<{ firstName: string; lastName: string; phone?: string | null } | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
   const { isLoading: isResolvingConv } = useQuery({
@@ -38,6 +42,7 @@ export default function GestanteChatScreen() {
         const res = await api.get('/chat/conversation');
         const convId = res.data.data.id;
         setConversationId(convId);
+        setObstetra(res.data.data.obstetra || null);
         return res.data.data;
       } catch (error) {
         console.warn('Failed to resolve conversation:', error);
@@ -45,6 +50,16 @@ export default function GestanteChatScreen() {
       }
     },
   });
+
+  const handleWhatsApp = async () => {
+    if (!obstetra?.phone) {
+      toast.info('WhatsApp no disponible', 'Tu obstetra no tiene un número registrado.');
+      return;
+    }
+    const saludo = `Hola Obst. ${obstetra.firstName}, soy ${user?.firstName || ''}. Tengo una consulta sobre mi control prenatal.`;
+    const ok = await openWhatsApp(obstetra.phone, saludo);
+    if (!ok) toast.error('No se pudo abrir WhatsApp', 'Verifica que tengas WhatsApp instalado.');
+  };
 
   const { isLoading: isLoadingHistory } = useQuery({
     queryKey: ['chat-history', conversationId],
@@ -164,10 +179,15 @@ export default function GestanteChatScreen() {
               <Text style={styles.headerTitle}>Consultas</Text>
               <Text style={styles.headerSubtitle}>Habla con tu obstetra</Text>
             </View>
-            <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/chatbot')} activeOpacity={0.8}>
-              <Bot size={20} color={BRAND} />
-              <Text style={styles.botBtnText}>Asistente 24/7</Text>
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp">
+                <MessageCircle size={20} color={commonColors.surface} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/chatbot')} activeOpacity={0.8}>
+                <Bot size={20} color={BRAND} />
+                <Text style={styles.botBtnText}>Asistente 24/7</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </View>
@@ -231,6 +251,8 @@ const styles = StyleSheet.create({
   headerTopRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { ...typography.h1, color: commonColors.text, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  waBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
   botBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 10 },
   botBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: BRAND },
   offlineBanner: { backgroundColor: commonColors.surfaceAlt, padding: spacing.sm, alignItems: 'center' },

@@ -101,7 +101,7 @@ Leyenda: ✅ Implementado · 🟡 Parcial · ❌ Faltante
 | RF-9.02 Chatbot de emergencia 24/7 | ✅ | Triage local por síntomas + **alerta automática al obstetra**: notificación in-app persistente (campana) y push; en casos GRAVES, además inserta un mensaje de alerta en el chat clínico gestante↔obstetra. |
 | RF-9.03 Mensajes masivos del obstetra | ✅ | Con filtros por trimestre y riesgo. Probado. |
 | RF-9.04 Línea de emergencia (llamada + GPS) | ✅ | Botón emergencia → GPS → mensaje de alerta + push. Probado. |
-| RF-9.05 WhatsApp para consultas (deep-link) | ❌ | No hay `wa.me`/`whatsapp://` para abrir chat con el obstetra. |
+| RF-9.05 WhatsApp para consultas (deep-link) | ✅ | Botón de WhatsApp en el chat de la gestante que abre `wa.me/<telefono>` del obstetra con mensaje prellenado; `/chat/conversation` ahora devuelve el teléfono del obstetra y se normaliza el número (+51). |
 
 **Estado del chat tras esta revisión:** verificado end-to-end (REST + Socket.IO):
 resolución de conversación, historial paginado, RBAC (403 a terceros), envío y

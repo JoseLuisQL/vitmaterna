@@ -108,7 +108,23 @@ export const getOrCreateConversation = async (
       });
     }
 
-    return conversation;
+    // Adjuntar datos de contacto del obstetra (para chat directo y WhatsApp RF-9.05).
+    const obstetraInfo = await prisma.obstetra.findUnique({
+      where: { id: obstetraId },
+      include: { user: { select: { firstName: true, lastName: true, phone: true } } },
+    });
+
+    return {
+      ...conversation,
+      obstetra: obstetraInfo
+        ? {
+            id: obstetraInfo.id,
+            firstName: obstetraInfo.user.firstName,
+            lastName: obstetraInfo.user.lastName,
+            phone: obstetraInfo.user.phone,
+          }
+        : null,
+    };
   } else if (userRole === 'obstetra') {
     const obstetra = await prisma.obstetra.findUnique({ where: { userId } });
     if (!obstetra) {
