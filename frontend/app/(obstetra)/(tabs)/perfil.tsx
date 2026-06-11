@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
+import { ProfileInfoModal, useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 
@@ -30,21 +31,65 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
 
 export default function ObstetraPerfilScreen(): React.ReactElement {
   const { user, logout } = useAuthStore();
+  const toast = useToast();
   const router = useRouter();
+  const [infoModal, setInfoModal] = useState<{ title: string; description?: string; rows?: { label: string; value: string }[] } | null>(null);
 
   const handleLogout = async () => {
     await logout();
+    toast.info('Sesión cerrada', 'Has salido de VITMATERNA correctamente.');
     router.replace('/(auth)/login');
   };
 
-  const proximamente = (titulo: string) =>
-    Alert.alert(titulo, 'Esta sección estará disponible en una próxima actualización.');
+  const abrirNotificaciones = () => setInfoModal({
+    title: 'Notificaciones clínicas',
+    description: 'Tu bandeja recibe alertas de signos de alarma, mensajes de gestantes y recordatorios críticos del sistema.',
+    rows: [
+      { label: 'Alertas', value: 'Signos de alarma, emergencias y derivaciones' },
+      { label: 'Canales', value: 'App/push; SMS y WhatsApp si están configurados en el backend' },
+      { label: 'Prioridad', value: 'Las alertas graves aparecen en la bandeja de Alertas' },
+    ],
+  });
+
+  const abrirConfiguracion = () => setInfoModal({
+    title: 'Configuración profesional',
+    description: 'Parámetros operativos de tu cuenta de obstetra.',
+    rows: [
+      { label: 'Panel', value: 'Gestantes activas, cronograma, alertas y reportes' },
+      { label: 'Acceso', value: 'Autorizado por rol obstetra' },
+      { label: 'Edición clínica', value: 'Controles, laboratorio, vacunas, tratamientos y tamizajes' },
+    ],
+  });
+
+  const abrirPrivacidad = () => setInfoModal({
+    title: 'Privacidad y seguridad',
+    description: 'Los datos de salud son sensibles. El sistema aplica autenticación, RBAC y auditoría para protegerlos.',
+    rows: [
+      { label: 'RBAC', value: 'Solo accedes a funciones clínicas autorizadas' },
+      { label: 'Auditoría', value: 'Las acciones administrativas y clínicas quedan registradas' },
+      { label: 'Recomendación', value: 'No compartas tu cuenta ni tokens de acceso' },
+    ],
+  });
+
+  const abrirAyuda = () => setInfoModal({
+    title: 'Ayuda y soporte',
+    description: 'Guía rápida para operar los módulos clínicos principales.',
+    rows: [
+      { label: 'Gestantes', value: 'Registra y actualiza datos clínicos desde la ficha' },
+      { label: 'Alertas', value: 'Atiende o deriva signos de alarma desde la bandeja' },
+      { label: 'Mensajes', value: 'Usa consultas o mensaje masivo para comunicados' },
+    ],
+  });
 
   const verDatosProfesionales = () =>
-    Alert.alert(
-      'Datos Profesionales',
-      `Nombre: ${user?.firstName || ''} ${user?.lastName || ''}\nDNI: ${user?.dni || '—'}\nRol: Obstetra`
-    );
+    setInfoModal({
+      title: 'Datos profesionales',
+      rows: [
+        { label: 'Nombre', value: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '—' },
+        { label: 'DNI', value: user?.dni || '—' },
+        { label: 'Rol', value: 'Obstetra' },
+      ],
+    });
 
   const displayName = user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Obstetra';
   const initials = (user?.firstName?.charAt(0) || '') + (user?.lastName?.charAt(0) || '') || 'O';
@@ -80,19 +125,27 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         <View style={styles.menuCard}>
           <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Profesionales" onPress={verDatosProfesionales} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
+          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={() => proximamente('Configuración')} />
+          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={abrirConfiguracion} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
+          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={abrirPrivacidad} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={() => proximamente('Ayuda y Soporte')} />
+          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
         </View>
 
         <View style={[styles.menuCard, { marginTop: 24 }]}>
           <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
         </View>
       </View>
+
+      <ProfileInfoModal
+        visible={!!infoModal}
+        title={infoModal?.title ?? ''}
+        description={infoModal?.description}
+        rows={infoModal?.rows}
+        onClose={() => setInfoModal(null)}
+      />
     </View>
   );
 }

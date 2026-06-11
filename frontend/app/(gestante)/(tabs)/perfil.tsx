@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient } from '../../../src/services/api-queries';
+import { ProfileInfoModal, useToast } from '../../../src/components/ui';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
@@ -36,6 +37,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
 
 export default function PerfilScreen(): React.ReactElement {
   const { user: authUser, logout } = useAuthStore();
+  const toast = useToast();
   const router = useRouter();
 
   const { data: profileData, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
@@ -49,20 +51,50 @@ export default function PerfilScreen(): React.ReactElement {
   const [email, setEmail] = useState('');
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [fum, setFum] = useState('');
+  const [infoModal, setInfoModal] = useState<{ title: string; description?: string; rows?: { label: string; value: string }[] } | null>(null);
 
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)/login');
   };
 
-  const proximamente = (titulo: string) =>
-    Alert.alert(titulo, 'Esta sección estará disponible en una próxima actualización.');
+  const abrirNotificaciones = () => setInfoModal({
+    title: 'Preferencias de notificación',
+    description: 'Tus recordatorios están activos para citas, tratamientos, signos de alarma y mensajes de la obstetra. Puedes modificar tus datos de contacto desde “Datos Personales y FUM”.',
+    rows: [
+      { label: 'Canales habilitados', value: 'Push en app, SMS y WhatsApp si el centro tiene credenciales activas' },
+      { label: 'Momentos de aviso', value: '3 días antes, 1 día antes y alertas clínicas inmediatas' },
+    ],
+  });
 
-  const mostrarAyuda = () =>
-    Alert.alert(
-      'Ayuda y Soporte',
-      'Para consultas comunícate con tu obstetra desde el chat de la app.\n\nCentro de Salud Talavera\nTeléfono: 083 - 421800'
-    );
+  const abrirConfiguracion = () => setInfoModal({
+    title: 'Configuración de cuenta',
+    description: 'Configuración segura para tu cuenta de gestante.',
+    rows: [
+      { label: 'Sesión', value: 'Persistente con token seguro' },
+      { label: 'Privacidad', value: 'Tus datos clínicos solo son visibles para el personal autorizado' },
+      { label: 'Soporte', value: 'Usa el chat para consultas no urgentes' },
+    ],
+  });
+
+  const abrirPrivacidad = () => setInfoModal({
+    title: 'Privacidad y seguridad',
+    description: 'VITMATERNA protege tus datos personales y de salud con autenticación, roles y validación de acceso.',
+    rows: [
+      { label: 'Datos sensibles', value: 'Historial clínico, controles, tratamientos y tamizajes' },
+      { label: 'Acceso', value: 'Solo tú y el equipo clínico autorizado' },
+      { label: 'Trazabilidad', value: 'Las acciones importantes quedan registradas para auditoría' },
+    ],
+  });
+
+  const mostrarAyuda = () => setInfoModal({
+    title: 'Ayuda y soporte',
+    description: 'Para consultas comunícate con tu obstetra desde el chat de la app. Si es urgente, llama o acude al centro de salud.',
+    rows: [
+      { label: 'Centro de Salud Talavera', value: '083 - 421800' },
+      { label: 'Emergencia', value: 'Usa el botón de emergencia o el asistente 24/7' },
+    ],
+  });
 
   const openEditModal = () => {
     if (!profileData) {
@@ -118,10 +150,7 @@ export default function PerfilScreen(): React.ReactElement {
       }
     }, {
       onSuccess: () => {
-        Alert.alert(
-          'Datos Guardados', 
-          'Tus datos y cronograma de controles prenatales se han auto-actualizado exitosamente.'
-        );
+        toast.success('Datos guardados', 'Tu perfil y cronograma prenatal se actualizaron correctamente.');
         setIsEditModalVisible(false);
         refetchProfile();
       },
@@ -136,7 +165,7 @@ export default function PerfilScreen(): React.ReactElement {
             msg += `\n\nDetalles:\n${detailMsgs}`;
           }
         }
-        Alert.alert('Error', msg);
+        toast.error('No se pudo guardar', msg);
       }
     });
   };
@@ -184,14 +213,14 @@ export default function PerfilScreen(): React.ReactElement {
           <View style={styles.menuDivider} />
           <MenuItem icon={<Activity size={20} color={BRAND} />} title="Mi Progreso" onPress={() => router.push('/(gestante)/(tabs)/mi-progreso')} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={() => proximamente('Notificaciones')} />
+          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
         </View>
 
         <Text style={styles.sectionTitle}>Preferencias</Text>
         <View style={styles.menuCard}>
-          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={() => proximamente('Configuración')} />
+          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={abrirConfiguracion} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={() => proximamente('Privacidad y Seguridad')} />
+          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={abrirPrivacidad} />
           <View style={styles.menuDivider} />
           <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={mostrarAyuda} />
         </View>
@@ -309,6 +338,14 @@ export default function PerfilScreen(): React.ReactElement {
           </View>
         </View>
       </Modal>
+
+      <ProfileInfoModal
+        visible={!!infoModal}
+        title={infoModal?.title ?? ''}
+        description={infoModal?.description}
+        rows={infoModal?.rows}
+        onClose={() => setInfoModal(null)}
+      />
     </View>
   );
 }

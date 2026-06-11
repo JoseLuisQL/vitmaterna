@@ -15,6 +15,7 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { useAuthStore } from '../src/store/authStore';
+import { ToastProvider } from '../src/components/ui/ToastProvider';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
 
@@ -54,6 +55,7 @@ export default function RootLayout(): React.ReactElement | null {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
+        <ToastProvider>
           <StatusBar style="dark" />
           <Stack
             screenOptions={{
@@ -68,6 +70,7 @@ export default function RootLayout(): React.ReactElement | null {
             <Stack.Screen name="(obstetra)" />
             <Stack.Screen name="(admin)" />
           </Stack>
+        </ToastProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
