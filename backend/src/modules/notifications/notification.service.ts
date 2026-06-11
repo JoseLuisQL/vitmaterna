@@ -166,10 +166,133 @@ export async function scanAndSendReminders() {
   }
 }
 
-export function startReminderCron() {
-  scanAndSendReminders().catch((err) => console.error('[REMINDER CRON ERROR]', err));
+/** Crea una notificación persistente para un usuario y le envía push si tiene token. */
+async function notifyUser(
+  userId: string,
+  tipo: string,
+  titulo: string,
+  mensaje: string,
+  datos?: Record<string, unknown>,
+) {
+  await prisma.notification.create({
+    data: { userId, tipo, canal: 'push', titulo, mensaje, datos: (datos ?? {}) as object, estado: 'enviada', enviadaAt: new Date() },
+  });
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const prefs = user?.notificationPreferences as Record<string, any> | null;
+  if (prefs?.expoPushToken) {
+    await sendPushNotification([prefs.expoPushToken], titulo, mensaje, datos);
+  }
+}
 
+/** Devuelve el userId del obstetra asociado a una gestante (último control o cita). */
+async function findObstetraUserIdForGestante(gestanteId: string): Promise<string | null> {
+  const lastControl = await prisma.prenatalControl.findFirst({
+    where: { gestanteId },
+    orderBy: { fecha: 'desc' },
+    include: { obstetra: true },
+  });
+  if (lastControl?.obstetra?.userId) return lastControl.obstetra.userId;
+  const lastAppt = await prisma.appointment.findFirst({
+    where: { gestanteId, obstetraId: { not: null } },
+    orderBy: { fecha: 'desc' },
+    include: { obstetra: true },
+  });
+  if (lastAppt?.obstetra?.userId) return lastAppt.obstetra.userId;
+  const anyObs = await prisma.obstetra.findFirst();
+  return anyObs?.userId ?? null;
+}
+
+/**
+ * RF-3.13 / RF-7.07: marca como no_asistida toda cita programada/confirmada
+ * cuya fecha ya pasó (más de 1 día) sin registro de asistencia, y alerta al
+ * obstetra responsable para seguimiento (visita domiciliaria o llamada).
+ */
+export async function scanMissedAppointments() {
+  const limite = new Date(Date.now() - 24 * 60 * 60 * 1000); // pasó hace +24h
+  const vencidas = await prisma.appointment.findMany({
+    where: { estado: { in: ['programada', 'confirmada'] }, fecha: { lt: limite } },
+    include: { gestante: { include: { user: true } } },
+  });
+
+  for (const appt of vencidas) {
+    await prisma.appointment.update({ where: { id: appt.id }, data: { estado: 'no_asistida' } });
+    const obstetraUserId = await findObstetraUserIdForGestante(appt.gestanteId);
+    if (obstetraUserId) {
+      const nombre = appt.gestante?.user
+        ? `${appt.gestante.user.firstName} ${appt.gestante.user.lastName}`
+        : 'una gestante';
+      await notifyUser(
+        obstetraUserId,
+        'inasistencia',
+        'Cita perdida',
+        `${nombre} no asistió a su control del ${new Date(appt.fecha).toLocaleDateString()}. Considera una visita domiciliaria o llamada.`,
+        { gestanteId: appt.gestanteId, appointmentId: appt.id },
+      );
+    }
+  }
+  if (vencidas.length) {
+    console.log(`[CRON] ${vencidas.length} cita(s) marcada(s) como no asistida + alerta a obstetra`);
+  }
+}
+
+/**
+ * RF-7.08: detecta gestantes con adherencia < 50% en algún tratamiento activo
+ * (con al menos 7 días de tratamiento) y alerta al obstetra una vez al día.
+ */
+export async function scanLowAdherence() {
+  const tratamientos = await prisma.treatment.findMany({
+    where: { estado: 'activo' },
+    include: { supplementLogs: true, gestante: { include: { user: true } } },
+  });
+
+  const hoy = new Date().toISOString().split('T')[0];
+
+  for (const t of tratamientos) {
+    const inicio = new Date(t.fechaInicio);
+    const diasTranscurridos = Math.max(1, Math.floor((Date.now() - inicio.getTime()) / (24 * 60 * 60 * 1000)));
+    if (diasTranscurridos < 7) continue; // necesita historial mínimo
+
+    const tomados = t.supplementLogs.filter((l) => l.tomado).length;
+    const denom = Math.min(diasTranscurridos, t.duracionDias || diasTranscurridos);
+    const adherencia = denom > 0 ? Math.round((tomados / denom) * 100) : 100;
+    if (adherencia >= 50) continue;
+
+    // Evitar alertas repetidas el mismo día (busca una previa de hoy).
+    const yaAlertado = await prisma.notification.findFirst({
+      where: {
+        tipo: 'baja_adherencia',
+        datos: { path: ['treatmentId'], equals: t.id },
+        createdAt: { gte: new Date(`${hoy}T00:00:00.000Z`) },
+      },
+    });
+    if (yaAlertado) continue;
+
+    const obstetraUserId = await findObstetraUserIdForGestante(t.gestanteId);
+    if (obstetraUserId) {
+      const nombre = t.gestante?.user
+        ? `${t.gestante.user.firstName} ${t.gestante.user.lastName}`
+        : 'una gestante';
+      await notifyUser(
+        obstetraUserId,
+        'baja_adherencia',
+        'Baja adherencia al tratamiento',
+        `${nombre} tiene ${adherencia}% de adherencia en "${t.nombre}". Recomienda intervención/seguimiento.`,
+        { gestanteId: t.gestanteId, treatmentId: t.id, adherencia },
+      );
+    }
+  }
+}
+
+export function startReminderCron() {
+  const runAll = async () => {
+    await scanAndSendReminders();
+    await scanMissedAppointments();
+    await scanLowAdherence();
+  };
+  runAll().catch((err) => console.error('[REMINDER CRON ERROR]', err));
+
+  // Ejecutar cada hora para acercarse a tiempo real en recordatorios y alertas.
   setInterval(() => {
-    scanAndSendReminders().catch((err) => console.error('[REMINDER CRON ERROR]', err));
-  }, 24 * 60 * 60 * 1000);
+    runAll().catch((err) => console.error('[REMINDER CRON ERROR]', err));
+  }, 60 * 60 * 1000);
 }
