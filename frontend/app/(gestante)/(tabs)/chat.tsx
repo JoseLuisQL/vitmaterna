@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import api from '../../../src/services/api';
+import * as ImagePicker from 'expo-image-picker';
+import api, { resolveMediaUrl } from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useToast } from '../../../src/components/ui';
-import { Send, Bot, MessageCircle } from 'lucide-react-native';
+import { Send, Bot, MessageCircle, ImagePlus } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
@@ -22,6 +23,7 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   tipo?: string;
+  mediaUrl?: string | null;
 }
 
 export default function GestanteChatScreen() {
@@ -33,6 +35,7 @@ export default function GestanteChatScreen() {
   const [inputText, setInputText] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [obstetra, setObstetra] = useState<{ firstName: string; lastName: string; phone?: string | null } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   const { isLoading: isResolvingConv } = useQuery({
@@ -74,6 +77,7 @@ export default function GestanteChatScreen() {
           text: m.contenido,
           createdAt: m.createdAt,
           tipo: m.tipo,
+          mediaUrl: m.mediaUrl,
         }));
         const sortedHistory = [...mappedHistory].reverse();
         setMessages(sortedHistory);
@@ -96,6 +100,7 @@ export default function GestanteChatScreen() {
           text: message.contenido,
           createdAt: message.createdAt,
           tipo: message.tipo,
+          mediaUrl: message.mediaUrl,
         };
 
         setMessages(prev => {
@@ -135,6 +140,47 @@ export default function GestanteChatScreen() {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
+  const handleAttachPhoto = async () => {
+    if (!conversationId || uploading) return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        toast.info('Permiso requerido', 'Permite el acceso a tus fotos para enviar imágenes.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.6,
+        base64: true,
+      });
+      if (result.canceled || !result.assets?.[0]?.base64) return;
+
+      setUploading(true);
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const res = await api.post('/chat/upload', { base64: asset.base64, mimeType });
+      const mediaUrl = res.data?.data?.mediaUrl;
+      if (!mediaUrl) throw new Error('upload failed');
+
+      emit('send_message', { conversationId, content: '📷 Foto', type: 'imagen', mediaUrl });
+
+      const optimistic: ChatMessage = {
+        id: Date.now().toString(),
+        senderId: user?.id || 'me',
+        text: '📷 Foto',
+        createdAt: new Date().toISOString(),
+        tipo: 'imagen',
+        mediaUrl,
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (e) {
+      toast.error('No se pudo enviar la foto', 'Inténtalo nuevamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMe = item.senderId === user?.id || item.senderId === 'me';
     const isAlert = item.tipo === 'alerta_emergencia';
@@ -152,11 +198,22 @@ export default function GestanteChatScreen() {
       );
     }
 
+    const isImage = item.tipo === 'imagen' && item.mediaUrl;
+
     return (
       <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther]}>
-        <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
-          {item.text}
-        </Text>
+        {isImage ? (
+          <Image
+            source={{ uri: resolveMediaUrl(item.mediaUrl) || undefined }}
+            style={styles.messageImage}
+            resizeMode="cover"
+            accessibilityLabel="Foto enviada en el chat"
+          />
+        ) : (
+          <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
+            {item.text}
+          </Text>
+        )}
         <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
           {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
@@ -213,6 +270,18 @@ export default function GestanteChatScreen() {
       />
 
       <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={styles.attachButton}
+          onPress={handleAttachPhoto}
+          disabled={uploading}
+          accessibilityLabel="Adjuntar foto"
+        >
+          {uploading ? (
+            <ActivityIndicator size="small" color={BRAND} />
+          ) : (
+            <ImagePlus size={22} color={BRAND} />
+          )}
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           value={inputText}
@@ -261,6 +330,7 @@ const styles = StyleSheet.create({
   messageBubble: { maxWidth: '80%', padding: spacing.md, borderRadius: borderRadius.xl, marginBottom: spacing.sm + 4, borderWidth: 1, borderColor: commonColors.border },
   messageMe: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: 4, borderColor: BRAND },
   messageOther: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: 4 },
+  messageImage: { width: 200, height: 200, borderRadius: borderRadius.lg, marginBottom: 6, backgroundColor: commonColors.surfaceAlt },
   messageText: { ...typography.bodyMedium, marginBottom: 6 },
   messageTextMe: { color: commonColors.surface },
   messageTextOther: { color: commonColors.text },
@@ -268,6 +338,7 @@ const styles = StyleSheet.create({
   timeTextMe: { color: 'rgba(255,255,255,0.7)' },
   timeTextOther: { color: commonColors.textTertiary },
   inputContainer: { flexDirection: 'row', padding: spacing.md, backgroundColor: commonColors.surface, borderTopWidth: 1, borderColor: commonColors.border, alignItems: 'flex-end', paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.md },
+  attachButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: gestanteColors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },
   input: { flex: 1, backgroundColor: commonColors.background, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: 14, minHeight: 48, maxHeight: 120, ...typography.bodyMedium, color: commonColors.text, borderWidth: 1, borderColor: commonColors.border },
   sendButton: { backgroundColor: BRAND, width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginLeft: spacing.sm + 4, marginBottom: 0 },
   sendButtonDisabled: { backgroundColor: commonColors.disabled },

@@ -1,5 +1,44 @@
 import { prisma } from '../../config/database.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { randomUUID } from 'crypto';
+
+/** Directorio físico donde se guardan las imágenes del chat. */
+export const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads', 'chat');
+
+const EXT_BY_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+/**
+ * RF-9.01: guarda una imagen (base64) del chat en disco y devuelve su URL
+ * pública relativa (/uploads/chat/<archivo>). El cliente la envía luego como
+ * `mediaUrl` en un mensaje de tipo `imagen`.
+ */
+export const saveChatImage = async (base64: string, mimeType: string): Promise<string> => {
+  // Permitir prefijo data:image/...;base64,
+  const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
+  const buffer = Buffer.from(cleaned, 'base64');
+
+  // Validación de tamaño (máx 8MB ya decodificado).
+  if (buffer.length === 0) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Imagen inválida');
+  }
+  if (buffer.length > 8 * 1024 * 1024) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'La imagen supera el tamaño máximo (8MB)');
+  }
+
+  const ext = EXT_BY_MIME[mimeType] || 'jpg';
+  const filename = `${randomUUID()}.${ext}`;
+
+  await fs.mkdir(UPLOADS_DIR, { recursive: true });
+  await fs.writeFile(path.join(UPLOADS_DIR, filename), buffer);
+
+  return `/uploads/chat/${filename}`;
+};
 
 export const getConversationHistory = async (
   userId: string,

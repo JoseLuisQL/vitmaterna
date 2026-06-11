@@ -40,9 +40,9 @@ export const setupChatSockets = (io: Server) => {
       socket.leave(`conversation:${conversationId}`);
     });
 
-    socket.on('send_message', async (data: { conversationId: string; content: string; type?: 'texto' | 'imagen' | 'alerta_emergencia' }) => {
+    socket.on('send_message', async (data: { conversationId: string; content: string; type?: 'texto' | 'imagen' | 'alerta_emergencia'; mediaUrl?: string }) => {
       try {
-        const { conversationId, content, type = 'texto' } = data;
+        const { conversationId, content, type = 'texto', mediaUrl } = data;
 
         // Verificar que la conversación existe y que el usuario participa.
         // Nota: conversation.gestanteId / obstetraId son IDs de los perfiles
@@ -79,6 +79,7 @@ export const setupChatSockets = (io: Server) => {
             senderId: user.userId,
             contenido: content,
             tipo: type,
+            mediaUrl: mediaUrl ?? null,
           },
           include: {
             sender: {

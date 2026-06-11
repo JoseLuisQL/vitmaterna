@@ -25,6 +25,12 @@ router.post(
 );
 
 router.post(
+  '/upload',
+  validate(chatSchema.uploadImageSchema),
+  chatController.uploadImage
+);
+
+router.post(
   '/broadcast',
   rbac('obstetra', 'admin'),
   validate(chatSchema.broadcastSchema),

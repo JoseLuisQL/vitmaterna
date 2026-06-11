@@ -85,6 +85,16 @@ export const sendEmergencyAlert = async (req: Request, res: Response, next: Next
   }
 };
 
+export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { base64, mimeType } = req.body;
+    const mediaUrl = await chatService.saveChatImage(base64, mimeType);
+    res.status(201).json({ success: true, data: { mediaUrl } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendBroadcast = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;

@@ -36,6 +36,12 @@
         {
           "color": "#7C3AED"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VITMATERNA necesita acceso a tus fotos para que puedas enviar imágenes en el chat con tu obstetra."
+        }
       ]
     ],
     "experiments": {

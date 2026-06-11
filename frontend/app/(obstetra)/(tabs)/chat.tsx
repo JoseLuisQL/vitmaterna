@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import api from '../../../src/services/api';
+import * as ImagePicker from 'expo-image-picker';
+import api, { resolveMediaUrl } from '../../../src/services/api';
 import { AppHeader } from '../../../src/components/ui/AppHeader';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { Send, ChevronLeft, User, MessageSquare, Megaphone } from 'lucide-react-native';
+import { useToast } from '../../../src/components/ui';
+import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
@@ -20,15 +22,18 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   tipo?: string;
+  mediaUrl?: string | null;
 }
 
 export default function ObstetraChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
   const [activeConv, setActiveConv] = useState<any>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [uploading, setUploading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // 1. Fetch active conversations for this obstetra
@@ -60,6 +65,7 @@ export default function ObstetraChatScreen() {
           text: m.contenido,
           createdAt: m.createdAt,
           tipo: m.tipo,
+          mediaUrl: m.mediaUrl,
         }));
         const sortedHistory = [...mappedHistory].reverse();
         setMessages(sortedHistory);
@@ -83,6 +89,7 @@ export default function ObstetraChatScreen() {
           text: message.contenido,
           createdAt: message.createdAt,
           tipo: message.tipo,
+          mediaUrl: message.mediaUrl,
         };
 
         setMessages(prev => {
@@ -122,6 +129,47 @@ export default function ObstetraChatScreen() {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
+  const handleAttachPhoto = async () => {
+    if (!conversationId || uploading) return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        toast.info('Permiso requerido', 'Permite el acceso a tus fotos para enviar imágenes.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.6,
+        base64: true,
+      });
+      if (result.canceled || !result.assets?.[0]?.base64) return;
+
+      setUploading(true);
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const res = await api.post('/chat/upload', { base64: asset.base64, mimeType });
+      const mediaUrl = res.data?.data?.mediaUrl;
+      if (!mediaUrl) throw new Error('upload failed');
+
+      emit('send_message', { conversationId, content: '📷 Foto', type: 'imagen', mediaUrl });
+
+      const optimistic: ChatMessage = {
+        id: Date.now().toString(),
+        senderId: user?.id || 'me',
+        text: '📷 Foto',
+        createdAt: new Date().toISOString(),
+        tipo: 'imagen',
+        mediaUrl,
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (e) {
+      toast.error('No se pudo enviar la foto', 'Inténtalo nuevamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleBack = () => {
     setActiveConv(null);
     setMessages([]);
@@ -145,11 +193,22 @@ export default function ObstetraChatScreen() {
       );
     }
 
+    const isImage = item.tipo === 'imagen' && item.mediaUrl;
+
     return (
       <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther]}>
-        <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
-          {item.text}
-        </Text>
+        {isImage ? (
+          <Image
+            source={{ uri: resolveMediaUrl(item.mediaUrl) || undefined }}
+            style={styles.messageImage}
+            resizeMode="cover"
+            accessibilityLabel="Foto enviada en el chat"
+          />
+        ) : (
+          <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
+            {item.text}
+          </Text>
+        )}
         <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
           {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
@@ -258,6 +317,14 @@ export default function ObstetraChatScreen() {
       />
 
       <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={styles.attachButton}
+          onPress={handleAttachPhoto}
+          disabled={uploading}
+          accessibilityLabel="Adjuntar foto"
+        >
+          {uploading ? <ActivityIndicator size="small" color={BRAND} /> : <ImagePlus size={22} color={BRAND} />}
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           value={inputText}
@@ -392,6 +459,13 @@ const styles = StyleSheet.create({
     borderColor: commonColors.border,
     borderBottomLeftRadius: 4,
   },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 6,
+    backgroundColor: commonColors.surfaceAlt,
+  },
   messageText: {
     ...typography.bodySmall,
     fontSize: 15,
@@ -421,6 +495,15 @@ const styles = StyleSheet.create({
     borderColor: commonColors.border,
     alignItems: 'flex-end',
     paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+  },
+  attachButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: obstetraColors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   input: {
     flex: 1,

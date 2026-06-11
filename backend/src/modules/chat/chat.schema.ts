@@ -24,3 +24,14 @@ export const broadcastSchema = {
     nivelRiesgo: z.enum(['verde', 'amarillo', 'rojo']).optional(),
   }),
 };
+
+export const uploadImageSchema = {
+  body: z.object({
+    // Imagen en base64 (con o sin prefijo data:). Límite ~10MB acorde al body parser.
+    base64: z.string().min(1, 'La imagen es requerida'),
+    mimeType: z
+      .enum(['image/jpeg', 'image/png', 'image/webp'])
+      .optional()
+      .default('image/jpeg'),
+  }),
+};

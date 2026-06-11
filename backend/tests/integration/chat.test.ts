@@ -146,6 +146,31 @@ describe('Chat API', () => {
     expect(res.status).toBe(400);
   });
 
+  it('sube una imagen al chat y devuelve una mediaUrl (RF-9.01)', async () => {
+    // PNG 1x1 en base64
+    const png =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+    const res = await request(app)
+      .post(`${PREFIX}/chat/upload`)
+      .set('Authorization', `Bearer ${gestanteToken}`)
+      .send({ base64: png, mimeType: 'image/png' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.mediaUrl).toMatch(/^\/uploads\/chat\/.+\.png$/);
+  });
+
+  it('rechaza una subida sin imagen (400)', async () => {
+    const res = await request(app)
+      .post(`${PREFIX}/chat/upload`)
+      .set('Authorization', `Bearer ${gestanteToken}`)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('requiere autenticación para subir (401)', async () => {
+    const res = await request(app).post(`${PREFIX}/chat/upload`).send({ base64: 'x' });
+    expect(res.status).toBe(401);
+  });
+
   afterAll(async () => {
     // Limpiar los mensajes de prueba creados por el broadcast
     await prisma.message.deleteMany({ where: { contenido: { contains: '(prueba chat)' } } });

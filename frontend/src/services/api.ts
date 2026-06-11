@@ -170,5 +170,15 @@ export const clearStoredTokens = async (): Promise<void> => {
   }
 };
 
+/** Origen del servidor sin el sufijo /v1 (para recursos estáticos como /uploads). */
+export const SERVER_ORIGIN = BASE_URL.replace(/\/v1\/?$/, '');
+
+/** Resuelve una mediaUrl relativa (/uploads/...) a una URL absoluta del servidor. */
+export const resolveMediaUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${SERVER_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export { STORAGE_KEYS };
 export default api;

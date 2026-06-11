@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import swaggerUi from 'swagger-ui-express';
 import { corsOptions } from './cors.js';
@@ -21,8 +22,13 @@ export function createApp(): express.Express {
   });
 
   // ---- Security ----
-  app.use(helmet());
+  // crossOriginResourcePolicy desactivado para permitir servir imágenes del
+  // chat a la app móvil/web desde otro origen.
+  app.use(helmet({ crossOriginResourcePolicy: false }));
   app.use(cors(corsOptions));
+
+  // ---- Archivos subidos (imágenes del chat, RF-9.01) ----
+  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
   // ---- Body Parsing ----
   app.use(express.json({ limit: '10mb' }));

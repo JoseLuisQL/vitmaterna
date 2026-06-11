@@ -26,3 +26,6 @@ coverage/
 
 # Prisma
 prisma/migrations/
+
+# Uploaded files (chat images, etc.)
+uploads/
