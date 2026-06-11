@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, StyleSheet, Text, FlatList, RefreshControl,
-  TouchableOpacity, Alert, StatusBar
+  TouchableOpacity, StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pill, CheckCircle, Clock, Info } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { useToast } from '../../../src/components/ui';
+import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -106,17 +108,22 @@ const calStyles = StyleSheet.create({
 });
 
 export default function TratamientoScreen(): React.ReactElement {
-  const { data: treatments, isLoading, refetch } = useTreatments();
-  const { mutate: logTreatment, isPending: isLogging } = useLogTreatment();
-  const [registradosHoy, setRegistradosHoy] = useState<string[]>([]);
+  const { data: treatments, isLoading, refetch, isRefetching } = useTreatments();
+  const { mutate: logTreatment } = useLogTreatment();
+  const toast = useToast();
+
+  useRefetchOnFocus([refetch]);
 
   if (isLoading) return <LoadingScreen message="Cargando tu tratamiento..." />;
 
-  function handleRegistrar(id: string, nombre: string) {
-    if (registradosHoy.includes(id)) return;
-    setRegistradosHoy((prev) => [...prev, id]);
-    logTreatment(id);
-    Alert.alert('✓ Registrado', `Consumo de ${nombre} registrado para hoy.`);
+  function handleRegistrar(id: string, nombre: string, yaTomado: boolean) {
+    if (yaTomado) return;
+    // La actualización es optimista: adherencia, calendario y progreso se
+    // refrescan al instante vía la mutación; aquí solo damos feedback.
+    logTreatment(id, {
+      onSuccess: () => toast.success('Consumo registrado', `Registraste ${nombre} para hoy.`),
+      onError: () => toast.error('No se pudo registrar', 'Revisa tu conexión e inténtalo otra vez.'),
+    });
   }
 
   const semanaGestacional = (treatments as any)?.[0]?.weekNumber || null;
@@ -159,9 +166,11 @@ export default function TratamientoScreen(): React.ReactElement {
     const hora = item.scheduleTime || item.horaRecordatorio || '';
     const diasTomados: string[] = item.diasTomados || [];
     const diasOmitidos: string[] = item.diasOmitidos || [];
-    const totalDias = item.totalDias || 30;
-    const pct = totalDias > 0 ? Math.round((diasTomados.length / totalDias) * 100) : 0;
-    const yaRegistrado = item.taken || registradosHoy.includes(id);
+    const totalDias = item.totalDias || item.duracionDias || 30;
+    const pct = typeof item.adherencia === 'number'
+      ? item.adherencia
+      : totalDias > 0 ? Math.round((diasTomados.length / totalDias) * 100) : 0;
+    const yaRegistrado = !!item.taken;
 
     return (
       <View style={styles.card}>
@@ -181,8 +190,8 @@ export default function TratamientoScreen(): React.ReactElement {
           </View>
           <TouchableOpacity
             style={[styles.registerBtn, yaRegistrado && styles.registerBtnDone]}
-            onPress={() => handleRegistrar(id, nombre)}
-            disabled={yaRegistrado || isLogging}
+            onPress={() => handleRegistrar(id, nombre, yaRegistrado)}
+            disabled={yaRegistrado}
           >
             <CheckCircle size={18} color={yaRegistrado ? semanticColors.success : commonColors.surface} />
             <Text style={[styles.registerBtnText, yaRegistrado && styles.registerBtnTextDone]}>
@@ -232,7 +241,7 @@ export default function TratamientoScreen(): React.ReactElement {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={BRAND} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
       />
     </View>
   );

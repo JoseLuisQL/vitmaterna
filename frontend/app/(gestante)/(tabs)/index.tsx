@@ -28,6 +28,7 @@ import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard } from '../../../src/services/api-queries';
+import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
@@ -41,7 +42,8 @@ export default function GestanteDashboard(): React.ReactElement {
   const router = useRouter();
   const displayName = user?.firstName || 'Gestante';
 
-  const { data, isLoading } = useGestanteDashboard();
+  const { data, isLoading, refetch } = useGestanteDashboard();
+  useRefetchOnFocus([refetch]);
 
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [selectedSign, setSelectedSign] = React.useState('');

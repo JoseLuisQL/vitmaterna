@@ -201,6 +201,24 @@ export const logTreatment = async (treatmentId: string) => {
   return res.data;
 };
 
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+/** Aplica de forma optimista el consumo de hoy a un tratamiento. */
+const applyTakenToday = (t: any) => {
+  const today = todayISO();
+  const diasTomados: string[] = Array.isArray(t.diasTomados) ? t.diasTomados : [];
+  if (diasTomados.includes(today)) return t;
+  const nuevosDias = [today, ...diasTomados];
+  const totalDias = t.totalDias || t.duracionDias || 30;
+  return {
+    ...t,
+    diasTomados: nuevosDias,
+    totalDias,
+    adherencia: totalDias > 0 ? Math.round((nuevosDias.length / totalDias) * 100) : 0,
+    taken: true,
+  };
+};
+
 // Obstetra Endpoints
 
 export const fetchObstetraDashboard = async () => {
@@ -305,9 +323,42 @@ export const useLogTreatment = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logTreatment,
-    onSuccess: () => {
+    // Actualización optimista: refleja el consumo de hoy al instante en
+    // la lista de tratamientos (adherencia, calendario y progreso) y en el
+    // dashboard, sin esperar al servidor.
+    onMutate: async (treatmentId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['treatments'] });
+      const prevTreatments = queryClient.getQueryData<any[]>(['treatments']);
+      const prevDashboard = queryClient.getQueryData<any>(['gestanteDashboard']);
+
+      queryClient.setQueryData<any[]>(['treatments'], (old) =>
+        Array.isArray(old)
+          ? old.map((t) => ((t.id || t._id) === treatmentId ? applyTakenToday(t) : t))
+          : old,
+      );
+
+      queryClient.setQueryData<any>(['gestanteDashboard'], (old: any) => {
+        if (!old?.todayTreatments) return old;
+        return {
+          ...old,
+          todayTreatments: old.todayTreatments.map((t: any) =>
+            (t.id || t._id) === treatmentId ? applyTakenToday(t) : t,
+          ),
+        };
+      });
+
+      return { prevTreatments, prevDashboard };
+    },
+    onError: (_err, _id, context) => {
+      // Revertir si falla
+      if (context?.prevTreatments) queryClient.setQueryData(['treatments'], context.prevTreatments);
+      if (context?.prevDashboard) queryClient.setQueryData(['gestanteDashboard'], context.prevDashboard);
+    },
+    onSettled: () => {
+      // Reconciliar con el servidor (adherencia real recalculada)
       queryClient.invalidateQueries({ queryKey: ['treatments'] });
       queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['adherence'] });
     },
   });
 };

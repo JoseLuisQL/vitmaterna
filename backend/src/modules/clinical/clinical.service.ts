@@ -164,9 +164,37 @@ export class ClinicalService {
   }
 
   async getTreatments(gestanteId: string) {
-    return prisma.treatment.findMany({
+    const treatments = await prisma.treatment.findMany({
       where: { gestanteId },
       orderBy: { fechaInicio: 'desc' },
+      include: {
+        supplementLogs: {
+          orderBy: { fecha: 'desc' },
+        },
+      },
+    });
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    return treatments.map((t) => {
+      const diasTomados = t.supplementLogs
+        .filter((l) => l.tomado)
+        .map((l) => l.fecha.toISOString().split('T')[0]);
+      const diasOmitidos = t.supplementLogs
+        .filter((l) => !l.tomado)
+        .map((l) => l.fecha.toISOString().split('T')[0]);
+      const totalDias = t.duracionDias || 30;
+      const adherencia = totalDias > 0 ? Math.round((diasTomados.length / totalDias) * 100) : 0;
+      const takenToday = diasTomados.includes(todayStr);
+
+      return {
+        ...t,
+        diasTomados,
+        diasOmitidos,
+        totalDias,
+        adherencia,
+        taken: takenToday,
+      };
     });
   }
 

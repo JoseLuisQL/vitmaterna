@@ -7,6 +7,7 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { KpiCard } from '../../../src/components/ui/KpiCard';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
+import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -20,6 +21,8 @@ export default function ObstetraDashboard(): React.ReactElement {
 
   const { data: stats, isLoading: isStatsLoading, refetch: refetchStats, isRefetching: isRefetchingStats } = useObstetraDashboard();
   const { data: appointments, isLoading: isApptsLoading, refetch: refetchAppts, isRefetching: isRefetchingAppts } = useTodayAppointments();
+
+  useRefetchOnFocus([refetchStats, refetchAppts]);
 
   if (isStatsLoading || isApptsLoading) {
     return <LoadingScreen message="Cargando panel..." />;
