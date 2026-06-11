@@ -22,6 +22,7 @@ const BRAND = obstetraColors.primary;
 const schema = z.object({
   maxPatientsPerObstetra: z.string().min(1, 'Requerido'),
   allowNewRegistrations: z.boolean(),
+  autoGenerarCitas: z.boolean(),
   maintenanceMode: z.boolean(),
   supportEmail: z.string().email('Email inválido'),
 });
@@ -37,6 +38,7 @@ export default function ConfigScreen(): React.ReactElement {
     defaultValues: {
       maxPatientsPerObstetra: '50',
       allowNewRegistrations: true,
+      autoGenerarCitas: true,
       maintenanceMode: false,
       supportEmail: 'soporte@vitmaterna.com',
     },
@@ -47,6 +49,7 @@ export default function ConfigScreen(): React.ReactElement {
       reset({
         maxPatientsPerObstetra: String(config.maxPatientsPerObstetra || 50),
         allowNewRegistrations: config.allowNewRegistrations ?? true,
+        autoGenerarCitas: config.autoGenerarCitas ?? true,
         maintenanceMode: config.maintenanceMode ?? false,
         supportEmail: config.supportEmail || 'soporte@vitmaterna.com',
       });
@@ -98,6 +101,31 @@ export default function ConfigScreen(): React.ReactElement {
             </View>
             <Controller
               name="allowNewRegistrations"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <Switch
+                  value={value}
+                  onValueChange={onChange}
+                  trackColor={{ false: commonColors.border, true: obstetraColors.primaryLight }}
+                  thumbColor={value ? BRAND : commonColors.textSecondary}
+                />
+              )}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Citas Prenatales</Text>
+          <View style={[styles.switchRow, { borderBottomWidth: 0, marginBottom: 0 }]}>
+            <View>
+              <Text style={styles.switchLabel}>Generar citas automáticamente</Text>
+              <Text style={styles.switchDesc}>
+                Al registrar la FUM de una gestante, crea su cronograma de controles.
+                Si está desactivado, la obstetra programa las citas manualmente.
+              </Text>
+            </View>
+            <Controller
+              name="autoGenerarCitas"
               control={control}
               render={({ field: { onChange, value } }) => (
                 <Switch

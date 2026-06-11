@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import type { Express } from 'express';
 import { createApp } from '../../src/config/app.js';
+import { prisma } from '../../src/config/database.js';
 
 /**
  * Pruebas de integración del módulo de gestantes:
@@ -53,5 +54,52 @@ describe('Gestantes API — FPP automática', () => {
       .get(`${PREFIX}/patients/${gestanteId}`)
       .set('Authorization', `Bearer ${obstetraToken}`);
     expect(String(res.body.data.fppFum)).toContain('2026-11-15');
+  });
+
+  describe('Generación automática de citas según configuración (RF-3.02)', () => {
+    let adminToken: string;
+
+    beforeAll(async () => {
+      adminToken = await login(app, '99999999', 'Admin@2026');
+    });
+
+    const countAuto = () =>
+      prisma.appointment.count({
+        where: { gestanteId, esAutoGenerada: true, estado: 'programada' },
+      });
+
+    it('NO genera citas cuando autoGenerarCitas está desactivado', async () => {
+      await request(app)
+        .put(`${PREFIX}/admin/config`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ autoGenerarCitas: false });
+      await prisma.appointment.deleteMany({ where: { gestanteId, esAutoGenerada: true } });
+
+      await request(app)
+        .patch(`${PREFIX}/patients/${gestanteId}`)
+        .set('Authorization', `Bearer ${obstetraToken}`)
+        .send({ fum: '2026-03-01' });
+
+      expect(await countAuto()).toBe(0);
+    });
+
+    it('SÍ genera el cronograma cuando autoGenerarCitas está activado', async () => {
+      await request(app)
+        .put(`${PREFIX}/admin/config`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ autoGenerarCitas: true });
+
+      await request(app)
+        .patch(`${PREFIX}/patients/${gestanteId}`)
+        .set('Authorization', `Bearer ${obstetraToken}`)
+        .send({ fum: '2026-03-15' });
+
+      expect(await countAuto()).toBeGreaterThan(0);
+    });
+
+    afterAll(async () => {
+      // Dejar el sistema en su estado por defecto (activado) y limpiar.
+      await prisma.appointment.deleteMany({ where: { gestanteId, esAutoGenerada: true } });
+    });
   });
 });

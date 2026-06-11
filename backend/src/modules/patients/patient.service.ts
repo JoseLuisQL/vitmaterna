@@ -408,19 +408,27 @@ export class PatientService {
         },
       });
 
-      // If FUM is being updated or set, schedule the 8 controls
+      // Si se establece/actualiza la FUM, generar el cronograma de controles
+      // SOLO si la opción "autoGenerarCitas" está activada por el administrador.
+      // Si está desactivada, la obstetra crea las citas manualmente (RF-3.02).
       if (dateFields.fum) {
-        const lastControl = await tx.prenatalControl.findFirst({
-          where: { gestanteId: id },
-          orderBy: { fecha: 'desc' },
-        });
-        const lastAppointment = await tx.appointment.findFirst({
-          where: { gestanteId: id, obstetraId: { not: null } },
-          orderBy: { fecha: 'desc' },
-        });
-        const resolvedObstetraId = lastControl?.obstetraId || lastAppointment?.obstetraId || undefined;
+        const cfg = await tx.systemConfig.findUnique({ where: { clave: 'autoGenerarCitas' } });
+        // Por defecto activado (true) si no existe la configuración.
+        const autoGenerar = cfg ? cfg.valor === true || cfg.valor === 'true' : true;
 
-        await this.schedulePrenatalAppointments(tx, id, dateFields.fum, resolvedObstetraId);
+        if (autoGenerar) {
+          const lastControl = await tx.prenatalControl.findFirst({
+            where: { gestanteId: id },
+            orderBy: { fecha: 'desc' },
+          });
+          const lastAppointment = await tx.appointment.findFirst({
+            where: { gestanteId: id, obstetraId: { not: null } },
+            orderBy: { fecha: 'desc' },
+          });
+          const resolvedObstetraId = lastControl?.obstetraId || lastAppointment?.obstetraId || undefined;
+
+          await this.schedulePrenatalAppointments(tx, id, dateFields.fum, resolvedObstetraId);
+        }
       }
 
       return updatedGestante;
