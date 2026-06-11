@@ -38,6 +38,17 @@ const envSchema = z.object({
 
   // Bcrypt
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
+
+  // Canales de notificación (opcionales). Sin credenciales se usa modo mock.
+  // SMS (Twilio)
+  SMS_PROVIDER: z.enum(['mock', 'twilio']).default('mock'),
+  TWILIO_ACCOUNT_SID: z.string().optional().default(''),
+  TWILIO_AUTH_TOKEN: z.string().optional().default(''),
+  TWILIO_PHONE_NUMBER: z.string().optional().default(''),
+  // WhatsApp (WhatsApp Business Cloud API)
+  WHATSAPP_PROVIDER: z.enum(['mock', 'whatsapp_cloud']).default('mock'),
+  WHATSAPP_API_TOKEN: z.string().optional().default(''),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

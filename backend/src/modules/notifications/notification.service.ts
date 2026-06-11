@@ -2,6 +2,7 @@ import { Expo, ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-ser
 import { Queue, Worker, Job } from 'bullmq';
 import { redis } from '../../config/redis.js';
 import { prisma } from '../../config/database.js';
+import { smsChannel, whatsappChannel, sendSmsAndWhatsApp } from './channels.js';
 
 const expo = new Expo();
 
@@ -43,8 +44,17 @@ export async function sendPushNotification(
   // Optional: We can handle receipts later.
 }
 
+/**
+ * Envía un SMS por el canal configurado (Twilio o mock según el entorno).
+ * Se mantiene el nombre por compatibilidad con llamadas existentes.
+ */
 export function sendSmsMock(phone: string, text: string): void {
-  console.log(`[SMS MOCK] Sending SMS to ${phone}: ${text}`);
+  void smsChannel.send(phone, text);
+}
+
+/** Envía un WhatsApp por el canal configurado (Cloud API o mock). */
+export function sendWhatsApp(phone: string, text: string): void {
+  void whatsappChannel.send(phone, text);
 }
 
 // BullMQ is disabled due to Redis 3.x on Windows not supporting it.
@@ -88,8 +98,10 @@ export async function scanAndSendReminders() {
       console.log(`[REMINDER 3D] Sending 3-day reminder for appointment ${appt.id} to user ${user.id}`);
       
       if (user.phone) {
-        sendSmsMock(user.phone, `Hola ${user.firstName}, recuerda que tienes tu control prenatal programado para el día ${apptDate.toLocaleDateString()} a las 9:00 AM.`);
-        console.log(`[WHATSAPP MOCK] Sending 3D reminder to ${user.phone}: Hola ${user.firstName}, tienes un control programado.`);
+        await sendSmsAndWhatsApp(
+          user.phone,
+          `Hola ${user.firstName}, recuerda que tienes tu control prenatal programado para el día ${apptDate.toLocaleDateString()} a las 9:00 AM.`
+        );
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;
@@ -112,8 +124,10 @@ export async function scanAndSendReminders() {
       console.log(`[REMINDER 1D] Sending 1-day reminder for appointment ${appt.id} to user ${user.id}`);
       
       if (user.phone) {
-        sendSmsMock(user.phone, `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`);
-        console.log(`[WHATSAPP MOCK] Sending 1D reminder to ${user.phone}: Hola ${user.firstName}, recuerda asistir a tu cita de mañana.`);
+        await sendSmsAndWhatsApp(
+          user.phone,
+          `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`
+        );
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;
