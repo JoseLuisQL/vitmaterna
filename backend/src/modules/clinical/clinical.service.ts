@@ -6,6 +6,11 @@ import {
   notifyUser,
   findObstetraUserIdForGestante,
 } from '../notifications/notification.service.js';
+import {
+  computeViolenceScore,
+  isViolencePositive,
+  isSrq18Positive,
+} from '../../utils/screeningThresholds.js';
 
 export class ClinicalService {
   async createPrenatalControl(data: any, authenticatedUserId?: string) {
@@ -729,16 +734,15 @@ export class ClinicalService {
       }
     }
 
-    let resultado = screeningData.resultado;
-    let derivacion = screeningData.derivacion || false;
-    if (!resultado) {
-      if (puntajeP1_18 >= 9 || puntajeP19_22 >= 1 || pregunta23 === true || puntajeP24_28 >= 1) {
-        resultado = 'positivo';
-        derivacion = true;
-      } else {
-        resultado = 'negativo';
-      }
-    }
+    // RF: criterio SRQ-18 centralizado y autoritativo en el servidor.
+    const positivo = isSrq18Positive({
+      p1_18: puntajeP1_18,
+      p19_22: puntajeP19_22,
+      pregunta23,
+      p24_28: puntajeP24_28,
+    });
+    const resultado = positivo ? 'positivo' : 'negativo';
+    const derivacion = positivo || screeningData.derivacion === true;
 
     return prisma.mentalHealthScreening.create({
       data: {
@@ -773,21 +777,13 @@ export class ClinicalService {
       resolvedObstetraId = obstetra?.id;
     }
 
-    let puntajeTotal = screeningData.puntajeTotal || 0;
-    if (respuestas && typeof respuestas === 'object' && screeningData.puntajeTotal === undefined) {
-      for (const val of Object.values(respuestas)) {
-        if (val === true || val === 'si' || val === 'yes') {
-          puntajeTotal++;
-        } else if (typeof val === 'number') {
-          puntajeTotal += val;
-        }
-      }
-    }
+    // Puntaje total: usa el explícito o lo calcula desde las respuestas.
+    const puntajeTotal = computeViolenceScore(respuestas, screeningData.puntajeTotal);
 
-    let tamizajePositivo = screeningData.tamizajePositivo;
-    if (tamizajePositivo === undefined) {
-      tamizajePositivo = puntajeTotal > 0;
-    }
+    // RF-5.11: el servidor es la fuente de verdad del umbral (≥15). Se ignora
+    // cualquier `tamizajePositivo` enviado por el cliente para evitar
+    // inconsistencias (antes bastaba puntaje > 0).
+    const tamizajePositivo = isViolencePositive(puntajeTotal);
 
     return prisma.violenceScreening.create({
       data: {
@@ -796,7 +792,8 @@ export class ClinicalService {
         respuestas: respuestas || {},
         puntajeTotal,
         tamizajePositivo,
-        derivacion: screeningData.derivacion || tamizajePositivo,
+        // La derivación se activa si el tamizaje es positivo (o si el obstetra la fuerza).
+        derivacion: screeningData.derivacion === true || tamizajePositivo,
         observaciones: screeningData.observaciones,
         fecha: new Date(fecha || new Date()),
       }

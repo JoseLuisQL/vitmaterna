@@ -82,7 +82,10 @@ Leyenda: ✅ Implementado · 🟡 Parcial · ❌ Faltante
   referencia P10/P90 (CLAP/MINSA) y clasificación del último control
   (baja/normal/alta) en la ficha del obstetra; curva de peso con leyenda. Util
   `clinicalReferences` con pruebas unitarias.
-- **RF-5.11** Aplicar umbral ≥15 en el tamizaje de violencia (hoy positivo si >0).
+- ~~**RF-5.11** Aplicar umbral ≥15 en el tamizaje de violencia (hoy positivo si >0).~~
+  ✅ **Resuelto:** el servidor aplica el umbral ≥15 (Ficha MINSA) de forma
+  autoritativa e ignora el `tamizajePositivo` del cliente; criterio SRQ-18
+  centralizado. Util `screeningThresholds` con pruebas unitarias + integración.
 - **RF-5.12 / RF-2.08** UI para odontograma y ecografías (backend ya listo).
 - **RF-7.13** UI de preferencias de notificación.
 - **RF-8.05** Exportación a Excel además de PDF.

@@ -215,4 +215,29 @@ describe('Clinical API', () => {
 
     await prisma.treatment.delete({ where: { id: treatmentId } });
   });
+
+  it('tamizaje de violencia: el servidor aplica el umbral ≥15 (RF-5.11)', async () => {
+    // Puntaje 5 → negativo, aunque el cliente envíe tamizajePositivo:true
+    const neg = await request(app)
+      .post(`${PREFIX}/clinical/screenings/violence`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, puntajeTotal: 5, tamizajePositivo: true, respuestas: { a: 5 }, fecha: '2026-06-11' });
+    expect(neg.status).toBe(201);
+    expect(neg.body.data.tamizajePositivo).toBe(false);
+    expect(neg.body.data.derivacion).toBe(false);
+
+    // Puntaje 15 → positivo + derivación
+    const pos = await request(app)
+      .post(`${PREFIX}/clinical/screenings/violence`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, puntajeTotal: 15, respuestas: { a: 15 }, fecha: '2026-06-11' });
+    expect(pos.status).toBe(201);
+    expect(pos.body.data.tamizajePositivo).toBe(true);
+    expect(pos.body.data.derivacion).toBe(true);
+
+    // Limpieza
+    await prisma.violenceScreening.deleteMany({
+      where: { gestanteId, fecha: new Date('2026-06-11T00:00:00.000Z'), puntajeTotal: { in: [5, 15] } },
+    });
+  });
 });
