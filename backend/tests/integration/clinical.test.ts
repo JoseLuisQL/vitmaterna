@@ -137,6 +137,34 @@ describe('Clinical API', () => {
     await prisma.treatment.delete({ where: { id: treatmentId } });
   });
 
+  it('registra, lista y elimina antecedentes (RF-2.03)', async () => {
+    const create = await request(app)
+      .post(`${PREFIX}/clinical/antecedentes`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, tipo: 'personal', condicion: 'Diabetes jest', detalle: 'DM2' });
+    expect(create.status).toBe(201);
+    const id = create.body.data.id;
+
+    const list = await request(app)
+      .get(`${PREFIX}/clinical/antecedentes/${gestanteId}`)
+      .set('Authorization', `Bearer ${obstetraToken}`);
+    expect(list.status).toBe(200);
+    expect(list.body.data.some((a: any) => a.id === id)).toBe(true);
+
+    const del = await request(app)
+      .delete(`${PREFIX}/clinical/antecedentes/${id}`)
+      .set('Authorization', `Bearer ${obstetraToken}`);
+    expect(del.status).toBe(200);
+  });
+
+  it('RBAC: la gestante NO puede registrar antecedentes (403)', async () => {
+    const res = await request(app)
+      .post(`${PREFIX}/clinical/antecedentes`)
+      .set('Authorization', `Bearer ${gestanteToken}`)
+      .send({ gestanteId, tipo: 'personal', condicion: 'no permitido' });
+    expect(res.status).toBe(403);
+  });
+
   it('RBAC: la gestante NO puede modificar tratamientos (403)', async () => {
     const create = await request(app)
       .post(`${PREFIX}/clinical/treatments`)

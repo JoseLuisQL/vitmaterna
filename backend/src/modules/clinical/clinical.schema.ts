@@ -75,6 +75,27 @@ export const getTreatmentsSchema = {
   }),
 };
 
+export const createAntecedenteSchema = {
+  body: z.object({
+    gestanteId: z.string().uuid(),
+    tipo: z.enum(['familiar', 'personal']),
+    condicion: z.string().min(1).max(100),
+    detalle: z.string().optional(),
+  }),
+};
+
+export const getAntecedentesSchema = {
+  params: z.object({
+    gestanteId: z.string().uuid(),
+  }),
+};
+
+export const deleteAntecedenteSchema = {
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+};
+
 export const updateTreatmentSchema = {
   params: z.object({
     treatmentId: z.string().uuid(),

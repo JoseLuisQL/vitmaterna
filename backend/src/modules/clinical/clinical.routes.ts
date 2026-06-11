@@ -48,6 +48,27 @@ clinicalRoutes.patch(
   controller.updateTreatment
 );
 
+// Antecedentes familiares/personales (RF-2.03)
+clinicalRoutes.post(
+  '/antecedentes',
+  rbac('obstetra', 'admin'),
+  validate(schema.createAntecedenteSchema),
+  controller.createAntecedente
+);
+
+clinicalRoutes.get(
+  '/antecedentes/:gestanteId',
+  validate(schema.getAntecedentesSchema),
+  controller.getAntecedentes
+);
+
+clinicalRoutes.delete(
+  '/antecedentes/:id',
+  rbac('obstetra', 'admin'),
+  validate(schema.deleteAntecedenteSchema),
+  controller.deleteAntecedente
+);
+
 clinicalRoutes.post(
   '/danger-signs',
   validate(schema.createDangerSignSchema),

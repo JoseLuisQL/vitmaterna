@@ -151,6 +151,77 @@ export class ClinicalService {
     });
   }
 
+  // ── Antecedentes familiares/personales (RF-2.03) ──
+
+  async createAntecedente(data: { gestanteId: string; tipo: string; condicion: string; detalle?: string }) {
+    const gestante = await prisma.gestante.findUnique({ where: { id: data.gestanteId } });
+    if (!gestante) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
+    }
+    const antecedente = await prisma.antecedente.create({
+      data: {
+        gestanteId: data.gestanteId,
+        tipo: data.tipo as any,
+        condicion: data.condicion,
+        detalle: data.detalle,
+      },
+    });
+    // Recalcular el nivel de riesgo, que depende de los antecedentes personales.
+    await this.recalcularRiesgo(data.gestanteId);
+    return antecedente;
+  }
+
+  async getAntecedentes(gestanteId: string) {
+    return prisma.antecedente.findMany({
+      where: { gestanteId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async deleteAntecedente(id: string) {
+    const existing = await prisma.antecedente.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Antecedente no encontrado');
+    }
+    await prisma.antecedente.delete({ where: { id } });
+    await this.recalcularRiesgo(existing.gestanteId);
+    return { id };
+  }
+
+  /** Recalcula y persiste el nivel de riesgo de una gestante. */
+  private async recalcularRiesgo(gestanteId: string) {
+    const gestante = await prisma.gestante.findUnique({
+      where: { id: gestanteId },
+      include: {
+        antecedentes: true,
+        prenatalControls: { orderBy: { fecha: 'desc' }, take: 1 },
+        labResults: { where: { tipoExamen: 'Hemoglobina' }, orderBy: { fechaExamen: 'desc' }, take: 1 },
+      },
+    });
+    if (!gestante) return;
+    const latestControl = gestante.prenatalControls[0];
+    const latestLab = gestante.labResults[0];
+    const assessment = calculateRiskLevel({
+      age: gestante.ageAtRegistration || undefined,
+      imc: gestante.imc ? Number(gestante.imc) : undefined,
+      correctedHemoglobin: latestLab?.valorCorregido ? Number(latestLab.valorCorregido) : undefined,
+      presionSistolica: latestControl?.presionSistolica || undefined,
+      presionDiastolica: latestControl?.presionDiastolica || undefined,
+      cesareasPrevias: gestante.cesareas,
+      abortosPrevios: gestante.abortos,
+      nacidosMuertos: gestante.nacidosMuertos,
+      gestaciones: gestante.gestaciones,
+      rhSensitizado: gestante.rhSensitizado || undefined,
+      antecedentesPersonales: gestante.antecedentes
+        .filter((a) => a.tipo === 'personal')
+        .map((a) => a.condicion),
+    });
+    await prisma.gestante.update({
+      where: { id: gestanteId },
+      data: { nivelRiesgo: assessment.level },
+    });
+  }
+
   async createTreatment(data: any) {
     const { fechaInicio, fechaFin, horaToma, ...treatmentData } = data;
     return prisma.treatment.create({

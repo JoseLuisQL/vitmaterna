@@ -30,6 +30,33 @@ export const createTreatment = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const createAntecedente = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.createAntecedente(req.body);
+    res.status(201).json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAntecedentes = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.getAntecedentes(req.params.gestanteId as string);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteAntecedente = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.deleteAntecedente(req.params.id as string);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateTreatment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await clinicalService.updateTreatment(req.params.treatmentId as string, req.body);
