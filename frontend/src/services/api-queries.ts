@@ -233,13 +233,13 @@ export const fetchObstetraDashboard = async () => {
     return { 
       totalPatients: patients.length, 
       appointmentsToday: appointments.length, 
-      alerts: alertsList.length || 3, // Fallback to 3 if none so the UI badge matches initially if backend is empty
+      alerts: alertsList.length,
       completed: appointments.filter((a: any) => a.estado === 'completada').length,
       riskDistribution,
     };
   } catch (e) {
     console.error('Dashboard fetch failed completely:', e);
-    return { totalPatients: 0, appointmentsToday: 0, alerts: 3, completed: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
+    return { totalPatients: 0, appointmentsToday: 0, alerts: 0, completed: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
   }
 };
 

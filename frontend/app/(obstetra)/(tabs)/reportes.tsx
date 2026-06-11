@@ -57,45 +57,11 @@ const semaforoStyles = StyleSheet.create({
 });
 
 export default function ReportesScreen(): React.ReactElement {
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['clinic-reports'],
     queryFn: async (): Promise<ReportData> => {
-      try {
-        const res = await api.get('/reports/clinic');
-        return res.data.data as ReportData;
-      } catch {
-        return {
-          totalGestantes: 5,
-          averageAdherence: 72,
-          alertasActivas: 4,
-          con6Controles: 1,
-          enAltoRiesgo: 1,
-          gestantesMenorAdherencia: [
-            { nombre: 'Rosa C.', pct: 45, riesgo: 'amarillo' },
-            { nombre: 'Carmen P.', pct: 78, riesgo: 'rojo' },
-            { nombre: 'Yolanda C.', pct: 80, riesgo: 'amarillo' },
-          ],
-          kpisMinsa: [
-            { label: 'Gestantes con 6+ controles', pct: 20, meta: 80 },
-            { label: 'Inicio en 1° trimestre', pct: 60, meta: 70 },
-            { label: 'Adherencia 80%+ a suplementos', pct: 40, meta: 75 },
-            { label: 'Gestantes con 8+ controles', pct: 0, meta: 60 },
-          ],
-          attendanceStats: [
-            { month: 'Ene', attended: 8, missed: 2 },
-            { month: 'Feb', attended: 9, missed: 1 },
-            { month: 'Mar', attended: 7, missed: 3 },
-            { month: 'Abr', attended: 10, missed: 2 },
-            { month: 'May', attended: 11, missed: 1 },
-            { month: 'Jun', attended: 6, missed: 2 },
-          ],
-          riskDistribution: [
-            { name: 'Sin riesgo', population: 2, color: '#10B981', legendFontColor: '#64748B', legendFontSize: 13 },
-            { name: 'Moderado', population: 2, color: '#F59E0B', legendFontColor: '#64748B', legendFontSize: 13 },
-            { name: 'Alto riesgo', population: 1, color: '#EF4444', legendFontColor: '#64748B', legendFontSize: 13 },
-          ],
-        };
-      }
+      const res = await api.get('/reports/clinic');
+      return res.data.data as ReportData;
     },
   });
 
@@ -123,6 +89,30 @@ export default function ReportesScreen(): React.ReactElement {
   };
 
   if (isLoading) return <LoadingScreen message="Cargando reportes..." />;
+
+  if (isError || !data) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerGradient}>
+          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+            <Text style={styles.pageTitle}>Reportes</Text>
+            <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
+          </SafeAreaView>
+        </View>
+        <View style={styles.errorWrap}>
+          <AlertTriangle size={48} color="#EF4444" />
+          <Text style={styles.errorTitle}>No se pudieron cargar los reportes</Text>
+          <Text style={styles.errorText}>
+            Ocurrió un problema al obtener las estadísticas del servidor.
+            Verifica tu conexión e inténtalo de nuevo.
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.7}>
+            <Text style={styles.retryBtnText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const chartConfig = {
     backgroundColor: '#ffffff',
@@ -282,4 +272,9 @@ const styles = StyleSheet.create({
   adherenciaNombre: { flex: 1, fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, fontWeight: '600', color: '#0F172A' },
   adherenciaPctWrap: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99 },
   adherenciaPct: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '800' },
+  errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 16 },
+  errorTitle: { fontFamily: typography.h3.fontFamily, fontSize: 20, fontWeight: '800', color: '#0F172A', textAlign: 'center' },
+  errorText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, color: '#64748B', textAlign: 'center', lineHeight: 22 },
+  retryBtn: { backgroundColor: '#BE185D', borderRadius: 99, paddingHorizontal: 32, paddingVertical: 14, marginTop: 8 },
+  retryBtnText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 });
