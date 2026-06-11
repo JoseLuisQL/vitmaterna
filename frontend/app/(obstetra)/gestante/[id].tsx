@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Check, Plus, Settings
+  Syringe, AlertTriangle, Activity, Check, Plus, Settings, ClipboardList
 } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
@@ -421,6 +421,25 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <Fila label="Talla" value={patient.talla ? `${patient.talla} cm` : undefined} />
                 <Fila label="Grupo sanguíneo" value={patient.bloodType} isLast />
               </View>
+
+              <Seccion titulo="Tamizajes y registros clínicos" />
+              <TouchableOpacity
+                style={[styles.tamizajesBtn, designTokens.cardShadow]}
+                onPress={() => router.push({
+                  pathname: '/(obstetra)/gestante/tamizajes',
+                  params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
+                } as any)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.tamizajesIcon}>
+                  <ClipboardList size={22} color="#BE185D" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tamizajesTitle}>SRQ-18, violencia, patologías y más</Text>
+                  <Text style={styles.tamizajesDesc}>Registrar tamizajes, consejería nutricional y peso</Text>
+                </View>
+                <Plus size={20} color="#94A3B8" />
+              </TouchableOpacity>
             </View>
           )}
 
@@ -1075,6 +1094,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 8,
   },
+  tamizajesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+  },
+  tamizajesIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FDF2F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tamizajesTitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 15, fontWeight: '700', color: '#0F172A' },
+  tamizajesDesc: { fontFamily: typography.bodySmall.fontFamily, fontSize: 13, color: '#64748B', marginTop: 2 },
   primaryActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

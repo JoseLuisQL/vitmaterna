@@ -15,6 +15,7 @@ export default function ObstetraLayout(): React.ReactElement {
       }}
     >
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="gestante/tamizajes" />
     </Stack>
   );
 }
