@@ -49,5 +49,12 @@ export const getAppointmentsSchema = {
     obstetraId: z.string().uuid().optional(),
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     estado: z.enum(['programada', 'confirmada', 'asistida', 'no_asistida', 'reprogramada', 'cancelada']).optional(),
-  }),
+  }).passthrough(),
+};
+
+export const availabilitySchema = {
+  query: z.object({
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)'),
+    obstetraId: z.string().uuid('El ID de obstetra debe ser un UUID válido').optional(),
+  }).passthrough(),
 };

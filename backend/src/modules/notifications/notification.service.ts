@@ -254,7 +254,7 @@ export async function scanSupplementReminders() {
 }
 
 /** Crea una notificación persistente para un usuario y le envía push si tiene token. */
-async function notifyUser(
+export async function notifyUser(
   userId: string,
   tipo: string,
   titulo: string,
@@ -272,7 +272,7 @@ async function notifyUser(
 }
 
 /** Devuelve el userId del obstetra asociado a una gestante (último control o cita). */
-async function findObstetraUserIdForGestante(gestanteId: string): Promise<string | null> {
+export async function findObstetraUserIdForGestante(gestanteId: string): Promise<string | null> {
   const lastControl = await prisma.prenatalControl.findFirst({
     where: { gestanteId },
     orderBy: { fecha: 'desc' },

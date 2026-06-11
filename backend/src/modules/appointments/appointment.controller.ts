@@ -20,9 +20,18 @@ export const getAppointments = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const getAvailability = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await appointmentService.getAvailability(req.query as any, req.user);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const rescheduleAppointment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await appointmentService.reschedule(req.params.id as string, req.body);
+    const data = await appointmentService.reschedule(req.params.id as string, req.body, req.user);
     res.json(successResponse(data));
   } catch (error) {
     next(error);
@@ -31,7 +40,11 @@ export const rescheduleAppointment = async (req: Request, res: Response, next: N
 
 export const updateAppointmentStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await appointmentService.updateStatus(req.params.id as string, req.body.estado);
+    const data = await appointmentService.updateStatus(
+      req.params.id as string,
+      req.body.estado,
+      req.user,
+    );
     res.json(successResponse(data));
   } catch (error) {
     next(error);
