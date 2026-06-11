@@ -41,6 +41,13 @@ clinicalRoutes.post(
   controller.createSupplementLog
 );
 
+clinicalRoutes.patch(
+  '/treatments/:treatmentId',
+  rbac('obstetra', 'admin'),
+  validate(schema.updateTreatmentSchema),
+  controller.updateTreatment
+);
+
 clinicalRoutes.post(
   '/danger-signs',
   validate(schema.createDangerSignSchema),

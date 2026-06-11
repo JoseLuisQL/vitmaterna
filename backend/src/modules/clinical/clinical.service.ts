@@ -163,6 +163,36 @@ export class ClinicalService {
     });
   }
 
+  /**
+   * Modifica o suspende un tratamiento (RF-4.10). Permite cambiar dosis,
+   * frecuencia, indicaciones, hora de toma y estado; al suspender exige
+   * justificación clínica (motivoSuspension).
+   */
+  async updateTreatment(treatmentId: string, data: any) {
+    const existing = await prisma.treatment.findUnique({ where: { id: treatmentId } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Tratamiento no encontrado');
+    }
+
+    const { horaToma, fechaFin, ...rest } = data;
+    const updateData: any = { ...rest };
+    if (horaToma !== undefined) {
+      updateData.horaToma = horaToma ? new Date(`1970-01-01T${horaToma}:00.000Z`) : null;
+    }
+    if (fechaFin !== undefined) {
+      updateData.fechaFin = fechaFin ? new Date(`${fechaFin}T00:00:00.000Z`) : null;
+    }
+    // Al suspender, registrar la fecha de fin si no se indicó otra.
+    if (data.estado === 'suspendido' && fechaFin === undefined) {
+      updateData.fechaFin = new Date();
+    }
+
+    return prisma.treatment.update({
+      where: { id: treatmentId },
+      data: updateData,
+    });
+  }
+
   async getTreatments(gestanteId: string) {
     const treatments = await prisma.treatment.findMany({
       where: { gestanteId },

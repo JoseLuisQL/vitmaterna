@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from '@jest/globals';
 import request from 'supertest';
 import type { Express } from 'express';
 import { createApp } from '../../src/config/app.js';
+import { prisma } from '../../src/config/database.js';
 
 /**
  * Pruebas de integración del módulo clínico y de roles (RBAC).
@@ -98,5 +99,57 @@ describe('Clinical API', () => {
       .set('Authorization', `Bearer ${gestanteToken}`)
       .send({ descripcion: 'sin tipo' });
     expect(res.status).toBe(400);
+  });
+
+  it('modifica y suspende un tratamiento (RF-4.10)', async () => {
+    const create = await request(app)
+      .post(`${PREFIX}/clinical/treatments`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, nombre: 'Tratamiento jest', dosis: '1 tab', frecuencia: 'Diario', fechaInicio: '2026-06-01' });
+    expect(create.status).toBe(201);
+    const treatmentId = create.body.data.id;
+
+    // Modificar dosis
+    const mod = await request(app)
+      .patch(`${PREFIX}/clinical/treatments/${treatmentId}`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ dosis: '2 tabletas' });
+    expect(mod.status).toBe(200);
+    expect(mod.body.data.dosis).toBe('2 tabletas');
+
+    // Suspender sin motivo → 400
+    const noMotivo = await request(app)
+      .patch(`${PREFIX}/clinical/treatments/${treatmentId}`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ estado: 'suspendido' });
+    expect(noMotivo.status).toBe(400);
+
+    // Suspender con motivo → 200
+    const susp = await request(app)
+      .patch(`${PREFIX}/clinical/treatments/${treatmentId}`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ estado: 'suspendido', motivoSuspension: 'Reacción adversa' });
+    expect(susp.status).toBe(200);
+    expect(susp.body.data.estado).toBe('suspendido');
+
+    // Limpieza
+    await prisma.supplementLog.deleteMany({ where: { treatmentId } });
+    await prisma.treatment.delete({ where: { id: treatmentId } });
+  });
+
+  it('RBAC: la gestante NO puede modificar tratamientos (403)', async () => {
+    const create = await request(app)
+      .post(`${PREFIX}/clinical/treatments`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, nombre: 'Tratamiento jest2', dosis: '1 tab', frecuencia: 'Diario', fechaInicio: '2026-06-01' });
+    const treatmentId = create.body.data.id;
+
+    const res = await request(app)
+      .patch(`${PREFIX}/clinical/treatments/${treatmentId}`)
+      .set('Authorization', `Bearer ${gestanteToken}`)
+      .send({ dosis: 'x' });
+    expect(res.status).toBe(403);
+
+    await prisma.treatment.delete({ where: { id: treatmentId } });
   });
 });

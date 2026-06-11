@@ -75,6 +75,31 @@ export const getTreatmentsSchema = {
   }),
 };
 
+export const updateTreatmentSchema = {
+  params: z.object({
+    treatmentId: z.string().uuid(),
+  }),
+  body: z
+    .object({
+      dosis: z.string().min(1).optional(),
+      frecuencia: z.string().min(1).optional(),
+      viaAdministracion: z.string().optional(),
+      horaToma: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+      indicaciones: z.string().nullable().optional(),
+      fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      duracionDias: z.number().int().positive().optional(),
+      estado: z.enum(['activo', 'suspendido', 'completado']).optional(),
+      motivoSuspension: z.string().optional(),
+    })
+    .refine((d) => Object.keys(d).length > 0, {
+      message: 'Debe enviar al menos un campo a modificar',
+    })
+    .refine((d) => d.estado !== 'suspendido' || (d.motivoSuspension && d.motivoSuspension.trim().length > 0), {
+      message: 'Al suspender un tratamiento se requiere el motivo (justificación clínica)',
+      path: ['motivoSuspension'],
+    }),
+};
+
 export const createSupplementLogSchema = {
   params: z.object({
     treatmentId: z.string().uuid(),

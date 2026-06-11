@@ -30,6 +30,15 @@ export const createTreatment = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const updateTreatment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.updateTreatment(req.params.treatmentId as string, req.body);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getTreatments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await clinicalService.getTreatments(req.params.gestanteId as string);
