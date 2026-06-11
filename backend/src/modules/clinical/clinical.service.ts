@@ -289,6 +289,52 @@ export class ClinicalService {
     return dangerSign;
   }
 
+  /**
+   * Atiende o deriva un signo de alarma. Solo obstetra/admin.
+   * Registra el estado, la acción tomada, quién respondió y el tiempo de
+   * respuesta (minutos transcurridos desde el reporte).
+   */
+  async updateDangerSign(
+    dangerSignId: string,
+    data: { estado?: string; accionTomada?: string },
+    authenticatedUserId: string
+  ) {
+    const existing = await prisma.dangerSign.findUnique({ where: { id: dangerSignId } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Signo de alarma no encontrado');
+    }
+
+    // Resolver el obstetra que responde (si el usuario lo es)
+    const obstetra = await prisma.obstetra.findUnique({ where: { userId: authenticatedUserId } });
+
+    const updateData: any = {};
+    if (data.estado) updateData.estado = data.estado;
+    if (data.accionTomada !== undefined) updateData.accionTomada = data.accionTomada;
+
+    // Al atender/derivar por primera vez, registrar responsable y tiempo de respuesta
+    const seAtiende = data.estado && data.estado !== 'pendiente';
+    if (seAtiende && !existing.respondidoPor) {
+      if (obstetra) updateData.respondidoPor = obstetra.id;
+      const minutos = Math.max(
+        0,
+        Math.round((Date.now() - existing.fechaReporte.getTime()) / 60000)
+      );
+      updateData.tiempoRespuestaMin = minutos;
+    }
+
+    return prisma.dangerSign.update({
+      where: { id: dangerSignId },
+      data: updateData,
+      include: {
+        gestante: {
+          include: {
+            user: { select: { firstName: true, lastName: true, phone: true } },
+          },
+        },
+      },
+    });
+  }
+
   async createLabResult(data: any, authenticatedUserId?: string) {
     const { gestanteId, fechaExamen, valorNumerico, ...labData } = data;
     

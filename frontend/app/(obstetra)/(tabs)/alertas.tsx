@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, Text, FlatList, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, FlatList, ActivityIndicator, Platform, StatusBar, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, AlertTriangle, User, Clock } from 'lucide-react-native';
-import { useQuery } from '@tanstack/react-query';
+import { Bell, AlertTriangle, User, Clock, CheckCircle, Share2 } from 'lucide-react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { typography } from '../../../src/theme/typography';
 
@@ -42,10 +42,48 @@ const fetchDangerSigns = async (): Promise<DangerSign[]> => {
 };
 
 export default function AlertasScreen(): React.ReactElement {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['danger-signs'],
     queryFn: fetchDangerSigns,
   });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, estado }: { id: string; estado: 'atendido' | 'derivado' }) => {
+      const accionTomada =
+        estado === 'atendido'
+          ? 'Atendido por el obstetra'
+          : 'Derivado al equipo de salud';
+      const res = await api.patch(`/clinical/danger-signs/${id}`, { estado, accionTomada });
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      // Refrescar la bandeja y el contador del dashboard del obstetra
+      queryClient.invalidateQueries({ queryKey: ['danger-signs'] });
+      queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
+      Alert.alert(
+        'Alerta actualizada',
+        variables.estado === 'atendido'
+          ? 'La alerta se marcó como atendida.'
+          : 'La alerta se derivó al equipo de salud.'
+      );
+    },
+    onError: () => {
+      Alert.alert('Error', 'No se pudo actualizar la alerta. Inténtalo de nuevo.');
+    },
+  });
+
+  const confirmAction = (id: string, estado: 'atendido' | 'derivado') => {
+    const titulo = estado === 'atendido' ? 'Atender alerta' : 'Derivar alerta';
+    const mensaje =
+      estado === 'atendido'
+        ? '¿Marcar este signo de alarma como atendido?'
+        : '¿Derivar este signo de alarma al equipo de salud?';
+    Alert.alert(titulo, mensaje, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Confirmar', onPress: () => updateMutation.mutate({ id, estado }) },
+    ]);
+  };
 
   const getSeverityColor = (severity?: string) => {
     switch (severity?.toLowerCase()) {
@@ -120,6 +158,27 @@ export default function AlertasScreen(): React.ReactElement {
           <Text style={styles.timeText}>
             {new Date(item.createdAt).toLocaleString()}
           </Text>
+        </View>
+
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionDerive]}
+            onPress={() => confirmAction(item.id, 'derivado')}
+            disabled={updateMutation.isPending}
+            activeOpacity={0.7}
+          >
+            <Share2 size={16} color="#B45309" />
+            <Text style={[styles.actionText, { color: '#B45309' }]}>Derivar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionAttend]}
+            onPress={() => confirmAction(item.id, 'atendido')}
+            disabled={updateMutation.isPending}
+            activeOpacity={0.7}
+          >
+            <CheckCircle size={16} color="#047857" />
+            <Text style={[styles.actionText, { color: '#047857' }]}>Atender</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -201,4 +260,9 @@ const styles = StyleSheet.create({
   signNotes: { fontFamily: typography.bodySmall.fontFamily, fontSize: 14, color: '#64748B', lineHeight: 20 },
   cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   timeText: { fontFamily: typography.caption.fontFamily, fontSize: 13, color: '#94A3B8' },
+  actionRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 14 },
+  actionDerive: { backgroundColor: '#FEF3C7' },
+  actionAttend: { backgroundColor: '#D1FAE5' },
+  actionText: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 14, fontWeight: '700' },
 });

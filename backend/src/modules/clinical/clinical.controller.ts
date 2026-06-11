@@ -99,6 +99,19 @@ export const getDangerSigns = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const updateDangerSign = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.updateDangerSign(
+      req.params.id as string,
+      req.body,
+      req.user!.userId
+    );
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createLabResult = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await clinicalService.createLabResult(req.body, req.user?.userId);

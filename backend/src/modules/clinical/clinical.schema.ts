@@ -101,6 +101,20 @@ export const getDangerSignsSchema = {
   }),
 };
 
+export const updateDangerSignSchema = {
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z
+    .object({
+      estado: z.enum(['pendiente', 'atendido', 'derivado']).optional(),
+      accionTomada: z.string().max(1000).optional(),
+    })
+    .refine((d) => d.estado !== undefined || d.accionTomada !== undefined, {
+      message: 'Debe indicar al menos el estado o la acción tomada',
+    }),
+};
+
 export const createLabResultSchema = {
   body: z.object({
     gestanteId: z.string().uuid(),

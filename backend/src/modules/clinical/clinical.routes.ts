@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validate.middleware.js';
+import { rbac } from '../../middleware/rbac.middleware.js';
 import * as schema from './clinical.schema.js';
 import * as controller from './clinical.controller.js';
 
@@ -50,6 +51,13 @@ clinicalRoutes.get(
   '/danger-signs',
   validate(schema.getDangerSignsSchema),
   controller.getDangerSigns
+);
+
+clinicalRoutes.patch(
+  '/danger-signs/:id',
+  rbac('obstetra', 'admin'),
+  validate(schema.updateDangerSignSchema),
+  controller.updateDangerSign
 );
 
 // Labs
