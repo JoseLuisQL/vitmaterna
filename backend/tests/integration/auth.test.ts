@@ -60,4 +60,30 @@ describe('Auth API', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.user.role).toBe('gestante');
   });
+
+  it('PATCH /auth/me actualiza las preferencias de notificación (RF-7.13)', async () => {
+    const login = await request(app)
+      .post(`${PREFIX}/auth/login`)
+      .send({ dni: '33333333', password: 'Test@1234' });
+    const token = login.body.data.accessToken;
+
+    const patched = await request(app)
+      .patch(`${PREFIX}/auth/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ notificationPreferences: { push: true, sms: false, whatsapp: true } });
+    expect(patched.status).toBe(200);
+    expect(patched.body.data.user.notificationPreferences.sms).toBe(false);
+
+    // Persistencia
+    const me = await request(app)
+      .get(`${PREFIX}/auth/me`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(me.body.data.user.notificationPreferences.sms).toBe(false);
+
+    // Restaurar
+    await request(app)
+      .patch(`${PREFIX}/auth/me`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ notificationPreferences: { push: true, sms: true, whatsapp: true } });
+  });
 });

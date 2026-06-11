@@ -3,14 +3,14 @@
  * Displays gestante profile menu and allows editing personal/clinical data (FUM, dates).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
-import { useMyProfile, useUpdatePatient } from '../../../src/services/api-queries';
+import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -42,6 +42,13 @@ export default function PerfilScreen(): React.ReactElement {
 
   const { data: profileData, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
   const updatePatientMutation = useUpdatePatient();
+  const updatePrefsMutation = useUpdateNotificationPreferences();
+
+  // Preferencias de notificación (RF-7.13)
+  const [isPrefsVisible, setIsPrefsVisible] = useState(false);
+  const [prefPush, setPrefPush] = useState(true);
+  const [prefSms, setPrefSms] = useState(true);
+  const [prefWhatsapp, setPrefWhatsapp] = useState(true);
 
   // Modal & Form States
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -58,14 +65,27 @@ export default function PerfilScreen(): React.ReactElement {
     router.replace('/(auth)/login');
   };
 
-  const abrirNotificaciones = () => setInfoModal({
-    title: 'Preferencias de notificación',
-    description: 'Tus recordatorios están activos para citas, tratamientos, signos de alarma y mensajes de la obstetra. Puedes modificar tus datos de contacto desde “Datos Personales y FUM”.',
-    rows: [
-      { label: 'Canales habilitados', value: 'Push en app, SMS y WhatsApp si el centro tiene credenciales activas' },
-      { label: 'Momentos de aviso', value: '3 días antes, 1 día antes y alertas clínicas inmediatas' },
-    ],
-  });
+  const abrirNotificaciones = () => {
+    const prefs = (profileData?.user?.notificationPreferences ?? {}) as { push?: boolean; sms?: boolean; whatsapp?: boolean };
+    setPrefPush(prefs.push ?? true);
+    setPrefSms(prefs.sms ?? true);
+    setPrefWhatsapp(prefs.whatsapp ?? true);
+    setIsPrefsVisible(true);
+  };
+
+  const handleSavePrefs = () => {
+    updatePrefsMutation.mutate(
+      { push: prefPush, sms: prefSms, whatsapp: prefWhatsapp },
+      {
+        onSuccess: () => {
+          toast.success('Preferencias guardadas', 'Tus canales de notificación se actualizaron.');
+          setIsPrefsVisible(false);
+          refetchProfile();
+        },
+        onError: () => toast.error('Error', 'No se pudieron guardar tus preferencias.'),
+      },
+    );
+  };
 
   const abrirConfiguracion = () => setInfoModal({
     title: 'Configuración de cuenta',
@@ -318,6 +338,45 @@ export default function PerfilScreen(): React.ReactElement {
         </View>
       </AppModal>
 
+      {/* MODAL: PREFERENCIAS DE NOTIFICACIÓN (RF-7.13) */}
+      <AppModal
+        visible={isPrefsVisible}
+        onClose={() => setIsPrefsVisible(false)}
+        title="Preferencias de notificación"
+        subtitle="Elige por qué canales quieres recibir recordatorios y alertas."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsPrefsVisible(false)} style={{ flex: 1 }} disabled={updatePrefsMutation.isPending} />
+            <AppButton title="Guardar" onPress={handleSavePrefs} style={{ flex: 1 }} themeColor={BRAND} loading={updatePrefsMutation.isPending} />
+          </>
+        }
+      >
+        <View style={{ gap: 4 }}>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>Notificaciones en la app</Text>
+              <Text style={styles.prefDesc}>Avisos push dentro de VITMATERNA</Text>
+            </View>
+            <Switch value={prefPush} onValueChange={setPrefPush} trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }} thumbColor={prefPush ? BRAND : commonColors.textSecondary} />
+          </View>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>SMS</Text>
+              <Text style={styles.prefDesc}>Mensajes de texto a tu teléfono</Text>
+            </View>
+            <Switch value={prefSms} onValueChange={setPrefSms} trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }} thumbColor={prefSms ? BRAND : commonColors.textSecondary} />
+          </View>
+          <View style={[styles.prefRow, { borderBottomWidth: 0 }]}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>WhatsApp</Text>
+              <Text style={styles.prefDesc}>Recordatorios y tips por WhatsApp</Text>
+            </View>
+            <Switch value={prefWhatsapp} onValueChange={setPrefWhatsapp} trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }} thumbColor={prefWhatsapp ? BRAND : commonColors.textSecondary} />
+          </View>
+          <Text style={styles.prefHint}>Las alertas clínicas urgentes siempre se enviarán por seguridad.</Text>
+        </View>
+      </AppModal>
+
       <ProfileInfoModal
         visible={!!infoModal}
         title={infoModal?.title ?? ''}
@@ -495,4 +554,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: commonColors.surface,
   },
+  prefRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: commonColors.borderLight,
+    gap: spacing.md,
+  },
+  prefTextWrap: { flex: 1 },
+  prefLabel: { ...typography.bodyMedium, color: commonColors.text },
+  prefDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  prefHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.md, lineHeight: 18 },
 });

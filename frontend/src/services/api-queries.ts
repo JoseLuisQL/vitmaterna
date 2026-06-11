@@ -454,6 +454,20 @@ export const useMyProfile = () => useQuery({
   queryFn: fetchMyProfile
 });
 
+// ── Preferencias de notificación (RF-7.13) ──
+export const useUpdateNotificationPreferences = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (prefs: { push?: boolean; sms?: boolean; whatsapp?: boolean }) => {
+      const res = await api.patch('/auth/me', { notificationPreferences: prefs });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myProfile'] });
+    },
+  });
+};
+
 export const useCreateLabResult = () => {
   const queryClient = useQueryClient();
   return useMutation({
