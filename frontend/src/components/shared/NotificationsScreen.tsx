@@ -17,6 +17,7 @@ import {
 import { BellOff } from 'lucide-react-native';
 import { EmptyState } from '../ui/EmptyState';
 import { LoadingScreen } from '../ui/LoadingScreen';
+import { useAuthStore } from '../../store/authStore';
 import { commonColors, semanticColors, gestanteColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
@@ -66,6 +67,7 @@ function tiempoRelativo(iso: string): string {
 
 export function NotificationsScreen({ themeColor = gestanteColors.primary }: Props): React.ReactElement {
   const router = useRouter();
+  const role = useAuthStore((s) => s.user?.role);
   const { data: items = [], isLoading, refetch, isRefetching } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
@@ -81,14 +83,31 @@ export function NotificationsScreen({ themeColor = gestanteColors.primary }: Pro
 
   const handlePress = (n: AppNotification) => {
     if (!n.leidaAt) markRead.mutate(n.id);
-    // Navegación contextual: las relativas a citas llevan a la pantalla de citas.
-    if (
-      ['cita_confirmada', 'solicitud_reprogramacion', 'reprogramacion_aprobada', 'reprogramacion_rechazada', 'inasistencia'].includes(
-        n.tipo,
-      )
-    ) {
-      // El obstetra ve su cronograma; la gestante su listado de citas.
-      router.push('/');
+
+    // Navegación contextual por tipo y rol.
+    const citaTipos = [
+      'cita_confirmada',
+      'solicitud_reprogramacion',
+      'reprogramacion_aprobada',
+      'reprogramacion_rechazada',
+      'inasistencia',
+    ];
+
+    let target: string | null = null;
+    if (citaTipos.includes(n.tipo)) {
+      target = role === 'obstetra' ? '/(obstetra)/(tabs)/cronograma' : '/(gestante)/(tabs)/citas';
+    } else if (n.tipo === 'signo_alarma' && role === 'obstetra') {
+      target = '/(obstetra)/(tabs)/alertas';
+    } else if (n.tipo === 'recordatorio_suplemento' && role === 'gestante') {
+      target = '/(gestante)/(tabs)/tratamiento';
+    }
+
+    if (target) {
+      try {
+        router.push(target as never);
+      } catch {
+        // Ruta no disponible: ignorar.
+      }
     }
   };
 
