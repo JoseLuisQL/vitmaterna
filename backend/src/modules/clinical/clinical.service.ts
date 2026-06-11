@@ -479,7 +479,9 @@ export class ClinicalService {
 
     if (labData.tipoExamen === 'Hemoglobina' && valNum !== undefined) {
       const { analyzeHemoglobin } = await import('../../utils/hemoglobinCorrection.js');
-      const analysis = analyzeHemoglobin(valNum, 2926);
+      const { getAltitudeMsnm } = await import('../../utils/systemSettings.js');
+      const altitud = await getAltitudeMsnm();
+      const analysis = analyzeHemoglobin(valNum, altitud);
       valCorregido = analysis.correctedHb;
       resultado = analysis.classification;
     }

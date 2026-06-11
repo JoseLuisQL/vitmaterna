@@ -157,6 +157,41 @@ describe('Clinical API', () => {
     expect(del.status).toBe(200);
   });
 
+  it('corrige la hemoglobina según la altitud configurada (RF-10.03)', async () => {
+    const adminRes = await request(app).post(`${PREFIX}/auth/login`).send({ dni: '99999999', password: 'Admin@2026' });
+    const adminToken = adminRes.body.data.accessToken;
+
+    // Altitud a nivel del mar -> factor 0 -> corregido == observado
+    await request(app)
+      .put(`${PREFIX}/admin/config`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ altitudMsnm: 0 });
+
+    const sea = await request(app)
+      .post(`${PREFIX}/clinical/labs`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, tipoExamen: 'Hemoglobina', valorNumerico: 12.0, fechaExamen: '2026-06-11' });
+    expect(sea.status).toBe(201);
+    expect(Number(sea.body.data.valorCorregido)).toBeCloseTo(12.0, 1);
+
+    // Altitud Talavera 2926 -> factor -1.3 -> 10.7
+    await request(app)
+      .put(`${PREFIX}/admin/config`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ altitudMsnm: 2926 });
+
+    const alt = await request(app)
+      .post(`${PREFIX}/clinical/labs`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId, tipoExamen: 'Hemoglobina', valorNumerico: 12.0, fechaExamen: '2026-06-11' });
+    expect(Number(alt.body.data.valorCorregido)).toBeCloseTo(10.7, 1);
+
+    // Limpieza
+    await prisma.labResult.deleteMany({
+      where: { gestanteId, tipoExamen: 'Hemoglobina', valorNumerico: 12.0, fechaExamen: new Date('2026-06-11T00:00:00.000Z') },
+    });
+  });
+
   it('RBAC: la gestante NO puede registrar antecedentes (403)', async () => {
     const res = await request(app)
       .post(`${PREFIX}/clinical/antecedentes`)

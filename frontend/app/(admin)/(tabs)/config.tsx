@@ -21,6 +21,7 @@ const BRAND = obstetraColors.primary;
 
 const schema = z.object({
   maxPatientsPerObstetra: z.string().min(1, 'Requerido'),
+  altitudMsnm: z.string().min(1, 'Requerido'),
   allowNewRegistrations: z.boolean(),
   autoGenerarCitas: z.boolean(),
   maintenanceMode: z.boolean(),
@@ -37,6 +38,7 @@ export default function ConfigScreen(): React.ReactElement {
     resolver: zodResolver(schema),
     defaultValues: {
       maxPatientsPerObstetra: '50',
+      altitudMsnm: '2926',
       allowNewRegistrations: true,
       autoGenerarCitas: true,
       maintenanceMode: false,
@@ -48,6 +50,7 @@ export default function ConfigScreen(): React.ReactElement {
     if (config) {
       reset({
         maxPatientsPerObstetra: String(config.maxPatientsPerObstetra || 50),
+        altitudMsnm: String(config.altitudMsnm ?? 2926),
         allowNewRegistrations: config.allowNewRegistrations ?? true,
         autoGenerarCitas: config.autoGenerarCitas ?? true,
         maintenanceMode: config.maintenanceMode ?? false,
@@ -60,6 +63,7 @@ export default function ConfigScreen(): React.ReactElement {
     const payload = {
       ...data,
       maxPatientsPerObstetra: parseInt(data.maxPatientsPerObstetra, 10),
+      altitudMsnm: parseInt(data.altitudMsnm, 10),
     };
     updateConfigMutation.mutate(payload, {
       onSuccess: () => {
@@ -137,6 +141,21 @@ export default function ConfigScreen(): React.ReactElement {
               )}
             />
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Parámetros Clínicos</Text>
+          <AppInput
+            name="altitudMsnm"
+            control={control}
+            label="Altitud del establecimiento (msnm)"
+            keyboardType="numeric"
+            error={errors.altitudMsnm?.message}
+            themeColor={BRAND}
+          />
+          <Text style={styles.helperText}>
+            Se usa para corregir la hemoglobina por altitud (MINSA). Talavera ≈ 2926 msnm.
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -234,5 +253,10 @@ const styles = StyleSheet.create({
   submitBtn: {
     marginTop: spacing.md,
     backgroundColor: BRAND,
+  },
+  helperText: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
+    marginTop: spacing.xs,
   },
 });
