@@ -108,4 +108,20 @@ describe('Notifications API (Fase 7)', () => {
     const res = await request(app).get(`${PREFIX}/notifications`);
     expect(res.status).toBe(401);
   });
+
+  it('guarda y elimina el Expo push token del usuario', async () => {
+    const save = await request(app)
+      .post(`${PREFIX}/notifications/token`)
+      .set('Authorization', `Bearer ${gestanteToken}`)
+      .send({ expoPushToken: 'ExponentPushToken[jest-token]' });
+    expect(save.status).toBe(200);
+
+    const del = await request(app)
+      .delete(`${PREFIX}/notifications/token`)
+      .set('Authorization', `Bearer ${gestanteToken}`);
+    expect(del.status).toBe(200);
+
+    const noAuth = await request(app).delete(`${PREFIX}/notifications/token`);
+    expect(noAuth.status).toBe(401);
+  });
 });

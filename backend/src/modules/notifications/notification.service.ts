@@ -267,7 +267,8 @@ export async function notifyUser(
   const user = await prisma.user.findUnique({ where: { id: userId } });
   const prefs = user?.notificationPreferences as Record<string, any> | null;
   if (prefs?.expoPushToken) {
-    await sendPushNotification([prefs.expoPushToken], titulo, mensaje, datos);
+    // Se incluye `tipo` en los datos del push para el deep-link en el cliente.
+    await sendPushNotification([prefs.expoPushToken], titulo, mensaje, { tipo, ...(datos ?? {}) });
   }
 }
 

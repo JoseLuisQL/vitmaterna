@@ -18,6 +18,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { ToastProvider } from '../src/components/ui/ToastProvider';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
+import { usePushNotifications } from '../src/hooks/usePushNotifications';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,21 +62,33 @@ export default function RootLayout(): React.ReactElement | null {
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <StatusBar style="dark" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: commonColors.background },
-              animation: 'slide_from_right',
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(gestante)" />
-            <Stack.Screen name="(obstetra)" />
-            <Stack.Screen name="(admin)" />
-          </Stack>
+          <AppNavigator />
         </ToastProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+  );
+}
+
+/**
+ * Navegación raíz. Vive dentro de QueryClientProvider y del contexto de router,
+ * por lo que aquí se conecta la recepción de notificaciones push.
+ */
+function AppNavigator(): React.ReactElement {
+  usePushNotifications();
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: commonColors.background },
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(gestante)" />
+      <Stack.Screen name="(obstetra)" />
+      <Stack.Screen name="(admin)" />
+    </Stack>
   );
 }

@@ -108,6 +108,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async (): Promise<void> => {
     try {
+      // Quitar el push token de este dispositivo antes de cerrar sesión,
+      // para no seguir recibiendo notificaciones de un usuario deslogueado.
+      try {
+        await api.delete('/notifications/token');
+      } catch {
+        // No bloquear el logout si falla.
+      }
       await api.post('/auth/logout');
     } catch {
       // Proceed with local logout even if API call fails

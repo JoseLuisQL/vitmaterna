@@ -73,6 +73,28 @@ export async function markAllAsRead(req: Request, res: Response): Promise<void> 
   res.json(successResponse({ message: 'Todas las notificaciones marcadas como leídas' }));
 }
 
+/** Elimina el Expo push token del usuario (al cerrar sesión en un dispositivo). */
+export async function deleteToken(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'User not found');
+  }
+
+  const preferences =
+    typeof user.notificationPreferences === 'object' && user.notificationPreferences !== null
+      ? { ...(user.notificationPreferences as object) } as Record<string, unknown>
+      : {};
+  delete preferences.expoPushToken;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { notificationPreferences: preferences as object },
+  });
+
+  res.json(successResponse({ message: 'Push token removed' }));
+}
+
 export async function saveToken(req: Request, res: Response): Promise<void> {
   const userId = req.user!.userId;
   

@@ -30,7 +30,13 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "color": "#7C3AED"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

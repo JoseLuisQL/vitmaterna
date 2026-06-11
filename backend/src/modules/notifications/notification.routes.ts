@@ -33,6 +33,18 @@ router.post('/token', notificationController.saveToken);
 
 /**
  * @swagger
+ * /v1/notifications/token:
+ *   delete:
+ *     summary: Elimina el Expo Push Token del usuario (logout en el dispositivo)
+ *     tags: [Notifications]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Token eliminado }
+ */
+router.delete('/token', notificationController.deleteToken);
+
+/**
+ * @swagger
  * /v1/notifications:
  *   get:
  *     summary: Lista las notificaciones in-app del usuario
