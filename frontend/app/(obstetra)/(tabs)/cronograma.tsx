@@ -6,10 +6,15 @@ import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
-import { useAppointments, useUpdateAppointmentStatus } from '../../../src/services/api-queries';
+import {
+  useAppointments,
+  useUpdateAppointmentStatus,
+  useResolveReschedule,
+} from '../../../src/services/api-queries';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
 
 const BRAND = obstetraColors.primary;
@@ -19,8 +24,10 @@ export default function CronogramaScreen(): React.ReactElement {
   const [filterMode, setFilterMode] = useState<'todas' | 'hoy' | 'proximas'>('hoy');
   const [modalVisible, setModalVisible] = useState(false);
 
+  const toast = useToast();
   const { data: allAppointments, isLoading, refetch, isRefetching } = useAppointments();
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
+  const { mutate: resolveReschedule, isPending: isResolving } = useResolveReschedule();
 
   // Filter Logic natively matching backend returned data
   const processedAppointments = React.useMemo(() => {
@@ -34,7 +41,7 @@ export default function CronogramaScreen(): React.ReactElement {
         case 'hoy':
           return appDateStr === todayStr;
         case 'proximas':
-          return appDateStr >= todayStr && (app.status === 'programada' || app.status === 'confirmada' || app.status === 'reprogramada');
+          return appDateStr >= todayStr && (app.status === 'programada' || app.status === 'confirmada' || app.status === 'reprogramada' || app.status === 'solicitud_reprogramacion');
         case 'todas':
         default:
           return true;
@@ -83,6 +90,7 @@ export default function CronogramaScreen(): React.ReactElement {
       'programada': 'warning',
       'confirmada': 'success',
       'asistida': 'success',
+      'solicitud_reprogramacion': 'warning',
       'reprogramada': 'warning',
       'no_asistida': 'danger',
       'cancelada': 'danger'
@@ -93,6 +101,7 @@ export default function CronogramaScreen(): React.ReactElement {
       'programada': 'Programada',
       'confirmada': 'Confirmada',
       'asistida': 'Asistida',
+      'solicitud_reprogramacion': 'Solicita reprogramar',
       'reprogramada': 'Reprogramada',
       'no_asistida': 'No Asistió',
       'cancelada': 'Cancelada'
@@ -103,10 +112,36 @@ export default function CronogramaScreen(): React.ReactElement {
       updateStatus({ id, status: newStatus });
     };
 
+    const isRescheduleRequest = item.status === 'solicitud_reprogramacion';
     const showActions = item.status === 'programada' || item.status === 'confirmada';
 
+    const fmtHora = (iso?: string | null) => {
+      if (!iso) return '--:--';
+      const d = new Date(iso);
+      return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+    };
+    const fmtFecha = (iso?: string | null) => {
+      if (!iso) return '--';
+      const d = new Date(iso);
+      return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const handleResolve = (aprobar: boolean) => {
+      resolveReschedule(
+        { id: item.id, aprobar },
+        {
+          onSuccess: () =>
+            toast.success(
+              aprobar ? 'Reprogramación aprobada' : 'Solicitud rechazada',
+              aprobar ? 'La gestante fue notificada de la nueva fecha.' : 'La gestante fue notificada.',
+            ),
+          onError: () => toast.error('No se pudo procesar', 'Inténtalo nuevamente.'),
+        },
+      );
+    };
+
     return (
-      <View style={styles.appointmentCard}>
+      <View style={[styles.appointmentCard, isRescheduleRequest && styles.appointmentCardAlert]}>
         <View style={styles.timeLine}>
           <Text style={styles.timeText}>
             {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
@@ -126,6 +161,33 @@ export default function CronogramaScreen(): React.ReactElement {
             <MapPin size={12} color={commonColors.textTertiary} />
             <Text style={styles.infoText}>{item.location || 'Consultorio 102'}</Text>
           </View>
+
+          {isRescheduleRequest && (
+            <View style={styles.rescheduleBox}>
+              <Text style={styles.rescheduleTitle}>
+                Propone: {fmtFecha(item.fechaReprogramada)} · {fmtHora(item.horaReprogramada)}
+              </Text>
+              {item.motivoReprogramacion ? (
+                <Text style={styles.rescheduleMotivo}>Motivo: {item.motivoReprogramacion}</Text>
+              ) : null}
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.btnAsistio]}
+                  disabled={isResolving}
+                  onPress={() => handleResolve(true)}
+                >
+                  <Text style={styles.btnAsistioText}>Aprobar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.btnNoAsistio]}
+                  disabled={isResolving}
+                  onPress={() => handleResolve(false)}
+                >
+                  <Text style={styles.btnNoAsistioText}>Rechazar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {showActions && (
             <View style={styles.actionButtonsContainer}>
@@ -253,6 +315,15 @@ const styles = StyleSheet.create({
   },
   timeText: { ...typography.h3, color: BRAND },
   timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
+  appointmentCardAlert: { borderColor: semanticColors.warning, borderWidth: 1.5 },
+  rescheduleBox: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: semanticColors.warningLight,
+  },
+  rescheduleTitle: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: semanticColors.warning },
+  rescheduleMotivo: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
   appointmentHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1, marginRight: 8 },

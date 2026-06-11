@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, StyleSheet, Text, TouchableOpacity,
-  Alert, FlatList, TextInput, ScrollView, Dimensions 
+  Alert, FlatList, TextInput, ScrollView, ActivityIndicator, Dimensions 
 } from 'react-native';
-import { Calendar, Clock, User as UserIcon, Search, Check, FileText } from 'lucide-react-native';
+import { User as UserIcon, Search, Check, FileText } from 'lucide-react-native';
 import { commonColors, obstetraColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { shadows } from '../../theme/shadows';
-import { usePatients, useCreateAppointment } from '../../services/api-queries';
+import {
+  usePatients,
+  useCreateAppointment,
+  useAppointmentAvailability,
+} from '../../services/api-queries';
 import { AppModal, AppButton } from '../ui';
+import { format, addDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const BRAND = obstetraColors.primary;
 
@@ -27,14 +33,29 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
   const [gestanteName, setGestanteName] = useState('');
   const [motivo, setMotivo] = useState('Control Prenatal');
   const [observaciones, setObservaciones] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [dateStr, setDateStr] = useState(new Date().toISOString().split('T')[0]);
-  const [timeStr, setTimeStr] = useState('10:00');
-  
+  const [dateStr, setDateStr] = useState<string | null>(null);
+  const [timeStr, setTimeStr] = useState<string | null>(null);
+
   const [step, setStep] = useState<'form' | 'patients'>('form');
   const [search, setSearch] = useState('');
 
+  const { data: slots = [], isLoading: slotsLoading } = useAppointmentAvailability(dateStr);
+
   const MOTIVOS = ['Control Prenatal', 'Ecografía', 'Resultado Laboratorio', 'Monitoreo', 'Interconsulta'];
+
+  // Próximos 21 días para elegir fecha.
+  const dateOptions = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 21 }, (_, i) => {
+      const d = addDays(today, i);
+      return {
+        value: format(d, 'yyyy-MM-dd'),
+        dow: format(d, 'EEE', { locale: es }),
+        day: format(d, 'd'),
+        month: format(d, 'MMM', { locale: es }),
+      };
+    });
+  }, []);
 
   const filteredPatients = patients?.filter((p: any) => 
     p.firstName?.toLowerCase().includes(search.toLowerCase()) || 
@@ -53,7 +74,8 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     setGestanteName('');
     setMotivo('Control Prenatal');
     setObservaciones('');
-    setDate(new Date());
+    setDateStr(null);
+    setTimeStr(null);
     setStep('form');
     setSearch('');
   };
@@ -68,26 +90,25 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
       Alert.alert('Error', 'Debe seleccionar una paciente');
       return;
     }
-
-    const fecha = dateStr;
-    const hora = timeStr;
+    if (!dateStr || !timeStr) {
+      Alert.alert('Error', 'Debe seleccionar una fecha y un horario disponible');
+      return;
+    }
 
     try {
       await createAppointment({
         gestanteId,
-        fecha,
-        hora,
+        fecha: dateStr,
+        hora: timeStr,
         motivo,
         observaciones: observaciones || null, // Guardar observaciones en bd
       });
       handleClose();
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error || 'No se pudo crear la cita');
+      const msg = e?.response?.data?.error?.message || 'No se pudo crear la cita';
+      Alert.alert('Error', msg);
     }
   };
-
-  const handleDateChange = (text: string) => { setDateStr(text); };
-  const handleTimeChange = (text: string) => { setTimeStr(text); };
 
   return (
     <AppModal
@@ -130,34 +151,55 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
             ))}
           </ScrollView>
 
-          <View style={styles.row}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={styles.label}>Fecha (YYYY-MM-DD)</Text>
-              <View style={styles.inputBox}>
-                <Calendar size={18} color={commonColors.textSecondary} />
-                <TextInput 
-                  style={styles.inputTextNative} 
-                  value={dateStr} 
-                  onChangeText={handleDateChange} 
-                  placeholder="2026-06-08"
-                  placeholderTextColor={commonColors.textTertiary}
-                />
-              </View>
+          <Text style={styles.label}>Fecha</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+            {dateOptions.map((d) => {
+              const active = dateStr === d.value;
+              return (
+                <TouchableOpacity
+                  key={d.value}
+                  style={[styles.dateChip, active && styles.dateChipActive]}
+                  onPress={() => {
+                    setDateStr(d.value);
+                    setTimeStr(null);
+                  }}
+                >
+                  <Text style={[styles.dateChipDow, active && styles.dateChipTextActive]}>{d.dow}</Text>
+                  <Text style={[styles.dateChipDay, active && styles.dateChipTextActive]}>{d.day}</Text>
+                  <Text style={[styles.dateChipMonth, active && styles.dateChipTextActive]}>{d.month}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.label}>Horario disponible</Text>
+          {!dateStr ? (
+            <Text style={styles.helperText}>Primero selecciona una fecha.</Text>
+          ) : slotsLoading ? (
+            <ActivityIndicator color={BRAND} style={{ marginVertical: 12 }} />
+          ) : (
+            <View style={styles.slotsGrid}>
+              {slots.filter((s: any) => s.disponible).length === 0 ? (
+                <Text style={styles.helperText}>No hay horarios disponibles ese día.</Text>
+              ) : (
+                slots.map((s: any) => {
+                  const active = timeStr === s.hora;
+                  return (
+                    <TouchableOpacity
+                      key={s.hora}
+                      disabled={!s.disponible}
+                      style={[styles.slotChip, !s.disponible && styles.slotChipDisabled, active && styles.slotChipActive]}
+                      onPress={() => setTimeStr(s.hora)}
+                    >
+                      <Text style={[styles.slotText, !s.disponible && styles.slotTextDisabled, active && styles.slotTextActive]}>
+                        {s.hora}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </View>
-            <View style={{ flex: 1, marginLeft: 8 }}>
-              <Text style={styles.label}>Hora (HH:MM)</Text>
-              <View style={styles.inputBox}>
-                <Clock size={18} color={commonColors.textSecondary} />
-                <TextInput 
-                  style={styles.inputTextNative} 
-                  value={timeStr} 
-                  onChangeText={handleTimeChange}
-                  placeholder="14:30"
-                  placeholderTextColor={commonColors.textTertiary}
-                />
-              </View>
-            </View>
-          </View>
+          )}
 
           <Text style={styles.label}>Descripción / Consultorio</Text>
           <View style={[styles.inputBox, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
@@ -282,6 +324,38 @@ const styles = StyleSheet.create({
   chipTextActive: { color: BRAND, fontWeight: '700' },
 
   row: { flexDirection: 'row' },
+  helperText: { ...typography.bodySmall, color: commonColors.textTertiary, paddingVertical: 8 },
+  dateScroll: { flexDirection: 'row', marginBottom: 4 },
+  dateChip: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    marginRight: 8,
+    minWidth: 54,
+  },
+  dateChipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  dateChipDow: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase' },
+  dateChipDay: { ...typography.h3, color: commonColors.text },
+  dateChipMonth: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase' },
+  dateChipTextActive: { color: obstetraColors.onPrimary },
+  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slotChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+  },
+  slotChipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  slotChipDisabled: { opacity: 0.4 },
+  slotText: { ...typography.bodySmall, color: commonColors.text },
+  slotTextActive: { color: obstetraColors.onPrimary, fontWeight: '700' },
+  slotTextDisabled: { color: commonColors.textTertiary, textDecorationLine: 'line-through' },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',

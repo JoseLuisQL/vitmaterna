@@ -25,6 +25,10 @@ const mapAppointment = (appt: any) => ({
   location: appt.observaciones || 'Consultorio 102',
   gestanteId: appt.gestanteId,
   riskLevel: appt.gestante?.nivelRiesgo === 'rojo' ? 'Alto' : appt.gestante?.nivelRiesgo === 'amarillo' ? 'Medio' : 'Bajo',
+  // Datos de la solicitud de reprogramación (para que el obstetra apruebe/rechace).
+  fechaReprogramada: appt.fechaReprogramada || null,
+  horaReprogramada: appt.horaReprogramada || null,
+  motivoReprogramacion: appt.motivoReprogramacion || null,
 });
 
 const mapPatient = (gestante: any) => {
