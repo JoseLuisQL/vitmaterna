@@ -4,6 +4,7 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import * as authService from './auth.service.js';
 import type { LoginInput, RegisterInput, RefreshInput, UpdateProfileInput } from './auth.schema.js';
 import { prisma } from '../../config/database.js';
+import { sendSmsMock, sendWhatsApp } from '../notifications/notification.service.js';
 
 /**
  * POST /v1/auth/register
@@ -210,39 +211,38 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
   const { dni } = req.body as { dni: string };
 
-  // Look up the user (but always return the same response)
+  // Buscar el usuario, pero responder siempre igual (anti-enumeración de DNI).
   const user = await authService.findUserByDni(dni);
 
   if (user && user.phone) {
-    // In production: send reset code via SMS/WhatsApp
-    // For now, log it for development
-    console.log(`[DEV] Password reset requested for DNI ${dni}`);
+    const code = await authService.createPasswordResetToken(user.id);
+    const mensaje = `VITMATERNA: tu código para restablecer tu contraseña es ${code}. Vence en 30 minutos. No lo compartas.`;
+    // Enviar por SMS y WhatsApp (en modo mock si no hay credenciales).
+    sendSmsMock(user.phone, mensaje);
+    sendWhatsApp(user.phone, mensaje);
   }
 
-  // Always return success to prevent DNI enumeration
   res.json(
     successResponse({
-      message: 'If the DNI is registered, you will receive a reset code on your registered phone number.',
+      message:
+        'Si el DNI está registrado, recibirás un código de recuperación en tu teléfono registrado.',
     }),
   );
 }
 
 /**
  * POST /v1/auth/reset-password
- * Placeholder – in production, verify the reset token sent via SMS.
+ * Verifica el código enviado por SMS/WhatsApp y cambia la contraseña.
  */
 export async function resetPassword(req: Request, res: Response): Promise<void> {
-  const { token, newPassword } = req.body as { token: string; newPassword: string };
+  const { dni, code, newPassword } = req.body as { dni: string; code: string; newPassword: string };
 
-  // In production: verify the reset token from SMS
-  // For MVP, we use a simple token-based flow
-  // This is a placeholder that will be enhanced with real SMS verification
-  void token;
-  void newPassword;
+  const ok = await authService.resetPasswordWithToken(dni, code, newPassword);
+  if (!ok) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Código inválido o expirado.');
+  }
 
-  throw new AppError(
-    501,
-    'NOT_IMPLEMENTED',
-    'Password reset via SMS is not yet implemented. Contact an administrator.',
+  res.json(
+    successResponse({ message: 'Tu contraseña se restableció correctamente. Inicia sesión de nuevo.' }),
   );
 }

@@ -38,6 +38,8 @@ model User {
   notificationPreferences Json      @default("{\"push\": true, \"sms\": true, \"whatsapp\": true}") @map("notification_preferences") @db.JsonB
   consentAccepted         Boolean   @default(false) @map("consent_accepted")
   consentDate             DateTime? @map("consent_date") @db.Timestamptz()
+  resetTokenHash          String?   @map("reset_token_hash")
+  resetTokenExpires       DateTime? @map("reset_token_expires") @db.Timestamptz()
   createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   deletedAt               DateTime? @map("deleted_at") @db.Timestamptz()

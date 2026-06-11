@@ -290,6 +290,58 @@ export function isAccountLocked(user: User): boolean {
 }
 
 // ============================================
+// Recuperación de contraseña (RF-1.05)
+// ============================================
+
+const RESET_TOKEN_TTL_MINUTES = 30;
+
+/**
+ * Genera un código de recuperación de 6 dígitos, guarda su hash + expiración
+ * en el usuario y devuelve el código en claro (para enviarlo por SMS/WhatsApp).
+ */
+export async function createPasswordResetToken(userId: string): Promise<string> {
+  const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 dígitos
+  const hash = await bcrypt.hash(code, env.BCRYPT_SALT_ROUNDS);
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      resetTokenHash: hash,
+      resetTokenExpires: new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000),
+    },
+  });
+  return code;
+}
+
+/**
+ * Verifica el código de recuperación contra el hash vigente del usuario y,
+ * si es válido y no expiró, cambia la contraseña y limpia el token.
+ * Devuelve true si tuvo éxito.
+ */
+export async function resetPasswordWithToken(dni: string, code: string, newPassword: string): Promise<boolean> {
+  const user = await findUserByDni(dni);
+  if (!user || !user.resetTokenHash || !user.resetTokenExpires) return false;
+  if (new Date() > user.resetTokenExpires) return false;
+
+  const valid = await bcrypt.compare(code, user.resetTokenHash);
+  if (!valid) return false;
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash,
+      resetTokenHash: null,
+      resetTokenExpires: null,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    },
+  });
+  // Revocar sesiones activas por seguridad.
+  await revokeAllUserSessions(user.id);
+  return true;
+}
+
+// ============================================
 // Profile Update
 // ============================================
 

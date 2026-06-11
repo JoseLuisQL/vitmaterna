@@ -100,7 +100,8 @@ export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 // ---- Reset Password ----
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
+  dni: dniField,
+  code: z.string().regex(/^\d{6}$/, 'El código debe tener 6 dígitos'),
   newPassword: passwordField,
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
