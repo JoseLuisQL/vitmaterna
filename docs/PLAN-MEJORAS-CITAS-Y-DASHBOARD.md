@@ -247,3 +247,32 @@ estética minimalista optimizada.
 > **Orden de ejecución:** 1 → 2 → 3 → 4 → 5 → 6. Las fases 1 y 2 (backend) son
 > prerrequisito de las de UI. Tras cada fase: typecheck + commit en español +
 > push a `origin/main` (o rama de trabajo, según se prefiera).
+
+---
+
+## Estado de ejecución (todas las fases completadas ✅)
+
+| Fase | Estado | Commit |
+|------|--------|--------|
+| 1 | ✅ | `feat(citas): RBAC, validacion de propiedad y disponibilidad de horarios` |
+| 2 | ✅ | `feat(citas): flujo de confirmacion y reprogramacion con aprobacion del obstetra y notificaciones` |
+| 3 | ✅ | `feat(citas): rediseno profesional de citas de la gestante con detalle en modal y seleccion inteligente de horario` |
+| 4 | ✅ | `feat(dashboard): accesos directos funcionales y rediseno minimalista del panel de la gestante` |
+| 5 | ✅ | `feat(citas-obstetra): gestion de solicitudes de reprogramacion y agenda sin choques de horario` |
+| 6 | ✅ | `test(citas): cobertura del flujo de citas y actualizacion de documentacion de estado` |
+
+**Resultados de calidad (Fase 6):**
+- Backend: typecheck 0 errores · **90 pruebas** (unit + integración) · smoke 30/30.
+- Frontend: typecheck 0 errores · **30 pruebas** · bundle web compila.
+
+**Problemas del diagnóstico (sección 0) resueltos:**
+1. ✅ Citas con RBAC + verificación de propiedad.
+2. ✅ Reprogramación convertida en flujo de aprobación del obstetra.
+3. ✅ Validación de disponibilidad / anti doble-booking + `GET /availability`.
+4. ✅ Notificaciones a la contraparte en confirmar/solicitar/aprobar/rechazar.
+5. ✅ Accesos directos del dashboard ahora navegan y permiten confirmar.
+6. ✅ Reprogramación con selector de fecha + horarios disponibles (sin texto crudo).
+7. ✅ Detalle de cita en `AppModal` profesional y ordenado.
+8. ✅ Mapeo a campos reales del backend (sin valores inventados).
+9. ✅ Feedback con `ToastProvider` (sin `alert()` del navegador).
+10. ✅ Estados de cita completos, incluido `solicitud_reprogramacion`.

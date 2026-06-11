@@ -10,6 +10,15 @@ Auditoría RF por RF del `implementation_plan.md` (M1–M10) contra el código r
 
 Leyenda: ✅ Implementado · 🟡 Parcial · ❌ Faltante
 
+> **Actualización (módulo de Citas — M3):** se completó el flujo profesional de
+> citas. Ya resuelto: confirmación de cita con aviso al obstetra (RF-3.05),
+> solicitud de reprogramación **con aprobación/rechazo** del obstetra y
+> notificación a la gestante (RF-3.08/3.09), agenda inteligente con horarios
+> disponibles para evitar doble booking (`GET /appointments/availability`),
+> RBAC y verificación de propiedad en todas las rutas de citas, y rediseño UI
+> (detalle en modal + selección de horario) tanto en gestante como en obstetra.
+> Ver `docs/PLAN-MEJORAS-CITAS-Y-DASHBOARD.md`.
+
 ## Resumen por módulo
 
 | Módulo | RF | ✅ | 🟡 | ❌ |
