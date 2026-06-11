@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Modal,
   TouchableOpacity,
   TextInput,
   StatusBar,
@@ -26,6 +25,7 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { AppModal, useToast } from '../../../src/components/ui';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
@@ -43,6 +43,7 @@ export default function GestanteDashboard(): React.ReactElement {
   const displayName = user?.firstName || 'Gestante';
 
   const { data, isLoading, refetch } = useGestanteDashboard();
+  const toast = useToast();
   useRefetchOnFocus([refetch]);
 
   const [isModalVisible, setIsModalVisible] = React.useState(false);
@@ -61,10 +62,10 @@ export default function GestanteDashboard(): React.ReactElement {
       setIsModalVisible(false);
       setSelectedSign('');
       setNotes('');
-      Alert.alert('Alerta enviada', 'Tu obstetra ha sido notificada de tu signo de alarma.');
+      toast.success('Alerta enviada', 'Tu obstetra fue notificada de tu signo de alarma.');
     },
     onError: () => {
-      Alert.alert('Error', 'No se pudo enviar el signo de alarma. Inténtalo de nuevo.');
+      toast.error('No se pudo enviar', 'Inténtalo de nuevo. Si es urgente, llama al centro de salud.');
     },
   });
 
@@ -73,10 +74,10 @@ export default function GestanteDashboard(): React.ReactElement {
       return api.post('/chat/emergencia', coords);
     },
     onSuccess: () => {
-      Alert.alert('Alerta Enviada', 'Se ha enviado una alerta de emergencia a tu obstetra con tu ubicación GPS.');
+      toast.warning('Emergencia enviada', 'Tu obstetra recibió la alerta con tu ubicación GPS.');
     },
     onError: () => {
-      Alert.alert('Error', 'No se pudo enviar la alerta de emergencia.');
+      toast.error('No se pudo enviar', 'No se pudo enviar la alerta de emergencia.');
     }
   });
 
@@ -306,46 +307,46 @@ export default function GestanteDashboard(): React.ReactElement {
         </View>
       </ScrollView>
 
-      {/* Danger Sign Modal */}
-      <Modal visible={isModalVisible} animationType="fade" transparent={true} onRequestClose={() => setIsModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reportar Alarma</Text>
-              <AlertTriangle size={24} color={semanticColors.danger} />
-            </View>
-            <Text style={styles.modalDescription}>Selecciona el síntoma que estás experimentando. Si es muy grave, acude a emergencia inmediatamente.</Text>
+      {/* Modal de reporte de signo de alarma */}
+      <AppModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        title="Reportar alarma"
+        subtitle="Selecciona el síntoma que presentas. Si es grave, acude a emergencia de inmediato."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsModalVisible(false)} style={{ flex: 1 }} disabled={reportMutation.isPending} />
+            <AppButton
+              title={reportMutation.isPending ? 'Enviando...' : 'Enviar'}
+              onPress={() => reportMutation.mutate()}
+              style={{ flex: 1, backgroundColor: semanticColors.danger }}
+              disabled={!selectedSign || reportMutation.isPending}
+            />
+          </>
+        }
+      >
+        {DANGER_SIGNS.map((sign) => (
+          <TouchableOpacity
+            key={sign}
+            style={[styles.signOption, selectedSign === sign && styles.signOptionSelected]}
+            onPress={() => setSelectedSign(sign)}
+          >
+            <Text style={[styles.signOptionText, selectedSign === sign && styles.signOptionTextSelected]}>{sign}</Text>
+          </TouchableOpacity>
+        ))}
 
-            <ScrollView style={styles.signsList} showsVerticalScrollIndicator={false}>
-              {DANGER_SIGNS.map((sign) => (
-                <TouchableOpacity
-                  key={sign}
-                  style={[styles.signOption, selectedSign === sign && styles.signOptionSelected]}
-                  onPress={() => setSelectedSign(sign)}
-                >
-                  <Text style={[styles.signOptionText, selectedSign === sign && styles.signOptionTextSelected]}>{sign}</Text>
-                </TouchableOpacity>
-              ))}
-
-              {selectedSign === 'Otro' && (
-                <TextInput
-                  style={styles.notesInput}
-                  placeholder="Describe el síntoma..."
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  numberOfLines={3}
-                />
-              )}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <AppButton title="Cancelar" variant="outline" onPress={() => setIsModalVisible(false)} style={{ flex: 1, marginRight: spacing.sm + 4 }} disabled={reportMutation.isPending} />
-              <AppButton title={reportMutation.isPending ? "Enviando..." : "Enviar"} onPress={() => reportMutation.mutate()} style={{ flex: 1, backgroundColor: semanticColors.danger }} disabled={!selectedSign || reportMutation.isPending} />
-            </View>
-          </View>
-        </View>
-      </Modal>
+        {selectedSign === 'Otro' && (
+          <TextInput
+            style={styles.notesInput}
+            placeholder="Describe el síntoma..."
+            placeholderTextColor={commonColors.textTertiary}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+          />
+        )}
+      </AppModal>
     </View>
   );
 }
@@ -444,16 +445,9 @@ const styles = StyleSheet.create({
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   quickActionTitle: { ...typography.label, color: commonColors.text, textAlign: 'center' },
   quickActionSubtitle: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary, textAlign: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: commonColors.overlay, justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: commonColors.surface, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, padding: spacing.lg, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  modalTitle: { ...typography.h2, color: commonColors.text },
-  modalDescription: { ...typography.bodyMedium, color: commonColors.textSecondary, marginBottom: spacing.lg },
-  signsList: { marginBottom: spacing.lg },
   signOption: { padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: commonColors.border, marginBottom: spacing.sm + 4 },
   signOptionSelected: { borderColor: semanticColors.danger, backgroundColor: semanticColors.dangerLight, borderWidth: 2 },
   signOptionText: { ...typography.bodyMedium, color: commonColors.textSecondary },
   signOptionTextSelected: { fontFamily: typography.bodyMedium.fontFamily, fontWeight: '700', color: semanticColors.danger },
-  notesInput: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, padding: spacing.md, ...typography.bodyMedium, color: commonColors.text, minHeight: 100, textAlignVertical: 'top', marginTop: spacing.sm + 4, backgroundColor: commonColors.background },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing.lg },
+  notesInput: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, padding: spacing.md, ...typography.bodyMedium, color: commonColors.text, minHeight: 100, textAlignVertical: 'top', marginTop: spacing.sm + 4, backgroundColor: commonColors.surface },
 });

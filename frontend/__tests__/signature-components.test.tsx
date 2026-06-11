@@ -4,6 +4,8 @@ import { ToggleTabs } from '../src/components/ui/ToggleTabs';
 import { DiagnosisPill } from '../src/components/ui/DiagnosisPill';
 import { KpiCard } from '../src/components/ui/KpiCard';
 import { CircularProgress } from '../src/components/ui/CircularProgress';
+import { AppModal } from '../src/components/ui/AppModal';
+import { Text } from 'react-native';
 
 describe('ToggleTabs', () => {
   const tabs = [
@@ -61,5 +63,28 @@ describe('CircularProgress', () => {
   it('acota valores fuera de rango', () => {
     render(<CircularProgress value={140} />);
     expect(screen.getByText('100%')).toBeTruthy();
+  });
+});
+
+describe('AppModal', () => {
+  it('muestra título y contenido cuando es visible', () => {
+    render(
+      <AppModal visible title="Confirmar" onClose={() => {}}>
+        <Text>Cuerpo del modal</Text>
+      </AppModal>,
+    );
+    expect(screen.getByText('Confirmar')).toBeTruthy();
+    expect(screen.getByText('Cuerpo del modal')).toBeTruthy();
+  });
+
+  it('cierra al presionar el botón de cierre', () => {
+    const onClose = jest.fn();
+    render(
+      <AppModal visible title="Confirmar" onClose={onClose}>
+        <Text>Cuerpo</Text>
+      </AppModal>,
+    );
+    fireEvent.press(screen.getByLabelText('Cerrar'));
+    expect(onClose).toHaveBeenCalled();
   });
 });

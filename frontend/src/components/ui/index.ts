@@ -19,3 +19,4 @@ export { DiagnosisPill } from './DiagnosisPill';
 export { CircularProgress } from './CircularProgress';
 export { KpiCard } from './KpiCard';
 export { BottomSheet } from './BottomSheet';
+export { AppModal } from './AppModal';
