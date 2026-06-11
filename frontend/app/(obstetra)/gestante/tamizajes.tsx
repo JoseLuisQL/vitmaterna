@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  ChevronLeft, Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale,
+  ChevronLeft, Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale, Activity, Smile,
 } from 'lucide-react-native';
 import { AppModal, AppButton } from '../../../src/components/ui';
 import {
@@ -15,6 +15,8 @@ import {
   useCreateViolenceScreening,
   useCreateNutritionalCounseling,
   useCreateWeightRecord,
+  useCreateUltrasound,
+  useCreateDentalRecord,
 } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -22,7 +24,7 @@ import { typography } from '../../../src/theme/typography';
 const PINK = obstetraColors.primary;
 const hoy = () => new Date().toISOString().split('T')[0];
 
-type FormKey = 'patologia' | 'mental' | 'violencia' | 'nutricion' | 'peso';
+type FormKey = 'patologia' | 'mental' | 'violencia' | 'nutricion' | 'peso' | 'ecografia' | 'odontograma';
 
 export default function TamizajesScreen(): React.ReactElement {
   const router = useRouter();
@@ -37,6 +39,8 @@ export default function TamizajesScreen(): React.ReactElement {
   const violence = useCreateViolenceScreening();
   const nutrition = useCreateNutritionalCounseling();
   const weight = useCreateWeightRecord();
+  const ultrasound = useCreateUltrasound();
+  const dental = useCreateDentalRecord();
 
   // ── Patología (CIE-10) ──
   const [cie10, setCie10] = useState('');
@@ -65,6 +69,17 @@ export default function TamizajesScreen(): React.ReactElement {
   const [pesoSemana, setPesoSemana] = useState('');
   const [pesoKg, setPesoKg] = useState('');
 
+  // ── Ecografía ──
+  const [ecoTipo, setEcoTipo] = useState<'genetica' | 'morfologica' | 'bienestar_fetal'>('genetica');
+  const [ecoSemanas, setEcoSemanas] = useState('');
+  const [ecoResultado, setEcoResultado] = useState('');
+  const [ecoHallazgos, setEcoHallazgos] = useState('');
+
+  // ── Odontograma ──
+  const [dentEstado, setDentEstado] = useState('');
+  const [dentCaries, setDentCaries] = useState('');
+  const [dentTratamientos, setDentTratamientos] = useState('');
+
   const closeAndReset = () => {
     setOpenForm(null);
     setCie10(''); setPatDesc('');
@@ -72,6 +87,8 @@ export default function TamizajesScreen(): React.ReactElement {
     setVioPuntaje(''); setVioObs('');
     setNutHist(''); setNutAnimales(false); setNutMenestras(false); setNutFrutas(false); setNutSal(false); setNutAcuerdos('');
     setPesoSemana(''); setPesoKg('');
+    setEcoTipo('genetica'); setEcoSemanas(''); setEcoResultado(''); setEcoHallazgos('');
+    setDentEstado(''); setDentCaries(''); setDentTratamientos('');
   };
 
   const ok = (msg: string) => { Alert.alert('Registrado', msg); closeAndReset(); };
@@ -152,9 +169,42 @@ export default function TamizajesScreen(): React.ReactElement {
     );
   };
 
+  const guardarEcografia = () => {
+    const semanas = parseInt(ecoSemanas, 10);
+    const tipoNum: Record<string, number> = { genetica: 1, morfologica: 2, bienestar_fetal: 3 };
+    ultrasound.mutate(
+      {
+        gestanteId,
+        tipo: ecoTipo,
+        numero: tipoNum[ecoTipo],
+        egSemanas: !isNaN(semanas) ? semanas : undefined,
+        fecha: hoy(),
+        resultado: ecoResultado || undefined,
+        hallazgos: ecoHallazgos || undefined,
+      },
+      { onSuccess: () => ok('Ecografía registrada.'), onError: fail }
+    );
+  };
+
+  const guardarOdontograma = () => {
+    if (!dentEstado.trim() && !dentCaries.trim() && !dentTratamientos.trim()) {
+      return Alert.alert('Error', 'Completa al menos un campo del odontograma.');
+    }
+    dental.mutate(
+      {
+        gestanteId,
+        estadoBucal: dentEstado || undefined,
+        caries: dentCaries || undefined,
+        tratamientos: dentTratamientos || undefined,
+        fecha: hoy(),
+      },
+      { onSuccess: () => ok('Odontograma registrado.'), onError: fail }
+    );
+  };
+
   const isSaving =
     pathology.isPending || mental.isPending || violence.isPending ||
-    nutrition.isPending || weight.isPending;
+    nutrition.isPending || weight.isPending || ultrasound.isPending || dental.isPending;
 
   const FORM_TITLES: Record<FormKey, string> = {
     patologia: 'Registrar Patología (CIE-10)',
@@ -162,14 +212,18 @@ export default function TamizajesScreen(): React.ReactElement {
     violencia: 'Tamizaje de Violencia',
     nutricion: 'Consejería Nutricional',
     peso: 'Registro de Peso',
+    ecografia: 'Registrar Ecografía',
+    odontograma: 'Registrar Odontograma',
   };
 
   const CARDS: { key: FormKey; label: string; desc: string; icon: any; color: string; bg: string }[] = [
     { key: 'mental', label: 'Tamizaje SRQ-18', desc: 'Salud mental', icon: Brain, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
     { key: 'violencia', label: 'Tamizaje de violencia', desc: 'Detección y derivación', icon: ShieldAlert, color: semanticColors.danger, bg: semanticColors.dangerLight },
     { key: 'patologia', label: 'Patología (CIE-10)', desc: 'Diagnóstico materno', icon: Stethoscope, color: semanticColors.info, bg: semanticColors.infoLight },
+    { key: 'ecografia', label: 'Ecografía', desc: 'Genética, morfológica, bienestar', icon: Activity, color: obstetraColors.primary, bg: obstetraColors.primaryLight },
     { key: 'nutricion', label: 'Consejería nutricional', desc: 'Hábitos y acuerdos', icon: Apple, color: semanticColors.success, bg: semanticColors.successLight },
     { key: 'peso', label: 'Registro de peso', desc: 'Ganancia por semana', icon: Scale, color: semanticColors.warning, bg: semanticColors.warningLight },
+    { key: 'odontograma', label: 'Odontograma', desc: 'Salud bucal', icon: Smile, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
   ];
 
   return (
@@ -219,6 +273,8 @@ export default function TamizajesScreen(): React.ReactElement {
                 else if (openForm === 'violencia') guardarViolencia();
                 else if (openForm === 'nutricion') guardarNutricion();
                 else if (openForm === 'peso') guardarPeso();
+                else if (openForm === 'ecografia') guardarEcografia();
+                else if (openForm === 'odontograma') guardarOdontograma();
               }}
               style={{ flex: 1 }}
               themeColor={PINK}
@@ -311,6 +367,51 @@ export default function TamizajesScreen(): React.ReactElement {
               </Field>
             </>
           )}
+
+          {openForm === 'ecografia' && (
+            <>
+              <Field label="Tipo de ecografía">
+                <View style={styles.segmentRow}>
+                  {([
+                    { k: 'genetica', l: 'Genética (13 sem)' },
+                    { k: 'morfologica', l: 'Morfológica (22 sem)' },
+                    { k: 'bienestar_fetal', l: 'Bienestar (35 sem)' },
+                  ] as const).map((opt) => (
+                    <TouchableOpacity
+                      key={opt.k}
+                      style={[styles.segment, ecoTipo === opt.k && styles.segmentActive]}
+                      onPress={() => setEcoTipo(opt.k)}
+                    >
+                      <Text style={[styles.segmentText, ecoTipo === opt.k && styles.segmentTextActive]}>{opt.l}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </Field>
+              <Field label="Semanas de gestación (por eco)">
+                <TextInput style={styles.input} placeholder="Ej. 22" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={ecoSemanas} onChangeText={setEcoSemanas} />
+              </Field>
+              <Field label="Resultado">
+                <TextInput style={styles.input} placeholder="Ej. Normal, sin alteraciones" placeholderTextColor={commonColors.textTertiary} value={ecoResultado} onChangeText={setEcoResultado} />
+              </Field>
+              <Field label="Hallazgos (opcional)">
+                <TextInput style={[styles.input, { height: 70 }]} placeholder="Detalle de hallazgos..." placeholderTextColor={commonColors.textTertiary} multiline value={ecoHallazgos} onChangeText={setEcoHallazgos} />
+              </Field>
+            </>
+          )}
+
+          {openForm === 'odontograma' && (
+            <>
+              <Field label="Estado de salud bucal">
+                <TextInput style={styles.input} placeholder="Ej. Buena higiene, gingivitis leve" placeholderTextColor={commonColors.textTertiary} value={dentEstado} onChangeText={setDentEstado} />
+              </Field>
+              <Field label="Caries detectadas (opcional)">
+                <TextInput style={styles.input} placeholder="Ej. 2 piezas con caries" placeholderTextColor={commonColors.textTertiary} value={dentCaries} onChangeText={setDentCaries} />
+              </Field>
+              <Field label="Tratamientos realizados (opcional)">
+                <TextInput style={[styles.input, { height: 70 }]} placeholder="Ej. Profilaxis, obturación..." placeholderTextColor={commonColors.textTertiary} multiline value={dentTratamientos} onChangeText={setDentTratamientos} />
+              </Field>
+            </>
+          )}
         </View>
       </AppModal>
     </View>
@@ -352,4 +453,9 @@ const styles = StyleSheet.create({
   cancelBtnText: { ...typography.button, fontSize: 15, color: commonColors.textSecondary },
   saveBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: PINK },
   saveBtnText: { ...typography.button, fontSize: 15, color: obstetraColors.onPrimary },
+  segmentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  segment: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: commonColors.border, backgroundColor: commonColors.surface },
+  segmentActive: { backgroundColor: obstetraColors.primaryLight, borderColor: PINK },
+  segmentText: { ...typography.caption, color: commonColors.textSecondary },
+  segmentTextActive: { color: PINK, fontFamily: typography.label.fontFamily },
 });

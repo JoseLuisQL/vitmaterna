@@ -623,6 +623,36 @@ export const useDeleteAntecedente = () => {
   });
 };
 
+// ── Ecografías (RF-2.08) ──
+
+export const useCreateUltrasound = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/ultrasounds', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+// ── Odontograma (RF-5.12) ──
+
+export const useCreateDentalRecord = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/clinical/dental', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
 // ── Modificar / suspender tratamiento (RF-4.10) ──
 
 export const useUpdateTreatment = () => {
