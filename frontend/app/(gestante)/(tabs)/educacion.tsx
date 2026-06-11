@@ -13,6 +13,7 @@ import {
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { ToggleTabs } from '../../../src/components/ui';
 import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
 
 const BRAND = gestanteColors.primary;
@@ -187,20 +188,16 @@ export default function EducacionScreen(): React.ReactElement {
       </View>
 
       <View style={styles.seccionBar}>
-        {[
-          { key: 'contenido', label: 'Guía', icon: BookOpen },
-          { key: 'alarmas', label: 'Peligro', icon: AlertTriangle },
-          { key: 'calculadora', label: 'Calcular EG', icon: Calculator }
-        ].map(({ key, label, icon: Icon }) => (
-          <TouchableOpacity
-            key={key}
-            style={[styles.seccionBtn, seccion === key && styles.seccionBtnActive]}
-            onPress={() => setSeccion(key as Seccion)}
-          >
-            <Icon size={16} color={seccion === key ? commonColors.surface : commonColors.textSecondary} />
-            <Text style={[styles.seccionBtnText, seccion === key && styles.seccionBtnTextActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+        <ToggleTabs
+          tabs={[
+            { key: 'contenido', label: 'Guía' },
+            { key: 'alarmas', label: 'Peligro' },
+            { key: 'calculadora', label: 'Calcular EG' },
+          ]}
+          value={seccion}
+          onChange={(k) => setSeccion(k as Seccion)}
+          activeColor={BRAND}
+        />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -279,13 +276,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   seccionBar: {
-    flexDirection: 'row',
     marginHorizontal: spacing.lg,
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.full,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: commonColors.border,
   },
   seccionBtn: {
     flex: 1,

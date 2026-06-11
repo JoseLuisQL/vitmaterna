@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar, Users, AlertCircle, CheckCircle, TrendingUp, ChevronRight, Activity } from 'lucide-react-native';
+import { TrendingUp, ChevronRight, Activity } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
+import { KpiCard } from '../../../src/components/ui/KpiCard';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
@@ -65,22 +66,24 @@ export default function ObstetraDashboard(): React.ReactElement {
         </View>
 
         <View style={styles.statsGrid}>
-          {[
-            { id: 'citas', label: 'Citas Hoy', value: appointmentsToday, icon: Calendar, color: BRAND, bg: obstetraColors.primaryLight },
-            { id: 'pacientes', label: 'Pacientes', value: totalPatients, icon: Users, color: semanticColors.info, bg: semanticColors.infoLight },
-            { id: 'alertas', label: 'Alertas', value: alerts, icon: AlertCircle, color: semanticColors.danger, bg: semanticColors.dangerLight },
-            { id: 'completadas', label: 'Completadas', value: completed, icon: CheckCircle, color: semanticColors.success, bg: semanticColors.successLight },
-          ].map((item) => (
-            <View key={item.id} style={styles.statCard}>
-              <View style={styles.statTop}>
-                <View style={[styles.statIconWrap, { backgroundColor: item.bg }]}>
-                  <item.icon size={18} color={item.color} strokeWidth={2.5} />
-                </View>
-                <Text style={styles.statValue}>{item.value}</Text>
-              </View>
-              <Text style={styles.statLabel}>{item.label}</Text>
-            </View>
-          ))}
+          <View style={styles.statsRow}>
+            <KpiCard label="Citas Hoy" value={appointmentsToday} />
+            <KpiCard label="Pacientes" value={totalPatients} />
+          </View>
+          <View style={styles.statsRow}>
+            <KpiCard
+              label="Alertas"
+              value={alerts}
+              badge={alerts > 0 ? 'Pendientes' : undefined}
+              badgeTone={alerts > 0 ? 'negative' : 'neutral'}
+            />
+            <KpiCard
+              label="Completadas"
+              value={completed}
+              badge={completed > 0 ? 'Hoy' : undefined}
+              badgeTone="positive"
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Distribución de Riesgo</Text>
@@ -197,19 +200,8 @@ const styles = StyleSheet.create({
   todayTitle: { ...typography.h3, color: commonColors.text, marginBottom: 4 },
   todayDate: { ...typography.bodySmall, color: commonColors.textSecondary, textTransform: 'capitalize' },
   iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24, gap: 12 },
-  statCard: {
-    width: '48%',
-    backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-  },
-  statTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  statValue: { ...typography.h1, color: commonColors.text },
-  statLabel: { ...typography.caption, color: commonColors.textSecondary },
+  statsGrid: { marginBottom: 24, gap: 12 },
+  statsRow: { flexDirection: 'row', gap: 12 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: 16 },
   sectionLink: { ...typography.label, color: BRAND },
