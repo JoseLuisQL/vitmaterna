@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { prisma } from '../../config/database.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
 import { classifyImc } from '../../utils/imcClassification.js';
+import { calculateFPP } from '../../utils/dateCalc.js';
 
 export class PatientService {
   async findAll(filters: {
@@ -307,6 +308,11 @@ export class PatientService {
     if (gestanteFields.fppFum !== undefined) {
       dateFields.fppFum = gestanteFields.fppFum ? new Date(gestanteFields.fppFum) : null;
       delete gestanteFields.fppFum;
+    }
+    // RF-2.07/2.11: calcular automáticamente la FPP con la regla de Naegele
+    // cuando se establece la FUM y el cliente no envió una FPP explícita.
+    if (dateFields.fum && dateFields.fppFum === undefined) {
+      dateFields.fppFum = calculateFPP(dateFields.fum);
     }
     if (gestanteFields.fppEco !== undefined) {
       dateFields.fppEco = gestanteFields.fppEco ? new Date(gestanteFields.fppEco) : null;
