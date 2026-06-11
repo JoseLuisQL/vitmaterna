@@ -363,6 +363,32 @@ export const fetchMyProfile = async () => {
   return res.data?.data || null;
 };
 
+export interface EducationContentItem {
+  id: string;
+  titulo: string;
+  contenido: string;
+  tipo?: string;
+  categoria?: string;
+  trimestre?: number | null;
+}
+
+export interface EducationResponse {
+  currentTrimester: number;
+  contents: EducationContentItem[];
+}
+
+export const fetchEducation = async (): Promise<EducationResponse> => {
+  const res = await api.get('/education');
+  const data = res.data?.data || {};
+  return {
+    currentTrimester: data.currentTrimester || 1,
+    contents: Array.isArray(data.contents) ? data.contents : [],
+  };
+};
+
+export const useEducation = () =>
+  useQuery({ queryKey: ['education'], queryFn: fetchEducation });
+
 export const useMyProfile = () => useQuery({
   queryKey: ['myProfile'],
   queryFn: fetchMyProfile

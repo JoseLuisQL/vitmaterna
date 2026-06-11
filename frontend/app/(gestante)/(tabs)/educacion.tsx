@@ -12,6 +12,19 @@ import {
   AlertCircle, Clock, Users, HeartPulse,
 } from 'lucide-react-native';
 import { typography } from '../../../src/theme/typography';
+import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
+
+// Asigna un icono según la categoría del contenido publicado por el admin
+function iconoPorCategoria(categoria?: string, tipo?: string): string {
+  const c = (categoria || '').toLowerCase();
+  if (c.includes('nutri')) return 'Heart';
+  if (c.includes('suplement') || c.includes('medic')) return 'Pill';
+  if (c.includes('ecograf') || c.includes('control') || c.includes('clinic')) return 'Activity';
+  if (c.includes('parto') || c.includes('lactancia') || c.includes('bebe')) return 'Baby';
+  if (c.includes('alarma') || c.includes('peligro')) return 'AlertTriangle';
+  if ((tipo || '').toLowerCase() === 'video') return 'Activity';
+  return 'BookOpen';
+}
 
 const CONTENIDO: Record<1 | 2 | 3, { titulo: string; icono: string; descripcion: string }[]> = {
   1: [
@@ -142,6 +155,25 @@ export default function EducacionScreen(): React.ReactElement {
   const [seccion, setSeccion] = useState<Seccion>('contenido');
   const [trimestre, setTrimestre] = useState<1 | 2 | 3>(2);
 
+  const { data: eduData } = useEducation();
+
+  // Agrupar el contenido publicado por el admin según su trimestre.
+  // El contenido sin trimestre (general) se muestra en todos.
+  const contenidoBackend = React.useMemo(() => {
+    const items = eduData?.contents || [];
+    return items
+      .filter((c: EducationContentItem) => c.trimestre == null || c.trimestre === trimestre)
+      .map((c: EducationContentItem) => ({
+        titulo: c.titulo,
+        icono: iconoPorCategoria(c.categoria, c.tipo),
+        descripcion: c.contenido,
+      }));
+  }, [eduData, trimestre]);
+
+  // Si el backend tiene contenido para este trimestre, se usa; si no, el estático.
+  const contenidoMostrado =
+    contenidoBackend.length > 0 ? contenidoBackend : CONTENIDO[trimestre];
+
   return (
     <View style={styles.container}>
       <View style={styles.headerWrapper}>
@@ -183,7 +215,7 @@ export default function EducacionScreen(): React.ReactElement {
               ))}
             </View>
 
-            {CONTENIDO[trimestre].map((item, i) => (
+            {contenidoMostrado.map((item, i) => (
               <View key={i} style={styles.card}>
                 <View style={styles.contenidoIconWrap}>
                   <DynIcon name={item.icono} size={24} color="#7C3AED" />
