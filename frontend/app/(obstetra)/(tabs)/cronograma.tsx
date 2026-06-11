@@ -16,6 +16,7 @@ import {
   useResolveReschedule,
 } from '../../../src/services/api-queries';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 
 const BRAND = obstetraColors.primary;
 
@@ -54,8 +55,13 @@ export default function CronogramaScreen(): React.ReactElement {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.headerWrapper}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Cronograma</Text>
-          <Text style={styles.headerSubtitle}>Gestión de citas y pacientes</Text>
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Cronograma</Text>
+              <Text style={styles.headerSubtitle}>Gestión de citas y pacientes</Text>
+            </View>
+            <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.text} />
+          </View>
         </SafeAreaView>
       </View>
 
@@ -265,6 +271,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
   tabsWrapper: {

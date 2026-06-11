@@ -26,6 +26,7 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { AppModal, useToast } from '../../../src/components/ui';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
@@ -201,9 +202,12 @@ export default function GestanteDashboard(): React.ReactElement {
                 <Text style={styles.greeting}>Hola,</Text>
                 <Text style={styles.name}>{displayName}</Text>
               </View>
-              <View style={styles.weekBadge}>
-                <Heart size={16} color={BRAND} />
-                <Text style={styles.weekText}>{gestationalWeekText}</Text>
+              <View style={styles.headerActions}>
+                <View style={styles.weekBadge}>
+                  <Heart size={16} color={BRAND} />
+                  <Text style={styles.weekText}>{gestationalWeekText}</Text>
+                </View>
+                <NotificationBell href="/(gestante)/notificaciones" color={commonColors.text} />
               </View>
             </View>
           </SafeAreaView>
@@ -400,6 +404,7 @@ const styles = StyleSheet.create({
     ...typography.display,
     color: commonColors.text,
   },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   weekBadge: {
     flexDirection: 'row',
     alignItems: 'center',

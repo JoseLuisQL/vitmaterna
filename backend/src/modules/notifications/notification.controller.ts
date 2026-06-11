@@ -8,6 +8,71 @@ const TokenSchema = z.object({
   expoPushToken: z.string().min(1, 'Expo push token is required')
 });
 
+/**
+ * Lista las notificaciones in-app del usuario autenticado (más recientes primero).
+ * Soporta ?soloNoLeidas=true y ?limit.
+ */
+export async function listNotifications(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const soloNoLeidas = req.query.soloNoLeidas === 'true';
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+  const where: { userId: string; leidaAt?: null } = { userId };
+  if (soloNoLeidas) where.leidaAt = null;
+
+  const items = await prisma.notification.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      id: true,
+      tipo: true,
+      titulo: true,
+      mensaje: true,
+      datos: true,
+      leidaAt: true,
+      createdAt: true,
+    },
+  });
+
+  res.json(successResponse(items));
+}
+
+/** Devuelve el número de notificaciones no leídas (para el badge de la campana). */
+export async function getUnreadCount(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const count = await prisma.notification.count({ where: { userId, leidaAt: null } });
+  res.json(successResponse({ count }));
+}
+
+/** Marca una notificación como leída (solo si pertenece al usuario). */
+export async function markAsRead(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const id = req.params.id as string;
+
+  const notif = await prisma.notification.findUnique({ where: { id } });
+  if (!notif || notif.userId !== userId) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Notificación no encontrada');
+  }
+
+  const updated = await prisma.notification.update({
+    where: { id },
+    data: { leidaAt: new Date(), estado: 'leida' },
+  });
+
+  res.json(successResponse(updated));
+}
+
+/** Marca como leídas todas las notificaciones del usuario. */
+export async function markAllAsRead(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  await prisma.notification.updateMany({
+    where: { userId, leidaAt: null },
+    data: { leidaAt: new Date(), estado: 'leida' },
+  });
+  res.json(successResponse({ message: 'Todas las notificaciones marcadas como leídas' }));
+}
+
 export async function saveToken(req: Request, res: Response): Promise<void> {
   const userId = req.user!.userId;
   

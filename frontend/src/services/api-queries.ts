@@ -472,6 +472,68 @@ export const useUpdateNotificationPreferences = () => {
   });
 };
 
+// ── Bandeja de notificaciones in-app (Fase 7) ──
+
+export interface AppNotification {
+  id: string;
+  tipo: string;
+  titulo: string | null;
+  mensaje: string;
+  datos?: Record<string, any> | null;
+  leidaAt: string | null;
+  createdAt: string;
+}
+
+export const fetchNotifications = async (soloNoLeidas = false): Promise<AppNotification[]> => {
+  const res = await api.get('/notifications', { params: { soloNoLeidas } });
+  return res.data?.data || [];
+};
+
+export const fetchUnreadCount = async (): Promise<number> => {
+  try {
+    const res = await api.get('/notifications/unread-count');
+    return res.data?.data?.count || 0;
+  } catch {
+    return 0;
+  }
+};
+
+export const useNotifications = () =>
+  useQuery({ queryKey: ['notifications'], queryFn: () => fetchNotifications(false) });
+
+export const useUnreadCount = () =>
+  useQuery({
+    queryKey: ['notifications', 'unread'],
+    queryFn: fetchUnreadCount,
+    refetchInterval: 60 * 1000, // refresca el badge cada minuto
+  });
+
+export const useMarkNotificationRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.patch(`/notifications/${id}/read`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useMarkAllNotificationsRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.patch('/notifications/read-all');
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
 export const useCreateLabResult = () => {
   const queryClient = useQueryClient();
   return useMutation({
