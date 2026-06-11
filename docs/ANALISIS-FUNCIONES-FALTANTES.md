@@ -77,7 +77,11 @@ Leyenda: ✅ Implementado · 🟡 Parcial · ❌ Faltante
   frecuente (hoy corre cada 24 h).
 - **RF-4.04** Adherencia sobre días transcurridos, no sobre la duración total.
 - **RF-4.08** Alerta de anemia + orientación; usar altitud configurable.
-- **RF-5.02/5.03** Percentiles P25/P90 en peso y **gráfica de altura uterina**.
+- ~~**RF-5.02/5.03** Percentiles P25/P90 en peso y **gráfica de altura uterina**.~~
+  ✅ **Resuelto:** gráfica de altura uterina vs edad gestacional con bandas de
+  referencia P10/P90 (CLAP/MINSA) y clasificación del último control
+  (baja/normal/alta) en la ficha del obstetra; curva de peso con leyenda. Util
+  `clinicalReferences` con pruebas unitarias.
 - **RF-5.11** Aplicar umbral ≥15 en el tamizaje de violencia (hoy positivo si >0).
 - **RF-5.12 / RF-2.08** UI para odontograma y ecografías (backend ya listo).
 - **RF-7.13** UI de preferencias de notificación.

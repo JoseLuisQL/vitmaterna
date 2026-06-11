@@ -20,6 +20,7 @@ import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment,
 } from '../../../src/services/api-queries';
+import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 
 const { width: screenWidth } = Dimensions.get('window');
 const BRAND = obstetraColors.primary;
@@ -559,13 +560,17 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── TAB: CONTROLES ── */}
           {activeTab === 'controles' && (
             <View style={styles.section}>
+              {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
+              <AlturaUterinaChart controls={controls} themeColor={BRAND} />
+
               {controls.length >= 2 && (
                 <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
-                  <Text style={styles.cardHeader}>Curva de Ganancia de Peso</Text>
+                  <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
                   <LineChart
                     data={{
                       labels: weekLabels,
                       datasets: [{ data: weightData, color: () => BRAND, strokeWidth: 3 }],
+                      legend: ['Peso (kg)'],
                     }}
                     width={screenWidth - 72}
                     height={180}
