@@ -8,6 +8,7 @@ import { swaggerSpec } from './swagger.js';
 import { requestLoggerMiddleware } from '../middleware/requestLogger.middleware.js';
 import { errorHandler } from '../middleware/errorHandler.middleware.js';
 import { globalRateLimiter } from '../middleware/rateLimiter.middleware.js';
+import { auditLogger } from '../middleware/auditLogger.middleware.js';
 import { apiRouter } from '../routes/index.js';
 
 export function createApp(): express.Express {
@@ -56,6 +57,9 @@ export function createApp(): express.Express {
       },
     });
   });
+
+  // ---- Auditoría automática de mutaciones (RF-10.04) ----
+  app.use('/v1', auditLogger);
 
   // ---- API Routes ----
   app.use('/v1', apiRouter);
