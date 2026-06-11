@@ -29,6 +29,7 @@ const schema = z.object({
   phone: z.string().optional(),
   codigoSis: z.string().optional(),
   ocupacion: z.string().optional(),
+  acompanantePhone: z.string().optional(),
   nivelEstudios: z.enum(['analfabeta', 'primaria', 'secundaria', 'superior', 'no_universitario', '']).optional(),
   estadoCivil: z.enum(['casada', 'conviviente', 'soltera', 'otro', '']).optional(),
   
@@ -111,6 +112,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
           localidad: data.localidad || null,
           codigoSis: data.codigoSis || null,
           ocupacion: data.ocupacion || null,
+          acompanantePhone: data.acompanantePhone || null,
           nivelEstudios: data.nivelEstudios || null,
           estadoCivil: data.estadoCivil || null,
           
@@ -188,6 +190,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                 <AppInput name="direccion" control={control} label="DIRECCIÓN" />
                 <AppInput name="localidad" control={control} label="LOCALIDAD" />
                 <AppInput name="phone" control={control} label="TELÉFONO" keyboardType="phone-pad" maxLength={9} />
+                <AppInput name="acompanantePhone" control={control} label="TELÉFONO DEL ACOMPAÑANTE" keyboardType="phone-pad" maxLength={9} />
                 <AppInput name="codigoSis" control={control} label="CÓDIGO SIS" />
                 <AppInput name="ocupacion" control={control} label="OCUPACIÓN" />
               </View>

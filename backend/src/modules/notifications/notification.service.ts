@@ -104,6 +104,15 @@ export async function scanAndSendReminders() {
         );
       }
 
+      // Notificar también al acompañante/familiar registrado (RF-7.14)
+      const acompPhone3d = appt.gestante?.acompanantePhone;
+      if (acompPhone3d) {
+        await sendSmsAndWhatsApp(
+          acompPhone3d,
+          `VITMATERNA: ${user.firstName} ${user.lastName} tiene un control prenatal el día ${apptDate.toLocaleDateString()} a las 9:00 AM. Apóyala para que asista.`
+        );
+      }
+
       const prefs = user.notificationPreferences as Record<string, any>;
       if (prefs?.expoPushToken) {
         await sendPushNotification(
@@ -127,6 +136,15 @@ export async function scanAndSendReminders() {
         await sendSmsAndWhatsApp(
           user.phone,
           `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`
+        );
+      }
+
+      // Notificar también al acompañante/familiar registrado (RF-7.14)
+      const acompPhone1d = appt.gestante?.acompanantePhone;
+      if (acompPhone1d) {
+        await sendSmsAndWhatsApp(
+          acompPhone1d,
+          `VITMATERNA: Mañana ${apptDate.toLocaleDateString()} ${user.firstName} ${user.lastName} tiene su control prenatal a las 9:00 AM. Recuérdale y acompáñala.`
         );
       }
 
