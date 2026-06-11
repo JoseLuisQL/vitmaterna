@@ -265,6 +265,7 @@ enum EstadoCita {
   confirmada
   asistida
   no_asistida
+  solicitud_reprogramacion
   reprogramada
   cancelada
 }
@@ -277,6 +278,7 @@ model Appointment {
   fecha                 DateTime   @db.Date
   hora                  DateTime   @db.Time()
   estado                EstadoCita @default(programada)
+  estadoPrevio          EstadoCita? @map("estado_previo")
   numeroControl         Int?       @map("numero_control")
   egSemanas             Int?       @map("eg_semanas")
   motivoReprogramacion  String?    @map("motivo_reprogramacion")

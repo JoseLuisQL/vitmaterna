@@ -578,8 +578,9 @@ export const useCreateWeightRecord = () => {
 export const useConfirmAppointment = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    // La gestante confirma su cita; el backend notifica al obstetra.
     mutationFn: async (id: string) => {
-      const res = await api.patch(`/appointments/${id}/status`, { estado: 'confirmada' });
+      const res = await api.patch(`/appointments/${id}/confirm`);
       return res.data;
     },
     onSuccess: () => {
@@ -588,6 +589,74 @@ export const useConfirmAppointment = () => {
     },
   });
 };
+
+// ── Flujo de reprogramación con aprobación (Fase 2) ──
+
+/** La gestante SOLICITA reprogramar; queda pendiente de aprobación del obstetra. */
+export const useRequestReschedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      fecha,
+      hora,
+      motivoReprogramacion,
+    }: {
+      id: string;
+      fecha: string;
+      hora: string;
+      motivoReprogramacion: string;
+    }) => {
+      const res = await api.patch(`/appointments/${id}/request-reschedule`, {
+        fecha,
+        hora,
+        motivoReprogramacion,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
+    },
+  });
+};
+
+/** El obstetra APRUEBA o RECHAZA una solicitud de reprogramación. */
+export const useResolveReschedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      aprobar,
+      motivo,
+    }: {
+      id: string;
+      aprobar: boolean;
+      motivo?: string;
+    }) => {
+      const res = await api.patch(`/appointments/${id}/resolve-reschedule`, { aprobar, motivo });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['todayAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
+    },
+  });
+};
+
+/** Horarios disponibles de un día (agenda inteligente). */
+export const fetchAppointmentAvailability = async (fecha: string, obstetraId?: string) => {
+  const res = await api.get('/appointments/availability', { params: { fecha, obstetraId } });
+  return res.data?.data?.slots || [];
+};
+
+export const useAppointmentAvailability = (fecha: string | null, obstetraId?: string) =>
+  useQuery({
+    queryKey: ['availability', fecha, obstetraId],
+    queryFn: () => fetchAppointmentAvailability(fecha as string, obstetraId),
+    enabled: !!fecha,
+  });
 
 export const useUpdateAppointmentStatus = () => {
   const queryClient = useQueryClient();

@@ -7,6 +7,16 @@ import {
   isWithinWorkingHours,
   timeFromDate,
 } from '../../utils/appointmentSlots.js';
+import {
+  notifyUser,
+  findObstetraUserIdForGestante,
+} from '../notifications/notification.service.js';
+
+/** Formatea una fecha `Date` (UTC) a `dd/mm/aaaa` para mensajes. */
+function fmtFecha(value: Date): string {
+  const d = new Date(value);
+  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
+}
 
 /**
  * Resuelve los identificadores de dominio del usuario autenticado.
@@ -361,6 +371,221 @@ export class AppointmentService {
       where: { id },
       data: { estado },
     });
+  }
+
+  /**
+   * RF-3.x: la gestante CONFIRMA su cita (programada -> confirmada) y se
+   * notifica al obstetra responsable.
+   */
+  async confirm(id: string, userContext?: RequestUser) {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { gestante: { include: { user: true } } },
+    });
+    if (!appointment || appointment.deletedAt) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Cita no encontrada');
+    }
+
+    const actor = await resolveActor(userContext);
+    await assertCanAccessAppointment(appointment, actor);
+
+    if (appointment.estado !== EstadoCita.programada) {
+      throw new AppError(
+        409,
+        ErrorCodes.CONFLICT,
+        `Solo puedes confirmar una cita programada (estado actual: "${appointment.estado}").`,
+      );
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: { estado: EstadoCita.confirmada },
+    });
+
+    // Notificar al obstetra responsable.
+    const obstetraUserId = await findObstetraUserIdForGestante(appointment.gestanteId);
+    if (obstetraUserId) {
+      const nombre = appointment.gestante?.user
+        ? `${appointment.gestante.user.firstName} ${appointment.gestante.user.lastName}`
+        : 'Una gestante';
+      await notifyUser(
+        obstetraUserId,
+        'cita_confirmada',
+        'Cita confirmada',
+        `${nombre} aceptó su cita del ${fmtFecha(appointment.fecha)} a las ${timeFromDate(appointment.hora)}.`,
+        { appointmentId: id, gestanteId: appointment.gestanteId },
+      );
+    }
+
+    return updated;
+  }
+
+  /**
+   * RF-3.08/3.09: la gestante SOLICITA una reprogramación. No cambia la cita
+   * por sí misma: guarda la propuesta (fecha/hora/motivo) y la cita pasa a
+   * "solicitud_reprogramacion" para que el obstetra la apruebe o rechace.
+   */
+  async requestReschedule(
+    id: string,
+    data: { fecha: string; hora: string; motivoReprogramacion: string },
+    userContext?: RequestUser,
+  ) {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { gestante: { include: { user: true } } },
+    });
+    if (!appointment || appointment.deletedAt) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Cita no encontrada');
+    }
+
+    const actor = await resolveActor(userContext);
+    await assertCanAccessAppointment(appointment, actor);
+
+    if (
+      appointment.estado !== EstadoCita.programada &&
+      appointment.estado !== EstadoCita.confirmada
+    ) {
+      throw new AppError(
+        409,
+        ErrorCodes.CONFLICT,
+        `Solo puedes solicitar reprogramación de una cita programada o confirmada (estado actual: "${appointment.estado}").`,
+      );
+    }
+
+    if (!isWithinWorkingHours(data.hora)) {
+      throw new AppError(
+        400,
+        ErrorCodes.VALIDATION_ERROR,
+        'La hora propuesta está fuera del horario de atención (08:00–17:00, sin 13:00–14:00).',
+      );
+    }
+
+    const fechaPropuesta = new Date(`${data.fecha}T00:00:00.000Z`);
+    const horaPropuesta = new Date(`1970-01-01T${data.hora}:00.000Z`);
+
+    // Avisar pronto si el horario propuesto ya está ocupado.
+    await this.assertSlotAvailable(fechaPropuesta, horaPropuesta, appointment.obstetraId, id);
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        estadoPrevio: appointment.estado,
+        estado: EstadoCita.solicitud_reprogramacion,
+        fechaReprogramada: fechaPropuesta,
+        horaReprogramada: horaPropuesta,
+        motivoReprogramacion: data.motivoReprogramacion,
+      },
+    });
+
+    // Notificar al obstetra para que apruebe o rechace.
+    const obstetraUserId = await findObstetraUserIdForGestante(appointment.gestanteId);
+    if (obstetraUserId) {
+      const nombre = appointment.gestante?.user
+        ? `${appointment.gestante.user.firstName} ${appointment.gestante.user.lastName}`
+        : 'Una gestante';
+      await notifyUser(
+        obstetraUserId,
+        'solicitud_reprogramacion',
+        'Solicitud de reprogramación',
+        `${nombre} solicita reprogramar su cita para el ${fmtFecha(fechaPropuesta)} a las ${data.hora}. Motivo: ${data.motivoReprogramacion}`,
+        { appointmentId: id, gestanteId: appointment.gestanteId },
+      );
+    }
+
+    return updated;
+  }
+
+  /**
+   * RF-3.08/3.09: el obstetra RESUELVE una solicitud de reprogramación.
+   * - aprobar=true: aplica fecha/hora propuestas como nuevas, vuelve a
+   *   "programada" y notifica a la gestante.
+   * - aprobar=false: revierte al estado previo y notifica el rechazo.
+   */
+  async resolveReschedule(
+    id: string,
+    data: { aprobar: boolean; motivo?: string },
+    userContext?: RequestUser,
+  ) {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { gestante: { include: { user: true } } },
+    });
+    if (!appointment || appointment.deletedAt) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Cita no encontrada');
+    }
+
+    const actor = await resolveActor(userContext);
+    await assertCanAccessAppointment(appointment, actor);
+
+    if (appointment.estado !== EstadoCita.solicitud_reprogramacion) {
+      throw new AppError(
+        409,
+        ErrorCodes.CONFLICT,
+        'Esta cita no tiene una solicitud de reprogramación pendiente.',
+      );
+    }
+
+    const gestanteUserId = appointment.gestante?.user?.id ?? null;
+
+    if (data.aprobar) {
+      const nuevaFecha = appointment.fechaReprogramada;
+      const nuevaHora = appointment.horaReprogramada;
+      if (!nuevaFecha || !nuevaHora) {
+        throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'La solicitud no tiene fecha/hora propuestas.');
+      }
+
+      // Revalidar disponibilidad al aprobar (pudo ocuparse mientras tanto).
+      await this.assertSlotAvailable(nuevaFecha, nuevaHora, appointment.obstetraId, id);
+
+      const updated = await prisma.appointment.update({
+        where: { id },
+        data: {
+          fecha: nuevaFecha,
+          hora: nuevaHora,
+          estado: EstadoCita.programada,
+          estadoPrevio: null,
+          fechaReprogramada: null,
+          horaReprogramada: null,
+        },
+      });
+
+      if (gestanteUserId) {
+        await notifyUser(
+          gestanteUserId,
+          'reprogramacion_aprobada',
+          'Reprogramación aprobada',
+          `Tu cita fue reprogramada para el ${fmtFecha(nuevaFecha)} a las ${timeFromDate(nuevaHora)}.`,
+          { appointmentId: id },
+        );
+      }
+
+      return updated;
+    }
+
+    // Rechazo: volver al estado previo y limpiar la propuesta.
+    const estadoPrevio = appointment.estadoPrevio ?? EstadoCita.programada;
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        estado: estadoPrevio,
+        estadoPrevio: null,
+        fechaReprogramada: null,
+        horaReprogramada: null,
+        motivoReprogramacion: null,
+      },
+    });
+
+    if (gestanteUserId) {
+      await notifyUser(
+        gestanteUserId,
+        'reprogramacion_rechazada',
+        'Reprogramación no aprobada',
+        `Tu solicitud de reprogramación no fue aprobada${data.motivo ? `: ${data.motivo}` : '.'} Tu cita del ${fmtFecha(appointment.fecha)} a las ${timeFromDate(appointment.hora)} se mantiene.`,
+        { appointmentId: id },
+      );
+    }
+
+    return updated;
   }
 }
 

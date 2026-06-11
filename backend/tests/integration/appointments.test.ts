@@ -150,4 +150,98 @@ describe('Appointments API (Fase 1)', () => {
       .send({ estado: 'confirmada' });
     expect(res.status).toBe(403);
   });
+
+  // ── Fase 2: flujo de confirmación y reprogramación con aprobación ──
+
+  it('la gestante confirma con /confirm y notifica al obstetra', async () => {
+    const create = await request(app)
+      .post(`${PREFIX}/appointments`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId: gestante1Id, fecha: '2027-02-01', hora: '08:00' });
+    const id = create.body.data.id;
+    createdIds.push(id);
+
+    const confirm = await request(app)
+      .patch(`${PREFIX}/appointments/${id}/confirm`)
+      .set('Authorization', `Bearer ${gestante1Token}`);
+    expect(confirm.status).toBe(200);
+    expect(confirm.body.data.estado).toBe('confirmada');
+  });
+
+  it('flujo de reprogramación: solicitar → (gestante no resuelve) → obstetra aprueba', async () => {
+    const create = await request(app)
+      .post(`${PREFIX}/appointments`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId: gestante1Id, fecha: '2027-02-02', hora: '08:30' });
+    const id = create.body.data.id;
+    createdIds.push(id);
+
+    // gestante solicita reprogramación
+    const req1 = await request(app)
+      .patch(`${PREFIX}/appointments/${id}/request-reschedule`)
+      .set('Authorization', `Bearer ${gestante1Token}`)
+      .send({ fecha: '2027-02-05', hora: '15:00', motivoReprogramacion: 'Viaje imprevisto' });
+    expect(req1.status).toBe(200);
+    expect(req1.body.data.estado).toBe('solicitud_reprogramacion');
+
+    // la gestante NO puede resolver su propia solicitud (403)
+    const noResolve = await request(app)
+      .patch(`${PREFIX}/appointments/${id}/resolve-reschedule`)
+      .set('Authorization', `Bearer ${gestante1Token}`)
+      .send({ aprobar: true });
+    expect(noResolve.status).toBe(403);
+
+    // el obstetra aprueba: vuelve a programada con la nueva fecha/hora
+    const approve = await request(app)
+      .patch(`${PREFIX}/appointments/${id}/resolve-reschedule`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ aprobar: true });
+    expect(approve.status).toBe(200);
+    expect(approve.body.data.estado).toBe('programada');
+    expect(new Date(approve.body.data.fecha).toISOString().startsWith('2027-02-05')).toBe(true);
+  });
+
+  it('flujo de reprogramación: obstetra rechaza → vuelve al estado previo', async () => {
+    const create = await request(app)
+      .post(`${PREFIX}/appointments`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ gestanteId: gestante1Id, fecha: '2027-02-03', hora: '09:30' });
+    const id = create.body.data.id;
+    createdIds.push(id);
+
+    // confirmar primero (estado previo = confirmada)
+    await request(app)
+      .patch(`${PREFIX}/appointments/${id}/confirm`)
+      .set('Authorization', `Bearer ${gestante1Token}`);
+
+    // solicitar reprogramación
+    await request(app)
+      .patch(`${PREFIX}/appointments/${id}/request-reschedule`)
+      .set('Authorization', `Bearer ${gestante1Token}`)
+      .send({ fecha: '2027-02-06', hora: '10:00', motivoReprogramacion: 'Cambio de planes' });
+
+    // el obstetra rechaza → vuelve a "confirmada"
+    const reject = await request(app)
+      .patch(`${PREFIX}/appointments/${id}/resolve-reschedule`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .send({ aprobar: false, motivo: 'No hay disponibilidad ese día' });
+    expect(reject.status).toBe(200);
+    expect(reject.body.data.estado).toBe('confirmada');
+    expect(reject.body.data.fechaReprogramada).toBeNull();
+  });
+
+  it('genera notificaciones del flujo (confirmada/solicitud/aprobada)', async () => {
+    const notifs = await prisma.notification.findMany({
+      where: {
+        tipo: {
+          in: ['cita_confirmada', 'solicitud_reprogramacion', 'reprogramacion_aprobada', 'reprogramacion_rechazada'],
+        },
+      },
+      select: { tipo: true },
+    });
+    const tipos = new Set(notifs.map((n) => n.tipo));
+    expect(tipos.has('cita_confirmada')).toBe(true);
+    expect(tipos.has('solicitud_reprogramacion')).toBe(true);
+    expect(tipos.has('reprogramacion_aprobada')).toBe(true);
+  });
 });

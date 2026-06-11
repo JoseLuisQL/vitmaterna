@@ -41,3 +41,27 @@ appointmentRoutes.patch(
   validate(schema.updateStatusSchema),
   controller.updateAppointmentStatus
 );
+
+// La gestante confirma su cita (notifica al obstetra).
+appointmentRoutes.patch(
+  '/:id/confirm',
+  rbac('gestante', 'admin'),
+  validate(schema.idParamSchema),
+  controller.confirmAppointment
+);
+
+// La gestante solicita reprogramación (queda pendiente de aprobación).
+appointmentRoutes.patch(
+  '/:id/request-reschedule',
+  rbac('gestante', 'admin'),
+  validate(schema.requestRescheduleSchema),
+  controller.requestReschedule
+);
+
+// El obstetra aprueba o rechaza la solicitud de reprogramación.
+appointmentRoutes.patch(
+  '/:id/resolve-reschedule',
+  rbac('obstetra', 'admin'),
+  validate(schema.resolveRescheduleSchema),
+  controller.resolveReschedule
+);

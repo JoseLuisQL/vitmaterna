@@ -50,3 +50,38 @@ export const updateAppointmentStatus = async (req: Request, res: Response, next:
     next(error);
   }
 };
+
+export const confirmAppointment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await appointmentService.confirm(req.params.id as string, req.user);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const requestReschedule = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await appointmentService.requestReschedule(
+      req.params.id as string,
+      req.body,
+      req.user,
+    );
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resolveReschedule = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await appointmentService.resolveReschedule(
+      req.params.id as string,
+      req.body,
+      req.user,
+    );
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};

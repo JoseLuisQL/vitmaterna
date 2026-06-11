@@ -39,7 +39,7 @@ export const updateStatusSchema = {
     id: z.string().uuid('El ID de la cita debe ser un UUID válido'),
   }),
   body: z.object({
-    estado: z.enum(['programada', 'confirmada', 'asistida', 'no_asistida', 'reprogramada', 'cancelada']),
+    estado: z.enum(['programada', 'confirmada', 'asistida', 'no_asistida', 'solicitud_reprogramacion', 'reprogramada', 'cancelada']),
   }),
 };
 
@@ -50,6 +50,33 @@ export const getAppointmentsSchema = {
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     estado: z.enum(['programada', 'confirmada', 'asistida', 'no_asistida', 'reprogramada', 'cancelada']).optional(),
   }).passthrough(),
+};
+
+export const idParamSchema = {
+  params: z.object({
+    id: z.string().uuid('El ID de la cita debe ser un UUID válido'),
+  }),
+};
+
+export const requestRescheduleSchema = {
+  params: z.object({
+    id: z.string().uuid('El ID de la cita debe ser un UUID válido'),
+  }),
+  body: z.object({
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)'),
+    hora: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido (HH:mm)'),
+    motivoReprogramacion: z.string().min(5, 'Debe especificar el motivo de reprogramación'),
+  }),
+};
+
+export const resolveRescheduleSchema = {
+  params: z.object({
+    id: z.string().uuid('El ID de la cita debe ser un UUID válido'),
+  }),
+  body: z.object({
+    aprobar: z.boolean(),
+    motivo: z.string().optional(),
+  }),
 };
 
 export const availabilitySchema = {
