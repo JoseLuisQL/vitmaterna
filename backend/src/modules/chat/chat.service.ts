@@ -258,3 +258,85 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
     return message;
   });
 };
+
+/**
+ * Envía un mensaje masivo del obstetra a las gestantes que cumplan el filtro
+ * (RF-9.03). Filtros opcionales: trimestre (1-3) y nivel de riesgo. El mensaje
+ * se crea en la conversación de cada gestante (creándola si no existe) y se
+ * envía notificación push a quienes tengan token registrado.
+ */
+export const sendBroadcast = async (
+  userId: string,
+  contenido: string,
+  filtros: { trimestre?: number; nivelRiesgo?: 'verde' | 'amarillo' | 'rojo' }
+) => {
+  const obstetra = await prisma.obstetra.findUnique({ where: { userId } });
+  if (!obstetra) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Perfil de obstetra no encontrado');
+  }
+
+  // Construir el filtro de gestantes
+  const where: any = { estado: 'activa' };
+  if (filtros.nivelRiesgo) {
+    where.nivelRiesgo = filtros.nivelRiesgo;
+  }
+
+  // Filtro por trimestre usando la FPP (semana = 40 - semanas restantes)
+  if (filtros.trimestre) {
+    const hoy = new Date();
+    // Trimestre 1: <=13 sem -> FPP entre hoy+189d (27 sem rest) y hoy+280d
+    // Trimestre 2: 14-27 sem -> FPP entre hoy+91d y hoy+189d
+    // Trimestre 3: >=28 sem -> FPP entre hoy y hoy+91d
+    const dias = (n: number) => new Date(hoy.getTime() + n * 24 * 60 * 60 * 1000);
+    let rango: { gte?: Date; lte?: Date } = {};
+    if (filtros.trimestre === 1) rango = { gte: dias(189), lte: dias(280) };
+    else if (filtros.trimestre === 2) rango = { gte: dias(91), lte: dias(189) };
+    else if (filtros.trimestre === 3) rango = { gte: hoy, lte: dias(91) };
+    where.OR = [{ fppFum: rango }, { fppEco: rango }];
+  }
+
+  const gestantes = await prisma.gestante.findMany({
+    where,
+    include: { user: true },
+  });
+
+  let enviados = 0;
+  const pushTokens: string[] = [];
+
+  for (const gestante of gestantes) {
+    // Buscar o crear conversación obstetra-gestante
+    let conversation = await prisma.conversation.findFirst({
+      where: { gestanteId: gestante.id, obstetraId: obstetra.id },
+    });
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: { gestanteId: gestante.id, obstetraId: obstetra.id },
+      });
+    }
+
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderId: userId,
+        contenido,
+        tipo: 'texto',
+      },
+    });
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { ultimoMensaje: new Date() },
+    });
+
+    const prefs = gestante.user?.notificationPreferences as Record<string, any> | null;
+    if (prefs?.expoPushToken) pushTokens.push(prefs.expoPushToken);
+
+    enviados++;
+  }
+
+  if (pushTokens.length > 0) {
+    const { sendPushNotification } = await import('../notifications/notification.service.js');
+    await sendPushNotification(pushTokens, 'Mensaje de tu obstetra', contenido);
+  }
+
+  return { enviados, total: gestantes.length };
+};

@@ -5,7 +5,13 @@ export const getHistory = async (req: Request, res: Response, next: NextFunction
   try {
     const { conversationId } = req.params;
     const { page, limit } = req.query;
-    
+
+    // Defaults seguros: en Express 5 req.query es de solo lectura y los
+    // valores por defecto del esquema no siempre persisten, por lo que se
+    // aplican aquí para evitar page/limit NaN.
+    const pageNum = Number(page) > 0 ? Number(page) : 1;
+    const limitNum = Number(limit) > 0 ? Number(limit) : 50;
+
     // Using explicit typing based on our auth middleware which sets req.user
     const userId = req.user!.userId;
     const userRole = req.user!.role;
@@ -14,8 +20,8 @@ export const getHistory = async (req: Request, res: Response, next: NextFunction
       userId,
       userRole,
       conversationId as string,
-      Number(page),
-      Number(limit)
+      pageNum,
+      limitNum
     );
 
     res.json({
@@ -70,6 +76,21 @@ export const sendEmergencyAlert = async (req: Request, res: Response, next: Next
     const { latitude, longitude } = req.body;
 
     const data = await chatService.sendEmergencyAlert(userId, latitude, longitude);
+    res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendBroadcast = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { contenido, trimestre, nivelRiesgo } = req.body;
+
+    const data = await chatService.sendBroadcast(userId, contenido, { trimestre, nivelRiesgo });
     res.status(201).json({
       success: true,
       data,

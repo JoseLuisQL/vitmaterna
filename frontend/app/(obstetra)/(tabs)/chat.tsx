@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import api from '../../../src/services/api';
 import { AppHeader } from '../../../src/components/ui/AppHeader';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { Send, ChevronLeft, User, MessageSquare } from 'lucide-react-native';
+import { Send, ChevronLeft, User, MessageSquare, Megaphone } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 
@@ -17,6 +18,7 @@ interface ChatMessage {
 }
 
 export default function ObstetraChatScreen() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { socket, isConnected, emit } = useSocket();
   const [activeConv, setActiveConv] = useState<any>(null);
@@ -198,6 +200,14 @@ export default function ObstetraChatScreen() {
             </View>
           }
         />
+        <TouchableOpacity
+          style={styles.broadcastFab}
+          onPress={() => router.push('/(obstetra)/mensaje-masivo')}
+          activeOpacity={0.85}
+        >
+          <Megaphone size={20} color="#FFFFFF" />
+          <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -443,6 +453,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  broadcastFab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#BE185D',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 99,
+    shadowColor: '#BE185D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  broadcastFabText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   emergencyMessageBubble: {
     alignSelf: 'center',
     backgroundColor: '#FEF2F2',
