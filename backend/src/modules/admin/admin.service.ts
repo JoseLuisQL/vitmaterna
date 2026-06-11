@@ -121,6 +121,15 @@ export class AdminService {
   }
 
   /**
+   * List all educational content for admin management (including inactive).
+   */
+  async listEducation() {
+    return prisma.educationalContent.findMany({
+      orderBy: [{ activo: 'desc' }, { orden: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  /**
    * Create educational content
    */
   async createEducation(data: any) {

@@ -40,14 +40,74 @@ export const useToggleUserActive = () => {
 };
 
 // --- Admin Education Content ---
+
+/** Tipos y categorías válidos (alineados con el enum del backend). */
+export const EDUCATION_TIPOS = ['articulo', 'infografia', 'video', 'audio', 'faq'] as const;
+export const EDUCATION_CATEGORIAS = [
+  'nutricion',
+  'suplementos',
+  'signos_alarma',
+  'parto',
+  'lactancia',
+  'cuidado_bebe',
+  'salud_mental',
+  'general',
+] as const;
+
+export interface EducationContent {
+  id: string;
+  titulo: string;
+  contenido: string;
+  tipo?: string;
+  categoria?: string;
+  trimestre?: number | null;
+  mediaUrl?: string | null;
+  thumbnailUrl?: string | null;
+  duracionMin?: number | null;
+  orden: number;
+  activo: boolean;
+}
+
+export const fetchEducationContent = async (): Promise<EducationContent[]> => {
+  const res = await api.get('/admin/education');
+  return res.data?.data || [];
+};
+
+export const useEducationContent = () =>
+  useQuery({ queryKey: ['adminEducation'], queryFn: fetchEducationContent });
+
 export const createEducationContent = async (data: any) => {
   const res = await api.post('/admin/education', data);
   return res.data;
 };
 
 export const useCreateEducationContent = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createEducationContent,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminEducation'] }),
+  });
+};
+
+export const useUpdateEducationContent = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await api.put(`/admin/education/${id}`, data);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminEducation'] }),
+  });
+};
+
+export const useDeleteEducationContent = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/admin/education/${id}`);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminEducation'] }),
   });
 };
 

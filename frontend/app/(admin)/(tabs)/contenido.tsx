@@ -1,190 +1,271 @@
 /**
- * VITMATERNA - Admin Education Content CMS Screen
- * Create new educational content.
+ * VITMATERNA - Admin: gestión de contenido educativo (RF-10.05)
+ * Crear, listar, editar y eliminar contenido. Campos y enums alineados con el
+ * backend (titulo/contenido/tipo/categoria/mediaUrl/duracionMin).
  */
-import React from 'react';
-import { View, StyleSheet, Text, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, StyleSheet, Text, ScrollView, FlatList, TouchableOpacity, Alert, RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FileText, Link as LinkIcon, Image as ImageIcon, Clock } from 'lucide-react-native';
+import { Plus, FileText, Pencil, Trash2, BookOpen } from 'lucide-react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
-import { commonColors, obstetraColors } from '../../../src/theme/colors';
+import { AppModal } from '../../../src/components/ui/AppModal';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { useToast } from '../../../src/components/ui';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
-import { useCreateEducationContent } from '../../../src/services/admin-queries';
+import {
+  useEducationContent,
+  useCreateEducationContent,
+  useUpdateEducationContent,
+  useDeleteEducationContent,
+  EDUCATION_TIPOS,
+  EDUCATION_CATEGORIAS,
+  type EducationContent,
+} from '../../../src/services/admin-queries';
 
 const BRAND = obstetraColors.primary;
 
+const TIPO_LABEL: Record<string, string> = {
+  articulo: 'Artículo',
+  infografia: 'Infografía',
+  video: 'Video',
+  audio: 'Audio',
+  faq: 'FAQ',
+};
+
+const CATEGORIA_LABEL: Record<string, string> = {
+  nutricion: 'Nutrición',
+  suplementos: 'Suplementos',
+  signos_alarma: 'Signos de alarma',
+  parto: 'Parto',
+  lactancia: 'Lactancia',
+  cuidado_bebe: 'Cuidado del bebé',
+  salud_mental: 'Salud mental',
+  general: 'General',
+};
+
 const schema = z.object({
-  title: z.string().min(1, 'El título es requerido'),
-  description: z.string().min(1, 'La descripción es requerida'),
-  type: z.enum(['video', 'article', 'guide']),
-  url: z.string().url('Debe ser una URL válida'),
-  duration: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
+  titulo: z.string().min(1, 'El título es requerido'),
+  contenido: z.string().min(1, 'El contenido es requerido'),
+  tipo: z.enum(EDUCATION_TIPOS),
+  categoria: z.enum(EDUCATION_CATEGORIAS),
+  trimestre: z.string().optional(),
+  mediaUrl: z.string().optional(),
+  duracionMin: z.string().optional(),
 });
 
-type EducationFormValues = z.infer<typeof schema>;
+type FormValues = z.infer<typeof schema>;
 
 export default function ContenidoScreen(): React.ReactElement {
-  const createContentMutation = useCreateEducationContent();
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<EducationFormValues>({
+  const toast = useToast();
+  const { data: items = [], isLoading, refetch, isRefetching } = useEducationContent();
+  const createMut = useCreateEducationContent();
+  const updateMut = useUpdateEducationContent();
+  const deleteMut = useDeleteEducationContent();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editing, setEditing] = useState<EducationContent | null>(null);
+
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: '',
-      description: '',
-      type: 'article',
-      url: '',
-      duration: '',
-      thumbnailUrl: '',
+      titulo: '', contenido: '', tipo: 'articulo', categoria: 'general',
+      trimestre: '', mediaUrl: '', duracionMin: '',
     },
   });
 
-  const onSubmit = (data: EducationFormValues) => {
-    const payload = {
-      ...data,
-      duration: data.duration ? parseInt(data.duration, 10) : undefined,
-    };
-    createContentMutation.mutate(payload, {
-      onSuccess: () => {
-        Alert.alert('Éxito', 'Contenido creado correctamente');
-        reset();
-      },
-      onError: (error: any) => {
-        Alert.alert('Error', error.response?.data?.message || 'Error al crear contenido');
-      },
-    });
+  const openCreate = () => {
+    setEditing(null);
+    reset({ titulo: '', contenido: '', tipo: 'articulo', categoria: 'general', trimestre: '', mediaUrl: '', duracionMin: '' });
+    setModalVisible(true);
   };
+
+  const openEdit = (item: EducationContent) => {
+    setEditing(item);
+    reset({
+      titulo: item.titulo,
+      contenido: item.contenido,
+      tipo: (item.tipo as any) || 'articulo',
+      categoria: (item.categoria as any) || 'general',
+      trimestre: item.trimestre ? String(item.trimestre) : '',
+      mediaUrl: item.mediaUrl || '',
+      duracionMin: item.duracionMin ? String(item.duracionMin) : '',
+    });
+    setModalVisible(true);
+  };
+
+  const onSubmit = (data: FormValues) => {
+    const payload: any = {
+      titulo: data.titulo,
+      contenido: data.contenido,
+      tipo: data.tipo,
+      categoria: data.categoria,
+      trimestre: data.trimestre ? parseInt(data.trimestre, 10) : null,
+      mediaUrl: data.mediaUrl || null,
+      duracionMin: data.duracionMin ? parseInt(data.duracionMin, 10) : null,
+    };
+
+    if (editing) {
+      updateMut.mutate({ id: editing.id, data: payload }, {
+        onSuccess: () => { toast.success('Contenido actualizado'); setModalVisible(false); },
+        onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo actualizar'),
+      });
+    } else {
+      createMut.mutate(payload, {
+        onSuccess: () => { toast.success('Contenido creado'); setModalVisible(false); },
+        onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo crear'),
+      });
+    }
+  };
+
+  const confirmDelete = (item: EducationContent) => {
+    Alert.alert('Eliminar contenido', `¿Eliminar "${item.titulo}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () =>
+          deleteMut.mutate(item.id, {
+            onSuccess: () => toast.success('Contenido eliminado'),
+            onError: () => toast.error('Error', 'No se pudo eliminar'),
+          }),
+      },
+    ]);
+  };
+
+  const renderItem = ({ item }: { item: EducationContent }) => (
+    <View style={styles.card}>
+      <View style={styles.cardIcon}>
+        <BookOpen size={20} color={BRAND} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.cardTitle} numberOfLines={1}>{item.titulo}</Text>
+        <View style={styles.cardMeta}>
+          <View style={styles.tag}><Text style={styles.tagText}>{TIPO_LABEL[item.tipo || ''] || item.tipo || '—'}</Text></View>
+          <View style={styles.tag}><Text style={styles.tagText}>{CATEGORIA_LABEL[item.categoria || ''] || 'General'}</Text></View>
+          {item.trimestre ? <View style={styles.tag}><Text style={styles.tagText}>T{item.trimestre}</Text></View> : null}
+          {!item.activo ? <View style={[styles.tag, styles.tagInactive]}><Text style={styles.tagInactiveText}>Inactivo</Text></View> : null}
+        </View>
+      </View>
+      <TouchableOpacity onPress={() => openEdit(item)} hitSlop={8} style={styles.iconBtn}>
+        <Pencil size={18} color={commonColors.textSecondary} />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={styles.iconBtn}>
+        <Trash2 size={18} color={semanticColors.danger} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (isLoading) return <LoadingScreen message="Cargando contenido..." />;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Nuevo Contenido</Text>
-      </View>
-      
-      <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
-        <AppInput
-          name="title"
-          control={control}
-          label="Título"
-          placeholder="Ej. Cuidados en el primer trimestre"
-          error={errors.title?.message}
-          themeColor={BRAND}
-        />
-        
-        <AppInput
-          name="description"
-          control={control}
-          label="Descripción"
-          placeholder="Breve descripción del contenido"
-          error={errors.description?.message}
-          themeColor={BRAND}
-          multiline
-          numberOfLines={3}
-          containerStyle={{ minHeight: 100 }}
-        />
-
-        <View style={styles.typeSelector}>
-          <Text style={styles.label}>Tipo de Contenido</Text>
-          <Controller
-            name="type"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <View style={styles.radioGroup}>
-                {['article', 'video', 'guide'].map((t) => (
-                  <AppButton
-                    key={t}
-                    title={t.charAt(0).toUpperCase() + t.slice(1)}
-                    onPress={() => onChange(t)}
-                    variant={value === t ? 'primary' : 'outline'}
-                    style={[{ flex: 1, marginHorizontal: 4 }, value === t ? { backgroundColor: BRAND } : {}] as any}
-                    size="sm"
-                  />
-                ))}
-              </View>
-            )}
-          />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Contenido educativo</Text>
+          <Text style={styles.subtitle}>{items.length} recurso(s)</Text>
         </View>
+        <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8}>
+          <Plus size={22} color={obstetraColors.onPrimary} />
+        </TouchableOpacity>
+      </View>
 
-        <AppInput
-          name="url"
-          control={control}
-          label="URL del Contenido"
-          placeholder="https://..."
-          leftIcon={LinkIcon as any}
-          error={errors.url?.message}
-          themeColor={BRAND}
-        />
+      <FlatList
+        data={items}
+        keyExtractor={(i) => i.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
+        ListEmptyComponent={
+          <View style={{ marginTop: 60 }}>
+            <EmptyState icon={BookOpen} title="Sin contenido" description="Crea el primer recurso educativo para las gestantes." themeColor={BRAND} />
+          </View>
+        }
+      />
 
-        <AppInput
-          name="thumbnailUrl"
-          control={control}
-          label="URL de Miniatura (Opcional)"
-          placeholder="https://..."
-          leftIcon={ImageIcon as any}
-          error={errors.thumbnailUrl?.message}
-          themeColor={BRAND}
-        />
+      <AppModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={editing ? 'Editar contenido' : 'Nuevo contenido'}
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton
+              title={editing ? 'Guardar' : 'Crear'}
+              onPress={handleSubmit(onSubmit)}
+              loading={createMut.isPending || updateMut.isPending}
+              themeColor={BRAND}
+              style={{ flex: 1 }}
+            />
+          </>
+        }
+      >
+        <AppInput name="titulo" control={control} label="Título" placeholder="Ej. Cuidados en el primer trimestre" error={errors.titulo?.message} themeColor={BRAND} />
+        <AppInput name="contenido" control={control} label="Contenido" placeholder="Texto del artículo o descripción" error={errors.contenido?.message} themeColor={BRAND} multiline numberOfLines={4} containerStyle={{ minHeight: 110 }} />
 
-        <AppInput
-          name="duration"
-          control={control}
-          label="Duración en minutos (Opcional)"
-          placeholder="Ej. 15"
-          leftIcon={Clock as any}
-          keyboardType="numeric"
-          error={errors.duration?.message}
-          themeColor={BRAND}
-        />
+        <Text style={styles.label}>Tipo</Text>
+        <Controller name="tipo" control={control} render={({ field: { onChange, value } }) => (
+          <View style={styles.chipsWrap}>
+            {EDUCATION_TIPOS.map((t) => (
+              <TouchableOpacity key={t} style={[styles.chip, value === t && styles.chipActive]} onPress={() => onChange(t)}>
+                <Text style={[styles.chipText, value === t && styles.chipTextActive]}>{TIPO_LABEL[t]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )} />
 
-        <AppButton
-          title="Crear Contenido"
-          onPress={handleSubmit(onSubmit)}
-          variant="primary"
-          style={styles.submitBtn}
-          icon={FileText}
-          loading={createContentMutation.isPending}
-        />
-      </ScrollView>
+        <Text style={styles.label}>Categoría</Text>
+        <Controller name="categoria" control={control} render={({ field: { onChange, value } }) => (
+          <View style={styles.chipsWrap}>
+            {EDUCATION_CATEGORIAS.map((c) => (
+              <TouchableOpacity key={c} style={[styles.chip, value === c && styles.chipActive]} onPress={() => onChange(c)}>
+                <Text style={[styles.chipText, value === c && styles.chipTextActive]}>{CATEGORIA_LABEL[c]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )} />
+
+        <AppInput name="trimestre" control={control} label="Trimestre (1-3, opcional)" placeholder="Ej. 1" keyboardType="numeric" error={errors.trimestre?.message} themeColor={BRAND} />
+        <AppInput name="mediaUrl" control={control} label="URL del recurso (opcional)" placeholder="https://..." error={errors.mediaUrl?.message} themeColor={BRAND} />
+        <AppInput name="duracionMin" control={control} label="Duración en minutos (opcional)" placeholder="Ej. 15" keyboardType="numeric" error={errors.duracionMin?.message} themeColor={BRAND} />
+      </AppModal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: commonColors.background,
+  container: { flex: 1, backgroundColor: commonColors.background },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  title: { ...typography.h1, color: commonColors.text },
+  subtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 2 },
+  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
+  list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: commonColors.surface, borderRadius: borderRadius.lg,
+    padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: commonColors.border,
   },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  title: {
-    ...typography.h1,
-    color: commonColors.text,
-  },
-  formContainer: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  label: {
-    ...typography.label,
-    color: commonColors.text,
-    marginBottom: spacing.xs,
-  },
-  typeSelector: {
-    marginBottom: spacing.md,
-  },
-  radioGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-  },
-  submitBtn: {
-    marginTop: spacing.lg,
-    backgroundColor: BRAND,
-  },
+  cardIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  tag: { backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.sm, paddingHorizontal: 8, paddingVertical: 2 },
+  tagText: { ...typography.overline, color: commonColors.textSecondary, letterSpacing: 0 },
+  tagInactive: { backgroundColor: semanticColors.dangerLight },
+  tagInactiveText: { ...typography.overline, color: semanticColors.danger, letterSpacing: 0 },
+  iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  label: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.md },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  chipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  chipText: { ...typography.bodySmall, color: commonColors.textSecondary },
+  chipTextActive: { color: obstetraColors.onPrimary, fontWeight: '700' },
 });

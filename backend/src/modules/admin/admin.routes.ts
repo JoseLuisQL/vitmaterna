@@ -63,6 +63,11 @@ adminRoutes.put(
 );
 
 // Educational Content
+adminRoutes.get(
+  '/education',
+  adminController.listEducation
+);
+
 adminRoutes.post(
   '/education',
   validate(createEducationSchema),

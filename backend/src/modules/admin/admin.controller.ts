@@ -42,6 +42,11 @@ export class AdminController {
     return res.status(200).json(successResponse(config));
   }
 
+  async listEducation(_req: Request, res: Response) {
+    const items = await adminService.listEducation();
+    return res.status(200).json(successResponse(items));
+  }
+
   async createEducation(req: Request, res: Response) {
     const education = await adminService.createEducation(req.body);
     return res.status(201).json(successResponse(education));

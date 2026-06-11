@@ -85,8 +85,11 @@ Leyenda: ✅ Implementado · 🟡 Parcial · ❌ Faltante
 - **RF-9.01** Subida de fotos en el chat (modelo lo soporta; falta picker).
 - **RF-9.02** Chatbot: alerta automática al obstetra en casos graves.
 - **RF-10.03** Exponer parámetros reales (plantillas, Hb de referencia, altitud, horarios).
-- **RF-10.05** UI de listar/editar/eliminar contenido + alinear el enum `tipo`
-  (la UI usa `article/video/guide`, el backend `articulo/infografia/video/audio/faq`).
+- ~~**RF-10.05** UI de listar/editar/eliminar contenido + alinear el enum `tipo`~~
+  ✅ **Resuelto:** `GET /admin/education` (listar), UI admin de crear/listar/editar/
+  eliminar con selección de tipo y categoría, y payload alineado al backend
+  (`titulo/contenido/tipo/categoria/mediaUrl/duracionMin`); enum corregido a
+  `articulo/infografia/video/audio/faq`.
 
 ---
 
