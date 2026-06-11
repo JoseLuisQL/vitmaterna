@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "echo \"No linter configured yet\"",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
+    "smoke": "node scripts/smoke-test.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"
