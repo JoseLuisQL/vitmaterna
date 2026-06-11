@@ -163,6 +163,93 @@ export async function scanAndSendReminders() {
         data: { recordatorio1d: true }
       });
     }
+
+    // Recordatorio 2 horas antes (RF-7.04). fecha es @db.Date y hora @db.Time;
+    // se combinan para obtener el instante exacto de la cita.
+    if (!appt.recordatorio2h) {
+      const h = new Date(appt.hora);
+      const apptDateTime = new Date(apptDate);
+      apptDateTime.setUTCHours(h.getUTCHours(), h.getUTCMinutes(), 0, 0);
+      const diffHours = (apptDateTime.getTime() - now.getTime()) / (60 * 60 * 1000);
+
+      if (diffHours <= 2 && diffHours > 0) {
+        const horaTxt = `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`;
+        if (user.phone) {
+          await sendSmsAndWhatsApp(
+            user.phone,
+            `Hola ${user.firstName}, tu control prenatal es hoy a las ${horaTxt}. Acude con tiempo. ¡Te esperamos!`
+          );
+        }
+        const prefs = user.notificationPreferences as Record<string, any>;
+        if (prefs?.expoPushToken) {
+          await sendPushNotification(
+            [prefs.expoPushToken],
+            'Tu cita es en 2 horas',
+            `Hola ${user.firstName}, tu control prenatal es hoy a las ${horaTxt}.`,
+            { appointmentId: appt.id }
+          );
+        }
+        await prisma.appointment.update({
+          where: { id: appt.id },
+          data: { recordatorio2h: true },
+        });
+      }
+    }
+  }
+}
+
+/**
+ * RF-4.06 / RF-7.05: recordatorio diario de toma de suplementos.
+ * Para cada tratamiento activo con hora de toma definida, si ya pasó la hora
+ * del día y la gestante aún no registró el consumo de hoy, envía un
+ * recordatorio (una vez al día, deduplicado por Notification).
+ */
+export async function scanSupplementReminders() {
+  const now = new Date();
+  const hoyStr = now.toISOString().split('T')[0];
+  const hoyMidnight = new Date(`${hoyStr}T00:00:00.000Z`);
+
+  const tratamientos = await prisma.treatment.findMany({
+    where: { estado: 'activo', horaToma: { not: null } },
+    include: {
+      gestante: { include: { user: true } },
+      supplementLogs: { where: { fecha: hoyMidnight } },
+    },
+  });
+
+  for (const t of tratamientos) {
+    const user = t.gestante?.user;
+    if (!user || !t.horaToma) continue;
+
+    // ¿ya pasó la hora de toma de hoy?
+    const ht = new Date(t.horaToma);
+    const horaToday = new Date(now);
+    horaToday.setUTCHours(ht.getUTCHours(), ht.getUTCMinutes(), 0, 0);
+    if (now.getTime() < horaToday.getTime()) continue;
+
+    // ¿ya registró el consumo de hoy?
+    const yaTomadoHoy = t.supplementLogs.some((l) => l.tomado);
+    if (yaTomadoHoy) continue;
+
+    // ¿ya se le recordó hoy?
+    const yaRecordado = await prisma.notification.findFirst({
+      where: {
+        userId: user.id,
+        tipo: 'recordatorio_suplemento',
+        datos: { path: ['treatmentId'], equals: t.id },
+        createdAt: { gte: hoyMidnight },
+      },
+    });
+    if (yaRecordado) continue;
+
+    const horaTxt = `${String(ht.getUTCHours()).padStart(2, '0')}:${String(ht.getUTCMinutes()).padStart(2, '0')}`;
+    const mensaje = `Hola ${user.firstName}, no olvides tomar tu ${t.nombre} (${t.dosis}) de las ${horaTxt}. Registra tu consumo en la app.`;
+    if (user.phone) {
+      await sendSmsAndWhatsApp(user.phone, mensaje);
+    }
+    await notifyUser(user.id, 'recordatorio_suplemento', 'Recordatorio de medicamento', mensaje, {
+      treatmentId: t.id,
+    });
   }
 }
 
@@ -286,6 +373,7 @@ export async function scanLowAdherence() {
 export function startReminderCron() {
   const runAll = async () => {
     await scanAndSendReminders();
+    await scanSupplementReminders();
     await scanMissedAppointments();
     await scanLowAdherence();
   };
