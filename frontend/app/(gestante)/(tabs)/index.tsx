@@ -47,17 +47,21 @@ export default function GestanteDashboard(): React.ReactElement {
   const [notes, setNotes] = React.useState('');
 
   const reportMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: () => {
       return api.post('/clinical/danger-signs', {
-        ...data,
-        sign: selectedSign,
-        notes,
+        tipo_signo: selectedSign,
+        descripcion: notes || undefined,
+        severidad: 'grave',
       });
     },
     onSuccess: () => {
       setIsModalVisible(false);
       setSelectedSign('');
       setNotes('');
+      Alert.alert('Alerta enviada', 'Tu obstetra ha sido notificada de tu signo de alarma.');
+    },
+    onError: () => {
+      Alert.alert('Error', 'No se pudo enviar el signo de alarma. Inténtalo de nuevo.');
     },
   });
 
@@ -286,12 +290,12 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionSubtitle}>Pedir Auxilio</Text>
             </AppCard>
 
-            <AppCard style={styles.quickActionCard} onPress={() => {}}>
+            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#F5F3FF' }]}>
                 <Activity size={24} color="#7C3AED" />
               </View>
               <Text style={styles.quickActionTitle}>Mis Signos</Text>
-              <Text style={styles.quickActionSubtitle}>Registrar hoy</Text>
+              <Text style={styles.quickActionSubtitle}>Reportar varios</Text>
             </AppCard>
           </View>
           
@@ -334,7 +338,7 @@ export default function GestanteDashboard(): React.ReactElement {
 
             <View style={styles.modalActions}>
               <AppButton title="Cancelar" variant="outline" onPress={() => setIsModalVisible(false)} style={{ flex: 1, marginRight: 12 }} disabled={reportMutation.isPending} />
-              <AppButton title={reportMutation.isPending ? "Enviando..." : "Enviar"} onPress={() => reportMutation.mutate({})} style={{ flex: 1, backgroundColor: '#EF4444' }} disabled={!selectedSign || reportMutation.isPending} />
+              <AppButton title={reportMutation.isPending ? "Enviando..." : "Enviar"} onPress={() => reportMutation.mutate()} style={{ flex: 1, backgroundColor: '#EF4444' }} disabled={!selectedSign || reportMutation.isPending} />
             </View>
           </View>
         </View>

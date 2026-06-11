@@ -6,10 +6,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import {
   AlertTriangle, Send, CheckCircle, Phone,
   Frown, Thermometer, Activity, Droplets, Droplet,
-  Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse,
+  Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse, ArrowLeft,
 } from 'lucide-react-native';
 import api from '../../src/services/api';
 import { typography } from '../../src/theme/typography';
@@ -56,15 +57,22 @@ function SignoIcon({ name, color }: { name: string; color: string }) {
 }
 
 export default function AlarmScreen(): React.ReactElement {
+  const router = useRouter();
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [notas, setNotas] = useState('');
   const [enviado, setEnviado] = useState(false);
 
   const { mutateAsync: enviarAlerta, isPending } = useMutation({
-    mutationFn: async (data: any) => {
-      try {
-        await api.post('/alerts', data);
-      } catch {}
+    mutationFn: async ({ sintomas, notas }: { sintomas: string[]; notas: string }) => {
+      // El backend registra un signo de alarma por cada síntoma reportado.
+      // Se envían en serie para que cada uno quede trazable para el obstetra.
+      for (const sintoma of sintomas) {
+        await api.post('/clinical/danger-signs', {
+          tipo_signo: sintoma,
+          descripcion: notas || undefined,
+          severidad: 'grave',
+        });
+      }
     },
   });
 
@@ -78,8 +86,15 @@ export default function AlarmScreen(): React.ReactElement {
       return;
     }
     const sintomas = seleccionados.map((i) => TODOS_LOS_SIGNOS[i].texto);
-    await enviarAlerta({ symptoms: sintomas, notes: notas });
-    setEnviado(true);
+    try {
+      await enviarAlerta({ sintomas, notas });
+      setEnviado(true);
+    } catch (error) {
+      Alert.alert(
+        'No se pudo enviar la alerta',
+        'Ocurrió un problema al enviar tus síntomas. Revisa tu conexión e inténtalo de nuevo. Si es urgente, llama al centro de salud.'
+      );
+    }
   }
 
   if (enviado) {
@@ -115,6 +130,10 @@ export default function AlarmScreen(): React.ReactElement {
           <TouchableOpacity style={styles.resetBtn} onPress={() => { setEnviado(false); setSeleccionados([]); setNotas(''); }}>
             <Text style={styles.resetBtnText}>Reportar otro síntoma</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.resetBtn} onPress={() => router.back()}>
+            <Text style={styles.resetBtnText}>Volver al inicio</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -124,6 +143,13 @@ export default function AlarmScreen(): React.ReactElement {
     <View style={styles.container}>
       <LinearGradient colors={['#EF4444', '#B91C1C']} style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ArrowLeft size={24} color="#FFFFFF" />
+          </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <AlertTriangle size={32} color="#FFFFFF" />
             <Text style={styles.headerTitle}>Reportar Alarma</Text>
@@ -224,6 +250,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   headerGradient: { paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
   safeAreaHeader: { paddingHorizontal: 24, paddingTop: 16 },
+  backBtn: { marginBottom: 12 },
   headerTitle: { fontFamily: typography.h1.fontFamily, fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
   headerSubtitle: { fontFamily: typography.bodyMedium.fontFamily, fontSize: 16, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, marginTop: -24 },
