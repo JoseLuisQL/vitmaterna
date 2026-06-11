@@ -3,15 +3,15 @@
  * Displays gestante profile menu and allows editing personal/clinical data (FUM, dates).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity, X
+  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient } from '../../../src/services/api-queries';
-import { ProfileInfoModal, useToast } from '../../../src/components/ui';
+import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
@@ -232,112 +232,91 @@ export default function PerfilScreen(): React.ReactElement {
       </ScrollView>
 
       {/* MODAL: EDIT DATA & FUM */}
-      <Modal
+      <AppModal
         visible={isEditModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsEditModalVisible(false)}
+        onClose={() => setIsEditModalVisible(false)}
+        title="Modificar Perfil y FUM"
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsEditModalVisible(false)} style={{ flex: 1 }} disabled={isSaving} />
+            <AppButton title="Guardar Datos" onPress={handleSave} style={{ flex: 1 }} themeColor={BRAND} disabled={isSaving} loading={isSaving} />
+          </>
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalHeader}>Modificar Perfil y FUM</Text>
-              <TouchableOpacity onPress={() => setIsEditModalVisible(false)} style={styles.closeBtn}>
-                <X size={24} color={commonColors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+        <View style={{ gap: 14 }}>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Nombres *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Nombres"
+              placeholderTextColor={commonColors.textTertiary}
+              value={firstName}
+              onChangeText={setFirstName}
+            />
+          </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 10 }}>
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Nombres *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Nombres"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Apellidos *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Apellidos"
+              placeholderTextColor={commonColors.textTertiary}
+              value={lastName}
+              onChangeText={setLastName}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Apellidos *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Apellidos"
-                  value={lastName}
-                  onChangeText={setLastName}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Teléfono</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. +51999888777"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Teléfono</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. +51999888777"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={setPhone}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Correo Electrónico</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. correo@servidor.com"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Correo Electrónico</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. correo@servidor.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Fecha de Nacimiento (YYYY-MM-DD) *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. 1998-08-25"
+              placeholderTextColor={commonColors.textTertiary}
+              value={fechaNacimiento}
+              onChangeText={setFechaNacimiento}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Fecha de Nacimiento (YYYY-MM-DD) *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. 1998-08-25"
-                  value={fechaNacimiento}
-                  onChangeText={setFechaNacimiento}
-                />
-              </View>
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Fecha Última Menstruación (FUM) (YYYY-MM-DD) *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. 2026-03-17"
-                  value={fum}
-                  onChangeText={setFum}
-                />
-                <Text style={styles.hintText}>
-                  Nota: Modificar tu FUM reprogramará automáticamente tu cronograma de 8 controles prenatales MINSA.
-                </Text>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.cancelBtn} 
-                onPress={() => setIsEditModalVisible(false)}
-                disabled={isSaving}
-              >
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.saveBtn} 
-                onPress={handleSave} 
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color={commonColors.surface} size="small" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Guardar Datos</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Fecha Última Menstruación (FUM) (YYYY-MM-DD) *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. 2026-03-17"
+              placeholderTextColor={commonColors.textTertiary}
+              value={fum}
+              onChangeText={setFum}
+            />
+            <Text style={styles.hintText}>
+              Nota: Modificar tu FUM reprogramará automáticamente tu cronograma de 8 controles prenatales MINSA.
+            </Text>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       <ProfileInfoModal
         visible={!!infoModal}

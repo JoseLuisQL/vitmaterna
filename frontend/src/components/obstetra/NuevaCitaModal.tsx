@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { 
-  View, StyleSheet, Text, Modal, TouchableOpacity, KeyboardAvoidingView, 
-  Platform, Alert, FlatList, TextInput, ScrollView, Dimensions 
+  View, StyleSheet, Text, TouchableOpacity,
+  Alert, FlatList, TextInput, ScrollView, Dimensions 
 } from 'react-native';
-import { Calendar, Clock, User as UserIcon, X, Search, Check, FileText } from 'lucide-react-native';
+import { Calendar, Clock, User as UserIcon, Search, Check, FileText } from 'lucide-react-native';
 import { commonColors, obstetraColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { shadows } from '../../theme/shadows';
 import { usePatients, useCreateAppointment } from '../../services/api-queries';
-import { AppButton } from '../ui/AppButton';
+import { AppModal, AppButton } from '../ui';
 
 const BRAND = obstetraColors.primary;
 
@@ -90,148 +90,131 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
   const handleTimeChange = (text: string) => { setTimeStr(text); };
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      title={step === 'form' ? 'Programar Cita' : 'Seleccionar Paciente'}
+      scroll={step === 'form'}
+      footer={
+        step === 'form' ? (
+          <AppButton
+            title="Programar Cita"
+            onPress={handleSave}
+            loading={isPending}
+            themeColor={BRAND}
+            style={{ flex: 1 }}
+          />
+        ) : undefined
+      }
     >
-      <KeyboardAvoidingView 
-        style={styles.overlay} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleClose} />
-        
-        <View style={styles.bottomSheet}>
-          <View style={styles.dragPill} />
-          
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              {step === 'form' ? 'Programar Cita' : 'Seleccionar Paciente'}
+      {step === 'form' ? (
+        <View>
+          <Text style={styles.label}>Gestante</Text>
+          <TouchableOpacity style={styles.selector} onPress={() => setStep('patients')}>
+            <View style={styles.iconBox}><UserIcon size={20} color={BRAND} /></View>
+            <Text style={[styles.selectorText, !gestanteId && { color: commonColors.textTertiary }]}>
+              {gestanteId ? gestanteName : 'Tocar para seleccionar paciente...'}
             </Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-              <X size={20} color={commonColors.textSecondary} />
-            </TouchableOpacity>
+          </TouchableOpacity>
+
+          <Text style={styles.label}>Motivo</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.motivoScroll}>
+            {MOTIVOS.map(m => (
+              <TouchableOpacity 
+                key={m} 
+                style={[styles.chip, motivo === m && styles.chipActive]}
+                onPress={() => setMotivo(m)}
+              >
+                <Text style={[styles.chipText, motivo === m && styles.chipTextActive]}>{m}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.label}>Fecha (YYYY-MM-DD)</Text>
+              <View style={styles.inputBox}>
+                <Calendar size={18} color={commonColors.textSecondary} />
+                <TextInput 
+                  style={styles.inputTextNative} 
+                  value={dateStr} 
+                  onChangeText={handleDateChange} 
+                  placeholder="2026-06-08"
+                  placeholderTextColor={commonColors.textTertiary}
+                />
+              </View>
+            </View>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Text style={styles.label}>Hora (HH:MM)</Text>
+              <View style={styles.inputBox}>
+                <Clock size={18} color={commonColors.textSecondary} />
+                <TextInput 
+                  style={styles.inputTextNative} 
+                  value={timeStr} 
+                  onChangeText={handleTimeChange}
+                  placeholder="14:30"
+                  placeholderTextColor={commonColors.textTertiary}
+                />
+              </View>
+            </View>
           </View>
 
-          {step === 'form' ? (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-              
-              <Text style={styles.label}>Gestante</Text>
-              <TouchableOpacity style={styles.selector} onPress={() => setStep('patients')}>
-                <View style={styles.iconBox}><UserIcon size={20} color={BRAND} /></View>
-                <Text style={[styles.selectorText, !gestanteId && { color: commonColors.textTertiary }]}>
-                  {gestanteId ? gestanteName : 'Tocar para seleccionar paciente...'}
-                </Text>
-              </TouchableOpacity>
+          <Text style={styles.label}>Descripción / Consultorio</Text>
+          <View style={[styles.inputBox, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
+             <FileText size={18} color={commonColors.textSecondary} style={{ marginTop: 2 }} />
+             <TextInput 
+               style={[styles.inputTextNative, { textAlignVertical: 'top' }]} 
+               value={observaciones} 
+               onChangeText={setObservaciones}
+               placeholder="Ej: Traer resultados / Consultorio 103"
+               placeholderTextColor={commonColors.textTertiary}
+               multiline
+             />
+          </View>
 
-              <Text style={styles.label}>Motivo</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.motivoScroll}>
-                {MOTIVOS.map(m => (
-                  <TouchableOpacity 
-                    key={m} 
-                    style={[styles.chip, motivo === m && styles.chipActive]}
-                    onPress={() => setMotivo(m)}
-                  >
-                    <Text style={[styles.chipText, motivo === m && styles.chipTextActive]}>{m}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.label}>Fecha (YYYY-MM-DD)</Text>
-                  <View style={styles.inputBox}>
-                    <Calendar size={18} color={commonColors.textSecondary} />
-                    <TextInput 
-                      style={styles.inputTextNative} 
-                      value={dateStr} 
-                      onChangeText={handleDateChange} 
-                      placeholder="2026-06-08"
-                      placeholderTextColor={commonColors.textTertiary}
-                    />
-                  </View>
-                </View>
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.label}>Hora (HH:MM)</Text>
-                  <View style={styles.inputBox}>
-                    <Clock size={18} color={commonColors.textSecondary} />
-                    <TextInput 
-                      style={styles.inputTextNative} 
-                      value={timeStr} 
-                      onChangeText={handleTimeChange}
-                      placeholder="14:30"
-                      placeholderTextColor={commonColors.textTertiary}
-                    />
-                  </View>
-                </View>
-              </View>
-
-              <Text style={styles.label}>Descripción / Consultorio</Text>
-              <View style={[styles.inputBox, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
-                 <FileText size={18} color={commonColors.textSecondary} style={{ marginTop: 2 }} />
-                 <TextInput 
-                   style={[styles.inputTextNative, { textAlignVertical: 'top' }]} 
-                   value={observaciones} 
-                   onChangeText={setObservaciones}
-                   placeholder="Ej: Traer resultados / Consultorio 103"
-                   placeholderTextColor={commonColors.textTertiary}
-                   multiline
-                 />
-              </View>
-
-              {/* Removed native pickers */}
-
-              <View style={{ marginTop: 32, marginBottom: 20 }}>
-                <AppButton 
-                  title="Programar Cita" 
-                  onPress={handleSave} 
-                  loading={isPending} 
-                />
-              </View>
-            </ScrollView>
-          ) : (
-            <View style={{ flex: 1, padding: 20 }}>
-              <View style={styles.searchBox}>
-                <Search size={18} color={commonColors.textTertiary} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Buscar por nombre o DNI..."
-                  placeholderTextColor={commonColors.textTertiary}
-                  value={search}
-                  onChangeText={setSearch}
-                  autoFocus
-                />
-              </View>
-              
-              <FlatList
-                data={filteredPatients}
-                keyExtractor={item => item.id}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={styles.patientItem}
-                    onPress={() => handleSelectPatient(item.id, `${item.firstName} ${item.lastName}`)}
-                  >
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{item.firstName?.[0] || ''}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.patientName}>{item.firstName} {item.lastName}</Text>
-                      <Text style={styles.patientDoc}>DNI: {item.documentNumber}</Text>
-                    </View>
-                    {gestanteId === item.id && <Check size={20} color={BRAND} />}
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No se encontraron pacientes</Text>
-                }
-              />
-            </View>
-          )}
+          {/* Removed native pickers */}
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      ) : (
+        <View>
+          <View style={styles.searchBox}>
+            <Search size={18} color={commonColors.textTertiary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por nombre o DNI..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={search}
+              onChangeText={setSearch}
+              autoFocus
+            />
+          </View>
+          
+          <FlatList
+            data={filteredPatients}
+            keyExtractor={item => item.id}
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: SCREEN_HEIGHT * 0.5 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.patientItem}
+                onPress={() => handleSelectPatient(item.id, `${item.firstName} ${item.lastName}`)}
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{item.firstName?.[0] || ''}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.patientName}>{item.firstName} {item.lastName}</Text>
+                  <Text style={styles.patientDoc}>DNI: {item.documentNumber}</Text>
+                </View>
+                {gestanteId === item.id && <Check size={20} color={BRAND} />}
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No se encontraron pacientes</Text>
+            }
+          />
+        </View>
+      )}
+    </AppModal>
   );
 }
 

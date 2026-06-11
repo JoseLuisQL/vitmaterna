@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  TextInput, Modal, Alert, ActivityIndicator, Switch, StatusBar,
+  TextInput, Alert, Switch, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale,
 } from 'lucide-react-native';
+import { AppModal, AppButton } from '../../../src/components/ui';
 import {
   useCreatePathology,
   useCreateMentalHealthScreening,
@@ -155,6 +156,14 @@ export default function TamizajesScreen(): React.ReactElement {
     pathology.isPending || mental.isPending || violence.isPending ||
     nutrition.isPending || weight.isPending;
 
+  const FORM_TITLES: Record<FormKey, string> = {
+    patologia: 'Registrar Patología (CIE-10)',
+    mental: 'Tamizaje SRQ-18 (Salud Mental)',
+    violencia: 'Tamizaje de Violencia',
+    nutricion: 'Consejería Nutricional',
+    peso: 'Registro de Peso',
+  };
+
   const CARDS: { key: FormKey; label: string; desc: string; icon: any; color: string; bg: string }[] = [
     { key: 'mental', label: 'Tamizaje SRQ-18', desc: 'Salud mental', icon: Brain, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
     { key: 'violencia', label: 'Tamizaje de violencia', desc: 'Detección y derivación', icon: ShieldAlert, color: semanticColors.danger, bg: semanticColors.dangerLight },
@@ -195,123 +204,115 @@ export default function TamizajesScreen(): React.ReactElement {
       </ScrollView>
 
       {/* ── MODAL ── */}
-      <Modal visible={openForm !== null} transparent animationType="fade" onRequestClose={closeAndReset}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>
-              {openForm === 'patologia' && 'Registrar Patología (CIE-10)'}
-              {openForm === 'mental' && 'Tamizaje SRQ-18 (Salud Mental)'}
-              {openForm === 'violencia' && 'Tamizaje de Violencia'}
-              {openForm === 'nutricion' && 'Consejería Nutricional'}
-              {openForm === 'peso' && 'Registro de Peso'}
-            </Text>
+      <AppModal
+        visible={openForm !== null}
+        onClose={closeAndReset}
+        title={openForm ? FORM_TITLES[openForm] : undefined}
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={closeAndReset} style={{ flex: 1 }} disabled={isSaving} />
+            <AppButton
+              title="Guardar"
+              onPress={() => {
+                if (openForm === 'patologia') guardarPatologia();
+                else if (openForm === 'mental') guardarMental();
+                else if (openForm === 'violencia') guardarViolencia();
+                else if (openForm === 'nutricion') guardarNutricion();
+                else if (openForm === 'peso') guardarPeso();
+              }}
+              style={{ flex: 1 }}
+              themeColor={PINK}
+              disabled={isSaving}
+              loading={isSaving}
+            />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          {openForm === 'patologia' && (
+            <>
+              <Field label="Código CIE-10">
+                <TextInput style={styles.input} placeholder="Ej. O990" placeholderTextColor={commonColors.textTertiary} value={cie10} onChangeText={setCie10} autoCapitalize="characters" />
+              </Field>
+              <Field label="Descripción (opcional)">
+                <TextInput style={[styles.input, { height: 80 }]} placeholder="Descripción del diagnóstico..." placeholderTextColor={commonColors.textTertiary} multiline value={patDesc} onChangeText={setPatDesc} />
+              </Field>
+            </>
+          )}
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-              {openForm === 'patologia' && (
-                <>
-                  <Field label="Código CIE-10">
-                    <TextInput style={styles.input} placeholder="Ej. O990" value={cie10} onChangeText={setCie10} autoCapitalize="characters" />
-                  </Field>
-                  <Field label="Descripción (opcional)">
-                    <TextInput style={[styles.input, { height: 80 }]} placeholder="Descripción del diagnóstico..." multiline value={patDesc} onChangeText={setPatDesc} />
-                  </Field>
-                </>
-              )}
+          {openForm === 'mental' && (
+            <>
+              <Text style={styles.helper}>Ingresa los puntajes obtenidos en cada bloque del cuestionario SRQ-18.</Text>
+              <Field label="Puntaje preguntas 1–18 (trastorno mental)">
+                <TextInput style={styles.input} placeholder="0" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={p118} onChangeText={setP118} />
+              </Field>
+              <Field label="Puntaje preguntas 19–22 (psicótico)">
+                <TextInput style={styles.input} placeholder="0" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={p1922} onChangeText={setP1922} />
+              </Field>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Pregunta 23 (convulsivo): Sí</Text>
+                <Switch value={p23} onValueChange={setP23} trackColor={{ true: PINK }} />
+              </View>
+              <Field label="Puntaje preguntas 24–28 (alcoholismo)">
+                <TextInput style={styles.input} placeholder="0" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={p2428} onChangeText={setP2428} />
+              </Field>
+              <Field label="Observaciones (opcional)">
+                <TextInput style={[styles.input, { height: 70 }]} placeholder="Notas..." placeholderTextColor={commonColors.textTertiary} multiline value={mentalObs} onChangeText={setMentalObs} />
+              </Field>
+            </>
+          )}
 
-              {openForm === 'mental' && (
-                <>
-                  <Text style={styles.helper}>Ingresa los puntajes obtenidos en cada bloque del cuestionario SRQ-18.</Text>
-                  <Field label="Puntaje preguntas 1–18 (trastorno mental)">
-                    <TextInput style={styles.input} placeholder="0" keyboardType="numeric" value={p118} onChangeText={setP118} />
-                  </Field>
-                  <Field label="Puntaje preguntas 19–22 (psicótico)">
-                    <TextInput style={styles.input} placeholder="0" keyboardType="numeric" value={p1922} onChangeText={setP1922} />
-                  </Field>
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Pregunta 23 (convulsivo): Sí</Text>
-                    <Switch value={p23} onValueChange={setP23} trackColor={{ true: PINK }} />
-                  </View>
-                  <Field label="Puntaje preguntas 24–28 (alcoholismo)">
-                    <TextInput style={styles.input} placeholder="0" keyboardType="numeric" value={p2428} onChangeText={setP2428} />
-                  </Field>
-                  <Field label="Observaciones (opcional)">
-                    <TextInput style={[styles.input, { height: 70 }]} placeholder="Notas..." multiline value={mentalObs} onChangeText={setMentalObs} />
-                  </Field>
-                </>
-              )}
+          {openForm === 'violencia' && (
+            <>
+              <Text style={styles.helper}>Cuestionario de 8 preguntas (8–24 puntos). Tamizaje positivo si el puntaje es ≥ 15.</Text>
+              <Field label="Puntaje total (8–24)">
+                <TextInput style={styles.input} placeholder="0" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={vioPuntaje} onChangeText={setVioPuntaje} />
+              </Field>
+              <Field label="Observaciones (opcional)">
+                <TextInput style={[styles.input, { height: 70 }]} placeholder="Notas..." placeholderTextColor={commonColors.textTertiary} multiline value={vioObs} onChangeText={setVioObs} />
+              </Field>
+            </>
+          )}
 
-              {openForm === 'violencia' && (
-                <>
-                  <Text style={styles.helper}>Cuestionario de 8 preguntas (8–24 puntos). Tamizaje positivo si el puntaje es ≥ 15.</Text>
-                  <Field label="Puntaje total (8–24)">
-                    <TextInput style={styles.input} placeholder="0" keyboardType="numeric" value={vioPuntaje} onChangeText={setVioPuntaje} />
-                  </Field>
-                  <Field label="Observaciones (opcional)">
-                    <TextInput style={[styles.input, { height: 70 }]} placeholder="Notas..." multiline value={vioObs} onChangeText={setVioObs} />
-                  </Field>
-                </>
-              )}
+          {openForm === 'nutricion' && (
+            <>
+              <Field label="Historial alimentario (opcional)">
+                <TextInput style={[styles.input, { height: 70 }]} placeholder="Describe la alimentación habitual..." placeholderTextColor={commonColors.textTertiary} multiline value={nutHist} onChangeText={setNutHist} />
+              </Field>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Consume alimentos de origen animal</Text>
+                <Switch value={nutAnimales} onValueChange={setNutAnimales} trackColor={{ true: PINK }} />
+              </View>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Consume menestras</Text>
+                <Switch value={nutMenestras} onValueChange={setNutMenestras} trackColor={{ true: PINK }} />
+              </View>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Consume frutas y verduras</Text>
+                <Switch value={nutFrutas} onValueChange={setNutFrutas} trackColor={{ true: PINK }} />
+              </View>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Usa sal yodada</Text>
+                <Switch value={nutSal} onValueChange={setNutSal} trackColor={{ true: PINK }} />
+              </View>
+              <Field label="Acuerdos (opcional)">
+                <TextInput style={[styles.input, { height: 70 }]} placeholder="Acuerdos con la gestante..." placeholderTextColor={commonColors.textTertiary} multiline value={nutAcuerdos} onChangeText={setNutAcuerdos} />
+              </Field>
+            </>
+          )}
 
-              {openForm === 'nutricion' && (
-                <>
-                  <Field label="Historial alimentario (opcional)">
-                    <TextInput style={[styles.input, { height: 70 }]} placeholder="Describe la alimentación habitual..." multiline value={nutHist} onChangeText={setNutHist} />
-                  </Field>
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Consume alimentos de origen animal</Text>
-                    <Switch value={nutAnimales} onValueChange={setNutAnimales} trackColor={{ true: PINK }} />
-                  </View>
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Consume menestras</Text>
-                    <Switch value={nutMenestras} onValueChange={setNutMenestras} trackColor={{ true: PINK }} />
-                  </View>
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Consume frutas y verduras</Text>
-                    <Switch value={nutFrutas} onValueChange={setNutFrutas} trackColor={{ true: PINK }} />
-                  </View>
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Usa sal yodada</Text>
-                    <Switch value={nutSal} onValueChange={setNutSal} trackColor={{ true: PINK }} />
-                  </View>
-                  <Field label="Acuerdos (opcional)">
-                    <TextInput style={[styles.input, { height: 70 }]} placeholder="Acuerdos con la gestante..." multiline value={nutAcuerdos} onChangeText={setNutAcuerdos} />
-                  </Field>
-                </>
-              )}
-
-              {openForm === 'peso' && (
-                <>
-                  <Field label="Semana gestacional">
-                    <TextInput style={styles.input} placeholder="Ej. 20" keyboardType="numeric" value={pesoSemana} onChangeText={setPesoSemana} />
-                  </Field>
-                  <Field label="Peso (kg)">
-                    <TextInput style={styles.input} placeholder="Ej. 62.5" keyboardType="numeric" value={pesoKg} onChangeText={setPesoKg} />
-                  </Field>
-                </>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={closeAndReset} disabled={isSaving}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveBtn}
-                disabled={isSaving}
-                onPress={() => {
-                  if (openForm === 'patologia') guardarPatologia();
-                  else if (openForm === 'mental') guardarMental();
-                  else if (openForm === 'violencia') guardarViolencia();
-                  else if (openForm === 'nutricion') guardarNutricion();
-                  else if (openForm === 'peso') guardarPeso();
-                }}
-              >
-                {isSaving ? <ActivityIndicator color={obstetraColors.onPrimary} size="small" /> : <Text style={styles.saveBtnText}>Guardar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
+          {openForm === 'peso' && (
+            <>
+              <Field label="Semana gestacional">
+                <TextInput style={styles.input} placeholder="Ej. 20" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={pesoSemana} onChangeText={setPesoSemana} />
+              </Field>
+              <Field label="Peso (kg)">
+                <TextInput style={styles.input} placeholder="Ej. 62.5" placeholderTextColor={commonColors.textTertiary} keyboardType="numeric" value={pesoKg} onChangeText={setPesoKg} />
+              </Field>
+            </>
+          )}
         </View>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

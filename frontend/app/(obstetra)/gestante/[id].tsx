@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, Dimensions,
-  StatusBar, Platform, Modal, TextInput, Alert, ActivityIndicator
+  StatusBar, Platform, TextInput, Alert
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -11,6 +11,7 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { AppModal, AppButton } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -651,268 +652,241 @@ export default function PatientProfileScreen(): React.ReactElement {
       </View>
 
       {/* ── MODAL: REGISTRAR EXAMEN ── */}
-      <Modal
+      <AppModal
         visible={isLabModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsLabModalVisible(false)}
+        onClose={() => setIsLabModalVisible(false)}
+        title="Registrar Examen de Laboratorio"
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsLabModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSaveLab} style={{ flex: 1 }} themeColor={BRAND} disabled={isSavingLab} loading={isSavingLab} />
+          </>
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Registrar Examen de Laboratorio</Text>
-            
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Tipo de Examen</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. Hemoglobina, Glucemia, VIH..."
-                  value={labTipo}
-                  onChangeText={setLabTipo}
-                />
-              </View>
+        <View style={{ gap: 14 }}>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Tipo de Examen</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Hemoglobina, Glucemia, VIH..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={labTipo}
+              onChangeText={setLabTipo}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Número de Toma</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 1, 2, 3"
-                  keyboardType="numeric"
-                  value={labToma}
-                  onChangeText={setLabToma}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Número de Toma</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 1, 2, 3"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="numeric"
+              value={labToma}
+              onChangeText={setLabToma}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Valor Numérico (Opcional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 11.5"
-                  keyboardType="numeric"
-                  value={labValorNum}
-                  onChangeText={setLabValorNum}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Valor Numérico (Opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 11.5"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="numeric"
+              value={labValorNum}
+              onChangeText={setLabValorNum}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Valor Texto (Opcional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. Normal, Reactivo..."
-                  value={labValorText}
-                  onChangeText={setLabValorText}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Valor Texto (Opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Normal, Reactivo..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={labValorText}
+              onChangeText={setLabValorText}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Unidad (Opcional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. g/dL, mg/dL"
-                  value={labUnidad}
-                  onChangeText={setLabUnidad}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Unidad (Opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. g/dL, mg/dL"
+              placeholderTextColor={commonColors.textTertiary}
+              value={labUnidad}
+              onChangeText={setLabUnidad}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Resultado (Opcional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. Normal, Anemia Leve..."
-                  value={labResultado}
-                  onChangeText={setLabResultado}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Resultado (Opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Normal, Anemia Leve..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={labResultado}
+              onChangeText={setLabResultado}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Observaciones</Text>
-                <TextInput
-                  style={[styles.textInput, { height: 80 }]}
-                  placeholder="Notas adicionales..."
-                  multiline
-                  value={labObs}
-                  onChangeText={setLabObs}
-                />
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsLabModalVisible(false)}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveLab} disabled={isSavingLab}>
-                {isSavingLab ? (
-                  <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Guardar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Observaciones</Text>
+            <TextInput
+              style={[styles.textInput, { height: 80 }]}
+              placeholder="Notas adicionales..."
+              placeholderTextColor={commonColors.textTertiary}
+              multiline
+              value={labObs}
+              onChangeText={setLabObs}
+            />
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* ── MODAL: REGISTRAR VACUNA ── */}
-      <Modal
+      <AppModal
         visible={isVaxModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsVaxModalVisible(false)}
+        onClose={() => setIsVaxModalVisible(false)}
+        title="Registrar Vacunación"
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsVaxModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSaveVax} style={{ flex: 1 }} themeColor={BRAND} disabled={isSavingVax} loading={isSavingVax} />
+          </>
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Registrar Vacunación</Text>
-            
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Nombre de la Vacuna</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. Influenza, Tétanos..."
-                  value={vaxNombre}
-                  onChangeText={setVaxNombre}
-                />
-              </View>
+        <View style={{ gap: 14 }}>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Nombre de la Vacuna</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Influenza, Tétanos..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={vaxNombre}
+              onChangeText={setVaxNombre}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Número de Dosis</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 1, 2"
-                  keyboardType="numeric"
-                  value={vaxDosis}
-                  onChangeText={setVaxDosis}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Número de Dosis</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 1, 2"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="numeric"
+              value={vaxDosis}
+              onChangeText={setVaxDosis}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Semanas de Embarazo Aplicación</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 20"
-                  keyboardType="numeric"
-                  value={vaxSemana}
-                  onChangeText={setVaxSemana}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Semanas de Embarazo Aplicación</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 20"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="numeric"
+              value={vaxSemana}
+              onChangeText={setVaxSemana}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Estado</Text>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  {['aplicada', 'pendiente'].map((est) => (
-                    <TouchableOpacity
-                      key={est}
-                      style={[
-                        styles.textInput,
-                        { flex: 1, alignItems: 'center' },
-                        vaxEstado === est && { borderColor: BRAND, backgroundColor: obstetraColors.primaryLight }
-                      ]}
-                      onPress={() => setVaxEstado(est)}
-                    >
-                      <Text style={[vaxEstado === est && { color: BRAND, fontWeight: 'bold' }]}>
-                        {est.toUpperCase()}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsVaxModalVisible(false)}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveVax} disabled={isSavingVax}>
-                {isSavingVax ? (
-                  <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Guardar</Text>
-                )}
-              </TouchableOpacity>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Estado</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {['aplicada', 'pendiente'].map((est) => (
+                <TouchableOpacity
+                  key={est}
+                  style={[
+                    styles.textInput,
+                    { flex: 1, alignItems: 'center' },
+                    vaxEstado === est && { borderColor: BRAND, backgroundColor: obstetraColors.primaryLight }
+                  ]}
+                  onPress={() => setVaxEstado(est)}
+                >
+                  <Text style={[vaxEstado === est && { color: BRAND, fontWeight: 'bold' }]}>
+                    {est.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* ── MODAL: REGISTRAR TRATAMIENTO ── */}
-      <Modal
+      <AppModal
         visible={isTreatModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsTreatModalVisible(false)}
+        onClose={() => setIsTreatModalVisible(false)}
+        title="Asignar Tratamiento"
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsTreatModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Asignar" onPress={handleSaveTreat} style={{ flex: 1 }} themeColor={BRAND} disabled={isSavingTreat} loading={isSavingTreat} />
+          </>
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Asignar Tratamiento</Text>
-            
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Medicamento</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. Sulfato Ferroso + Ácido Fólico"
-                  value={treatNombre}
-                  onChangeText={setTreatNombre}
-                />
-              </View>
+        <View style={{ gap: 14 }}>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Medicamento</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Sulfato Ferroso + Ácido Fólico"
+              placeholderTextColor={commonColors.textTertiary}
+              value={treatNombre}
+              onChangeText={setTreatNombre}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Dosis</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 1 tableta, 60mg"
-                  value={treatDosis}
-                  onChangeText={setTreatDosis}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Dosis</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 1 tableta, 60mg"
+              placeholderTextColor={commonColors.textTertiary}
+              value={treatDosis}
+              onChangeText={setTreatDosis}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Frecuencia</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. Diario, Cada 8 horas"
-                  value={treatFrecuencia}
-                  onChangeText={setTreatFrecuencia}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Frecuencia</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. Diario, Cada 8 horas"
+              placeholderTextColor={commonColors.textTertiary}
+              value={treatFrecuencia}
+              onChangeText={setTreatFrecuencia}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Horario de Recordatorio</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 08:00"
-                  value={treatHora}
-                  onChangeText={setTreatHora}
-                />
-              </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Horario de Recordatorio</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 08:00"
+              placeholderTextColor={commonColors.textTertiary}
+              value={treatHora}
+              onChangeText={setTreatHora}
+            />
+          </View>
 
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Duración (Días)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ej. 30"
-                  keyboardType="numeric"
-                  value={treatDuracion}
-                  onChangeText={setTreatDuracion}
-                />
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsTreatModalVisible(false)}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveTreat} disabled={isSavingTreat}>
-                {isSavingTreat ? (
-                  <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Asignar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Duración (Días)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej. 30"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="numeric"
+              value={treatDuracion}
+              onChangeText={setTreatDuracion}
+            />
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

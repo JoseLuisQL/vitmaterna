@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { ProgressChart, LineChart } from 'react-native-chart-kit';
+import { CircularProgress } from '../../../src/components/ui';
+import { LineChart } from 'react-native-chart-kit';
 import { gestanteColors, commonColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
@@ -20,7 +21,6 @@ const hexToRgba = (hex: string) => {
 };
 
 const brandColor = hexToRgba(gestanteColors.primary);
-const textColor = hexToRgba(commonColors.text);
 const textSecondaryColor = hexToRgba(commonColors.textSecondary);
 
 interface AdherenceReport {
@@ -49,11 +49,6 @@ export default function MiProgresoScreen() {
 
   const adherence = data?.adherencePercentage || 0;
   const history = data?.history || [];
-
-  const chartData = {
-    labels: ['Adherencia'],
-    data: [adherence / 100],
-  };
 
   const lineChartData = {
     labels: history.slice(-7).map(h => h.date.substring(5, 10)),
@@ -84,25 +79,12 @@ export default function MiProgresoScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Adherencia General</Text>
           <View style={styles.chartContainer}>
-            <ProgressChart
-              data={chartData}
-              width={screenWidth - 48}
-              height={200}
-              strokeWidth={20}
-              radius={80}
-              chartConfig={{
-                backgroundColor: commonColors.surface,
-                backgroundGradientFrom: commonColors.surface,
-                backgroundGradientTo: commonColors.surface,
-                color: brandColor,
-                labelColor: textColor,
-                propsForLabels: {
-                  fontFamily: typography.bodyMedium.fontFamily,
-                  fontSize: 14,
-                  fontWeight: '700'
-                }
-              }}
-              hideLegend={false}
+            <CircularProgress
+              value={adherence}
+              size={180}
+              strokeWidth={16}
+              color={BRAND}
+              sublabel="adherencia"
             />
           </View>
           <View style={styles.summaryBox}>

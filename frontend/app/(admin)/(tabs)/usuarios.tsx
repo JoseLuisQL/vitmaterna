@@ -3,12 +3,13 @@
  * Fetch and display all users with options to view detail and activate/deactivate.
  */
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TextInput, Modal, ScrollView, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TextInput, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, X, LogOut } from 'lucide-react-native';
+import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, LogOut } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { AppModal, AppButton } from '../../../src/components/ui';
 import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -273,22 +274,12 @@ export default function UsuariosScreen(): React.ReactElement {
     };
 
     return (
-      <Modal
+      <AppModal
         visible={isDetailModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsDetailModalVisible(false)}
+        onClose={() => setIsDetailModalVisible(false)}
+        title="Detalle de Usuario"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalHeader}>Detalle de Usuario</Text>
-              <TouchableOpacity onPress={() => setIsDetailModalVisible(false)} style={styles.closeBtn}>
-                <X size={24} color={commonColors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 20 }}>
+        <View style={{ gap: 20 }}>
               {/* Profile card summary */}
               <View style={styles.detailUserSummaryCard}>
                 <View style={[
@@ -377,10 +368,8 @@ export default function UsuariosScreen(): React.ReactElement {
                   </Text>
                 )}
               </TouchableOpacity>
-            </ScrollView>
-          </View>
         </View>
-      </Modal>
+      </AppModal>
     );
   };
 
@@ -413,142 +402,122 @@ export default function UsuariosScreen(): React.ReactElement {
       </TouchableOpacity>
 
       {/* MODAL: CREATE USER */}
-      <Modal
+      <AppModal
         visible={isCreateModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsCreateModalVisible(false)}
+        onClose={() => setIsCreateModalVisible(false)}
+        title="Crear Nuevo Usuario"
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsCreateModalVisible(false)} style={{ flex: 1 }} disabled={isCreating} />
+            <AppButton title="Guardar Usuario" onPress={handleCreateSubmit} style={{ flex: 1 }} themeColor={BRAND} disabled={isCreating} loading={isCreating} />
+          </>
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalHeader}>Crear Nuevo Usuario</Text>
-              <TouchableOpacity onPress={() => setIsCreateModalVisible(false)} style={styles.closeBtn}>
-                <X size={24} color={commonColors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Rol del Usuario</Text>
-                <View style={styles.roleTabs}>
-                  {['obstetra', 'admin', 'gestante'].map((r) => (
-                    <TouchableOpacity
-                      key={r}
-                      style={[styles.roleTab, role === r && styles.roleTabActive]}
-                      onPress={() => setRole(r)}
-                    >
-                      <Text style={[styles.roleTabText, role === r && styles.roleTabTextActive]}>
-                        {r.toUpperCase()}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>DNI (8 dígitos) *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. 44556677"
-                  keyboardType="numeric"
-                  maxLength={8}
-                  value={dni}
-                  onChangeText={setDni}
-                />
-              </View>
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Nombres *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. Juan Pablo"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                />
-              </View>
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Apellidos *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. Pérez Gómez"
-                  value={lastName}
-                  onChangeText={setLastName}
-                />
-              </View>
-
-              {role === 'obstetra' && (
-                <View style={styles.inputFieldGroup}>
-                  <Text style={styles.inputLabel}>Número de COP *</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="ej. 12345"
-                    keyboardType="numeric"
-                    value={cop}
-                    onChangeText={setCop}
-                  />
-                </View>
-              )}
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Teléfono (ej. +51999888777)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. +51999888777"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={setPhone}
-                />
-              </View>
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Correo Electrónico (Opcional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="ej. correo@servidor.com"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
-
-              <View style={styles.inputFieldGroup}>
-                <Text style={styles.inputLabel}>Contraseña *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Mínimo 8 caracteres"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.cancelBtn} 
-                onPress={() => setIsCreateModalVisible(false)}
-                disabled={isCreating}
-              >
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.saveBtn} 
-                onPress={handleCreateSubmit} 
-                disabled={isCreating}
-              >
-                {isCreating ? (
-                  <ActivityIndicator color={commonColors.white} size="small" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Guardar Usuario</Text>
-                )}
-              </TouchableOpacity>
+        <View style={{ gap: 14 }}>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Rol del Usuario</Text>
+            <View style={styles.roleTabs}>
+              {['obstetra', 'admin', 'gestante'].map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.roleTab, role === r && styles.roleTabActive]}
+                  onPress={() => setRole(r)}
+                >
+                  <Text style={[styles.roleTabText, role === r && styles.roleTabTextActive]}>
+                    {r.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
+
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>DNI (8 dígitos) *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. 44556677"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="numeric"
+              maxLength={8}
+              value={dni}
+              onChangeText={setDni}
+            />
+          </View>
+
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Nombres *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. Juan Pablo"
+              placeholderTextColor={commonColors.textTertiary}
+              value={firstName}
+              onChangeText={setFirstName}
+            />
+          </View>
+
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Apellidos *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. Pérez Gómez"
+              placeholderTextColor={commonColors.textTertiary}
+              value={lastName}
+              onChangeText={setLastName}
+            />
+          </View>
+
+          {role === 'obstetra' && (
+            <View style={styles.inputFieldGroup}>
+              <Text style={styles.inputLabel}>Número de COP *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="ej. 12345"
+                placeholderTextColor={commonColors.textTertiary}
+                keyboardType="numeric"
+                value={cop}
+                onChangeText={setCop}
+              />
+            </View>
+          )}
+
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Teléfono (ej. +51999888777)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. +51999888777"
+              placeholderTextColor={commonColors.textTertiary}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+          </View>
+
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Correo Electrónico (Opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. correo@servidor.com"
+              placeholderTextColor={commonColors.textTertiary}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Contraseña *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Mínimo 8 caracteres"
+              placeholderTextColor={commonColors.textTertiary}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* MODAL: DETAIL USER */}
       {renderDetailModal()}

@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
-  Modal,
   TextInput
 } from 'react-native';
+import { AppModal, AppButton } from '../../../src/components/ui';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -349,64 +349,52 @@ export default function AppointmentsScreen() {
         }
       />
 
-      <Modal
+      <AppModal
         visible={rescheduleModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setRescheduleModalVisible(false)}
+        onClose={() => setRescheduleModalVisible(false)}
+        title="Reprogramar cita"
+        subtitle="Indica la nueva fecha, hora y el motivo."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setRescheduleModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleReschedule} style={{ flex: 1 }} themeColor={BRAND} />
+          </>
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Reprogramar Cita</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nueva Fecha (YYYY-MM-DD)</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Ej. 2026-06-15"
-                value={rescheduleData.fecha}
-                onChangeText={(text) => setRescheduleData({...rescheduleData, fecha: text})}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nueva Hora (HH:MM)</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Ej. 10:30"
-                value={rescheduleData.hora}
-                onChangeText={(text) => setRescheduleData({...rescheduleData, hora: text})}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Motivo de Reprogramación</Text>
-              <TextInput
-                style={[styles.modalInput, { height: 80 }]}
-                placeholder="Agrega el motivo brevemente"
-                multiline
-                value={rescheduleData.motivoReprogramacion}
-                onChangeText={(text) => setRescheduleData({...rescheduleData, motivoReprogramacion: text})}
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.modalBtnCancel} 
-                onPress={() => setRescheduleModalVisible(false)}
-              >
-                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.modalBtnSubmit} 
-                onPress={handleReschedule}
-              >
-                <Text style={styles.modalBtnSubmitText}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Nueva Fecha (YYYY-MM-DD)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Ej. 2026-06-15"
+            placeholderTextColor={commonColors.textTertiary}
+            value={rescheduleData.fecha}
+            onChangeText={(text) => setRescheduleData({...rescheduleData, fecha: text})}
+          />
         </View>
-      </Modal>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Nueva Hora (HH:MM)</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Ej. 10:30"
+            placeholderTextColor={commonColors.textTertiary}
+            value={rescheduleData.hora}
+            onChangeText={(text) => setRescheduleData({...rescheduleData, hora: text})}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Motivo de Reprogramación</Text>
+          <TextInput
+            style={[styles.modalInput, { height: 80 }]}
+            placeholder="Agrega el motivo brevemente"
+            placeholderTextColor={commonColors.textTertiary}
+            multiline
+            value={rescheduleData.motivoReprogramacion}
+            onChangeText={(text) => setRescheduleData({...rescheduleData, motivoReprogramacion: text})}
+          />
+        </View>
+      </AppModal>
 
     </SafeAreaView>
   );
