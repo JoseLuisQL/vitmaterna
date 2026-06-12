@@ -148,6 +148,7 @@ export class AppointmentService {
       numeroControl?: number;
       egSemanas?: number;
       observaciones?: string;
+      modalidad?: 'establecimiento' | 'domiciliaria';
     },
     userContext?: RequestUser,
   ) {
@@ -171,7 +172,11 @@ export class AppointmentService {
       }
     }
 
-    // Validar horario laboral.
+    const esDomiciliaria = data.modalidad === 'domiciliaria';
+
+    // Validar horario laboral (también aplica a domiciliarias: el obstetra
+    // trabaja en horario; pero no se valida disponibilidad de slot porque la
+    // visita es en terreno y puede solaparse con la agenda del consultorio).
     if (!isWithinWorkingHours(data.hora)) {
       throw new AppError(
         400,
@@ -183,20 +188,23 @@ export class AppointmentService {
     const fechaObj = new Date(`${data.fecha}T00:00:00.000Z`);
     const horaObj = new Date(`1970-01-01T${data.hora}:00.000Z`);
 
-    // Evitar doble booking del mismo obstetra.
-    await this.assertSlotAvailable(fechaObj, horaObj, obstetraIdToSave);
+    // Evitar doble booking del mismo obstetra SOLO en citas de establecimiento.
+    if (!esDomiciliaria) {
+      await this.assertSlotAvailable(fechaObj, horaObj, obstetraIdToSave);
+    }
 
     return prisma.appointment.create({
       data: {
         gestanteId: data.gestanteId,
         obstetraId: obstetraIdToSave,
-        motivo: data.motivo || 'Control prenatal',
+        motivo: data.motivo || (esDomiciliaria ? 'Visita domiciliaria' : 'Control prenatal'),
         fecha: fechaObj,
         hora: horaObj,
         numeroControl: data.numeroControl,
         egSemanas: data.egSemanas,
         observaciones: data.observaciones,
         estado: EstadoCita.programada,
+        modalidad: esDomiciliaria ? 'domiciliaria' : 'establecimiento',
       },
     });
   }
@@ -207,6 +215,7 @@ export class AppointmentService {
       obstetraId?: string;
       fecha?: string;
       estado?: EstadoCita;
+      modalidad?: 'establecimiento' | 'domiciliaria';
     },
     userContext?: RequestUser,
   ) {
@@ -231,6 +240,7 @@ export class AppointmentService {
 
     if (filters.fecha) where.fecha = new Date(`${filters.fecha}T00:00:00.000Z`);
     if (filters.estado) where.estado = filters.estado;
+    if ((filters as any).modalidad) where.modalidad = (filters as any).modalidad;
 
     return prisma.appointment.findMany({
       where,
@@ -371,6 +381,55 @@ export class AppointmentService {
       where: { id },
       data: { estado },
     });
+  }
+
+  /**
+   * Convierte una cita de establecimiento en VISITA DOMICILIARIA (cuando la
+   * gestante no puede acudir). Solo obstetra/admin. Notifica a la gestante.
+   */
+  async convertToHome(id: string, observaciones: string | undefined, userContext?: RequestUser) {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { gestante: { include: { user: true } } },
+    });
+    if (!appointment || appointment.deletedAt) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Cita no encontrada');
+    }
+
+    const actor = await resolveActor(userContext);
+    await assertCanAccessAppointment(appointment, actor);
+
+    const convertibles: EstadoCita[] = [EstadoCita.programada, EstadoCita.confirmada];
+    if (!convertibles.includes(appointment.estado)) {
+      throw new AppError(
+        409,
+        ErrorCodes.CONFLICT,
+        `Solo se puede convertir a domiciliaria una cita programada o confirmada (estado: "${appointment.estado}").`,
+      );
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        modalidad: 'domiciliaria',
+        motivo: appointment.motivo?.toLowerCase().includes('domicil') ? appointment.motivo : 'Visita domiciliaria',
+        observaciones: observaciones ?? appointment.observaciones,
+      },
+    });
+
+    // Notificar a la gestante.
+    const gestanteUserId = appointment.gestante?.user?.id;
+    if (gestanteUserId) {
+      await notifyUser(
+        gestanteUserId,
+        'cita_domiciliaria',
+        'Tu cita será domiciliaria',
+        `Tu obstetra te visitará en tu domicilio el ${fmtFecha(appointment.fecha)} a las ${timeFromDate(appointment.hora)}. Coordina la visita.`,
+        { appointmentId: id },
+      );
+    }
+
+    return updated;
   }
 
   /**

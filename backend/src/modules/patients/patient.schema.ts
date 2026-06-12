@@ -33,6 +33,17 @@ export const buscarPatientSchema = {
   }),
 };
 
+export const updateUbicacionSchema = {
+  params: z.object({
+    id: z.string().uuid('El ID de la gestante debe ser un UUID válido'),
+  }),
+  body: z.object({
+    domicilioLat: z.number().min(-90).max(90),
+    domicilioLng: z.number().min(-180).max(180),
+    referenciaDom: z.string().optional(),
+  }),
+};
+
 export const updatePatientSchema = {
   params: z.object({
     id: z.string().uuid('El ID de la gestante debe ser un UUID válido'),
@@ -47,6 +58,9 @@ export const updatePatientSchema = {
     ageAtRegistration: z.number().nullable().optional(),
     direccion: z.string().nullable().optional(),
     localidad: z.string().nullable().optional(),
+    domicilioLat: z.number().min(-90).max(90).nullable().optional(),
+    domicilioLng: z.number().min(-180).max(180).nullable().optional(),
+    referenciaDom: z.string().nullable().optional(),
     departamento: z.string().nullable().optional(),
     provincia: z.string().nullable().optional(),
     distrito: z.string().nullable().optional(),

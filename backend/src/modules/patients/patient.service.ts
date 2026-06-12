@@ -285,6 +285,35 @@ export class PatientService {
     }
   }
 
+  /**
+   * Registra/actualiza la ubicación GPS del domicilio de la gestante (para que
+   * el obstetra pueda ubicarla en visitas domiciliarias).
+   */
+  async updateUbicacion(
+    id: string,
+    data: { domicilioLat: number; domicilioLng: number; referenciaDom?: string },
+    userContext?: { userId: string; role: string },
+  ) {
+    const gestante = await prisma.gestante.findUnique({ where: { id } });
+    if (!gestante) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
+    }
+    // Una gestante solo puede actualizar SU propia ubicación.
+    if (userContext?.role === 'gestante' && gestante.userId !== userContext.userId) {
+      throw new AppError(403, ErrorCodes.FORBIDDEN, 'No puedes modificar la ubicación de otra gestante');
+    }
+    const updated = await prisma.gestante.update({
+      where: { id },
+      data: {
+        domicilioLat: data.domicilioLat,
+        domicilioLng: data.domicilioLng,
+        ...(data.referenciaDom !== undefined && { referenciaDom: data.referenciaDom }),
+      },
+      include: { user: { select: { dni: true, firstName: true, lastName: true, phone: true, email: true } } },
+    });
+    return normalizePatient(updated);
+  }
+
   async updatePatient(id: string, data: any) {
     // 1. Check if gestante exists
     const currentGestante = await prisma.gestante.findUnique({

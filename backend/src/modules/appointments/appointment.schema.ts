@@ -10,6 +10,16 @@ export const createAppointmentSchema = {
     numeroControl: z.number().int().positive().optional(),
     egSemanas: z.number().int().nonnegative().optional(),
     observaciones: z.string().optional(),
+    modalidad: z.enum(['establecimiento', 'domiciliaria']).optional().default('establecimiento'),
+  }),
+};
+
+export const convertToHomeSchema = {
+  params: z.object({
+    id: z.string().uuid('El ID de la cita debe ser un UUID válido'),
+  }),
+  body: z.object({
+    observaciones: z.string().optional(),
   }),
 };
 
@@ -49,6 +59,7 @@ export const getAppointmentsSchema = {
     obstetraId: z.string().uuid().optional(),
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     estado: z.enum(['programada', 'confirmada', 'asistida', 'no_asistida', 'reprogramada', 'cancelada']).optional(),
+    modalidad: z.enum(['establecimiento', 'domiciliaria']).optional(),
   }).passthrough(),
 };
 

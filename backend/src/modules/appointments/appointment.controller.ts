@@ -51,6 +51,19 @@ export const updateAppointmentStatus = async (req: Request, res: Response, next:
   }
 };
 
+export const convertToHome = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await appointmentService.convertToHome(
+      req.params.id as string,
+      req.body?.observaciones,
+      req.user,
+    );
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const confirmAppointment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await appointmentService.confirm(req.params.id as string, req.user);

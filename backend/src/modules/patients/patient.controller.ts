@@ -50,3 +50,12 @@ export const updatePatient = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+
+export const updateUbicacion = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await patientService.updateUbicacion(req.params.id as string, req.body, req.user);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};

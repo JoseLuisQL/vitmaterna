@@ -29,6 +29,13 @@ patientRoutes.get(
   controller.getPatientById
 );
 
+// Ubicación GPS del domicilio (la gestante puede registrar la suya; obstetra/admin también).
+patientRoutes.patch(
+  '/:id/ubicacion',
+  validate(schema.updateUbicacionSchema),
+  controller.updateUbicacion
+);
+
 patientRoutes.patch(
   '/:id',
   validate(schema.updatePatientSchema),

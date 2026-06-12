@@ -127,6 +127,9 @@ model Gestante {
   ageAtRegistration  Int?            @map("age_at_registration")
   direccion          String?
   localidad          String?         @db.VarChar(100)
+  domicilioLat       Decimal?        @map("domicilio_lat") @db.Decimal(10, 7)
+  domicilioLng       Decimal?        @map("domicilio_lng") @db.Decimal(10, 7)
+  referenciaDom      String?         @map("referencia_domicilio")
   departamento       String?         @default("Apurimac") @db.VarChar(50)
   provincia          String?         @default("Andahuaylas") @db.VarChar(50)
   distrito           String?         @default("Talavera") @db.VarChar(50)
@@ -205,6 +208,7 @@ model Gestante {
   nutritionalCounselings  NutritionalCounseling[]
   dentalRecords           DentalRecord[]
   conversations           Conversation[]
+  homeVisits              HomeVisit[]
 
   @@index([userId], map: "idx_gestantes_user")
   @@map("gestantes")
@@ -251,6 +255,7 @@ model Obstetra {
   mentalHealthScreenings MentalHealthScreening[]
   nutritionalCounselings NutritionalCounseling[]
   conversations      Conversation[]
+  homeVisits         HomeVisit[]
 
   @@index([userId], map: "idx_obstetras_user")
   @@map("obstetras")
@@ -270,6 +275,11 @@ enum EstadoCita {
   cancelada
 }
 
+enum ModalidadCita {
+  establecimiento
+  domiciliaria
+}
+
 model Appointment {
   id                    String     @id @default(uuid()) @db.Uuid
   gestanteId            String     @map("gestante_id") @db.Uuid
@@ -279,6 +289,7 @@ model Appointment {
   hora                  DateTime   @db.Time()
   estado                EstadoCita @default(programada)
   estadoPrevio          EstadoCita? @map("estado_previo")
+  modalidad             ModalidadCita @default(establecimiento)
   numeroControl         Int?       @map("numero_control")
   egSemanas             Int?       @map("eg_semanas")
   motivoReprogramacion  String?    @map("motivo_reprogramacion")
@@ -297,11 +308,44 @@ model Appointment {
   gestante        Gestante          @relation(fields: [gestanteId], references: [id])
   obstetra        Obstetra?         @relation(fields: [obstetraId], references: [id])
   prenatalControls PrenatalControl[]
+  homeVisits       HomeVisit[]
 
   @@index([gestanteId, fecha], map: "idx_appointments_gestante")
   @@index([obstetraId, fecha], map: "idx_appointments_obstetra")
   @@index([estado], map: "idx_appointments_estado")
   @@map("appointments")
+}
+
+// Acta de visita domiciliaria (formato MINSA): seguimiento de consumo de
+// micronutrientes/SOFE, plan de parto, consejería. Vinculada opcionalmente a la
+// cita domiciliaria que la originó.
+model HomeVisit {
+  id            String    @id @default(uuid()) @db.Uuid
+  gestanteId    String    @map("gestante_id") @db.Uuid
+  obstetraId    String    @map("obstetra_id") @db.Uuid
+  appointmentId String?   @map("appointment_id") @db.Uuid
+  numeroVisita  Int       @map("numero_visita")
+  fecha         DateTime  @db.Date
+  horaLlegada   DateTime? @map("hora_llegada") @db.Time()
+  duracionMin   Int?      @map("duracion_min")
+  motivo        String    @db.VarChar(300)
+  acciones      String
+  acuerdos      String?
+  lat           Decimal?  @db.Decimal(10, 7)
+  lng           Decimal?  @db.Decimal(10, 7)
+  firmaGestante Boolean   @default(false) @map("firma_gestante")
+  firmaObstetra Boolean   @default(false) @map("firma_obstetra")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  gestante    Gestante     @relation(fields: [gestanteId], references: [id])
+  obstetra    Obstetra     @relation(fields: [obstetraId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([gestanteId, fecha], map: "idx_home_visits_gestante")
+  @@index([obstetraId], map: "idx_home_visits_obstetra")
+  @@map("home_visits")
 }
 
 // ============================================

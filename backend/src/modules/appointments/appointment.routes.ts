@@ -42,6 +42,14 @@ appointmentRoutes.patch(
   controller.updateAppointmentStatus
 );
 
+// El obstetra convierte una cita en visita domiciliaria.
+appointmentRoutes.patch(
+  '/:id/convertir-domiciliaria',
+  rbac('obstetra', 'admin'),
+  validate(schema.convertToHomeSchema),
+  controller.convertToHome
+);
+
 // La gestante confirma su cita (notifica al obstetra).
 appointmentRoutes.patch(
   '/:id/confirm',
