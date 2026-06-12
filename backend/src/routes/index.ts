@@ -17,6 +17,7 @@ import notificationRoutes from '../modules/notifications/notification.routes.js'
 import syncRoutes from '../modules/sync/sync.routes.js';
 import reportsRoutes from '../modules/reports/reports.routes.js';
 import chatRoutes from '../modules/chat/chat.routes.js';
+import homeVisitRoutes from '../modules/home-visits/home-visit.routes.js';
 import { adminRoutes } from '../modules/admin/admin.routes.js';
 
 // ---- Future modules will be mounted here ----
@@ -28,5 +29,6 @@ apiRouter.use('/education', educationRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/reports', reportsRoutes);
 apiRouter.use('/chat', chatRoutes);
+apiRouter.use('/home-visits', homeVisitRoutes);
 // apiRouter.use('/gestantes', gestanteRoutes);
 apiRouter.use('/admin', adminRoutes);

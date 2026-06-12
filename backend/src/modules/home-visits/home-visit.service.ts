@@ -1,0 +1,155 @@
+import { prisma } from '../../config/database.js';
+import { AppError, ErrorCodes } from '../../types/index.js';
+import type { RequestUser } from '../../types/index.js';
+import { EstadoCita } from '@prisma/client';
+import { notifyUser } from '../notifications/notification.service.js';
+
+/** Resuelve el id de perfil de obstetra a partir del usuario autenticado. */
+async function resolveObstetraId(userContext?: RequestUser): Promise<string | null> {
+  if (!userContext) return null;
+  if (userContext.role === 'obstetra') {
+    const o = await prisma.obstetra.findUnique({ where: { userId: userContext.userId }, select: { id: true } });
+    return o?.id ?? null;
+  }
+  return null;
+}
+
+export class HomeVisitService {
+  /**
+   * Registra el acta de una visita domiciliaria. El número de visita es un
+   * correlativo automático por gestante. Si viene appointmentId, marca la cita
+   * como asistida. Notifica a la gestante.
+   */
+  async create(
+    data: {
+      gestanteId: string;
+      appointmentId?: string;
+      fecha: string;
+      horaLlegada?: string;
+      duracionMin?: number;
+      motivo: string;
+      acciones: string;
+      acuerdos?: string;
+      lat?: number;
+      lng?: number;
+      firmaGestante?: boolean;
+      firmaObstetra?: boolean;
+    },
+    userContext?: RequestUser,
+  ) {
+    const gestante = await prisma.gestante.findUnique({
+      where: { id: data.gestanteId },
+      include: { user: { select: { id: true, firstName: true } } },
+    });
+    if (!gestante) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
+    }
+
+    // Resolver obstetra: del contexto o, si admin, del que envíe explícito.
+    let obstetraId = await resolveObstetraId(userContext);
+    if (!obstetraId) {
+      // admin: usar el obstetra de la última cita/visita de la gestante o el primero.
+      const lastAppt = await prisma.appointment.findFirst({
+        where: { gestanteId: data.gestanteId, obstetraId: { not: null } },
+        orderBy: { fecha: 'desc' },
+        select: { obstetraId: true },
+      });
+      obstetraId = lastAppt?.obstetraId ?? (await prisma.obstetra.findFirst({ select: { id: true } }))?.id ?? null;
+    }
+    if (!obstetraId) {
+      throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'No se pudo determinar el obstetra responsable');
+    }
+
+    // Correlativo automático por gestante.
+    const count = await prisma.homeVisit.count({ where: { gestanteId: data.gestanteId } });
+    const numeroVisita = count + 1;
+
+    const visit = await prisma.homeVisit.create({
+      data: {
+        gestanteId: data.gestanteId,
+        obstetraId,
+        appointmentId: data.appointmentId ?? null,
+        numeroVisita,
+        fecha: new Date(`${data.fecha}T00:00:00.000Z`),
+        horaLlegada: data.horaLlegada ? new Date(`1970-01-01T${data.horaLlegada}:00.000Z`) : null,
+        duracionMin: data.duracionMin ?? null,
+        motivo: data.motivo,
+        acciones: data.acciones,
+        acuerdos: data.acuerdos ?? null,
+        lat: data.lat ?? null,
+        lng: data.lng ?? null,
+        firmaGestante: data.firmaGestante ?? false,
+        firmaObstetra: data.firmaObstetra ?? false,
+      },
+    });
+
+    // Si la visita proviene de una cita, marcarla como asistida.
+    if (data.appointmentId) {
+      await prisma.appointment.updateMany({
+        where: { id: data.appointmentId, estado: { in: [EstadoCita.programada, EstadoCita.confirmada] } },
+        data: { estado: EstadoCita.asistida },
+      });
+    }
+
+    // Notificar a la gestante.
+    if (gestante.user?.id) {
+      await notifyUser(
+        gestante.user.id,
+        'visita_domiciliaria',
+        'Visita domiciliaria registrada',
+        `Tu obstetra registró la visita domiciliaria N°${numeroVisita}.`,
+        { homeVisitId: visit.id, numeroVisita },
+      );
+    }
+
+    return visit;
+  }
+
+  /** Historial de visitas de una gestante (con datos del obstetra para la firma). */
+  async listByGestante(gestanteId: string, userContext?: RequestUser) {
+    // La gestante solo puede ver las suyas.
+    if (userContext?.role === 'gestante') {
+      const g = await prisma.gestante.findUnique({ where: { userId: userContext.userId }, select: { id: true } });
+      if (!g || g.id !== gestanteId) {
+        throw new AppError(403, ErrorCodes.FORBIDDEN, 'No puedes ver estas visitas');
+      }
+    }
+
+    return prisma.homeVisit.findMany({
+      where: { gestanteId },
+      orderBy: { numeroVisita: 'asc' },
+      include: {
+        obstetra: {
+          select: { cop: true, user: { select: { firstName: true, lastName: true } } },
+        },
+      },
+    });
+  }
+
+  async update(id: string, data: Record<string, unknown>) {
+    const existing = await prisma.homeVisit.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Visita no encontrada');
+    }
+    const payload: Record<string, unknown> = {};
+    for (const k of ['motivo', 'acciones', 'acuerdos', 'duracionMin', 'lat', 'lng', 'firmaGestante', 'firmaObstetra']) {
+      if (data[k] !== undefined) payload[k] = data[k];
+    }
+    if (data.fecha !== undefined) payload.fecha = new Date(`${data.fecha as string}T00:00:00.000Z`);
+    if (data.horaLlegada !== undefined) {
+      payload.horaLlegada = data.horaLlegada ? new Date(`1970-01-01T${data.horaLlegada as string}:00.000Z`) : null;
+    }
+    return prisma.homeVisit.update({ where: { id }, data: payload });
+  }
+
+  async remove(id: string) {
+    const existing = await prisma.homeVisit.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Visita no encontrada');
+    }
+    await prisma.homeVisit.delete({ where: { id } });
+    return { deleted: true };
+  }
+}
+
+export const homeVisitService = new HomeVisitService();
