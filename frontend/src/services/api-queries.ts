@@ -29,6 +29,7 @@ const mapAppointment = (appt: any) => ({
   fechaReprogramada: appt.fechaReprogramada || null,
   horaReprogramada: appt.horaReprogramada || null,
   motivoReprogramacion: appt.motivoReprogramacion || null,
+  modalidad: appt.modalidad || 'establecimiento',
 });
 
 const mapPatient = (gestante: any) => {
@@ -91,6 +92,9 @@ const mapPatientProfile = (g: any) => {
     talla: g.talla || null,
     // Datos personales
     address: g.direccion || g.user?.address || null,
+    domicilioLat: g.domicilioLat != null ? Number(g.domicilioLat) : null,
+    domicilioLng: g.domicilioLng != null ? Number(g.domicilioLng) : null,
+    referenciaDom: g.referenciaDom || null,
     maritalStatus: g.estadoCivil || null,
     occupation: g.ocupacion || null,
     education: g.nivelEstudios || null,
@@ -736,6 +740,90 @@ export const useUpdateAppointmentStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['todayAppointments'] });
       queryClient.invalidateQueries({ queryKey: ['gestanteDashboard'] });
       queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
+    },
+  });
+};
+
+// ── Visita domiciliaria ──
+
+export interface HomeVisit {
+  id: string;
+  numeroVisita: number;
+  fecha: string;
+  horaLlegada?: string | null;
+  duracionMin?: number | null;
+  motivo: string;
+  acciones: string;
+  acuerdos?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  firmaGestante: boolean;
+  firmaObstetra: boolean;
+  obstetra?: { cop?: string; user?: { firstName: string; lastName: string } };
+}
+
+export const fetchHomeVisits = async (gestanteId: string): Promise<HomeVisit[]> => {
+  const res = await api.get(`/home-visits/${gestanteId}`);
+  return res.data?.data || [];
+};
+
+export const useHomeVisits = (gestanteId: string) =>
+  useQuery({ queryKey: ['homeVisits', gestanteId], queryFn: () => fetchHomeVisits(gestanteId), enabled: !!gestanteId });
+
+export const useCreateHomeVisit = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/home-visits', data);
+      return res.data;
+    },
+    onSuccess: (_, variables: any) => {
+      queryClient.invalidateQueries({ queryKey: ['homeVisits', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+};
+
+export const useDeleteHomeVisit = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; gestanteId: string }) => {
+      const res = await api.delete(`/home-visits/visit/${id}`);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['homeVisits', variables.gestanteId] });
+    },
+  });
+};
+
+/** El obstetra convierte una cita en visita domiciliaria. */
+export const useConvertToHomeVisit = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, observaciones }: { id: string; observaciones?: string }) => {
+      const res = await api.patch(`/appointments/${id}/convertir-domiciliaria`, { observaciones });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['todayAppointments'] });
+    },
+  });
+};
+
+/** Registra/actualiza la ubicación GPS del domicilio de la gestante. */
+export const useUpdateUbicacion = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, domicilioLat, domicilioLng, referenciaDom }: { id: string; domicilioLat: number; domicilioLng: number; referenciaDom?: string }) => {
+      const res = await api.patch(`/patients/${id}/ubicacion`, { domicilioLat, domicilioLng, referenciaDom });
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patient', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['myProfile'] });
     },
   });
 };

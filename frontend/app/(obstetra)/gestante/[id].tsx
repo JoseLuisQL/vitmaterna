@@ -6,8 +6,9 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Check, Plus, ClipboardList, Trash2, MoreVertical
+  Syringe, AlertTriangle, Activity, Check, Plus, ClipboardList, Trash2, MoreVertical, Home
 } from 'lucide-react-native';
+import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChart } from 'react-native-chart-kit';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -41,6 +42,7 @@ const TABS = [
   { id: 'tratamiento', label: 'Medicinas', icon: Pill },
   { id: 'laboratorio', label: 'Lab.', icon: FlaskConical },
   { id: 'vacunas', label: 'Vacunas', icon: Syringe },
+  { id: 'visitas', label: 'Visitas', icon: Home },
 ];
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
@@ -777,6 +779,15 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <Text style={styles.emptyTextInfo}>No hay vacunas en el esquema.</Text>
               )}
             </View>
+          )}
+
+          {activeTab === 'visitas' && (
+            <HomeVisitsTab
+              gestanteId={patient.id}
+              domicilioLat={patient.domicilioLat}
+              domicilioLng={patient.domicilioLng}
+              referenciaDom={patient.referenciaDom}
+            />
           )}
         </ScrollView>
       </View>

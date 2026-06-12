@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, Plus } from 'lucide-react-native';
+import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, Plus, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
@@ -14,6 +14,7 @@ import {
   useAppointments,
   useUpdateAppointmentStatus,
   useResolveReschedule,
+  useConvertToHomeVisit,
 } from '../../../src/services/api-queries';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
@@ -29,6 +30,7 @@ export default function CronogramaScreen(): React.ReactElement {
   const { data: allAppointments, isLoading, refetch, isRefetching } = useAppointments();
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
   const { mutate: resolveReschedule, isPending: isResolving } = useResolveReschedule();
+  const { mutate: convertToHome } = useConvertToHomeVisit();
 
   // Filter Logic natively matching backend returned data
   const processedAppointments = React.useMemo(() => {
@@ -120,6 +122,28 @@ export default function CronogramaScreen(): React.ReactElement {
 
     const isRescheduleRequest = item.status === 'solicitud_reprogramacion';
     const showActions = item.status === 'programada' || item.status === 'confirmada';
+    const esDomiciliaria = item.modalidad === 'domiciliaria';
+
+    const handleConvertir = () => {
+      Alert.alert(
+        'Convertir a visita domiciliaria',
+        'Se atenderá a la gestante en su domicilio. Se le notificará.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Convertir',
+            onPress: () =>
+              convertToHome(
+                { id: item.id },
+                {
+                  onSuccess: () => toast.success('Cita domiciliaria', 'La gestante fue notificada.'),
+                  onError: () => toast.error('No se pudo convertir', 'Inténtalo nuevamente.'),
+                },
+              ),
+          },
+        ],
+      );
+    };
 
     const fmtHora = (iso?: string | null) => {
       if (!iso) return '--:--';
@@ -164,8 +188,10 @@ export default function CronogramaScreen(): React.ReactElement {
           </View>
           <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
           <View style={styles.infoRow}>
-            <MapPin size={12} color={commonColors.textTertiary} />
-            <Text style={styles.infoText}>{item.location || 'Consultorio 102'}</Text>
+            {esDomiciliaria ? <Home size={12} color={BRAND} /> : <MapPin size={12} color={commonColors.textTertiary} />}
+            <Text style={[styles.infoText, esDomiciliaria && { color: BRAND, fontWeight: '700' }]}>
+              {esDomiciliaria ? 'Visita domiciliaria' : (item.location || 'Consultorio 102')}
+            </Text>
           </View>
 
           {isRescheduleRequest && (
@@ -193,6 +219,13 @@ export default function CronogramaScreen(): React.ReactElement {
                 </TouchableOpacity>
               </View>
             </View>
+          )}
+
+          {showActions && !esDomiciliaria && (
+            <TouchableOpacity style={styles.convertBtn} onPress={handleConvertir}>
+              <Home size={13} color={BRAND} />
+              <Text style={styles.convertBtnText}>Convertir a domiciliaria</Text>
+            </TouchableOpacity>
           )}
 
           {showActions && (
@@ -329,6 +362,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: semanticColors.warningLight,
   },
+  convertBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 10, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: BRAND, backgroundColor: obstetraColors.primaryLight },
+  convertBtnText: { ...typography.caption, color: BRAND, fontWeight: '700' },
   rescheduleTitle: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: semanticColors.warning },
   rescheduleMotivo: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },

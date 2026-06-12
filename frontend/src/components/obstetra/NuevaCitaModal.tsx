@@ -32,6 +32,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
   const [gestanteId, setGestanteId] = useState('');
   const [gestanteName, setGestanteName] = useState('');
   const [motivo, setMotivo] = useState('Control Prenatal');
+  const [modalidad, setModalidad] = useState<'establecimiento' | 'domiciliaria'>('establecimiento');
   const [observaciones, setObservaciones] = useState('');
   const [dateStr, setDateStr] = useState<string | null>(null);
   const [timeStr, setTimeStr] = useState<string | null>(null);
@@ -73,6 +74,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     setGestanteId('');
     setGestanteName('');
     setMotivo('Control Prenatal');
+    setModalidad('establecimiento');
     setObservaciones('');
     setDateStr(null);
     setTimeStr(null);
@@ -101,6 +103,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
         fecha: dateStr,
         hora: timeStr,
         motivo,
+        modalidad,
         observaciones: observaciones || null, // Guardar observaciones en bd
       });
       handleClose();
@@ -137,6 +140,25 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
               {gestanteId ? gestanteName : 'Tocar para seleccionar paciente...'}
             </Text>
           </TouchableOpacity>
+
+          <Text style={styles.label}>Modalidad</Text>
+          <View style={styles.modalidadRow}>
+            <TouchableOpacity
+              style={[styles.modalidadBtn, modalidad === 'establecimiento' && styles.modalidadBtnActive]}
+              onPress={() => setModalidad('establecimiento')}
+            >
+              <Text style={[styles.modalidadText, modalidad === 'establecimiento' && styles.modalidadTextActive]}>Establecimiento</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalidadBtn, modalidad === 'domiciliaria' && styles.modalidadBtnActive]}
+              onPress={() => { setModalidad('domiciliaria'); if (motivo === 'Control Prenatal') setMotivo('Visita domiciliaria'); }}
+            >
+              <Text style={[styles.modalidadText, modalidad === 'domiciliaria' && styles.modalidadTextActive]}>Domiciliaria</Text>
+            </TouchableOpacity>
+          </View>
+          {modalidad === 'domiciliaria' && (
+            <Text style={styles.modalidadHint}>El obstetra acudirá al domicilio de la gestante (previa coordinación). No bloquea la agenda del consultorio.</Text>
+          )}
 
           <Text style={styles.label}>Motivo</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.motivoScroll}>
@@ -306,6 +328,12 @@ const styles = StyleSheet.create({
   iconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   selectorText: { ...typography.bodyMedium, color: commonColors.text, flex: 1 },
 
+  modalidadRow: { flexDirection: 'row', gap: 8 },
+  modalidadBtn: { flex: 1, paddingVertical: 12, borderRadius: 14, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center' },
+  modalidadBtnActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
+  modalidadText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '600' },
+  modalidadTextActive: { color: BRAND, fontWeight: '700' },
+  modalidadHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 6 },
   motivoScroll: { flexDirection: 'row', marginBottom: 8 },
   chip: {
     paddingHorizontal: 16,
