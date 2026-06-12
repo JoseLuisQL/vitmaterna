@@ -9,6 +9,7 @@ import type { ApiResponse } from '../types/api';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { pushSupported } from '../utils/pushEnv';
 
 interface AuthState {
   user: User | null;
@@ -185,11 +186,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   registerPushToken: async (): Promise<void> => {
     try {
-      if (!Device.isDevice || Constants.appOwnership === 'expo') {
-        console.log('Push Notifications require a physical device and a Custom Build (not Expo Go)');
+      // Push real requiere dispositivo físico + build de desarrollo (no Expo Go
+      // ni web). Importar expo-notifications en Expo Go provoca un error, por eso
+      // se sale ANTES de cualquier import.
+      if (!pushSupported || !Device.isDevice) {
         return;
       }
-      
+
       const NotificationsPerms = await import('expo-notifications');
       const { status: existingStatus } = await NotificationsPerms.getPermissionsAsync();
       let finalStatus = existingStatus;

@@ -9,10 +9,10 @@
  * No hace nada en web ni en Expo Go (push requiere build nativo).
  */
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
+import { pushSupported } from '../utils/pushEnv';
 
 /** Decide a qué ruta llevar según el tipo/datos de la notificación. */
 function routeForNotification(role: string | undefined, data: Record<string, any>): string | null {
@@ -54,8 +54,8 @@ export function usePushNotifications(): void {
   roleRef.current = user?.role;
 
   useEffect(() => {
-    // Push no aplica en web ni sin sesión.
-    if (Platform.OS === 'web' || !isAuthenticated) return;
+    // Push no aplica en web, en Expo Go (importar el módulo allí falla), ni sin sesión.
+    if (!pushSupported || !isAuthenticated) return;
 
     let receivedSub: { remove: () => void } | undefined;
     let responseSub: { remove: () => void } | undefined;
