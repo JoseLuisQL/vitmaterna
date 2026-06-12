@@ -73,6 +73,13 @@ export const getClinicReport = async () => {
     where: { estado: 'pendiente' },
   });
 
+  // Visitas domiciliarias registradas (total y del mes en curso).
+  const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const visitasDomiciliariasTotal = await prisma.homeVisit.count();
+  const visitasDomiciliariasMes = await prisma.homeVisit.count({
+    where: { fecha: { gte: inicioMes } },
+  });
+
   const gestantesWithControls = await prisma.gestante.findMany({
     where: { estado: 'activa' },
     include: {
@@ -199,5 +206,7 @@ export const getClinicReport = async () => {
     kpisMinsa,
     attendanceStats,
     riskDistribution,
+    visitasDomiciliariasTotal,
+    visitasDomiciliariasMes,
   };
 };

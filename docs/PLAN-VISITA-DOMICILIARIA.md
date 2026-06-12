@@ -10,6 +10,11 @@
 > la máquina de estados, RBAC, disponibilidad, notificaciones y bandeja in-app ya
 > probadas (97/97 en la simulación integral).
 
+> ✅ **ESTADO: IMPLEMENTADO** (Fases 1–5). Backend 133 tests, frontend 44 tests,
+> simulación integral **109/109 OK** (incluye Fase I — Visita domiciliaria).
+> Endpoints: `POST/GET/PATCH/DELETE /home-visits`, `PATCH /appointments/:id/convertir-domiciliaria`,
+> `PATCH /patients/:id/ubicacion`, `Appointment.modalidad`, GPS en `Gestante`.
+
 ---
 
 ## 0. Análisis de la lógica actual (qué reutilizamos)

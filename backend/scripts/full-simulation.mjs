@@ -302,6 +302,53 @@ async function run() {
   check(nu.status === 201 || nu.status === 200, 'admin crea usuario', `status ${nu.status} ${JSON.stringify(nu.body?.error||'')}`);
 
   // ─────────────────────────────────────────────────────────────
+  setPhase('FASE I — Visita domiciliaria (modalidad, GPS, acta)');
+  // ─────────────────────────────────────────────────────────────
+  // Gestante registra su ubicación GPS del domicilio.
+  const ubic = await api('PATCH', `/patients/${gestanteId}/ubicacion`, tokens.gestante, { domicilioLat: -13.6548, domicilioLng: -73.4259, referenciaDom: 'Casa azul' });
+  check(ubic.status === 200 && Number(ubic.data?.domicilioLat) !== 0, 'gestante registra ubicación GPS del domicilio');
+
+  // Obstetra crea una cita domiciliaria.
+  const fechaDom = rndFutureDate();
+  const citaDom = await api('POST', '/appointments', tokens.obstetra, { gestanteId, fecha: fechaDom, hora: '09:00', modalidad: 'domiciliaria', motivo: 'Visita domiciliaria' });
+  check(citaDom.status === 201 && citaDom.data?.modalidad === 'domiciliaria', 'obstetra crea cita domiciliaria');
+
+  // Convertir una cita de establecimiento a domiciliaria.
+  const citaNorm = await api('POST', '/appointments', tokens.obstetra, { gestanteId, fecha: rndFutureDate(), hora: '10:00', motivo: 'Control prenatal' });
+  const convDom = await api('PATCH', `/appointments/${citaNorm.data?.id}/convertir-domiciliaria`, tokens.obstetra, { observaciones: 'No puede asistir' });
+  check(convDom.data?.modalidad === 'domiciliaria', 'obstetra convierte cita a domiciliaria');
+  check((await api('PATCH', `/appointments/${citaNorm.data?.id}/convertir-domiciliaria`, tokens.gestante, {})).status === 403, 'RBAC: gestante NO convierte a domiciliaria → 403');
+
+  // Registrar acta de visita (correlativo automático).
+  const acta1 = await api('POST', '/home-visits', tokens.obstetra, {
+    gestanteId, appointmentId: citaDom.data?.id, fecha: '2026-01-12', horaLlegada: '09:00', duracionMin: 30,
+    motivo: 'Seguimiento de consumo de micronutrientes', acciones: 'Orientación y consejería en nutrición y signos de alarma, lavado de manos', acuerdos: 'Comer carne de órgano 2 veces/semana', firmaGestante: true, firmaObstetra: true,
+  });
+  check(acta1.status === 201 && typeof acta1.data?.numeroVisita === 'number', 'obstetra registra acta de visita domiciliaria (correlativo)');
+  const acta2 = await api('POST', '/home-visits', tokens.obstetra, { gestanteId, fecha: '2026-02-07', motivo: 'Seguimiento', acciones: 'Consejería en signos de alarma' });
+  check(acta2.data?.numeroVisita === (acta1.data?.numeroVisita + 1), 'el número de visita es correlativo');
+
+  // Crear acta desde cita la marca asistida (la API cruda devuelve `estado`).
+  const citaEstado = await api('GET', '/appointments', tokens.obstetra, undefined);
+  const citaDomActual = (citaEstado.data || []).find((a) => a.id === citaDom.data?.id);
+  check(citaDomActual?.estado === 'asistida', 'la cita domiciliaria queda asistida al registrar el acta', `estado=${citaDomActual?.estado}`);
+
+  // Historial (obstetra) y RBAC (otra gestante).
+  const hist = await api('GET', `/home-visits/${gestanteId}`, tokens.obstetra);
+  check(hist.status === 200 && (hist.data || []).length >= 2, 'historial de visitas del obstetra');
+  check((hist.data?.[0]?.obstetra?.cop) != null, 'el acta incluye el COP del obstetra (firma)');
+  check((await api('GET', `/home-visits/${gestanteId}`, tokens.gestante2)).status === 403, 'RBAC: otra gestante NO ve visitas ajenas → 403');
+  check((await api('GET', `/home-visits/${gestanteId}`, tokens.gestante)).status === 200, 'la gestante ve sus propias visitas');
+
+  // Reporte incluye visitas domiciliarias.
+  const clinic = await api('GET', '/reports/clinic', tokens.obstetra);
+  check(typeof clinic.data?.visitasDomiciliariasTotal === 'number', 'reporte clínico incluye conteo de visitas domiciliarias');
+
+  // Limpieza de actas creadas en la simulación.
+  if (acta1.data?.id) await api('DELETE', `/home-visits/visit/${acta1.data.id}`, tokens.obstetra);
+  if (acta2.data?.id) await api('DELETE', `/home-visits/visit/${acta2.data.id}`, tokens.obstetra);
+
+  // ─────────────────────────────────────────────────────────────
   console.log(`\n${c.b}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.x}`);
   console.log(`${c.y}RESUMEN:${c.x} ${c.g}${pass} OK${c.x} · ${fail ? c.r : c.g}${fail} fallas${c.x}  (total ${pass + fail})`);
   if (failures.length) {

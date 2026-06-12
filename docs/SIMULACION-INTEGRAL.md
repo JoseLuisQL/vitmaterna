@@ -18,7 +18,7 @@ npm run simulate      # corre scripts/full-simulation.mjs
 > ejecuta varias veces seguidas, reiniciar el server limpia el contador en
 > memoria (o esperar 15 min). Esto es comportamiento de seguridad esperado.
 
-## Cobertura (94 comprobaciones, 8 fases)
+## Cobertura (109 comprobaciones, 9 fases)
 
 | Fase | Área | Comprobaciones clave |
 |------|------|----------------------|
@@ -30,13 +30,14 @@ npm run simulate      # corre scripts/full-simulation.mjs
 | F | Notificaciones | bandeja in-app, leída individual/masiva, propiedad (404 a terceros), push token guardar/eliminar |
 | G | Chat | conversación, teléfono del obstetra (WhatsApp), historial, RBAC de historial, **subir imagen**, emergencia GPS, broadcast con filtros |
 | H | Reportes / Admin | asistencia, clínico, educación por trimestre, usuarios, config, **auditoría**, backup, **sedes CRUD**, **educación CRUD + enum válido** |
+| I | Visita domiciliaria | ubicación GPS, cita domiciliaria, conversión + RBAC, **acta con correlativo**, cita→asistida, historial, COP firma, reporte |
 
 ## Resultado
 
-**94 / 94 OK · 0 fallas** (estado limpio).
+**109 / 109 OK · 0 fallas** (estado limpio).
 
 ```
-RESUMEN: 94 OK · 0 fallas (total 94)
+RESUMEN: 109 OK · 0 fallas (total 109)
 ```
 
 No se encontraron errores funcionales ni de lógica de negocio en la aplicación.
