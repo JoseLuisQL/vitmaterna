@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity
+  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity, Home
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -232,6 +232,8 @@ export default function PerfilScreen(): React.ReactElement {
           <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
           <View style={styles.menuDivider} />
           <MenuItem icon={<Activity size={20} color={BRAND} />} title="Mi Progreso" onPress={() => router.push('/(gestante)/(tabs)/mi-progreso')} />
+          <View style={styles.menuDivider} />
+          <MenuItem icon={<Home size={20} color={BRAND} />} title="Visitas Domiciliarias" onPress={() => router.push('/(gestante)/visitas')} />
           <View style={styles.menuDivider} />
           <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
         </View>
