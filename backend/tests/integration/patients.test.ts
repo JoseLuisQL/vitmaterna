@@ -30,6 +30,21 @@ describe('Gestantes API — FPP automática', () => {
     gestanteId = patients.body.data[0].id;
   });
 
+  it('expone el DNI normalizado (dni == user.dni) en el listado y el detalle', async () => {
+    const list = await request(app)
+      .get(`${PREFIX}/patients`)
+      .set('Authorization', `Bearer ${obstetraToken}`)
+      .query({ limit: 1000 });
+    expect(list.status).toBe(200);
+    expect(list.body.data.every((p: any) => p.dni === p.user?.dni)).toBe(true);
+
+    const detail = await request(app)
+      .get(`${PREFIX}/patients/${gestanteId}`)
+      .set('Authorization', `Bearer ${obstetraToken}`);
+    expect(detail.body.data.dni).toBe(detail.body.data.user?.dni);
+    expect(typeof detail.body.data.dni).toBe('string');
+  });
+
   it('calcula la FPP por la regla de Naegele al establecer la FUM', async () => {
     await request(app)
       .patch(`${PREFIX}/patients/${gestanteId}`)

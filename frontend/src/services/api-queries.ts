@@ -40,7 +40,7 @@ const mapPatient = (gestante: any) => {
     id: gestante.id || gestante._id,
     firstName: gestante.user?.firstName || '',
     lastName: gestante.user?.lastName || '',
-    documentNumber: gestante.user?.dni || '',
+    documentNumber: gestante.dni || gestante.user?.dni || '',
     age,
     riskLevel: gestante.nivelRiesgo === 'rojo' ? 'Alto' : gestante.nivelRiesgo === 'amarillo' ? 'Medio' : 'Bajo',
   };
@@ -77,7 +77,7 @@ const mapPatientProfile = (g: any) => {
     id: g.id || g._id,
     firstName: g.user?.firstName || '',
     lastName: g.user?.lastName || '',
-    documentNumber: g.user?.dni || '',
+    documentNumber: g.dni || g.user?.dni || '',
     phone: g.user?.phone || '',
     age,
     riskLevel: g.nivelRiesgo === 'rojo' ? 'Alto' : g.nivelRiesgo === 'amarillo' ? 'Medio' : 'Bajo',

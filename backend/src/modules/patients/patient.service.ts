@@ -4,6 +4,19 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import { classifyImc } from '../../utils/imcClassification.js';
 import { calculateFPP } from '../../utils/dateCalc.js';
 
+/**
+ * Normaliza la respuesta de una gestante para que el DNI esté siempre disponible
+ * de forma consistente en el nivel superior (`dni`), además de en `user.dni`.
+ * Evita la ambigüedad de tener que buscarlo en distintos lugares según el
+ * endpoint. Se mantiene `user` intacto por compatibilidad.
+ */
+function normalizePatient<T extends { user?: { dni?: string | null } | null }>(
+  gestante: T | null,
+): (T & { dni: string | null }) | null {
+  if (!gestante) return null;
+  return { ...gestante, dni: gestante.user?.dni ?? null };
+}
+
 export class PatientService {
   async findAll(filters: {
     search?: string;
@@ -61,7 +74,7 @@ export class PatientService {
       }),
     ]);
 
-    return { total, gestantes, page, limit };
+    return { total, gestantes: gestantes.map(normalizePatient), page, limit };
   }
 
   async createPatient(obstetraUserId: string, data: any) {
@@ -118,7 +131,8 @@ export class PatientService {
         });
       }
       
-      return gestante;
+      // Respuesta normalizada: incluir el DNI a nivel superior de forma consistente.
+      return { ...gestante, dni: user.dni, user: { dni: user.dni, firstName: user.firstName, lastName: user.lastName, phone: user.phone, email: user.email } };
     });
   }
 
@@ -169,7 +183,7 @@ export class PatientService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
     }
 
-    return gestante;
+    return normalizePatient(gestante);
   }
 
   async findByDni(dni: string) {
@@ -221,7 +235,7 @@ export class PatientService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
     }
 
-    return gestante;
+    return normalizePatient(gestante);
   }
 
   async schedulePrenatalAppointments(tx: any, gestanteId: string, fum: Date, obstetraId?: string) {
@@ -431,7 +445,7 @@ export class PatientService {
         }
       }
 
-      return updatedGestante;
+      return normalizePatient(updatedGestante);
     });
   }
 }

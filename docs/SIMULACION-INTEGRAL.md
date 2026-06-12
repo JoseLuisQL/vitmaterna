@@ -48,11 +48,12 @@ No se encontraron errores funcionales ni de lógica de negocio en la aplicación
    anti fuerza bruta funcionando (RF-1.08 / seguridad). Para baterías de prueba,
    reiniciar el server o espaciar las corridas.
 
-2. **Consistencia de nomenclatura en `/patients`.** El endpoint devuelve el DNI
-   bajo `user.dni` y los datos crudos de Prisma (`gestante` + `user`), mientras
-   que la capa de mapeo del frontend usa `documentNumber`. No es un error
-   (cada capa es coherente), pero conviene tenerlo presente al consumir la API
-   directa: usar `user.dni`, no `documentNumber`.
+2. ~~**Consistencia de nomenclatura en `/patients`.**~~ ✅ **Normalizado:** todos
+   los endpoints de pacientes (`GET /patients`, `GET /patients/:id`,
+   `GET /patients/buscar`, `POST /patients`, `PATCH /patients/:id`) exponen ahora
+   el DNI de forma consistente como **`dni`** a nivel superior, además de
+   mantener `user.dni` por compatibilidad. La simulación verifica
+   `dni === user.dni` en listado, detalle y creación.
 
 3. **Cálculos clínicos verificados numéricamente:** FPP por regla de Naegele
    (~280 días desde FUM), IMC, y corrección de hemoglobina por altitud (factor

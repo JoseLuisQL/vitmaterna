@@ -86,9 +86,10 @@ async function run() {
   // ─────────────────────────────────────────────────────────────
   const pacientes = await api('GET', '/patients?limit=1000', tokens.obstetra);
   check(pacientes.status === 200 && Array.isArray(pacientes.data), 'obstetra lista pacientes');
-  // El endpoint /patients devuelve el DNI bajo user.dni (no documentNumber).
-  const ana = (pacientes.data || []).find((p) => p.user?.dni === '33333333') || pacientes.data?.[0];
-  check(ana?.user?.dni === '33333333', 'localizar gestante Ana (DNI 33333333) en el listado', `encontrado dni=${ana?.user?.dni}`);
+  // DNI normalizado a nivel superior (`dni`) y en `user.dni`.
+  check((pacientes.data || []).every((p) => p.dni === p.user?.dni), '/patients expone DNI consistente (dni == user.dni)');
+  const ana = (pacientes.data || []).find((p) => p.dni === '33333333') || pacientes.data?.[0];
+  check(ana?.dni === '33333333', 'localizar gestante Ana (DNI 33333333) por campo dni', `encontrado dni=${ana?.dni}`);
   const gestanteId = ana.id;
 
   // Alta de una nueva gestante con FUM → debe calcular FPP (Naegele) automáticamente
@@ -97,6 +98,7 @@ async function run() {
     dni: nuevoDni, firstName: 'Prueba', lastName: 'Simulacion', phone: '987000111', fechaNacimiento: '1998-05-20',
   });
   check(alta.status === 201, 'obstetra crea una nueva gestante (201)', `status ${alta.status} ${JSON.stringify(alta.body?.error||'')}`);
+  check(alta.data?.dni === nuevoDni, 'la creación devuelve el DNI normalizado a nivel superior', `dni=${alta.data?.dni}`);
   const nuevaId = alta.data?.id || alta.data?.gestante?.id;
 
   if (nuevaId) {
@@ -105,6 +107,7 @@ async function run() {
     const upd = await api('PATCH', `/patients/${nuevaId}`, tokens.obstetra, { fum, talla: 1.60, pesoHabitual: 55 });
     check(upd.status === 200, 'actualizar FUM/antropometría de la gestante');
     const ficha = await api('GET', `/patients/${nuevaId}`, tokens.obstetra);
+    check(ficha.data?.dni === nuevoDni, 'GET /patients/:id expone DNI normalizado', `dni=${ficha.data?.dni}`);
     const fpp = ficha.data?.estimatedDueDate || ficha.data?.fppFum;
     check(!!fpp, 'FPP calculada automáticamente al registrar FUM (RF-2.07)', `fpp=${fpp}`);
     if (fpp) {
