@@ -65,8 +65,14 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // No intentar refrescar token en los propios endpoints de autenticación
+    // (login/register/refresh): un 401 ahí es credencial inválida, no sesión
+    // expirada. Se deja pasar el error original para mostrar el mensaje real.
+    const url = originalRequest.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
+
     // If 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // Queue this request until the token is refreshed
         return new Promise<string>((resolve, reject) => {

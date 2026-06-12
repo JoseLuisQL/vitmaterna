@@ -10,6 +10,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { pushSupported } from '../utils/pushEnv';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface AuthState {
   user: User | null;
@@ -59,10 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Register push notifications
       await get().registerPushToken();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Error al iniciar sesión. Verifica tus credenciales.';
+      const message = getApiErrorMessage(error, 'No se pudo iniciar sesión. Verifica tus credenciales.');
       set({
         isLoading: false,
         error: message,
@@ -94,10 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Register push notifications
       await get().registerPushToken();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Error al registrarse. Intenta de nuevo.';
+      const message = getApiErrorMessage(error, 'No se pudo registrar. Inténtalo de nuevo.');
       set({
         isLoading: false,
         error: message,
