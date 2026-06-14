@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, Plus, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { shadows } from '../../../src/theme/shadows';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
   useAppointments,
   useUpdateAppointmentStatus,
@@ -54,18 +56,23 @@ export default function CronogramaScreen(): React.ReactElement {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={styles.headerWrapper}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerTopRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Cronograma</Text>
               <Text style={styles.headerSubtitle}>Gestión de citas y pacientes</Text>
             </View>
-            <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.text} />
+            <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.tabsWrapper}>
         <TouchableOpacity
@@ -251,9 +258,9 @@ export default function CronogramaScreen(): React.ReactElement {
   };
 
   const renderEmpty = () => (
-    <View style={{ marginTop: 40, paddingHorizontal: 20 }}>
+    <View style={{ marginTop: spacing.lg, paddingHorizontal: spacing.lg }}>
       {isLoading ? (
-        <LoadingScreen message="Cargando citas..." />
+        <ListSkeleton count={5} />
       ) : (
         <EmptyState
           icon={CalendarIcon as any}
@@ -299,31 +306,31 @@ const styles = StyleSheet.create({
   headerContainer: { marginBottom: 12 },
   headerWrapper: {
     paddingBottom: 24,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
+  headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
   tabsWrapper: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginTop: 8,
-    gap: 12,
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
+    gap: spacing.sm2,
   },
   tabButton: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
     backgroundColor: commonColors.surface,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   tabButtonActive: {
     backgroundColor: BRAND,
-    borderColor: BRAND,
   },
   tabText: {
     ...typography.label,
@@ -417,7 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
+    ...coloredGlow(BRAND),
     zIndex: 999,
   },
 });

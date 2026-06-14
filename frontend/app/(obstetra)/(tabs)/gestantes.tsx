@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Baby, Search, ChevronRight, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { AppBadge } from '../../../src/components/ui/AppBadge';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { usePatients } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { shadows } from '../../../src/theme/shadows';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows, coloredGlow } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -48,13 +50,18 @@ export default function GestantesScreen(): React.ReactElement {
 
   const renderHeader = () => (
     <View style={{ paddingBottom: 16 }}>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <Text style={styles.headerTitle}>Gestantes</Text>
           <Text style={styles.headerSubtitle}>Tus pacientes asignadas</Text>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -164,9 +171,9 @@ export default function GestantesScreen(): React.ReactElement {
   };
 
   const renderEmpty = () => (
-    <View style={{ marginTop: 40, paddingHorizontal: 20 }}>
+    <View style={{ marginTop: spacing.lg, paddingHorizontal: spacing.lg }}>
       {isLoading ? (
-        <Text style={styles.loadingText}>Buscando pacientes...</Text>
+        <ListSkeleton count={5} />
       ) : (
         <EmptyState
           icon={Baby as any}
@@ -201,27 +208,29 @@ export default function GestantesScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.xl + spacing.sm,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
-  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
+  headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
   searchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
+    marginBottom: spacing.sm,
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    paddingHorizontal: 20,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.lg,
     height: 56,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   searchInput: { flex: 1, ...typography.bodyMedium, color: commonColors.text },
   filtersScrollWrapper: {
@@ -236,15 +245,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: commonColors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    paddingHorizontal: spacing.sm2,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.surface,
+    ...shadows.card,
   },
   tabButtonActive: {
     backgroundColor: BRAND,
-    borderColor: BRAND,
   },
   tabText: {
     ...typography.caption,
@@ -271,13 +278,12 @@ const styles = StyleSheet.create({
   listContent: { paddingBottom: 100 },
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: 16,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    paddingTop: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingTop: spacing.md,
     overflow: 'hidden',
+    ...shadows.card,
   },
   cardContent: { flexDirection: 'row', alignItems: 'flex-start', paddingBottom: 12, paddingHorizontal: 16 },
   avatar: {
@@ -346,6 +352,6 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
+    ...coloredGlow(BRAND),
   },
 });

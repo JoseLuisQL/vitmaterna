@@ -1,27 +1,21 @@
 import React from 'react';
 import { View, StyleSheet, Text, ScrollView, RefreshControl, Dimensions, Alert, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { BarChart, PieChart } from 'react-native-chart-kit';
 import { Download, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import api from '../../../src/services/api';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
+import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 const screenWidth = Dimensions.get('window').width - 40; // 20 padding horizontal
-
-/** Convierte un color hex (#RRGGBB) a rgba() para react-native-chart-kit. */
-const hexToRgba = (hex: string, opacity = 1): string => {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.substring(0, 2), 16);
-  const g = parseInt(h.substring(2, 4), 16);
-  const b = parseInt(h.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-};
 
 interface ReportData {
   totalGestantes: number;
@@ -98,17 +92,31 @@ export default function ReportesScreen(): React.ReactElement {
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Cargando reportes..." />;
-
-  if (isError || !data) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={styles.headerGradient}>
+        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
           <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
             <Text style={styles.pageTitle}>Reportes</Text>
             <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
           </SafeAreaView>
+        </LinearGradient>
+        <View style={[styles.content, { marginTop: spacing.lg }]}>
+          <DashboardSkeleton count={2} />
         </View>
+      </View>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
+          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+            <Text style={styles.pageTitle}>Reportes</Text>
+            <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
+          </SafeAreaView>
+        </LinearGradient>
         <View style={styles.errorWrap}>
           <AlertTriangle size={48} color={semanticColors.danger} />
           <Text style={styles.errorTitle}>No se pudieron cargar los reportes</Text>
@@ -124,26 +132,19 @@ export default function ReportesScreen(): React.ReactElement {
     );
   }
 
-  const chartConfig = {
-    backgroundColor: commonColors.surface,
-    backgroundGradientFrom: commonColors.surface,
-    backgroundGradientTo: commonColors.surface,
-    decimalPlaces: 0,
-    color: (opacity = 1) => hexToRgba(BRAND, opacity),
-    labelColor: (opacity = 1) => hexToRgba(commonColors.textSecondary, opacity),
-    style: { borderRadius: 24 },
-    propsForDots: { r: '4', strokeWidth: '2', stroke: BRAND },
-    propsForBackgroundLines: { strokeDasharray: '', stroke: commonColors.border },
-  };
+  const attendanceData: ChartBarDatum[] =
+    data?.attendanceStats.map((s) => ({ label: s.month, value: s.attended })) || [];
 
-  const barData = {
-    labels: data?.attendanceStats.map((s) => s.month) || [],
-    datasets: [{ data: data?.attendanceStats.map((s) => s.attended) || [] }],
-  };
+  const riskBars: ChartBarDatum[] =
+    data?.riskDistribution.map((r) => ({
+      label: r.name,
+      value: r.population,
+      color: r.color,
+    })) || [];
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerGradient}>
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
             <View>
@@ -151,12 +152,12 @@ export default function ReportesScreen(): React.ReactElement {
               <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
             </View>
             <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7}>
-              <Download size={18} color={BRAND} />
+              <Download size={18} color={commonColors.white} />
               <Text style={styles.exportBtnText}>Exportar PDF</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
         {/* KPIs principales */}
@@ -195,34 +196,20 @@ export default function ReportesScreen(): React.ReactElement {
         </View>
 
         {/* Gráfica distribución por riesgo */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Distribución por Riesgo</Text>
-          <PieChart
-            data={data?.riskDistribution || []}
-            width={screenWidth - 48}
-            height={180}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="0"
-            absolute
-          />
-        </View>
+        {riskBars.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Distribución por Riesgo</Text>
+            <ChartBar data={riskBars} height={160} showValues style={{ marginTop: spacing.sm }} />
+          </View>
+        )}
 
         {/* Gráfica asistencia */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Asistencia a Citas (2026)</Text>
-          <BarChart
-            data={barData}
-            width={screenWidth - 48}
-            height={200}
-            yAxisLabel=""
-            yAxisSuffix=""
-            chartConfig={chartConfig}
-            style={{ borderRadius: 16, marginTop: 16, marginLeft: -16 }}
-            showValuesOnTopOfBars
-          />
-        </View>
+        {attendanceData.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Asistencia a Citas (2026)</Text>
+            <ChartBar data={attendanceData} color={BRAND} height={180} showValues style={{ marginTop: spacing.sm }} />
+          </View>
+        )}
 
         {/* Tabla de menor adherencia */}
         <View style={styles.card}>
@@ -247,25 +234,22 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerGradient: {
     paddingBottom: 40,
-    backgroundColor: commonColors.surface,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    borderBottomWidth: 1,
-    borderColor: commonColors.border,
+    borderBottomLeftRadius: borderRadius.xxxl,
+    borderBottomRightRadius: borderRadius.xxxl,
   },
-  safeAreaHeader: { paddingHorizontal: 24, paddingTop: 16 },
+  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pageTitle: { ...typography.h1, color: commonColors.text },
-  pageSubtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 4 },
-  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: commonColors.surface, borderRadius: 99, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: commonColors.border },
-  exportBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: BRAND },
-  content: { paddingHorizontal: 20, paddingBottom: 48, marginTop: -24 },
-  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  kpiCard: { width: (screenWidth - 12) / 2, padding: 16, backgroundColor: commonColors.surface, borderRadius: 24, borderWidth: 1, borderColor: commonColors.border },
-  kpiIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  kpiValue: { ...typography.h2, marginBottom: 2 },
+  pageTitle: { ...typography.h1, color: commonColors.white },
+  pageSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  exportBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.white },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: 48, marginTop: -24 },
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm2, marginBottom: spacing.lg },
+  kpiCard: { width: (screenWidth - 12) / 2, padding: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, ...shadows.card },
+  kpiIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm2 },
+  kpiValue: { ...typography.numericMd, marginBottom: 2 },
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary },
-  card: { backgroundColor: commonColors.surface, borderRadius: 24, padding: 24, marginBottom: 16, borderWidth: 1, borderColor: commonColors.border },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.md, ...shadows.card },
   cardTitle: { ...typography.h3, color: commonColors.text, marginBottom: 4 },
   cardSubtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: 20 },
   kpiRow: { marginBottom: 20 },

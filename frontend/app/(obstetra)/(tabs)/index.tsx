@@ -1,16 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TrendingUp, ChevronRight, Activity } from 'lucide-react-native';
+import { TrendingUp, ChevronRight, Activity, Calendar, Users, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { KpiCard } from '../../../src/components/ui/KpiCard';
+import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -25,7 +28,13 @@ export default function ObstetraDashboard(): React.ReactElement {
   useRefetchOnFocus([refetchStats, refetchAppts]);
 
   if (isStatsLoading || isApptsLoading) {
-    return <LoadingScreen message="Cargando panel..." />;
+    return (
+      <View style={styles.container}>
+        <SafeAreaView edges={['top']} style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+          <DashboardSkeleton count={3} />
+        </SafeAreaView>
+      </View>
+    );
   }
 
   const onRefresh = () => {
@@ -38,46 +47,42 @@ export default function ObstetraDashboard(): React.ReactElement {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={styles.headerWrapper}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.greeting}>Bienvenida,</Text>
-              <Text style={styles.name}>{displayName}</Text>
+              <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+              <Text style={styles.todayDate}>
+                {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </Text>
             </View>
             <View style={styles.avatarWrap}>
               <Text style={styles.avatarText}>{displayName.charAt(4) || 'O'}</Text>
             </View>
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.topCardsWrapper}>
-        <View style={styles.todayCard}>
-          <View style={styles.todayHeader}>
-            <View>
-              <Text style={styles.todayTitle}>Resumen del Día</Text>
-              <Text style={styles.todayDate}>
-                {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
-              </Text>
-            </View>
-            <View style={styles.iconCircle}>
-              <TrendingUp size={20} color={BRAND} />
-            </View>
-          </View>
-        </View>
-
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
-            <KpiCard label="Citas Hoy" value={appointmentsToday} />
-            <KpiCard label="Pacientes" value={totalPatients} />
+            <KpiCard label="Citas Hoy" value={appointmentsToday} icon={Calendar} accentColor={BRAND} />
+            <KpiCard label="Pacientes" value={totalPatients} icon={Users} accentColor={semanticColors.success} />
           </View>
           <View style={styles.statsRow}>
             <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.8} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
               <KpiCard
                 label="Alertas"
                 value={alerts}
+                icon={AlertTriangle}
+                accentColor={semanticColors.danger}
                 badge={alerts > 0 ? 'Pendientes' : 'Ver'}
                 badgeTone={alerts > 0 ? 'negative' : 'neutral'}
               />
@@ -85,6 +90,8 @@ export default function ObstetraDashboard(): React.ReactElement {
             <KpiCard
               label="Completadas"
               value={completed}
+              icon={CheckCircle2}
+              accentColor={semanticColors.success}
               badge={completed > 0 ? 'Hoy' : undefined}
               badgeTone="positive"
             />
@@ -185,45 +192,35 @@ export default function ObstetraDashboard(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   flatListContent: { paddingBottom: 100 },
-  headerContainer: { marginBottom: 12 },
+  headerContainer: { marginBottom: spacing.sm2 },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { ...typography.body, color: commonColors.textSecondary, marginBottom: 4 },
-  name: { ...typography.display, color: commonColors.text },
-  avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { ...typography.h2, color: BRAND },
-  topCardsWrapper: { paddingHorizontal: 20 },
-  todayCard: {
-    backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-  },
-  todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  todayTitle: { ...typography.h3, color: commonColors.text, marginBottom: 4 },
-  todayDate: { ...typography.bodySmall, color: commonColors.textSecondary, textTransform: 'capitalize' },
-  iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  statsGrid: { marginBottom: 24, gap: 12 },
-  statsRow: { flexDirection: 'row', gap: 12 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
-  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: 16 },
-  sectionLink: { ...typography.label, color: BRAND },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  greeting: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginBottom: 2 },
+  name: { ...typography.display, color: commonColors.white },
+  avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { ...typography.h2, color: commonColors.white },
+  topCardsWrapper: { paddingHorizontal: spacing.lg, marginTop: -spacing.lg },
+  todayDate: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', textTransform: 'capitalize', marginTop: 2 },
+  statsGrid: { marginBottom: spacing.lg, gap: spacing.sm2 },
+  statsRow: { flexDirection: 'row', gap: spacing.sm2 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, marginTop: spacing.sm },
+  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md },
+  sectionLink: { ...typography.label, color: BRAND, fontWeight: '600' },
   reportLink: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   riskCard: {
     backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    ...shadows.card,
   },
   riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   riskItem: { alignItems: 'center', flex: 1 },
@@ -236,12 +233,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm2,
+    ...shadows.card,
   },
   timeLine: {
     alignItems: 'center',

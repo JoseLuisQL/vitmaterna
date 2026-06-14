@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, Text, FlatList, ActivityIndicator, StatusBar, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, FlatList, StatusBar, TouchableOpacity, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, AlertTriangle, User, Clock, CheckCircle, Share2 } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
 
 const BRAND = obstetraColors.primary;
 
@@ -120,14 +123,24 @@ export default function AlertasScreen(): React.ReactElement {
     });
   }, [data]);
 
+  const pendingCount = sortedData.length;
   const renderHeader = () => (
-    <View style={styles.headerWrapper}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+    <LinearGradient
+      colors={obstetraColors.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.headerWrapper}
+    >
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
         <Text style={styles.headerTitle}>Alertas</Text>
-        <Text style={styles.headerSubtitle}>Signos de alarma de pacientes</Text>
+        <Text style={styles.headerSubtitle}>
+          {pendingCount > 0
+            ? `${pendingCount} signo(s) de alarma por revisar`
+            : 'Signos de alarma de pacientes'}
+        </Text>
       </SafeAreaView>
-    </View>
+    </LinearGradient>
   );
 
   const renderItem = ({ item }: { item: DangerSign }) => {
@@ -187,9 +200,9 @@ export default function AlertasScreen(): React.ReactElement {
   };
 
   const renderEmpty = () => (
-    <View style={{ marginTop: 60, paddingHorizontal: 20 }}>
+    <View style={{ marginTop: spacing.lg, paddingHorizontal: spacing.lg }}>
       {isLoading ? (
-        <ActivityIndicator size="large" color={BRAND} />
+        <ListSkeleton count={4} />
       ) : isError ? (
         <EmptyState
           icon={Bell as any}
@@ -230,13 +243,15 @@ const styles = StyleSheet.create({
   headerWrapper: {
     paddingBottom: 24,
     marginBottom: 8,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
-  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
+  headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
   listContent: { paddingBottom: 100 },
   card: {
     backgroundColor: commonColors.surface,
