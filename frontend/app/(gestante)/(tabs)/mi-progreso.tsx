@@ -10,7 +10,7 @@ import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBa
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { gestanteColors, commonColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: layout.tabBarSpace,
     marginTop: -spacing.lg,
   },
   card: {

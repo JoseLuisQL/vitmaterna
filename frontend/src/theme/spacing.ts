@@ -59,4 +59,7 @@ export const layout = {
   tabBarHeight: 64,
   /** Header height */
   headerHeight: 56,
+  /** Espacio inferior para que el contenido no quede tapado por el tab bar
+   *  flotante (altura del tab bar + respiro). Usar en contentContainerStyle. */
+  tabBarSpace: 96,
 } as const;

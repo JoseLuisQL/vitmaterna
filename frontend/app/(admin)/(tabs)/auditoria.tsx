@@ -13,7 +13,7 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { spacing } from '../../../src/theme/spacing';
+import { spacing, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
 
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: layout.tabBarSpace,
   },
   card: {
     marginBottom: spacing.sm,

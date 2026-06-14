@@ -28,6 +28,7 @@ import { haptics } from '../../utils/haptics';
 interface TabBarRoute {
   key: string;
   name: string;
+  params?: object;
 }
 interface TabBarDescriptor {
   options: {
@@ -42,6 +43,7 @@ interface NavigationLike {
   emit: (event: { type: 'tabPress'; target: string; canPreventDefault: true }) => {
     defaultPrevented: boolean;
   };
+  dispatch: (action: object) => void;
   navigate: (name: string) => void;
 }
 
@@ -50,7 +52,7 @@ interface NavigationLike {
  * `accentColor`. Internamente normalizamos a tipos estrictos.
  */
 interface PillTabBarProps {
-  state: { index: number; routes: TabBarRoute[] };
+  state: { index: number; key: string; routes: TabBarRoute[] };
   descriptors: Record<string, any>;
   navigation: any;
   accentColor?: string;
@@ -69,20 +71,22 @@ export function PillTabBar({
   const insets = useSafeAreaInsets();
   const [barWidth, setBarWidth] = React.useState(0);
 
-  // Sólo las rutas visibles (href !== null)
-  const routes = state.routes.filter((route) => {
-    const { options } = descriptors[route.key];
-    // expo-router marca con href:null las rutas ocultas; el botón no se renderiza
-    return (options as any).href !== null;
+  // Ruta activa según el índice del estado COMPLETO (incluye ocultas).
+  const activeRouteKey = state.routes[state.index]?.key;
+
+  // Sólo las rutas visibles (href !== null). Conservamos el índice original.
+  const visibleRoutes = state.routes.filter((route) => {
+    const descriptor = descriptors[route.key];
+    return descriptor && descriptor.options.href !== null;
   });
 
-  const activeRouteKey = state.routes[state.index]?.key;
+  // Índice de la ruta activa DENTRO de las visibles (para el indicador pill).
   const activeVisibleIndex = Math.max(
     0,
-    routes.findIndex((r) => r.key === activeRouteKey),
+    visibleRoutes.findIndex((r) => r.key === activeRouteKey),
   );
 
-  const count = Math.max(1, routes.length);
+  const count = Math.max(1, visibleRoutes.length);
   const slot = barWidth > 0 ? barWidth / count : 0;
   const translateX = useSharedValue(0);
 
@@ -113,9 +117,9 @@ export function PillTabBar({
           style={[styles.indicator, { width: INDICATOR_WIDTH, backgroundColor: accentColor }, indicatorStyle]}
         />
       )}
-      {routes.map((route) => {
+      {visibleRoutes.map((route) => {
         const { options } = descriptors[route.key];
-        const isFocused = state.routes[state.index]?.key === route.key;
+        const isFocused = activeRouteKey === route.key;
         const label =
           typeof options.tabBarLabel === 'string'
             ? options.tabBarLabel
@@ -131,7 +135,7 @@ export function PillTabBar({
             canPreventDefault: true,
           });
           if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name as never);
+            navigation.navigate(route.name);
           }
         };
 

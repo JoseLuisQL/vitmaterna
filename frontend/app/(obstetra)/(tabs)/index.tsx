@@ -12,7 +12,7 @@ import { useObstetraDashboard, useTodayAppointments } from '../../../src/service
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -191,7 +191,7 @@ export default function ObstetraDashboard(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  flatListContent: { paddingBottom: 100 },
+  flatListContent: { paddingBottom: layout.tabBarSpace },
   headerContainer: { marginBottom: spacing.sm2 },
   headerWrapper: {
     paddingBottom: spacing.xl,

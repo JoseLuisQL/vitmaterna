@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ChevronLeft, Megaphone, Users } from 'lucide-react-native';
 import api from '../../src/services/api';
+import { confirmAction, notify } from '../../src/utils/confirm';
 import { commonColors, obstetraColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 
@@ -42,18 +43,21 @@ export default function MensajeMasivoScreen(): React.ReactElement {
     },
   });
 
-  const enviar = () => {
+  const enviar = async () => {
     if (!contenido.trim()) {
-      return Alert.alert('Mensaje vacío', 'Escribe el contenido del mensaje antes de enviar.');
+      return notify('Mensaje vacío', 'Escribe el contenido del mensaje antes de enviar.');
     }
     const filtros: string[] = [];
     if (trimestre !== 0) filtros.push(`${trimestre}° trimestre`);
     if (riesgo) filtros.push(`riesgo ${riesgo}`);
     const destino = filtros.length ? filtros.join(', ') : 'todas las gestantes activas';
-    Alert.alert('Confirmar envío', `El mensaje se enviará a: ${destino}.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Enviar', onPress: () => mutation.mutate() },
-    ]);
+    const ok = await confirmAction({
+      title: 'Confirmar envío',
+      message: `El mensaje se enviará a: ${destino}.`,
+      confirmText: 'Enviar',
+    });
+    if (!ok) return;
+    mutation.mutate();
   };
 
   const Chip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (

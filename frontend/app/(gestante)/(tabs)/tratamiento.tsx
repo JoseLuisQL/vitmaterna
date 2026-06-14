@@ -13,7 +13,7 @@ import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
 const BRAND = gestanteColors.primary;
 
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     color: semanticColors.info,
   },
   listContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: layout.tabBarSpace,
   },
   card: {
     backgroundColor: commonColors.surface,

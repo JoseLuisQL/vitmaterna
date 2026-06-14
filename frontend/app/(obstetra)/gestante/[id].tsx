@@ -24,6 +24,7 @@ import {
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
 } from '../../../src/services/api-queries';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
+import { confirmAction } from '../../../src/utils/confirm';
 
 const { width: screenWidth } = Dimensions.get('window');
 const BRAND = obstetraColors.primary;
@@ -248,18 +249,19 @@ export default function PatientProfileScreen(): React.ReactElement {
     );
   };
 
-  const confirmDeleteAntecedente = (ant: any) => {
+  const confirmDeleteAntecedente = async (ant: any) => {
     if (!patient) return;
-    Alert.alert('Eliminar antecedente', `¿Eliminar "${ant.condicion}"?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar', style: 'destructive',
-        onPress: () => deleteAntecedente(
-          { id: ant.id, gestanteId: patient.id },
-          { onSuccess: () => toast.success('Antecedente eliminado'), onError: () => toast.error('Error', 'No se pudo eliminar.') },
-        ),
-      },
-    ]);
+    const ok = await confirmAction({
+      title: 'Eliminar antecedente',
+      message: `¿Eliminar "${ant.condicion}"?`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteAntecedente(
+      { id: ant.id, gestanteId: patient.id },
+      { onSuccess: () => toast.success('Antecedente eliminado'), onError: () => toast.error('Error', 'No se pudo eliminar.') },
+    );
   };
 
   const openEditTreat = (sup: any) => {

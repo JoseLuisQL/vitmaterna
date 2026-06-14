@@ -29,7 +29,7 @@ import {
 } from '../../../src/services/api-queries';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
 const BRAND = gestanteColors.primary;
 
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   badgeNum: { ...typography.overline, letterSpacing: 0 },
   badgeNumActive: { color: commonColors.white },
   badgeNumInactive: { color: commonColors.textSecondary },
-  listContainer: { padding: spacing.md, paddingBottom: spacing.xl },
+  listContainer: { padding: spacing.md, paddingBottom: layout.tabBarSpace },
   card: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,

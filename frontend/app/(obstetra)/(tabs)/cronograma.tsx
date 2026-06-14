@@ -7,10 +7,11 @@ import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { confirmAction } from '../../../src/utils/confirm';
 import { useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
   useAppointments,
@@ -131,24 +132,19 @@ export default function CronogramaScreen(): React.ReactElement {
     const showActions = item.status === 'programada' || item.status === 'confirmada';
     const esDomiciliaria = item.modalidad === 'domiciliaria';
 
-    const handleConvertir = () => {
-      Alert.alert(
-        'Convertir a visita domiciliaria',
-        'Se atenderá a la gestante en su domicilio. Se le notificará.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Convertir',
-            onPress: () =>
-              convertToHome(
-                { id: item.id },
-                {
-                  onSuccess: () => toast.success('Cita domiciliaria', 'La gestante fue notificada.'),
-                  onError: () => toast.error('No se pudo convertir', 'Inténtalo nuevamente.'),
-                },
-              ),
-          },
-        ],
+    const handleConvertir = async () => {
+      const ok = await confirmAction({
+        title: 'Convertir a visita domiciliaria',
+        message: 'Se atenderá a la gestante en su domicilio. Se le notificará.',
+        confirmText: 'Convertir',
+      });
+      if (!ok) return;
+      convertToHome(
+        { id: item.id },
+        {
+          onSuccess: () => toast.success('Cita domiciliaria', 'La gestante fue notificada.'),
+          onError: () => toast.error('No se pudo convertir', 'Inténtalo nuevamente.'),
+        },
       );
     };
 
@@ -340,7 +336,7 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: obstetraColors.onPrimary,
   },
-  listContent: { paddingBottom: 100 },
+  listContent: { paddingBottom: layout.tabBarSpace },
   appointmentCard: {
     flexDirection: 'row',
     alignItems: 'center',

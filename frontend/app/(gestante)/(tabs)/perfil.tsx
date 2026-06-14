@@ -14,7 +14,7 @@ import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
 const BRAND = gestanteColors.primary;
 
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     ...typography.display,
     color: commonColors.text,
   },
-  content: { paddingHorizontal: spacing.lg },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace },
   loadingCard: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,

@@ -18,8 +18,9 @@ import { AppModal } from '../../../src/components/ui/AppModal';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useToast } from '../../../src/components/ui';
+import { confirmAction } from '../../../src/utils/confirm';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import {
   useEducationContent,
@@ -126,19 +127,18 @@ export default function ContenidoScreen(): React.ReactElement {
     }
   };
 
-  const confirmDelete = (item: EducationContent) => {
-    Alert.alert('Eliminar contenido', `¿Eliminar "${item.titulo}"?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: () =>
-          deleteMut.mutate(item.id, {
-            onSuccess: () => toast.success('Contenido eliminado'),
-            onError: () => toast.error('Error', 'No se pudo eliminar'),
-          }),
-      },
-    ]);
+  const confirmDelete = async (item: EducationContent) => {
+    const ok = await confirmAction({
+      title: 'Eliminar contenido',
+      message: `¿Eliminar "${item.titulo}"?`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteMut.mutate(item.id, {
+      onSuccess: () => toast.success('Contenido eliminado'),
+      onError: () => toast.error('Error', 'No se pudo eliminar'),
+    });
   };
 
   const renderItem = ({ item }: { item: EducationContent }) => (
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: commonColors.text },
   subtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
+  list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.lg,

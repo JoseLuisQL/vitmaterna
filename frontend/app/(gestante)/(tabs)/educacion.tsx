@@ -13,7 +13,7 @@ import {
 } from 'lucide-react-native';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { ToggleTabs } from '../../../src/components/ui';
 import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
 
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   seccionBtnActive: { backgroundColor: BRAND },
   seccionBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.textSecondary },
   seccionBtnTextActive: { color: commonColors.surface },
-  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   trimestreRow: { flexDirection: 'row', gap: spacing.sm + 4, marginBottom: spacing.lg },
   trimestreBtn: { flex: 1, paddingVertical: spacing.sm + 4, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, alignItems: 'center' },
   trimestreBtnActive: { backgroundColor: gestanteColors.primaryLight },

@@ -12,10 +12,11 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton } from '../../../src/components/ui';
 import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
 import { useAdminUsers, useCreateUser, useToggleUserActive } from '../../../src/services/admin-queries';
+import { confirmAction, notify } from '../../../src/utils/confirm';
 
 const BRAND = obstetraColors.primary;
 import { useAuthStore } from '../../../src/store/authStore';
@@ -74,26 +75,20 @@ export default function UsuariosScreen(): React.ReactElement {
   const { logout } = useAuthStore();
   const router = useRouter();
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Está seguro de que desea cerrar la sesión actual?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Cerrar Sesión', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/(auth)/login');
-            } catch (err) {
-              Alert.alert('Error', 'No se pudo cerrar la sesión.');
-            }
-          }
-        }
-      ]
-    );
+  const handleLogout = async () => {
+    const ok = await confirmAction({
+      title: 'Cerrar Sesión',
+      message: '¿Está seguro de que desea cerrar la sesión actual?',
+      confirmText: 'Cerrar Sesión',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await logout();
+      router.replace('/(auth)/login');
+    } catch (err) {
+      notify('Error', 'No se pudo cerrar la sesión.');
+    }
   };
 
   // Modal States
@@ -111,34 +106,27 @@ export default function UsuariosScreen(): React.ReactElement {
   const [cop, setCop] = useState('');
   const [role, setRole] = useState('obstetra');
 
-  const handleToggleActive = (user: any) => {
+  const handleToggleActive = async (user: any) => {
     const actionText = user.isActive ? 'desactivar' : 'activar/aprobar';
-    Alert.alert(
-      'Confirmar Acción',
-      `¿Está seguro de que desea ${actionText} a ${user.firstName} ${user.lastName}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Confirmar', 
-          onPress: () => {
-            toggleUserActiveMutation.mutate(user.id, {
-              onSuccess: (updatedRes) => {
-                const newActive = updatedRes.data?.isActive ?? !user.isActive;
-                Alert.alert('Éxito', `Usuario ${newActive ? 'activado' : 'desactivado'} correctamente.`);
-                
-                // Update selectedUser if open in modal
-                if (selectedUser && selectedUser.id === user.id) {
-                  setSelectedUser({ ...selectedUser, isActive: newActive });
-                }
-              },
-              onError: (err: any) => {
-                Alert.alert('Error', err.response?.data?.message || 'No se pudo cambiar el estado del usuario.');
-              }
-            });
-          }
+    const ok = await confirmAction({
+      title: 'Confirmar Acción',
+      message: `¿Está seguro de que desea ${actionText} a ${user.firstName} ${user.lastName}?`,
+      confirmText: 'Confirmar',
+      destructive: user.isActive,
+    });
+    if (!ok) return;
+    toggleUserActiveMutation.mutate(user.id, {
+      onSuccess: (updatedRes) => {
+        const newActive = updatedRes.data?.isActive ?? !user.isActive;
+        notify('Éxito', `Usuario ${newActive ? 'activado' : 'desactivado'} correctamente.`);
+        if (selectedUser && selectedUser.id === user.id) {
+          setSelectedUser({ ...selectedUser, isActive: newActive });
         }
-      ]
-    );
+      },
+      onError: (err: any) => {
+        notify('Error', err.response?.data?.message || 'No se pudo cambiar el estado del usuario.');
+      },
+    });
   };
 
   const handleCreateSubmit = () => {
@@ -589,8 +577,8 @@ const styles = StyleSheet.create({
     ...typography.bodyMedium,
     color: commonColors.text,
   },
-  listContent: { 
-    paddingBottom: 120 
+  listContent: {
+    paddingBottom: layout.tabBarSpace,
   },
   userCard: {
     backgroundColor: commonColors.surface,

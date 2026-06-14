@@ -8,6 +8,7 @@ import { Home, Plus, MapPin, Trash2, Clock, Pencil } from 'lucide-react-native';
 import { AppModal, AppButton, useToast } from '../ui';
 import { useHomeVisits, useCreateHomeVisit, useDeleteHomeVisit } from '../../services/api-queries';
 import { openInMaps } from '../../utils/maps';
+import { confirmAction } from '../../utils/confirm';
 import { commonColors, obstetraColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
@@ -101,11 +102,15 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
     );
   };
 
-  const confirmDelete = (id: string, n: number) => {
-    Alert.alert('Eliminar visita', `¿Eliminar el acta de la visita N°${n}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => deleteMut.mutate({ id, gestanteId }) },
-    ]);
+  const confirmDelete = async (id: string, n: number) => {
+    const ok = await confirmAction({
+      title: 'Eliminar visita',
+      message: `¿Eliminar el acta de la visita N°${n}?`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteMut.mutate({ id, gestanteId });
   };
 
   return (

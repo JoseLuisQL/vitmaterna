@@ -9,7 +9,7 @@ import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { usePatients } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: -8,
   },
-  listContent: { paddingBottom: 100 },
+  listContent: { paddingBottom: layout.tabBarSpace },
   card: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,

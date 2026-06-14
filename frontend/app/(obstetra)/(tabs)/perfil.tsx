@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 
 const BRAND = obstetraColors.primary;
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
-  content: { paddingHorizontal: 20, paddingBottom: 40 },
+  content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace },
   profileCard: {
     backgroundColor: commonColors.surface,
     borderRadius: 24,

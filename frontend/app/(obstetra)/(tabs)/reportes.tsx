@@ -11,7 +11,7 @@ import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBa
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   pageSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
   exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },
   exportBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.white },
-  content: { paddingHorizontal: spacing.lg, paddingBottom: 48, marginTop: -24 },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, marginTop: -24 },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm2, marginBottom: spacing.lg },
   kpiCard: { width: (screenWidth - 12) / 2, padding: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, ...shadows.card },
   kpiIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm2 },

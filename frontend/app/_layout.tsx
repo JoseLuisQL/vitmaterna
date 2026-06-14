@@ -16,6 +16,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { useAuthStore } from '../src/store/authStore';
 import { ToastProvider } from '../src/components/ui/ToastProvider';
+import { MobileFrame } from '../src/components/ui/MobileFrame';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
@@ -62,7 +63,9 @@ export default function RootLayout(): React.ReactElement | null {
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <StatusBar style="dark" />
-          <AppNavigator />
+          <MobileFrame>
+            <AppNavigator />
+          </MobileFrame>
         </ToastProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

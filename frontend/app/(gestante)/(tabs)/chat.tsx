@@ -13,7 +13,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
 const BRAND = gestanteColors.primary;
 
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   botBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: BRAND },
   offlineBanner: { backgroundColor: commonColors.surfaceAlt, padding: spacing.sm, alignItems: 'center' },
   offlineText: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary },
-  listContent: { padding: spacing.lg, paddingBottom: spacing.lg },
+  listContent: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
   messageBubble: { maxWidth: '80%', padding: spacing.md, borderRadius: borderRadius.xl, marginBottom: spacing.sm + 4, borderWidth: 1, borderColor: commonColors.border },
   messageMe: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: 4, borderColor: BRAND },
   messageOther: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: 4 },

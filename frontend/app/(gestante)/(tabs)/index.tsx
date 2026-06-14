@@ -38,8 +38,9 @@ import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
+import { confirmAction } from '../../../src/utils/confirm';
 
 const BRAND = gestanteColors.primary;
 
@@ -88,43 +89,31 @@ export default function GestanteDashboard(): React.ReactElement {
     }
   });
 
-  const handleEmergencyPress = () => {
-    Alert.alert(
-      '¿Enviar Alerta de Emergencia?',
-      'Se enviará tu ubicación GPS y una notificación de auxilio inmediata a tu obstetra y centro de salud.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Enviar Alerta',
-          style: 'destructive',
-          onPress: () => {
-            if (typeof navigator !== 'undefined' && navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (position) => {
-                  emergencyMutation.mutate({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                  });
-                },
-                (error) => {
-                  console.warn('Geolocation error, falling back to Talavera:', error);
-                  emergencyMutation.mutate({
-                    latitude: -13.654881,
-                    longitude: -73.425950
-                  });
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
-              );
-            } else {
-              emergencyMutation.mutate({
-                latitude: -13.654881,
-                longitude: -73.425950
-              });
-            }
-          }
-        }
-      ]
-    );
+  const handleEmergencyPress = async () => {
+    const ok = await confirmAction({
+      title: '¿Enviar Alerta de Emergencia?',
+      message: 'Se enviará tu ubicación GPS y una notificación de auxilio inmediata a tu obstetra y centro de salud.',
+      confirmText: 'Enviar Alerta',
+      destructive: true,
+    });
+    if (!ok) return;
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          emergencyMutation.mutate({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn('Geolocation error, falling back to Talavera:', error);
+          emergencyMutation.mutate({ latitude: -13.654881, longitude: -73.42595 });
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 },
+      );
+    } else {
+      emergencyMutation.mutate({ latitude: -13.654881, longitude: -73.42595 });
+    }
   };
 
   const nextAppointment = data?.nextAppointment;
@@ -202,7 +191,10 @@ export default function GestanteDashboard(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: layout.tabBarSpace }}
+      >
         
         {/* Header con gradient lila */}
         <LinearGradient
@@ -381,7 +373,6 @@ export default function GestanteDashboard(): React.ReactElement {
             <View style={[styles.quickActionCard, { opacity: 0 }]} pointerEvents="none" />
           </View>
 
-          <View style={{ height: 40 }} />
         </View>
       </ScrollView>
 

@@ -12,6 +12,7 @@ import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Sea
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
 
@@ -435,7 +436,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: layout.tabBarSpace,
   },
   convItem: {
     flexDirection: 'row',

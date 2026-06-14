@@ -13,7 +13,7 @@ import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useSystemConfig, useUpdateSystemConfig } from '../../../src/services/admin-queries';
 
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: layout.tabBarSpace,
   },
   section: {
     backgroundColor: commonColors.surface,

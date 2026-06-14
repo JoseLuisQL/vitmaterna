@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain } from 'lucide-react-native';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { confirmAction } from '../../../src/utils/confirm';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import {
@@ -13,7 +14,7 @@ import {
 } from '../../../src/services/admin-queries';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = adminColors.primary;
@@ -72,17 +73,18 @@ export default function SedesScreen(): React.ReactElement {
     else createMut.mutate(payload, { onSuccess, onError });
   };
 
-  const confirmDelete = (f: any) => {
-    Alert.alert('Eliminar sede', `¿Eliminar "${f.nombre}"?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar', style: 'destructive',
-        onPress: () => deleteMut.mutate(f.id, {
-          onSuccess: () => toast.success('Sede eliminada'),
-          onError: () => toast.error('Error', 'No se pudo eliminar.'),
-        }),
-      },
-    ]);
+  const confirmDelete = async (f: any) => {
+    const ok = await confirmAction({
+      title: 'Eliminar sede',
+      message: `¿Eliminar "${f.nombre}"?`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteMut.mutate(f.id, {
+      onSuccess: () => toast.success('Sede eliminada'),
+      onError: () => toast.error('Error', 'No se pudo eliminar.'),
+    });
   };
 
   if (isLoading) {
@@ -201,7 +203,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h1, color: commonColors.white },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, paddingTop: spacing.md },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, paddingTop: spacing.md },
   card: { flexDirection: 'row', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.md, ...shadows.card },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

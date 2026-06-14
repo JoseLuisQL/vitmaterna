@@ -6,9 +6,10 @@ import { Bell, AlertTriangle, User, Clock, CheckCircle, Share2 } from 'lucide-re
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { confirmAction } from '../../../src/utils/confirm';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
 const BRAND = obstetraColors.primary;
 
@@ -78,16 +79,15 @@ export default function AlertasScreen(): React.ReactElement {
     },
   });
 
-  const confirmAction = (id: string, estado: 'atendido' | 'derivado') => {
+  const confirmAlertAction = async (id: string, estado: 'atendido' | 'derivado') => {
     const titulo = estado === 'atendido' ? 'Atender alerta' : 'Derivar alerta';
     const mensaje =
       estado === 'atendido'
         ? '¿Marcar este signo de alarma como atendido?'
         : '¿Derivar este signo de alarma al equipo de salud?';
-    Alert.alert(titulo, mensaje, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Confirmar', onPress: () => updateMutation.mutate({ id, estado }) },
-    ]);
+    const ok = await confirmAction({ title: titulo, message: mensaje, confirmText: 'Confirmar' });
+    if (!ok) return;
+    updateMutation.mutate({ id, estado });
   };
 
   const getSeverityColor = (severity?: string) => {
@@ -178,7 +178,7 @@ export default function AlertasScreen(): React.ReactElement {
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionDerive]}
-            onPress={() => confirmAction(item.id, 'derivado')}
+            onPress={() => confirmAlertAction(item.id, 'derivado')}
             disabled={updateMutation.isPending}
             activeOpacity={0.7}
           >
@@ -187,7 +187,7 @@ export default function AlertasScreen(): React.ReactElement {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionAttend]}
-            onPress={() => confirmAction(item.id, 'atendido')}
+            onPress={() => confirmAlertAction(item.id, 'atendido')}
             disabled={updateMutation.isPending}
             activeOpacity={0.7}
           >
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
-  listContent: { paddingBottom: 100 },
+  listContent: { paddingBottom: layout.tabBarSpace },
   card: {
     backgroundColor: commonColors.surface,
     borderRadius: 24,
