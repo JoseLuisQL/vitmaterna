@@ -141,8 +141,12 @@
 - ✅ **Esperado:** Lucía con riesgo **Alto (rojo)**.
 
 ### 5.2 Registrar la FUM y verificar FPP automática
-- [ ] Si editas la FUM (p. ej. `2026-01-01`) y guardas.
-- ✅ **Esperado:** la **FPP se calcula sola** (~`2026-10-08`, regla de Naegele).
+- [ ] En el tab **Datos**, sección **"Datos del Embarazo"**, pulsa **Editar**.
+- [ ] En el campo **FUM** escribe `2026-01-01` (formato AAAA-MM-DD) → **Guardar**.
+- ✅ **Esperado:** la **FPP se calcula sola** (~`2026-10-08`, regla de Naegele) y
+  se muestra en la ficha.
+- 💡 La gestante también puede editar su propia FUM desde **Perfil → "Datos
+  Personales y FUM"** (mismo resultado).
 
 ### 5.3 Controles prenatales + gráficas
 - [ ] Tab **Controles** → **Nuevo Control**: EG `24` sem, peso `62`, PA `110/70`,

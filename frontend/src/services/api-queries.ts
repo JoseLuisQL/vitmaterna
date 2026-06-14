@@ -88,6 +88,11 @@ const mapPatientProfile = (g: any) => {
     bloodType: (g.grupoSanguineo || '') + (g.factorRh || ''),
     imc,
     fum: g.fum ? new Date(g.fum).toLocaleDateString('es-PE') : null,
+    // Valores crudos (ISO) para edición por el obstetra.
+    fumRaw: g.fum ? new Date(g.fum).toISOString().split('T')[0] : null,
+    fppEcoRaw: g.fppEco ? new Date(g.fppEco).toISOString().split('T')[0] : null,
+    grupoSanguineo: g.grupoSanguineo || null,
+    factorRh: g.factorRh || null,
     pesoHabitual: g.pesoHabitual || null,
     talla: g.talla || null,
     // Datos personales

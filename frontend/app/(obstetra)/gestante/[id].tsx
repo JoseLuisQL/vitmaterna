@@ -19,7 +19,7 @@ import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
 import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
-  useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment,
+  useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
 } from '../../../src/services/api-queries';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 
@@ -191,6 +191,15 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [antCondicion, setAntCondicion] = useState('');
   const [antDetalle, setAntDetalle] = useState('');
 
+  // Editar datos del embarazo (FUM/FPP/antropometría) por el obstetra
+  const [isEmbModalVisible, setIsEmbModalVisible] = useState(false);
+  const [embFum, setEmbFum] = useState('');
+  const [embFppEco, setEmbFppEco] = useState('');
+  const [embPesoHabitual, setEmbPesoHabitual] = useState('');
+  const [embTalla, setEmbTalla] = useState('');
+  const [embGrupo, setEmbGrupo] = useState('');
+  const [embFactor, setEmbFactor] = useState('');
+
   // Editar/suspender tratamiento (RF-4.10)
   const [editTreat, setEditTreat] = useState<any | null>(null);
   const [editDosis, setEditDosis] = useState('');
@@ -208,6 +217,48 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { mutate: createAntecedente, isPending: isSavingAnt } = useCreateAntecedente();
   const { mutate: deleteAntecedente } = useDeleteAntecedente();
   const { mutate: updateTreatment, isPending: isUpdatingTreat } = useUpdateTreatment();
+  const { mutate: updatePatient, isPending: isSavingEmb } = useUpdatePatient();
+
+  const openEmbModal = () => {
+    if (!patient) return;
+    setEmbFum(patient.fumRaw || '');
+    setEmbFppEco(patient.fppEcoRaw || '');
+    setEmbPesoHabitual(patient.pesoHabitual ? String(patient.pesoHabitual) : '');
+    setEmbTalla(patient.talla ? String(patient.talla) : '');
+    setEmbGrupo(patient.grupoSanguineo || '');
+    setEmbFactor(patient.factorRh || '');
+    setIsEmbModalVisible(true);
+  };
+
+  const handleSaveEmbarazo = () => {
+    if (!patient) return;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (embFum && !dateRegex.test(embFum)) {
+      return toast.error('Formato inválido', 'La FUM debe tener el formato AAAA-MM-DD.');
+    }
+    if (embFppEco && !dateRegex.test(embFppEco)) {
+      return toast.error('Formato inválido', 'La FPP por eco debe tener el formato AAAA-MM-DD.');
+    }
+    const data: any = {};
+    // Solo se envían los campos con valor para no sobrescribir con null sin querer.
+    data.fum = embFum ? new Date(embFum).toISOString() : null;
+    if (embFppEco) data.fppEco = new Date(embFppEco).toISOString();
+    if (embPesoHabitual) data.pesoHabitual = Number(embPesoHabitual);
+    if (embTalla) data.talla = Number(embTalla);
+    if (embGrupo) data.grupoSanguineo = embGrupo.trim();
+    if (embFactor) data.factorRh = embFactor.trim();
+
+    updatePatient(
+      { id: patient.id, data },
+      {
+        onSuccess: () => {
+          toast.success('Datos actualizados', 'La FPP se recalculó automáticamente.');
+          setIsEmbModalVisible(false);
+        },
+        onError: (e: any) => toast.error('No se pudo guardar', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
+      },
+    );
+  };
 
   const handleSaveAntecedente = () => {
     if (!antCondicion.trim()) return toast.error('Falta la condición', 'Indica la condición del antecedente.');
@@ -528,7 +579,13 @@ export default function PatientProfileScreen(): React.ReactElement {
                 )}
               </View>
 
-              <Seccion titulo="Datos del Embarazo" />
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderText}>Datos del Embarazo</Text>
+                <TouchableOpacity style={styles.addChip} onPress={openEmbModal}>
+                  <Plus size={14} color={obstetraColors.onPrimary} />
+                  <Text style={styles.addChipText}>Editar</Text>
+                </TouchableOpacity>
+              </View>
               <View style={[styles.insetGroup, designTokens.cardShadow]}>
                 <Fila label="FUM" value={patient.fum} />
                 <Fila label="FPP" value={patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE') : undefined} />
@@ -1025,6 +1082,65 @@ export default function PatientProfileScreen(): React.ReactElement {
               value={treatDuracion}
               onChangeText={setTreatDuracion}
             />
+          </View>
+        </View>
+      </AppModal>
+
+      {/* ── MODAL: EDITAR DATOS DEL EMBARAZO (FUM/FPP) ── */}
+      <AppModal
+        visible={isEmbModalVisible}
+        onClose={() => setIsEmbModalVisible(false)}
+        title="Editar datos del embarazo"
+        subtitle="Al guardar la FUM, la FPP se recalcula automáticamente (regla de Naegele)."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsEmbModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSaveEmbarazo} style={{ flex: 1 }} themeColor={BRAND} loading={isSavingEmb} disabled={isSavingEmb} />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>FUM — Fecha de última menstruación (AAAA-MM-DD)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. 2026-01-01"
+              placeholderTextColor={commonColors.textTertiary}
+              value={embFum}
+              onChangeText={setEmbFum}
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>FPP por ecografía (opcional, AAAA-MM-DD)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ej. 2026-10-05"
+              placeholderTextColor={commonColors.textTertiary}
+              value={embFppEco}
+              onChangeText={setEmbFppEco}
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
+              <Text style={styles.inputLabel}>Peso habitual (kg)</Text>
+              <TextInput style={styles.textInput} placeholder="ej. 55" placeholderTextColor={commonColors.textTertiary} value={embPesoHabitual} onChangeText={setEmbPesoHabitual} keyboardType="numeric" />
+            </View>
+            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
+              <Text style={styles.inputLabel}>Talla (cm)</Text>
+              <TextInput style={styles.textInput} placeholder="ej. 160" placeholderTextColor={commonColors.textTertiary} value={embTalla} onChangeText={setEmbTalla} keyboardType="numeric" />
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
+              <Text style={styles.inputLabel}>Grupo sanguíneo</Text>
+              <TextInput style={styles.textInput} placeholder="ej. O" placeholderTextColor={commonColors.textTertiary} value={embGrupo} onChangeText={setEmbGrupo} autoCapitalize="characters" />
+            </View>
+            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
+              <Text style={styles.inputLabel}>Factor RH</Text>
+              <TextInput style={styles.textInput} placeholder="ej. +" placeholderTextColor={commonColors.textTertiary} value={embFactor} onChangeText={setEmbFactor} />
+            </View>
           </View>
         </View>
       </AppModal>
