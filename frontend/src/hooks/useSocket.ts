@@ -18,13 +18,24 @@ export const useSocket = () => {
 
     const newSocket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket'],
+      // Permitir fallback a polling: en Expo/React Native el transporte
+      // 'websocket' puro a veces no conecta. Con polling+websocket es robusto.
+      transports: ['websocket', 'polling'],
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      timeout: 10000,
     });
 
     newSocket.on('connect', () => {
       setIsConnected(true);
       console.log('Socket connected:', newSocket.id);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      setIsConnected(false);
+      console.log('Socket connect_error:', err?.message);
     });
 
     newSocket.on('disconnect', () => {
