@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from './api';
+import { isOnline } from './network';
+import { enqueue } from './outbox';
+
+/** Fecha de hoy en formato YYYY-MM-DD (para dedupe de cola offline). */
+const todayISO = () => new Date().toISOString().split('T')[0];
 
 // Helper to safely extract date + time
 const combineDateTime = (fecha: string, hora: string) => {
@@ -221,12 +226,58 @@ export const fetchTreatments = async () => {
 };
 
 export const logTreatment = async (treatmentId: string) => {
-  // Se envía un cuerpo explícito (tomado=true) para evitar body vacío.
-  const res = await api.post(`/clinical/treatments/${treatmentId}/log`, { tomado: true });
+  const endpoint = `/clinical/treatments/${treatmentId}/log`;
+  const payload = { tomado: true, dedupeKey: `supplement:${treatmentId}:${todayISO()}` };
+
+  // Offline: encolar para reenviar al reconectar (idempotente por día).
+  if (!isOnline()) {
+    enqueue({
+      type: 'supplement_log',
+      endpoint,
+      method: 'POST',
+      payload,
+      dedupeKey: payload.dedupeKey,
+      invalidate: [['treatments'], ['gestanteDashboard'], ['adherence']],
+    });
+    return { data: { queued: true } };
+  }
+
+  // Online: enviar directo.
+  const res = await api.post(endpoint, payload);
   return res.data;
 };
 
-const todayISO = () => new Date().toISOString().split('T')[0];
+/**
+ * Reporta un signo de alarma. Offline-first: si no hay red, encola el envío
+ * (idempotente por tipo+descr+minuto) para reenviar al reconectar.
+ * Devuelve { queued: true } cuando quedó en cola.
+ */
+export const reportDangerSign = async (body: {
+  tipo_signo: string;
+  descripcion?: string;
+  severidad?: string;
+}): Promise<{ queued?: boolean } | any> => {
+  const endpoint = '/clinical/danger-signs';
+  const dedupeKey = `danger:${body.tipo_signo}:${body.descripcion || ''}:${new Date()
+    .toISOString()
+    .slice(0, 16)}`;
+  const payload = { ...body, dedupeKey };
+
+  if (!isOnline()) {
+    enqueue({
+      type: 'danger_sign',
+      endpoint,
+      method: 'POST',
+      payload,
+      dedupeKey,
+      invalidate: [['notifications']],
+    });
+    return { queued: true };
+  }
+
+  const res = await api.post(endpoint, payload);
+  return res.data;
+};
 
 /** Aplica de forma optimista el consumo de hoy a un tratamiento. */
 const applyTakenToday = (t: any) => {

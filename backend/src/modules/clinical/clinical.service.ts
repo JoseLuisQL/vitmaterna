@@ -381,6 +381,24 @@ export class ClinicalService {
   }
 
   async createDangerSign(gestanteId: string, data: any) {
+    // Idempotencia (cola offline): si llega un reenvío del mismo signo
+    // (mismo tipo + descripción) en una ventana de 10 minutos, se devuelve el
+    // existente en lugar de duplicar. La app envía `dedupeKey`, pero la
+    // deduplicación se basa en los datos para ser robusta ante reintentos.
+    const VENTANA_MS = 10 * 60 * 1000;
+    const reciente = await prisma.dangerSign.findFirst({
+      where: {
+        gestanteId,
+        tipoSigno: data.tipo_signo,
+        descripcion: data.descripcion ?? null,
+        createdAt: { gte: new Date(Date.now() - VENTANA_MS) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (reciente) {
+      return reciente;
+    }
+
     const dangerSign = await prisma.dangerSign.create({
       data: {
         gestanteId,

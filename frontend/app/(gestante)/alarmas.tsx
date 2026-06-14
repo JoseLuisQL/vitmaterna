@@ -12,7 +12,7 @@ import {
   Frown, Thermometer, Activity, Droplets, Droplet,
   Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse, ArrowLeft,
 } from 'lucide-react-native';
-import api from '../../src/services/api';
+import { reportDangerSign } from '../../src/services/api-queries';
 import { notify } from '../../src/utils/confirm';
 import { gradients } from '../../src/theme/gradients';
 import { commonColors, semanticColors } from '../../src/theme/colors';
@@ -69,9 +69,9 @@ export default function AlarmScreen(): React.ReactElement {
   const { mutateAsync: enviarAlerta, isPending } = useMutation({
     mutationFn: async ({ sintomas, notas }: { sintomas: string[]; notas: string }) => {
       // El backend registra un signo de alarma por cada síntoma reportado.
-      // Se envían en serie para que cada uno quede trazable para el obstetra.
+      // Offline-first: reportDangerSign encola si no hay red (idempotente).
       for (const sintoma of sintomas) {
-        await api.post('/clinical/danger-signs', {
+        await reportDangerSign({
           tipo_signo: sintoma,
           descripcion: notas || undefined,
           severidad: 'grave',

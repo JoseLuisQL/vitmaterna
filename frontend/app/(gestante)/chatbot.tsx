@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Bot, Phone, AlertTriangle, MessageCircle } from 'lucide-react-native';
-import api from '../../src/services/api';
+import { reportDangerSign } from '../../src/services/api-queries';
 import { gestanteColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
@@ -99,7 +99,7 @@ export default function ChatbotScreen(): React.ReactElement {
 
   const alertaMutation = useMutation({
     mutationFn: async (sintoma: SintomaOpcion) => {
-      await api.post('/clinical/danger-signs', {
+      await reportDangerSign({
         tipo_signo: sintoma.texto,
         descripcion: 'Reportado vía asistente de orientación (chatbot)',
         severidad: sintoma.urgencia === 'grave' ? 'grave' : 'moderado',

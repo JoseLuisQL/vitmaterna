@@ -130,6 +130,8 @@ export const createSupplementLogSchema = {
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     tomado: z.boolean().default(true),
     notas: z.string().optional(),
+    // Clave de deduplicación para reenvíos de la cola offline (opcional).
+    dedupeKey: z.string().optional(),
   }),
 };
 
@@ -138,6 +140,8 @@ export const createDangerSignSchema = {
     tipo_signo: z.string().min(1),
     descripcion: z.string().optional(),
     severidad: z.enum(['leve', 'moderado', 'grave']).optional(),
+    // Clave de deduplicación para reenvíos de la cola offline (opcional).
+    dedupeKey: z.string().optional(),
   }),
 };
 

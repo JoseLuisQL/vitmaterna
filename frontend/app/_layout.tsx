@@ -5,7 +5,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import {
   useFonts,
@@ -17,26 +17,19 @@ import {
 import { useAuthStore } from '../src/store/authStore';
 import { ToastProvider } from '../src/components/ui/ToastProvider';
 import { MobileFrame } from '../src/components/ui/MobileFrame';
+import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
+import { queryClient, startQueryPersistence } from '../src/services/queryClient';
+import { initNetwork } from '../src/services/network';
+import { initOutbox } from '../src/services/outbox';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      // Datos "frescos" por poco tiempo para favorecer la actualización
-      // en tiempo real al volver a una pantalla o reenfocar la app.
-      staleTime: 15 * 1000, // 15 segundos
-      gcTime: 30 * 60 * 1000,
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
+// Conectividad + persistencia + cola offline se inician una sola vez, antes de
+// montar el árbol (idempotentes).
+initNetwork();
+startQueryPersistence();
+initOutbox(queryClient);
 
 export default function RootLayout(): React.ReactElement | null {
   const loadStoredAuth = useAuthStore((s) => s.loadStoredAuth);
@@ -66,6 +59,7 @@ export default function RootLayout(): React.ReactElement | null {
           <MobileFrame>
             <AppNavigator />
           </MobileFrame>
+          <OfflineBanner />
         </ToastProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

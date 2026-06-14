@@ -32,7 +32,7 @@ import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, useToast } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
-import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
+import { useGestanteDashboard, useConfirmAppointment, reportDangerSign } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
@@ -59,18 +59,21 @@ export default function GestanteDashboard(): React.ReactElement {
   const [notes, setNotes] = React.useState('');
 
   const reportMutation = useMutation({
-    mutationFn: () => {
-      return api.post('/clinical/danger-signs', {
+    mutationFn: () =>
+      reportDangerSign({
         tipo_signo: selectedSign,
         descripcion: notes || undefined,
         severidad: 'grave',
-      });
-    },
-    onSuccess: () => {
+      }),
+    onSuccess: (res: any) => {
       setIsModalVisible(false);
       setSelectedSign('');
       setNotes('');
-      toast.success('Alerta enviada', 'Tu obstetra fue notificada de tu signo de alarma.');
+      if (res?.queued) {
+        toast.info('Alerta guardada', 'Sin conexión: se enviará a tu obstetra al reconectar.');
+      } else {
+        toast.success('Alerta enviada', 'Tu obstetra fue notificada de tu signo de alarma.');
+      }
     },
     onError: () => {
       toast.error('No se pudo enviar', 'Inténtalo de nuevo. Si es urgente, llama al centro de salud.');
