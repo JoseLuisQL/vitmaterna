@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import type { Express } from 'express';
 import { createApp } from '../../src/config/app.js';
+import { prisma } from '../../src/config/database.js';
 
 /**
  * Pruebas de integración del módulo de autenticación.
@@ -85,5 +86,54 @@ describe('Auth API', () => {
       .patch(`${PREFIX}/auth/me`)
       .set('Authorization', `Bearer ${token}`)
       .send({ notificationPreferences: { push: true, sms: true, whatsapp: true } });
+  });
+
+  describe('Registro de obstetra requiere aprobación del admin', () => {
+    const dni = String(Date.now()).slice(-8);
+    const password = 'Clave123@';
+
+    afterAll(async () => {
+      const u = await prisma.user.findUnique({ where: { dni } });
+      if (u) {
+        await prisma.obstetra.deleteMany({ where: { userId: u.id } });
+        await prisma.userSession.deleteMany({ where: { userId: u.id } });
+        await prisma.user.delete({ where: { id: u.id } });
+      }
+    });
+
+    it('el registro de obstetra NO devuelve token y queda pendiente de aprobación', async () => {
+      const res = await request(app)
+        .post(`${PREFIX}/auth/register`)
+        .send({
+          dni, firstName: 'Nueva', lastName: 'ObstetraTest', phone: '987654321',
+          password, confirmPassword: password, role: 'obstetra', cop: 'COP777', consentAccepted: true,
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.data.requiresApproval).toBe(true);
+      expect(res.body.data.accessToken).toBeUndefined();
+    });
+
+    it('el obstetra NO aprobado NO puede iniciar sesión (403)', async () => {
+      const res = await request(app).post(`${PREFIX}/auth/login`).send({ dni, password });
+      expect(res.status).toBe(403);
+    });
+
+    it('tras aprobar, el obstetra ya puede iniciar sesión (200)', async () => {
+      const admin = await request(app).post(`${PREFIX}/auth/login`).send({ dni: '99999999', password: 'Admin@2026' });
+      const adminToken = admin.body.data.accessToken;
+      const list = await request(app).get(`${PREFIX}/admin/users`).set('Authorization', `Bearer ${adminToken}`);
+      const arr = Array.isArray(list.body.data) ? list.body.data : (list.body.data.items || list.body.data.users || []);
+      const created = arr.find((u: any) => u.dni === dni);
+      expect(created).toBeTruthy();
+
+      const approve = await request(app)
+        .put(`${PREFIX}/admin/users/${created.id}/approve`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(approve.status).toBe(200);
+
+      const login = await request(app).post(`${PREFIX}/auth/login`).send({ dni, password });
+      expect(login.status).toBe(200);
+      expect(login.body.data.accessToken).toBeTruthy();
+    });
   });
 });

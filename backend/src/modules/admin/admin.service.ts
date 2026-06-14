@@ -66,9 +66,10 @@ export class AdminService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'User not found');
     }
 
+    // Aprobar = activar y verificar la cuenta (permite el ingreso).
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { isActive: true },
+      data: { isActive: true, isVerified: true },
     });
 
     return updated;

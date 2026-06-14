@@ -73,12 +73,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (data: RegisterRequest): Promise<void> => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post<ApiResponse<AuthResponse>>(
+      const response = await api.post<ApiResponse<any>>(
         '/auth/register',
         data,
       );
 
-      const { user, accessToken, refreshToken } = response.data.data;
+      const payload = response.data.data;
+      const { user, accessToken, refreshToken, requiresApproval } = payload;
+
+      // Obstetras: la cuenta queda pendiente de aprobación; NO se inicia sesión.
+      if (requiresApproval || !accessToken) {
+        set({ isLoading: false, error: null, isAuthenticated: false, user: null, token: null });
+        return;
+      }
+
       await storeTokens(accessToken, refreshToken);
 
       set({

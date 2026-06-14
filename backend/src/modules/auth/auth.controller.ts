@@ -15,7 +15,21 @@ export async function register(req: Request, res: Response): Promise<void> {
   const user = await authService.createUser(input);
   const sanitized = authService.sanitizeUser(user);
 
-  // Auto-login after registration
+  // Los obstetras requieren aprobación del administrador antes de poder ingresar.
+  // No se inicia sesión automáticamente: se queda pendiente de aprobación.
+  if (!user.isVerified) {
+    res.status(201).json(
+      successResponse({
+        user: sanitized,
+        requiresApproval: true,
+        message:
+          'Tu cuenta fue creada y está pendiente de aprobación por el administrador. Te avisaremos cuando puedas ingresar.',
+      }),
+    );
+    return;
+  }
+
+  // Gestantes (verificadas de inmediato): auto-login tras el registro.
   const { refreshToken } = await authService.createSession(
     user.id,
     undefined,
@@ -52,6 +66,16 @@ export async function login(req: Request, res: Response): Promise<void> {
   // Check if account is active
   if (!user.isActive) {
     throw new AppError(403, ErrorCodes.FORBIDDEN, 'Account is deactivated. Contact an administrator.');
+  }
+
+  // Las cuentas que requieren aprobación (obstetras) no pueden ingresar hasta
+  // que el administrador las verifique.
+  if (!user.isVerified) {
+    throw new AppError(
+      403,
+      ErrorCodes.FORBIDDEN,
+      'Tu cuenta está pendiente de aprobación por el administrador.',
+    );
   }
 
   // Check if account is locked

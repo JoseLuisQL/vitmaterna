@@ -99,13 +99,22 @@ export default function RegisterScreen(): React.ReactElement {
           cop: selectedRole === 'obstetra' ? validated.cop : undefined,
         };
         await registerUser(registerData);
-        
-        const user = useAuthStore.getState().user;
-        if (user) {
-          if (user.role === 'gestante') router.replace('/(gestante)/(tabs)');
-          else if (user.role === 'admin') router.replace('/(admin)/(tabs)/usuarios' as any);
-          else router.replace('/(obstetra)/(tabs)');
+
+        const { user, isAuthenticated } = useAuthStore.getState();
+
+        // Obstetra: queda pendiente de aprobación del administrador (no entra).
+        if (!isAuthenticated || !user) {
+          Alert.alert(
+            'Cuenta pendiente de aprobación',
+            'Tu cuenta fue creada y está pendiente de aprobación por el administrador. Te avisaremos cuando puedas ingresar.',
+            [{ text: 'Entendido', onPress: () => router.replace('/(auth)/login') }],
+          );
+          return;
         }
+
+        if (user.role === 'gestante') router.replace('/(gestante)/(tabs)');
+        else if (user.role === 'admin') router.replace('/(admin)/(tabs)/usuarios' as any);
+        else router.replace('/(obstetra)/(tabs)');
       } catch (error) {
         if (error instanceof z.ZodError) {
           Alert.alert('Error de validación', error.issues[0]?.message || 'Revisa los campos');
