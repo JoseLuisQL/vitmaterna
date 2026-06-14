@@ -3,6 +3,7 @@ import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
   TextInput, Linking, StatusBar
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BookOpen, AlertTriangle, Calculator, Phone,
@@ -180,12 +181,18 @@ export default function EducacionScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={gestanteColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <Text style={styles.headerTitle}>Educación</Text>
+          <Text style={styles.headerSubtitle}>Aprende sobre tu embarazo</Text>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.seccionBar}>
         <ToggleTabs
@@ -265,6 +272,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
     paddingHorizontal: spacing.lg,
@@ -272,8 +281,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...typography.display,
-    color: commonColors.text,
-    marginBottom: spacing.sm,
+    color: commonColors.white,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    ...typography.bodySm,
+    color: 'rgba(255,255,255,0.85)',
   },
   seccionBar: {
     marginHorizontal: spacing.lg,

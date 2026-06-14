@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -26,7 +27,8 @@ import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ProgressRing } from '../../../src/components/ui/ProgressRing';
+import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, useToast } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -37,6 +39,7 @@ import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
@@ -167,7 +170,13 @@ export default function GestanteDashboard(): React.ReactElement {
   };
 
   if (isLoading) {
-    return <LoadingScreen message="Cargando tu información..." />;
+    return (
+      <View style={styles.container}>
+        <SafeAreaView edges={['top']} style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+          <DashboardSkeleton count={3} />
+        </SafeAreaView>
+      </View>
+    );
   }
 
   const riskLevel = profile?.nivelRiesgo || 'verde';
@@ -195,25 +204,31 @@ export default function GestanteDashboard(): React.ReactElement {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         
-        {/* Luxury Header */}
-        <View style={styles.headerWrapper}>
-          <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+        {/* Header con gradient lila */}
+        <LinearGradient
+          colors={gestanteColors.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerWrapper}
+        >
+          <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
           <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
             <View style={styles.headerRow}>
               <View style={styles.headerGreeting}>
                 <Text style={styles.greeting}>Hola,</Text>
                 <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+                <Text style={styles.headerTrimester}>{trimesterText}</Text>
               </View>
               <View style={styles.headerActions}>
                 <View style={styles.weekBadge}>
-                  <Heart size={16} color={BRAND} />
+                  <Heart size={16} color={commonColors.white} />
                   <Text style={styles.weekText}>{gestationalWeekText}</Text>
                 </View>
-                <NotificationBell href="/(gestante)/notificaciones" color={commonColors.text} />
+                <NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />
               </View>
             </View>
           </SafeAreaView>
-        </View>
+        </LinearGradient>
 
         <View style={styles.contentWrapper}>
           
@@ -298,12 +313,24 @@ export default function GestanteDashboard(): React.ReactElement {
               </View>
               <ChevronRight size={20} color={commonColors.textTertiary} />
             </View>
-            <View style={styles.treatmentProgress}>
-              <View style={styles.treatmentTrack}>
-                <View style={[styles.treatmentFill, { width: `${treatmentPercentage}%` }]} />
+            {totalTreatments > 0 && (
+              <View style={styles.treatmentProgress}>
+                <ProgressRing
+                  value={treatmentPercentage}
+                  size="md"
+                  color={semanticColors.info}
+                  label={`${takenCount}/${totalTreatments}`}
+                />
+                <View style={styles.treatmentInfo}>
+                  <Text style={styles.treatmentInfoValue}>{treatmentPercentage}% completado</Text>
+                  <Text style={styles.treatmentInfoLabel}>
+                    {takenCount === totalTreatments
+                      ? '¡Excelente! Tomaste todo hoy.'
+                      : `Te faltan ${totalTreatments - takenCount} por tomar.`}
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.treatmentPercentage}>{treatmentPercentage}%</Text>
-            </View>
+            )}
           </AppCard>
 
           {/* Quick Actions */}
@@ -405,8 +432,10 @@ export default function GestanteDashboard(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: spacing.lg,
-    marginBottom: spacing.sm,
+    paddingBottom: spacing.xl,
+    marginBottom: -spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
     paddingHorizontal: spacing.lg,
@@ -415,37 +444,41 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
   },
   headerGreeting: { flexShrink: 1, minWidth: 0 },
   greeting: {
     ...typography.h3,
-    color: commonColors.textSecondary,
-    marginBottom: 4,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 2,
   },
   name: {
     ...typography.display,
-    color: commonColors.text,
+    color: commonColors.white,
+  },
+  headerTrimester: {
+    ...typography.bodySm,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
   weekBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: commonColors.surface,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: commonColors.border,
   },
   weekText: {
     ...typography.label,
-    color: BRAND,
+    color: commonColors.white,
   },
   contentWrapper: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   progressCard: {
     marginBottom: spacing.lg,
@@ -483,16 +516,16 @@ const styles = StyleSheet.create({
   cardHeaderText: { flex: 1 },
   cardTitle: { ...typography.h3, color: commonColors.text },
   cardSubtitle: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  cardDetails: { backgroundColor: commonColors.background, borderRadius: borderRadius.lg, padding: spacing.md },
+  cardDetails: { backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.md },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  divider: { height: 1, backgroundColor: commonColors.border, marginVertical: spacing.sm },
+  divider: { height: 1, backgroundColor: commonColors.borderLight, marginVertical: spacing.sm },
   detailLabel: { ...typography.bodySmall, color: commonColors.textSecondary },
   detailValue: { ...typography.label, color: commonColors.text },
   emptyText: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.sm },
-  treatmentProgress: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 4 },
-  treatmentTrack: { flex: 1, height: 12, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.full, overflow: 'hidden' },
-  treatmentFill: { height: '100%', backgroundColor: semanticColors.info, borderRadius: borderRadius.full },
-  treatmentPercentage: { ...typography.label, color: semanticColors.info, minWidth: 40, textAlign: 'right' },
+  treatmentProgress: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.sm },
+  treatmentInfo: { flex: 1 },
+  treatmentInfoValue: { ...typography.h4, color: commonColors.text },
+  treatmentInfoLabel: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md, marginTop: spacing.sm },
   quickActions: { flexDirection: 'row', gap: spacing.sm + 4 },
   quickActionCard: { flex: 1, alignItems: 'center', padding: spacing.md, gap: spacing.sm + 4 },

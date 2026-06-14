@@ -10,7 +10,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, ToggleTabs, ListSkeleton } from '../../../src/components/ui';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -291,10 +291,15 @@ export default function AppointmentsScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={BRAND} />
-        <Text style={styles.loadingText}>Cargando tus citas...</Text>
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Mis Citas</Text>
+          <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
+        </View>
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+          <ListSkeleton count={4} />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -310,26 +315,15 @@ export default function AppointmentsScreen() {
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
-          onPress={() => setActiveTab('upcoming')}
-        >
-          <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>Próximas</Text>
-          {upcoming.length > 0 && (
-            <View style={[styles.badge, activeTab === 'upcoming' ? styles.badgeActive : styles.badgeInactive]}>
-              <Text style={[styles.badgeNum, activeTab === 'upcoming' ? styles.badgeNumActive : styles.badgeNumInactive]}>
-                {upcoming.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-          onPress={() => setActiveTab('history')}
-        >
-          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>Historial</Text>
-        </TouchableOpacity>
+        <ToggleTabs
+          tabs={[
+            { key: 'upcoming', label: 'Próximas', badge: upcoming.length },
+            { key: 'history', label: 'Historial' },
+          ]}
+          value={activeTab}
+          onChange={(k) => setActiveTab(k as 'upcoming' | 'history')}
+          activeColor={BRAND}
+        />
       </View>
 
       <FlatList
@@ -533,7 +527,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.h1, color: commonColors.text, marginBottom: 2 },
   headerSubtitle: { ...typography.bodySmall, color: commonColors.textSecondary },
-  tabContainer: { flexDirection: 'row', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm, gap: spacing.sm },
+  tabContainer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',

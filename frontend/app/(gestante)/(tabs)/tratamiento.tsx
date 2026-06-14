@@ -3,10 +3,11 @@ import {
   View, StyleSheet, Text, FlatList, RefreshControl,
   TouchableOpacity, StatusBar
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pill, CheckCircle, Clock, Info } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
@@ -114,7 +115,25 @@ export default function TratamientoScreen(): React.ReactElement {
 
   useRefetchOnFocus([refetch]);
 
-  if (isLoading) return <LoadingScreen message="Cargando tu tratamiento..." />;
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={gestanteColors.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerWrapper}
+        >
+          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+            <Text style={styles.headerTitle}>Mi Tratamiento</Text>
+          </SafeAreaView>
+        </LinearGradient>
+        <View style={[styles.contentWrapper, { paddingTop: spacing.lg }]}>
+          <ListSkeleton count={4} />
+        </View>
+      </View>
+    );
+  }
 
   function handleRegistrar(id: string, nombre: string, yaTomado: boolean) {
     if (yaTomado) return;
@@ -131,15 +150,20 @@ export default function TratamientoScreen(): React.ReactElement {
 
   const renderHeader = () => (
     <>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={gestanteColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <Text style={styles.headerTitle}>Mi Tratamiento</Text>
           {semanaGestacional && (
             <Text style={styles.headerSubtitle}>Semana {semanaGestacional} de gestación</Text>
           )}
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.contentWrapper}>
         {semanaGestacional && (
@@ -251,6 +275,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
     paddingHorizontal: spacing.lg,
@@ -258,12 +284,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...typography.display,
-    color: commonColors.text,
+    color: commonColors.white,
     marginBottom: 4,
   },
   headerSubtitle: {
     ...typography.body,
-    color: commonColors.textSecondary,
+    color: 'rgba(255,255,255,0.85)',
   },
   contentWrapper: {
     paddingHorizontal: spacing.lg,
