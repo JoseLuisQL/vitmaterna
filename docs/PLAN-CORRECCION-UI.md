@@ -112,6 +112,30 @@ header pressable). Y `onResponderMove` de react-native-chart-kit en web.
 
 ---
 
+## D. Resultado de la ejecución (QA en navegador)
+
+- **BUG-1 (tabs):** resultó un **falso positivo** del método de diagnóstico
+  (`innerText` lee la pantalla oculta detrás con z-index −1). La conmutación de
+  tabs **sí funciona** (verificado: al centro de la pantalla siempre se ve la
+  pantalla activa). Se mejoró igual `PillTabBar` (navegación oficial + índice).
+- **BUG-2 (logout/confirm):** **corregido**. `confirmAction()` cross-platform.
+  Verificado: cancelar mantiene en `/usuarios`, aceptar va a `/login`.
+- **BUG-3 (mobile-first):** **corregido**. `MobileFrame` centra la app en 440px
+  en web. Verificado en dashboard, ficha clínica, admin.
+- **BUG-4 (scroll):** **corregido**. Token `layout.tabBarSpace` en todas las
+  listas/scrolls. Verificado: el contenido llega al fondo sin taparse.
+- **BUG-5 (headers):** **corregido**. Headers gradient por rol en todas las
+  vistas (gestante, obstetra, admin).
+
+**QA final (navegador):** recorridas las 5 tabs gestante, 7 obstetra, 5 admin
++ ficha clínica → todas renderizan su contenido correcto, con header gradient,
+frame mobile y scroll. Sin errores críticos de consola. `tsc` + 44 tests OK.
+
+> Nota: el apilamiento de pantallas en web (ambas en el DOM) es comportamiento
+> de expo-router + react-native-screens en web y **existía desde el commit
+> inicial** (no es regresión). No afecta lo que el usuario ve (z-index correcto)
+> ni el comportamiento en dispositivo nativo.
+
 ## C. Reglas que se respetarán (consistencia)
 - Cero valores de color/spacing hardcodeados nuevos: solo tokens del theme.
 - Un único patrón de header por rol (gradient + safe-area + radios inferiores).
