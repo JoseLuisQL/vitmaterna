@@ -3,6 +3,7 @@ import { Queue, Worker, Job } from 'bullmq';
 import { redis } from '../../config/redis.js';
 import { prisma } from '../../config/database.js';
 import { smsChannel, whatsappChannel, sendSmsAndWhatsApp } from './channels.js';
+import { calculateEG } from '../../utils/dateCalc.js';
 
 const expo = new Expo();
 
@@ -418,6 +419,78 @@ export async function scanUpcomingFPP() {
   }
 }
 
+/**
+ * RF-7.11: detecta exámenes de laboratorio obligatorios (MINSA) pendientes.
+ *
+ * Para cada gestante activa con EG conocida, revisa qué exámenes del tamizaje
+ * básico no tienen ningún `LabResult` registrado una vez superada la semana en
+ * que deberían haberse tomado. Alerta al obstetra a cargo, una vez al día por
+ * gestante (deduplicado por Notification del día).
+ */
+const EXAMENES_OBLIGATORIOS: { nombre: string; alias: string[]; desdeSemana: number }[] = [
+  { nombre: 'Hemoglobina', alias: ['hemoglobina', 'hb'], desdeSemana: 12 },
+  { nombre: 'VIH', alias: ['vih'], desdeSemana: 12 },
+  { nombre: 'Sífilis (VDRL/RPR)', alias: ['vdrl', 'rpr', 'sifilis', 'sífilis'], desdeSemana: 12 },
+  { nombre: 'Glucosa', alias: ['glucosa', 'glucemia'], desdeSemana: 12 },
+  { nombre: 'Examen de orina', alias: ['orina', 'urocultivo', 'examen de orina'], desdeSemana: 12 },
+];
+
+export async function scanPendingExams() {
+  const now = new Date();
+
+  const gestantes = await prisma.gestante.findMany({
+    where: { estado: 'activa', OR: [{ fum: { not: null } }, { fppEco: { not: null } }] },
+    include: { user: true, labResults: { select: { tipoExamen: true } } },
+  });
+
+  const hoy = now.toISOString().split('T')[0];
+
+  for (const g of gestantes) {
+    if (!g.user) continue;
+
+    // EG aproximada a partir de la FUM (si no hay FUM, derivar de FPP por eco).
+    let egWeeks: number | null = null;
+    if (g.fum) {
+      egWeeks = calculateEG(new Date(g.fum), now).weeks;
+    } else if (g.fppEco) {
+      const diasParaFpp = Math.ceil((new Date(g.fppEco).getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      egWeeks = Math.max(0, 40 - Math.ceil(diasParaFpp / 7));
+    }
+    if (egWeeks == null || egWeeks < 12) continue;
+
+    const registrados = g.labResults.map((l) => (l.tipoExamen || '').toLowerCase());
+    const faltantes = EXAMENES_OBLIGATORIOS.filter(
+      (ex) =>
+        egWeeks! >= ex.desdeSemana &&
+        !registrados.some((r) => ex.alias.some((a) => r.includes(a))),
+    );
+    if (faltantes.length === 0) continue;
+
+    // Una alerta por gestante por día.
+    const yaAlertado = await prisma.notification.findFirst({
+      where: {
+        tipo: 'examenes_pendientes',
+        datos: { path: ['gestanteId'], equals: g.id },
+        createdAt: { gte: new Date(`${hoy}T00:00:00.000Z`) },
+      },
+    });
+    if (yaAlertado) continue;
+
+    const nombres = faltantes.map((f) => f.nombre).join(', ');
+    const obstetraUserId = await findObstetraUserIdForGestante(g.id);
+    if (obstetraUserId) {
+      const nombreGestante = `${g.user.firstName} ${g.user.lastName}`;
+      await notifyUser(
+        obstetraUserId,
+        'examenes_pendientes',
+        'Exámenes pendientes',
+        `${nombreGestante} (sem. ${egWeeks}) tiene exámenes del tamizaje básico sin registrar: ${nombres}.`,
+        { gestanteId: g.id, egWeeks, faltantes: faltantes.map((f) => f.nombre) },
+      );
+    }
+  }
+}
+
 export function startReminderCron() {
   const runAll = async () => {
     await scanAndSendReminders();
@@ -425,6 +498,7 @@ export function startReminderCron() {
     await scanMissedAppointments();
     await scanLowAdherence();
     await scanUpcomingFPP();
+    await scanPendingExams();
   };
   runAll().catch((err) => console.error('[REMINDER CRON ERROR]', err));
 

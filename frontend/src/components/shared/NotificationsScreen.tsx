@@ -52,6 +52,8 @@ function metaFor(tipo: string): { icon: keyof typeof Ionicons.glyphMap; color: s
       return { icon: 'medkit', color: semanticColors.info, bg: semanticColors.infoLight };
     case 'fpp_proxima':
       return { icon: 'heart', color: gestanteColors.primary, bg: gestanteColors.primaryLight };
+    case 'examenes_pendientes':
+      return { icon: 'flask', color: semanticColors.info, bg: semanticColors.infoLight };
     default:
       return { icon: 'notifications', color: commonColors.textSecondary, bg: commonColors.surfaceAlt };
   }
@@ -105,6 +107,9 @@ export function NotificationsScreen({
       target = role === 'obstetra' ? '/(obstetra)/(tabs)/cronograma' : '/(gestante)/(tabs)/citas';
     } else if (n.tipo === 'signo_alarma' && role === 'obstetra') {
       target = '/(obstetra)/(tabs)/alertas';
+    } else if (n.tipo === 'examenes_pendientes' && role === 'obstetra') {
+      const gid = (n.datos as { gestanteId?: string })?.gestanteId;
+      target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
     } else if (n.tipo === 'recordatorio_suplemento' && role === 'gestante') {
       target = '/(gestante)/(tabs)/tratamiento';
     }
