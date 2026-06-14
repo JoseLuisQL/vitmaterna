@@ -1,6 +1,9 @@
-import { db } from './index';
+import { getDb } from './index';
 
 export function initializeDatabase() {
+  const db = getDb();
+  // En web (o si SQLite no está disponible) se omite sin romper la app.
+  if (!db) return;
   try {
     // Enable Write-Ahead Logging for better performance
     db.execSync('PRAGMA journal_mode = WAL;');

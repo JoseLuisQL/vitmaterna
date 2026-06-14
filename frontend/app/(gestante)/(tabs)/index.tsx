@@ -198,9 +198,9 @@ export default function GestanteDashboard(): React.ReactElement {
           <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
           <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
             <View style={styles.headerRow}>
-              <View>
+              <View style={styles.headerGreeting}>
                 <Text style={styles.greeting}>Hola,</Text>
-                <Text style={styles.name}>{displayName}</Text>
+                <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
               </View>
               <View style={styles.headerActions}>
                 <View style={styles.weekBadge}>
@@ -394,7 +394,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
+  headerGreeting: { flexShrink: 1, minWidth: 0 },
   greeting: {
     ...typography.h3,
     color: commonColors.textSecondary,
@@ -404,7 +406,7 @@ const styles = StyleSheet.create({
     ...typography.display,
     color: commonColors.text,
   },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
   weekBadge: {
     flexDirection: 'row',
     alignItems: 'center',
