@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -9,7 +10,10 @@ import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 import { useCreatePatient, useUpdatePatient } from '../../../src/services/api-queries';
+import { notify } from '../../../src/utils/confirm';
 
 const BRAND = obstetraColors.primary;
 
@@ -134,13 +138,13 @@ export default function NuevaGestanteScreen(): React.ReactElement {
         }
       });
 
-      Alert.alert(
-        '¡Registro Exitoso!', 
-        'La paciente fue registrada con todos sus datos clínicos. Su usuario inicial es su propio DNI.', 
-        [{ text: 'Entendido', onPress: () => router.back() }]
+      notify(
+        '¡Registro Exitoso!',
+        'La paciente fue registrada con todos sus datos clínicos. Su usuario inicial es su propio DNI.',
       );
+      router.back();
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error?.message || 'No se pudo guardar la paciente completa. Verifique los datos e intente de nuevo.');
+      notify('Error', err.response?.data?.error?.message || 'No se pudo guardar la paciente completa. Verifique los datos e intente de nuevo.');
     }
   };
 
@@ -153,7 +157,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
         return (
           <View key={step.id} style={styles.stepWrapper}>
             <View style={[styles.stepCircle, isActive && styles.stepActive, isCompleted && styles.stepCompleted]}>
-              {isCompleted ? <Check size={16} color={obstetraColors.onPrimary} /> : <Text style={[styles.stepNumber, isActive && styles.stepNumberActive]}>{step.id}</Text>}
+              {isCompleted ? <Check size={16} color={semanticColors.success} /> : <Text style={[styles.stepNumber, isActive && styles.stepNumberActive]}>{step.id}</Text>}
             </View>
             <Text style={[styles.stepText, (isActive || isCompleted) && styles.stepTextActive]}>{step.title}</Text>
             {index < STEPS.length - 1 && <View style={[styles.stepLine, isCompleted && styles.stepLineCompleted]} />}
@@ -165,18 +169,20 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.headerContainer}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color={commonColors.text} />
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Registrar Nueva Gestante</Text>
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerContainer}>
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <ArrowLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>Registrar Nueva Gestante</Text>
+            </View>
           </View>
-        </View>
-        
-        {renderStepper()}
-      </SafeAreaView>
+
+          {renderStepper()}
+        </SafeAreaView>
+      </LinearGradient>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -276,20 +282,21 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerContainer: { 
-    backgroundColor: commonColors.background,
-    paddingBottom: 24,
+  headerContainer: {
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, marginTop: 16 },
-  backButton: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center', paddingRight: 10 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.md },
+  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', marginRight: spacing.sm },
   headerTitleContainer: { flex: 1 },
-  headerTitle: { ...typography.h2, color: commonColors.text },
-  
+  headerTitle: { ...typography.h2, color: commonColors.white },
+
   stepperContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 32,
-    marginTop: 32,
+    marginTop: spacing.xl,
   },
   stepWrapper: {
     alignItems: 'center',
@@ -300,53 +307,53 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: commonColors.border,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
     zIndex: 2,
   },
   stepActive: {
-    backgroundColor: BRAND,
+    backgroundColor: commonColors.white,
   },
   stepCompleted: {
-    backgroundColor: semanticColors.success,
+    backgroundColor: semanticColors.successMid,
   },
   stepNumber: {
     ...typography.label,
-    color: commonColors.textSecondary,
+    color: commonColors.white,
     fontWeight: '700',
   },
   stepNumberActive: {
-    color: obstetraColors.onPrimary,
+    color: BRAND,
   },
   stepText: {
     ...typography.overline,
     fontSize: 11,
     letterSpacing: 0.1,
-    color: commonColors.textTertiary,
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
   },
   stepTextActive: {
-    color: commonColors.text,
-    fontWeight: '500',
+    color: commonColors.white,
+    fontWeight: '600',
   },
   stepLine: {
     position: 'absolute',
     top: 15,
     left: 45,
-    width: 100, // Approximate width
+    width: 100,
     height: 2,
-    backgroundColor: commonColors.border,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     zIndex: 1,
   },
   stepLineCompleted: {
-    backgroundColor: semanticColors.success,
+    backgroundColor: semanticColors.successMid,
   },
 
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: { backgroundColor: commonColors.surface, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: commonColors.border },
-  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: 24 },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 40 },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
+  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.lg },
   subTitle: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, color: commonColors.textSecondary, fontWeight: '600', marginBottom: 16 },
   
   formGrid: { gap: 16 },

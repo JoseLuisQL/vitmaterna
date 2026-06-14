@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  Alert, Linking, TextInput,
+  Linking, TextInput,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -12,6 +13,8 @@ import {
   Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse, ArrowLeft,
 } from 'lucide-react-native';
 import api from '../../src/services/api';
+import { notify } from '../../src/utils/confirm';
+import { gradients } from '../../src/theme/gradients';
 import { commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
@@ -83,7 +86,7 @@ export default function AlarmScreen(): React.ReactElement {
 
   async function handleEnviar() {
     if (seleccionados.length === 0) {
-      Alert.alert('Seleccione síntomas', 'Por favor marque al menos un síntoma antes de enviar.');
+      notify('Seleccione síntomas', 'Por favor marque al menos un síntoma antes de enviar.');
       return;
     }
     const sintomas = seleccionados.map((i) => TODOS_LOS_SIGNOS[i].texto);
@@ -91,7 +94,7 @@ export default function AlarmScreen(): React.ReactElement {
       await enviarAlerta({ sintomas, notas });
       setEnviado(true);
     } catch (error) {
-      Alert.alert(
+      notify(
         'No se pudo enviar la alerta',
         'Ocurrió un problema al enviar tus síntomas. Revisa tu conexión e inténtalo de nuevo. Si es urgente, llama al centro de salud.'
       );
@@ -142,22 +145,22 @@ export default function AlarmScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerGradient}>
+      <LinearGradient colors={gradients.danger.colors} start={gradients.danger.start} end={gradients.danger.end} style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ArrowLeft size={24} color={commonColors.surface} />
+            <ArrowLeft size={24} color={commonColors.white} />
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 }}>
-            <AlertTriangle size={32} color={commonColors.surface} />
+            <AlertTriangle size={32} color={commonColors.white} />
             <Text style={styles.headerTitle}>Reportar Alarma</Text>
           </View>
           <Text style={styles.headerSubtitle}>Selecciona los síntomas que presentas</Text>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.groupTitle}>Durante el Embarazo</Text>
@@ -249,7 +252,7 @@ export default function AlarmScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerGradient: { paddingBottom: spacing.xl, borderBottomLeftRadius: borderRadius.xl, borderBottomRightRadius: borderRadius.xl, backgroundColor: semanticColors.danger },
+  headerGradient: { paddingBottom: spacing.xl, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   backBtn: { marginBottom: spacing.sm + 4 },
   headerTitle: { ...typography.h1, color: commonColors.surface },

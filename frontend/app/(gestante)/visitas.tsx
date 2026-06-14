@@ -3,6 +3,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,7 +12,8 @@ import { useToast } from '../../src/components/ui';
 import { LoadingScreen } from '../../src/components/ui/LoadingScreen';
 import { gestanteColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
-import { spacing, borderRadius } from '../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../src/theme/spacing';
+import { shadows } from '../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
@@ -77,13 +79,15 @@ export default function VisitasGestante(): React.ReactElement {
   if (loadingProfile) return <LoadingScreen message="Cargando…" />;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={commonColors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Visitas domiciliarias</Text>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <SafeAreaView edges={['top']} style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={commonColors.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Visitas domiciliarias</Text>
+        </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Ubicación */}
@@ -142,19 +146,19 @@ export default function VisitasGestante(): React.ReactElement {
             </View>
           ))
         )}
-        <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md, backgroundColor: commonColors.surface, borderBottomWidth: 1, borderBottomColor: commonColors.border },
-  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { ...typography.h2, color: commonColors.text },
-  content: { padding: spacing.lg },
-  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, borderWidth: 1, borderColor: commonColors.border },
+  header: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
+  headerTitle: { ...typography.h2, color: commonColors.white },
+  content: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
   cardTitle: { ...typography.h3, color: commonColors.text },
   cardSub: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 4, marginBottom: spacing.md },
   locBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: borderRadius.md, backgroundColor: gestanteColors.primaryLight, borderWidth: 1, borderColor: BRAND },
@@ -162,14 +166,14 @@ const styles = StyleSheet.create({
   coordsBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
   coordsText: { ...typography.bodySmall, color: commonColors.textSecondary },
   inputLabel: { ...typography.label, color: commonColors.textSecondary, marginTop: spacing.md, marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, padding: spacing.sm + 2, ...typography.bodySmall, fontSize: 15, color: commonColors.text, backgroundColor: commonColors.background },
+  input: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, padding: spacing.sm + 2, ...typography.body, color: commonColors.text, backgroundColor: commonColors.surfaceAlt },
   saveBtn: { marginTop: spacing.md, backgroundColor: BRAND, borderRadius: borderRadius.md, paddingVertical: 14, alignItems: 'center' },
   saveBtnDisabled: { backgroundColor: commonColors.disabled },
   saveBtnText: { ...typography.button, color: commonColors.white },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.xl, marginBottom: spacing.md },
   emptyBox: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
   emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center' },
-  visitCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm + 2, borderWidth: 1, borderColor: commonColors.border, gap: 4 },
+  visitCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm + 2, ...shadows.card, gap: 4 },
   visitHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   numBadge: { backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.sm, paddingHorizontal: 8, paddingVertical: 2 },
   numText: { ...typography.overline, color: BRAND, fontWeight: '800', letterSpacing: 0 },
