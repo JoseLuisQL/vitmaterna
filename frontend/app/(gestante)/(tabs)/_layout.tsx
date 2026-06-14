@@ -10,7 +10,7 @@ import {
   Home,
   Calendar,
   Pill,
-  BookOpen,
+  MessageCircle,
   User,
 } from 'lucide-react-native';
 import { gestanteColors, commonColors } from '../../../src/theme/colors';
@@ -57,11 +57,11 @@ export default function GestanteTabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
-        name="educacion"
+        name="chat"
         options={{
-          title: 'Educación',
+          title: 'Chat',
           tabBarIcon: ({ color, size }) => (
-            <BookOpen size={size} color={color} />
+            <MessageCircle size={size} color={color} />
           ),
         }}
       />
@@ -82,9 +82,9 @@ export default function GestanteTabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="educacion"
         options={{
-          title: 'Chat',
+          title: 'Educación',
           href: null,
         }}
       />

@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Heart,
   Activity,
+  BookOpen,
+  MessageCircle,
 } from 'lucide-react-native';
 import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
@@ -331,7 +333,27 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionSubtitle}>Reportar varios</Text>
             </AppCard>
           </View>
-          
+
+          <View style={[styles.quickActions, { marginTop: spacing.sm + 4 }]}>
+            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/educacion')}>
+              <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.infoLight }]}>
+                <BookOpen size={24} color={semanticColors.info} />
+              </View>
+              <Text style={styles.quickActionTitle}>Educación</Text>
+              <Text style={styles.quickActionSubtitle}>Aprende más</Text>
+            </AppCard>
+
+            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/chat')}>
+              <View style={[styles.quickActionIcon, { backgroundColor: gestanteColors.primaryLight }]}>
+                <MessageCircle size={24} color={BRAND} />
+              </View>
+              <Text style={styles.quickActionTitle}>Chat</Text>
+              <Text style={styles.quickActionSubtitle}>Consulta</Text>
+            </AppCard>
+
+            <View style={[styles.quickActionCard, { opacity: 0 }]} pointerEvents="none" />
+          </View>
+
           <View style={{ height: 40 }} />
         </View>
       </ScrollView>
