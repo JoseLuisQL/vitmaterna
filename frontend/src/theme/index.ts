@@ -5,6 +5,7 @@ export {
   colors,
   gestanteColors,
   obstetraColors,
+  adminColors,
   accentColors,
   commonColors,
   semanticColors,
@@ -14,7 +15,12 @@ export {
 export { typography, fontFamilies } from './typography';
 export type { TypographyStyle } from './typography';
 export { spacing, borderRadius, layout } from './spacing';
-export { shadows, applyShadow } from './shadows';
+export { shadows, applyShadow, coloredGlow } from './shadows';
+export { animations } from './animations';
+export type { Animations } from './animations';
+export { gradients, makeGradient } from './gradients';
+export type { Gradients, GradientConfig } from './gradients';
+export { makeStyles } from './makeStyles';
 export { gestanteTheme } from './gestanteTheme';
 export type { GestanteTheme } from './gestanteTheme';
 export { obstetraTheme } from './obstetraTheme';

@@ -1,15 +1,22 @@
 /**
  * VITMATERNA Spacing & Layout System
- * Based on an 8-point grid for consistent rhythm.
+ * Based on an 8-point grid for consistent rhythm, plus a few fine tokens
+ * (xs2, sm2, md2) for tighter control.
  */
 
 export const spacing = {
+  /** 2px - Fine micro spacing */
+  xs2: 2,
   /** 4px - Micro spacing for tight elements */
   xs: 4,
   /** 8px - Small spacing */
   sm: 8,
+  /** 12px - Fine spacing */
+  sm2: 12,
   /** 16px - Default spacing */
   md: 16,
+  /** 20px - Medium-large spacing */
+  md2: 20,
   /** 24px - Large spacing */
   lg: 24,
   /** 32px - Extra large spacing */
@@ -21,15 +28,21 @@ export const spacing = {
 } as const;
 
 export const borderRadius = {
+  /** 4px - Minimal rounding */
+  xs: 4,
   /** 8px - Subtle rounding */
   sm: 8,
   /** 12px - Default rounding */
   md: 12,
   /** 16px - Card rounding */
   lg: 16,
-  /** 24px - Large rounding */
-  xl: 24,
-  /** 9999px - Full circle */
+  /** 20px - Large card rounding (default for AppCard) */
+  xl: 20,
+  /** 24px - Extra large rounding */
+  xxl: 24,
+  /** 32px - Hero rounding */
+  xxxl: 32,
+  /** 9999px - Full circle / pill */
   full: 9999,
 } as const;
 

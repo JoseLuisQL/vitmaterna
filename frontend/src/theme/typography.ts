@@ -1,13 +1,15 @@
 /**
- * VITMATERNA — Sistema Tipográfico (minimalista)
+ * VITMATERNA — Sistema Tipográfico (Inter)
  *
  * Una sola familia (Inter), cargada vía @expo-google-fonts/inter en el layout
- * raíz. Se referencian familias por peso (Inter_400Regular, etc.) porque en
- * React Native el peso se controla por familia cuando la fuente se carga así.
+ * raíz. Se referencian familias por peso porque en React Native el peso se
+ * controla por familia cuando la fuente se carga así.
  *
- * Escala con piso de 12px (RNF accesibilidad) y jerarquía clara por rol de
- * contenido. Cuerpo a 16px para legibilidad (población con baja alfabetización
- * digital).
+ * Cuerpo mínimo 15px para legibilidad (población con baja alfabetización
+ * digital). Se incluyen tokens numéricos para KPIs y métricas.
+ *
+ * Los nombres legacy (displayLg, h2, body, bodyMedium, bodyLarge, bodySmall,
+ * buttonSmall) se conservan como alias para no romper pantallas existentes.
  */
 import { TextStyle } from 'react-native';
 
@@ -41,28 +43,44 @@ const make = (
   letterSpacing,
 });
 
+const { regular, medium, semibold, bold } = fontFamilies;
+
 export const typography = {
-  // Números/títulos destacados (24–36)
-  displayLg: make(fontFamilies.bold, 36, 42, '700', -0.5),
-  display: make(fontFamilies.bold, 30, 38, '700', -0.4),
-  h1: make(fontFamilies.bold, 24, 32, '700', -0.3),
-  h2: make(fontFamilies.semibold, 22, 30, '600', -0.2),
-  // Subtítulos (17)
-  h3: make(fontFamilies.semibold, 17, 24, '600', -0.1),
+  // Display grandes
+  displayXl: make(bold, 32, 40, '700', -0.5),
+  display: make(bold, 28, 36, '700', -0.4),
 
-  // Cuerpo (14)
-  body: make(fontFamilies.regular, 14, 22, '400', 0),
-  bodyMedium: make(fontFamilies.medium, 14, 22, '500', 0),
-  bodyLarge: make(fontFamilies.regular, 16, 24, '400', 0),
-  bodySmall: make(fontFamilies.regular, 13, 19, '400', 0),
+  // Títulos de pantalla
+  h1: make(bold, 24, 32, '700', -0.3),
+  h2: make(semibold, 20, 28, '600', -0.2),
+  h3: make(semibold, 17, 24, '600', -0.1),
+  h4: make(semibold, 15, 22, '600', 0.0),
 
-  // Apoyos
-  caption: make(fontFamilies.regular, 12, 16, '400', 0.1), // meta (12)
-  label: make(fontFamilies.medium, 13, 18, '500', 0.1),
-  overline: make(fontFamilies.semibold, 11, 15, '600', 0.6),
-  micro: make(fontFamilies.semibold, 9, 12, '600', 0.4), // etiquetas mínimas (9)
+  // Cuerpo — mínimo 15px para baja alfabetización digital
+  bodyLg: make(regular, 16, 26, '400', 0),
+  body: make(regular, 15, 24, '400', 0), // cuerpo estándar
+  bodyMd: make(medium, 15, 24, '500', 0),
+  bodySm: make(regular, 13, 20, '400', 0),
+
+  // Apoyo
+  label: make(medium, 13, 18, '500', 0.1),
+  caption: make(regular, 12, 16, '400', 0.1),
+  overline: make(semibold, 11, 15, '600', 0.8),
+  micro: make(semibold, 9, 12, '600', 0.4),
 
   // Botones
-  button: make(fontFamilies.semibold, 15, 22, '600', 0.1),
-  buttonSmall: make(fontFamilies.semibold, 13, 18, '600', 0.1),
+  button: make(semibold, 15, 22, '600', 0.2),
+  buttonSm: make(semibold, 13, 18, '600', 0.2),
+
+  // Numérico (KPIs y métricas)
+  numeric: make(bold, 32, 38, '700', -0.5),
+  numericMd: make(bold, 24, 30, '700', -0.3),
+  numericSm: make(semibold, 18, 24, '600', -0.2),
+
+  // ---- Alias legacy (compatibilidad con pantallas existentes) ----
+  displayLg: make(bold, 36, 42, '700', -0.5),
+  bodyMedium: make(medium, 15, 24, '500', 0),
+  bodyLarge: make(regular, 16, 26, '400', 0),
+  bodySmall: make(regular, 13, 20, '400', 0),
+  buttonSmall: make(semibold, 13, 18, '600', 0.2),
 } as const;
