@@ -11,12 +11,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreditCard, Lock, KeyRound, CheckCircle, ArrowLeft } from 'lucide-react-native';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { useToast } from '../../src/components/ui';
 import api from '../../src/services/api';
+import { getApiErrorMessage } from '../../src/utils/apiError';
 import { obstetraColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
@@ -34,10 +36,18 @@ const dniSchema = z.object({
 type DniFormData = z.infer<typeof dniSchema>;
 
 // Paso 2: ingresar código + nueva contraseña
+// La validación debe coincidir con el backend: 8+ caracteres con mayúscula,
+// minúscula, número y carácter especial.
 const resetSchema = z
   .object({
     code: z.string().regex(/^\d{6}$/, 'El código debe tener 6 dígitos'),
-    newPassword: z.string().min(6, 'Mínimo 6 caracteres'),
+    newPassword: z
+      .string()
+      .min(8, 'Mínimo 8 caracteres')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
+        'Debe incluir mayúscula, minúscula, número y un símbolo (@$!%*?&#)',
+      ),
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
@@ -55,8 +65,8 @@ export default function ForgotPasswordScreen(): React.ReactElement {
   const [dni, setDni] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const dniForm = useForm<DniFormData>({ defaultValues: { dni: '' } });
-  const resetForm = useForm<ResetFormData>({ defaultValues: { code: '', newPassword: '', confirmPassword: '' } });
+  const dniForm = useForm<DniFormData>({ resolver: zodResolver(dniSchema), defaultValues: { dni: '' } });
+  const resetForm = useForm<ResetFormData>({ resolver: zodResolver(resetSchema), defaultValues: { code: '', newPassword: '', confirmPassword: '' } });
 
   const onRequest = useCallback(async (data: DniFormData) => {
     try {
@@ -91,7 +101,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
       setStep('done');
       toast.success('Contraseña actualizada', 'Ya puedes iniciar sesión con tu nueva contraseña.');
     } catch (error: any) {
-      const msg = error?.response?.data?.error?.message || 'Código inválido o expirado.';
+      const msg = getApiErrorMessage(error, 'Código inválido o expirado.');
       toast.error('No se pudo restablecer', msg);
     } finally {
       setIsSubmitting(false);

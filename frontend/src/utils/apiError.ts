@@ -19,6 +19,13 @@ const TRANSLATIONS: Record<string, string> = {
     'Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.',
   'Too many requests. Please try again later.':
     'Demasiadas solicitudes. Inténtalo de nuevo en un momento.',
+  'Invalid or expired reset code': 'El código es inválido o ya expiró. Solicita uno nuevo.',
+  'Invalid or expired token': 'El código es inválido o ya expiró. Solicita uno nuevo.',
+  'Password must be at least 8 characters': 'La contraseña debe tener al menos 8 caracteres.',
+  'Password must contain uppercase, lowercase, number, and special character':
+    'La contraseña debe incluir mayúscula, minúscula, número y un símbolo (@$!%*?&#).',
+  'Passwords do not match': 'Las contraseñas no coinciden.',
+  'El código debe tener 6 dígitos': 'El código debe tener 6 dígitos.',
 };
 
 /** Mensajes por defecto según el código de estado HTTP. */
@@ -47,6 +54,14 @@ export function getApiErrorMessage(error: unknown, fallback = 'Ocurrió un error
 
   const backendMsg: string | undefined = anyErr?.response?.data?.error?.message
     ?? anyErr?.response?.data?.message;
+
+  // Si es un error de validación con detalles, mostrar el primer detalle (más útil).
+  const details = anyErr?.response?.data?.error?.details;
+  if (Array.isArray(details) && details.length > 0) {
+    const first = details[0];
+    const detailMsg = typeof first === 'string' ? first : first?.message;
+    if (detailMsg) return TRANSLATIONS[detailMsg] || detailMsg;
+  }
 
   if (backendMsg) {
     return TRANSLATIONS[backendMsg] || backendMsg;
