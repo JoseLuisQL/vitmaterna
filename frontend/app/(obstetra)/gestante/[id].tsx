@@ -426,12 +426,14 @@ export default function PatientProfileScreen(): React.ReactElement {
 
   // Preparar datos de gráficas
   const controls = patient.controls || [];
-  const weightData = controls.length >= 2
-    ? controls.map((c: any) => c.weight || 60)
-    : [60, 62, 64];
-  const weekLabels = controls.length >= 2
-    ? controls.map((c: any) => `S${c.week || ''}`)
-    : ['S12', 'S20', 'S28'];
+  // Puntos de peso válidos (número > 0), ordenados por semana de gestación.
+  const weightPoints = controls
+    .map((c: any) => ({ week: Number(c.week), weight: Number(c.weight) }))
+    .filter((p: any) => Number.isFinite(p.weight) && p.weight > 0)
+    .sort((a: any, b: any) => (Number.isFinite(a.week) ? a.week : 0) - (Number.isFinite(b.week) ? b.week : 0));
+  const hasWeightChart = weightPoints.length >= 2;
+  const weightData = weightPoints.map((p: any) => p.weight);
+  const weekLabels = weightPoints.map((p: any) => `S${Number.isFinite(p.week) ? p.week : '—'}`);
 
   const lab = patient.laboratorio || {};
   const vacunas = patient.vacunas || [];
@@ -622,7 +624,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
               <AlturaUterinaChart controls={controls} themeColor={BRAND} />
 
-              {controls.length >= 2 && (
+              {hasWeightChart ? (
                 <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
                   <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
                   <LineChart
@@ -633,6 +635,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                     }}
                     width={screenWidth - 72}
                     height={180}
+                    fromZero={false}
                     chartConfig={{
                       backgroundColor: commonColors.surface,
                       backgroundGradientFrom: commonColors.surface,
@@ -645,6 +648,13 @@ export default function PatientProfileScreen(): React.ReactElement {
                     bezier
                     style={{ marginLeft: -10, marginTop: 10 }}
                   />
+                </View>
+              ) : (
+                <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
+                  <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
+                  <Text style={styles.emptyTextInfo}>
+                    Registra al menos 2 controles con peso para ver la curva.
+                  </Text>
                 </View>
               )}
 

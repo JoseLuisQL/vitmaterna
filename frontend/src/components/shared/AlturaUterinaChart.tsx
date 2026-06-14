@@ -32,8 +32,8 @@ export function AlturaUterinaChart({ controls, themeColor = obstetraColors.prima
   const points = useMemo(
     () =>
       controls
-        .filter((c) => c.week != null && c.alturaUterina != null && Number(c.alturaUterina) > 0)
         .map((c) => ({ semana: Number(c.week), au: Number(c.alturaUterina) }))
+        .filter((p) => Number.isFinite(p.semana) && Number.isFinite(p.au) && p.au > 0)
         .sort((a, b) => a.semana - b.semana),
     [controls],
   );
