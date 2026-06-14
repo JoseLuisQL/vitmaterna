@@ -10,7 +10,7 @@ import {
   Home,
   Baby,
   Calendar,
-  Bell,
+  MessageCircle,
   User,
 } from 'lucide-react-native';
 import { obstetraColors, commonColors } from '../../../src/theme/colors';
@@ -57,14 +57,12 @@ export default function ObstetraTabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
-        name="alertas"
+        name="chat"
         options={{
-          title: 'Alertas',
+          title: 'Chat',
           tabBarIcon: ({ color, size }) => (
-            <Bell size={size} color={color} />
+            <MessageCircle size={size} color={color} />
           ),
-          tabBarBadge: 3,
-          tabBarBadgeStyle: styles.badge,
         }}
       />
       <Tabs.Screen
@@ -84,9 +82,9 @@ export default function ObstetraTabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="alertas"
         options={{
-          title: 'Chat',
+          title: 'Alertas',
           href: null,
         }}
       />

@@ -6,8 +6,9 @@ import * as ImagePicker from 'expo-image-picker';
 import api, { resolveMediaUrl } from '../../../src/services/api';
 import { AppHeader } from '../../../src/components/ui/AppHeader';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { useToast } from '../../../src/components/ui';
-import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus } from 'lucide-react-native';
+import { AppModal, useToast } from '../../../src/components/ui';
+import { usePatients } from '../../../src/services/api-queries';
+import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
@@ -34,7 +35,13 @@ export default function ObstetraChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [startingChat, setStartingChat] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  // Gestantes asignadas a esta obstetra (para iniciar una conversación nueva).
+  const { data: patients = [] } = usePatients();
 
   // 1. Fetch active conversations for this obstetra
   const { data: conversations, isLoading: isLoadingConvs, refetch: refetchConvs } = useQuery({
@@ -176,6 +183,33 @@ export default function ObstetraChatScreen() {
     refetchConvs();
   };
 
+  // Inicia (o abre) la conversación con una gestante asignada.
+  const startChatWith = async (gestanteId: string, nombre: string) => {
+    if (startingChat) return;
+    setStartingChat(true);
+    try {
+      const res = await api.get('/chat/conversation', { params: { targetId: gestanteId } });
+      const conv = res.data?.data;
+      if (!conv?.id) throw new Error('sin conversación');
+      setPickerVisible(false);
+      setPickerSearch('');
+      setMessages([]);
+      setActiveConv({ ...conv, gestante: { user: { firstName: nombre } } });
+    } catch (e) {
+      toast.error('No se pudo abrir el chat', 'Inténtalo nuevamente.');
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
+  const filteredPatients = (patients || []).filter((p: any) => {
+    const q = pickerSearch.toLowerCase();
+    return (
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
+      String(p.documentNumber || '').includes(pickerSearch)
+    );
+  });
+
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMe = item.senderId === user?.id || item.senderId === 'me';
     const isAlert = item.tipo === 'alerta_emergencia';
@@ -250,6 +284,13 @@ export default function ObstetraChatScreen() {
     return (
       <View style={styles.container}>
         <AppHeader title="Bandeja de Consultas" />
+
+        {/* Iniciar conversación con una gestante asignada */}
+        <TouchableOpacity style={styles.newChatBtn} onPress={() => setPickerVisible(true)} activeOpacity={0.85}>
+          <Plus size={18} color={obstetraColors.onPrimary} />
+          <Text style={styles.newChatBtnText}>Nueva conversación</Text>
+        </TouchableOpacity>
+
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
@@ -260,7 +301,7 @@ export default function ObstetraChatScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <MessageSquare size={48} color={commonColors.textTertiary} style={{ marginBottom: 16 }} />
-              <Text style={styles.emptyText}>No tienes consultas o chats activos con gestantes en este momento.</Text>
+              <Text style={styles.emptyText}>Aún no tienes chats activos. Pulsa "Nueva conversación" para escribir a una gestante asignada.</Text>
             </View>
           }
         />
@@ -272,6 +313,47 @@ export default function ObstetraChatScreen() {
           <Megaphone size={20} color={obstetraColors.onPrimary} />
           <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
         </TouchableOpacity>
+
+        {/* Selector de gestante para iniciar chat */}
+        <AppModal
+          visible={pickerVisible}
+          onClose={() => setPickerVisible(false)}
+          title="Nueva conversación"
+          subtitle="Selecciona una gestante para iniciar el chat."
+        >
+          <View style={styles.searchBox}>
+            <Search size={18} color={commonColors.textTertiary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por nombre o DNI..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={pickerSearch}
+              onChangeText={setPickerSearch}
+            />
+          </View>
+          <View style={{ maxHeight: 360 }}>
+            {filteredPatients.length === 0 ? (
+              <Text style={styles.pickerEmpty}>No se encontraron gestantes.</Text>
+            ) : (
+              filteredPatients.map((p: any) => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={styles.pickerRow}
+                  onPress={() => startChatWith(p.id, `${p.firstName} ${p.lastName}`)}
+                  disabled={startingChat}
+                >
+                  <View style={styles.pickerAvatar}>
+                    <Text style={styles.pickerAvatarText}>{(p.firstName || '?')[0]}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pickerName}>{p.firstName} {p.lastName}</Text>
+                    <Text style={styles.pickerDni}>DNI: {p.documentNumber}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </AppModal>
       </View>
     );
   }
@@ -559,6 +641,23 @@ const styles = StyleSheet.create({
     ...shadows.md,
   },
   broadcastFabText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
+  newChatBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: BRAND, marginHorizontal: 20, marginTop: 12, marginBottom: 4,
+    paddingVertical: 12, borderRadius: 14,
+  },
+  newChatBtnText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1, borderColor: commonColors.border, borderRadius: 14, paddingHorizontal: 14, height: 48, marginBottom: 12,
+  },
+  searchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
+  pickerEmpty: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: 24 },
+  pickerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  pickerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  pickerAvatarText: { ...typography.bodyMedium, color: commonColors.textSecondary, fontWeight: '700' },
+  pickerName: { ...typography.bodyMedium, color: commonColors.text },
+  pickerDni: { ...typography.caption, color: commonColors.textTertiary },
   emergencyMessageBubble: {
     alignSelf: 'center',
     backgroundColor: semanticColors.dangerLight,

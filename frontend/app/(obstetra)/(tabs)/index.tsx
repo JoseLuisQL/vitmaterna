@@ -74,12 +74,14 @@ export default function ObstetraDashboard(): React.ReactElement {
             <KpiCard label="Pacientes" value={totalPatients} />
           </View>
           <View style={styles.statsRow}>
-            <KpiCard
-              label="Alertas"
-              value={alerts}
-              badge={alerts > 0 ? 'Pendientes' : undefined}
-              badgeTone={alerts > 0 ? 'negative' : 'neutral'}
-            />
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.8} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
+              <KpiCard
+                label="Alertas"
+                value={alerts}
+                badge={alerts > 0 ? 'Pendientes' : 'Ver'}
+                badgeTone={alerts > 0 ? 'negative' : 'neutral'}
+              />
+            </TouchableOpacity>
             <KpiCard
               label="Completadas"
               value={completed}
