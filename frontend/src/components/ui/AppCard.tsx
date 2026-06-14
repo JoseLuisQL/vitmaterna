@@ -1,23 +1,19 @@
 /**
- * VITMATERNA - AppCard Component
- * Card with shadow, border radius, optional press functionality.
+ * VITMATERNA - AppCard
+ * Tarjeta blanca flotante con sombra suave (estilo referencia). El borde es
+ * opcional (`bordered`); `highlighted` añade borde de acento + glow.
  */
 import React from 'react';
-import {
-  Pressable,
-  View,
-  StyleSheet,
-  StyleProp,
-  ViewStyle,
-} from 'react-native';
+import { Pressable, View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { commonColors } from '../../theme/colors';
+import { commonColors, gestanteColors } from '../../theme/colors';
 import { borderRadius, spacing } from '../../theme/spacing';
-import { shadows } from '../../theme/shadows';
+import { shadows, coloredGlow } from '../../theme/shadows';
+import { animations } from '../../theme/animations';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -27,7 +23,14 @@ interface AppCardProps {
   onPress?: () => void;
   padding?: number;
   noPadding?: boolean;
+  /** Sombra más marcada (float). */
   elevated?: boolean;
+  /** Muestra borde suave además de la sombra. */
+  bordered?: boolean;
+  /** Borde de acento + glow para destacar la tarjeta. */
+  highlighted?: boolean;
+  /** Color de acento para el modo highlighted. */
+  accentColor?: string;
 }
 
 export const AppCard: React.FC<AppCardProps> = ({
@@ -37,6 +40,9 @@ export const AppCard: React.FC<AppCardProps> = ({
   padding,
   noPadding = false,
   elevated = false,
+  bordered = false,
+  highlighted = false,
+  accentColor = gestanteColors.primary,
 }) => {
   const scale = useSharedValue(1);
 
@@ -45,20 +51,18 @@ export const AppCard: React.FC<AppCardProps> = ({
   }));
 
   const handlePressIn = () => {
-    if (onPress) {
-      scale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
-    }
+    if (onPress) scale.value = withSpring(0.98, animations.springFast);
   };
-
   const handlePressOut = () => {
-    if (onPress) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-    }
+    if (onPress) scale.value = withSpring(1, animations.springFast);
   };
 
   const cardStyle: StyleProp<ViewStyle> = [
     styles.card,
-    elevated ? shadows.md : shadows.sm,
+    elevated ? shadows.float : shadows.card,
+    highlighted && { borderWidth: 1.5, borderColor: accentColor },
+    highlighted && coloredGlow(accentColor),
+    bordered && !highlighted && styles.bordered,
     noPadding ? undefined : { padding: padding ?? spacing.md },
     style,
   ];
@@ -83,9 +87,11 @@ export const AppCard: React.FC<AppCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+  },
+  bordered: {
     borderWidth: 1,
     borderColor: commonColors.border,
-    overflow: 'hidden',
   },
 });

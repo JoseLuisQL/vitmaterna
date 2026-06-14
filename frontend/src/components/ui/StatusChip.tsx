@@ -21,29 +21,29 @@ interface StatusConfig {
 
 const STATUS_MAP: Record<string, StatusConfig> = {
   // Appointment statuses (English and Spanish)
-  scheduled: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'Programada' },
-  programada: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'Programada' },
-  confirmed: { bg: gestanteColors.primaryLight, text: gestanteColors.primary, label: 'Confirmada' },
-  confirmada: { bg: gestanteColors.primaryLight, text: gestanteColors.primary, label: 'Confirmada' },
-  completed: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Completada' },
-  asistida: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Asistida' },
-  no_asistida: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'No Asistida' },
-  solicitud_reprogramacion: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Solicitud enviada' },
-  reprogramada: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Reprogramada' },
-  cancelled: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
-  cancelada: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Cancelada' },
-  pending: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Pendiente' },
-  in_progress: { bg: semanticColors.infoLight, text: semanticColors.info, label: 'En Progreso' },
+  scheduled: { bg: semanticColors.infoMid, text: semanticColors.info, label: 'Programada' },
+  programada: { bg: semanticColors.infoMid, text: semanticColors.info, label: 'Programada' },
+  confirmed: { bg: gestanteColors.primaryMid, text: gestanteColors.primary, label: 'Confirmada' },
+  confirmada: { bg: gestanteColors.primaryMid, text: gestanteColors.primary, label: 'Confirmada' },
+  completed: { bg: semanticColors.successMid, text: semanticColors.success, label: 'Completada' },
+  asistida: { bg: semanticColors.successMid, text: semanticColors.success, label: 'Asistida' },
+  no_asistida: { bg: semanticColors.dangerMid, text: semanticColors.danger, label: 'No Asistida' },
+  solicitud_reprogramacion: { bg: semanticColors.warningMid, text: semanticColors.warning, label: 'Solicitud enviada' },
+  reprogramada: { bg: semanticColors.warningMid, text: semanticColors.warning, label: 'Reprogramada' },
+  cancelled: { bg: semanticColors.dangerMid, text: semanticColors.danger, label: 'Cancelada' },
+  cancelada: { bg: semanticColors.dangerMid, text: semanticColors.danger, label: 'Cancelada' },
+  pending: { bg: semanticColors.warningMid, text: semanticColors.warning, label: 'Pendiente' },
+  in_progress: { bg: semanticColors.infoMid, text: semanticColors.info, label: 'En Progreso' },
 
   // Treatment statuses
-  active: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Activo' },
-  paused: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Pausado' },
-  finished: { bg: commonColors.borderLight, text: commonColors.textSecondary, label: 'Finalizado' },
+  active: { bg: semanticColors.successMid, text: semanticColors.success, label: 'Activo' },
+  paused: { bg: semanticColors.warningMid, text: semanticColors.warning, label: 'Pausado' },
+  finished: { bg: commonColors.surfaceAlt, text: commonColors.textSecondary, label: 'Finalizado' },
 
   // Risk levels
-  bajo: { bg: semanticColors.successLight, text: semanticColors.success, label: 'Bajo' },
-  medio: { bg: semanticColors.warningLight, text: semanticColors.warning, label: 'Medio' },
-  alto: { bg: semanticColors.dangerLight, text: semanticColors.danger, label: 'Alto' },
+  bajo: { bg: semanticColors.successMid, text: semanticColors.success, label: 'Bajo' },
+  medio: { bg: semanticColors.warningMid, text: semanticColors.warning, label: 'Medio' },
+  alto: { bg: semanticColors.dangerMid, text: semanticColors.danger, label: 'Alto' },
 };
 
 const DEFAULT_STATUS: StatusConfig = {
