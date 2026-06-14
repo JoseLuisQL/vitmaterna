@@ -4,13 +4,14 @@
  */
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, FlatList, RefreshControl, TextInput, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, LogOut } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton } from '../../../src/components/ui';
-import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
@@ -193,8 +194,13 @@ export default function UsuariosScreen(): React.ReactElement {
 
   const renderHeader = () => (
     <View style={{ paddingBottom: 16 }}>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={adminColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
@@ -202,11 +208,11 @@ export default function UsuariosScreen(): React.ReactElement {
               <Text style={styles.headerSubtitle}>Administra los accesos y roles de la plataforma</Text>
             </View>
             <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-              <LogOut size={22} color={semanticColors.danger} />
+              <LogOut size={22} color={commonColors.white} />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -380,6 +386,22 @@ export default function UsuariosScreen(): React.ReactElement {
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={{ paddingHorizontal: spacing.lg }}>
+              <ListSkeleton count={6} />
+            </View>
+          ) : (
+            <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.lg }}>
+              <EmptyState
+                icon={Users as any}
+                title="Sin usuarios"
+                description={search ? 'No se encontraron usuarios con esa búsqueda.' : 'Aún no hay usuarios registrados.'}
+                themeColor={adminColors.primary}
+              />
+            </View>
+          )
+        }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -531,34 +553,36 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.background,
   },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerTitle: {
-    ...typography.display,
-    color: commonColors.text,
+    ...typography.h1,
+    color: commonColors.white,
     marginBottom: 4,
   },
   headerSubtitle: {
-    ...typography.bodySmall,
-    color: commonColors.textSecondary,
+    ...typography.bodySm,
+    color: 'rgba(255,255,255,0.85)',
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
+    marginBottom: spacing.sm,
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: commonColors.surface,
-    borderRadius: 24,
+    borderRadius: borderRadius.full,
     paddingHorizontal: 20,
     height: 56,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   searchInput: {
     flex: 1,
@@ -570,12 +594,11 @@ const styles = StyleSheet.create({
   },
   userCard: {
     backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.card,
   },
   cardContent: { 
     flexDirection: 'row', 
@@ -835,7 +858,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: semanticColors.dangerLight,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,

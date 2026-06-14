@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, StatusBar, Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain } from 'lucide-react-native';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import {
   useFacilities, useCreateFacility, useUpdateFacility, useDeleteFacility,
 } from '../../../src/services/admin-queries';
-import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
-const BRAND = obstetraColors.primary;
+const BRAND = adminColors.primary;
 
 interface FacilityForm {
   id?: string;
@@ -83,7 +85,20 @@ export default function SedesScreen(): React.ReactElement {
     ]);
   };
 
-  if (isLoading) return <LoadingScreen message="Cargando establecimientos..." />;
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerWrapper}>
+          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+            <Text style={styles.headerTitle}>Establecimientos</Text>
+          </SafeAreaView>
+        </LinearGradient>
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+          <ListSkeleton count={4} />
+        </View>
+      </View>
+    );
+  }
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
@@ -117,8 +132,13 @@ export default function SedesScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={adminColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
             <View>
@@ -126,11 +146,11 @@ export default function SedesScreen(): React.ReactElement {
               <Text style={styles.headerSubtitle}>Sedes del centro de salud</Text>
             </View>
             <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-              <Plus size={18} color={obstetraColors.onPrimary} />
+              <Plus size={18} color={commonColors.white} />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <FlatList
         data={facilities}
@@ -175,14 +195,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerWrapper: { paddingBottom: spacing.md },
+  headerWrapper: { paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTitle: { ...typography.display, color: commonColors.text },
-  headerSubtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 2 },
-  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
-  card: { flexDirection: 'row', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: commonColors.border, padding: spacing.md, marginBottom: spacing.md },
+  headerTitle: { ...typography.h1, color: commonColors.white },
+  headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, paddingTop: spacing.md },
+  card: { flexDirection: 'row', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.md, ...shadows.card },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cardName: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, color: commonColors.text },
