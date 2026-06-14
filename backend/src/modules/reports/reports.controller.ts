@@ -6,7 +6,8 @@ export const getAdherence = async (req: Request, res: Response, next: NextFuncti
     const { gestanteId, treatmentId } = req.query;
     const stats = await reportsService.getAdherenceStats(
       gestanteId as string | undefined,
-      treatmentId as string | undefined
+      treatmentId as string | undefined,
+      req.user, // permite resolver la gestante autenticada
     );
 
     res.json({

@@ -1,27 +1,56 @@
 import { prisma } from '../../config/database.js';
 
-export const getAdherenceStats = async (gestanteId?: string, treatmentId?: string) => {
+export const getAdherenceStats = async (
+  gestanteId?: string,
+  treatmentId?: string,
+  userContext?: { userId: string; role: string },
+) => {
+  // Si quien consulta es una gestante, se resuelve SU id para mostrar solo
+  // su propia adherencia (no la de todas).
+  let resolvedGestanteId = gestanteId;
+  if (!resolvedGestanteId && userContext?.role === 'gestante') {
+    const g = await prisma.gestante.findUnique({
+      where: { userId: userContext.userId },
+      select: { id: true },
+    });
+    resolvedGestanteId = g?.id;
+  }
+
   const whereClause: any = {};
-  if (gestanteId) whereClause.gestanteId = gestanteId;
+  if (resolvedGestanteId) whereClause.gestanteId = resolvedGestanteId;
   if (treatmentId) whereClause.treatmentId = treatmentId;
 
-  const totalLogs = await prisma.supplementLog.count({
-    where: whereClause,
-  });
-
+  const totalLogs = await prisma.supplementLog.count({ where: whereClause });
   const takenLogs = await prisma.supplementLog.count({
-    where: {
-      ...whereClause,
-      tomado: true,
-    },
+    where: { ...whereClause, tomado: true },
   });
 
   const adherencePercentage = totalLogs > 0 ? (takenLogs / totalLogs) * 100 : 0;
 
+  // Historial de los últimos 7 días (para la gráfica de "Mi Progreso").
+  const history: { date: string; taken: number; total: number }[] = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() - i);
+    const next = new Date(d);
+    next.setUTCDate(next.getUTCDate() + 1);
+
+    const dayWhere = { ...whereClause, fecha: { gte: d, lt: next } };
+    const total = await prisma.supplementLog.count({ where: dayWhere });
+    const taken = await prisma.supplementLog.count({ where: { ...dayWhere, tomado: true } });
+    history.push({ date: d.toISOString().split('T')[0], taken, total });
+  }
+
   return {
+    // Campos que consume el frontend (Mi Progreso) + compatibilidad anterior.
+    adherencePercentage: Number(adherencePercentage.toFixed(2)),
+    totalSupplements: totalLogs,
+    takenSupplements: takenLogs,
     totalLogs,
     takenLogs,
-    adherencePercentage: Number(adherencePercentage.toFixed(2)),
+    history,
   };
 };
 
