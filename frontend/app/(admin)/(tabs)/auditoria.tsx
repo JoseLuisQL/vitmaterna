@@ -12,8 +12,9 @@ import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, layout } from '../../../src/theme/spacing';
+import { LinearGradient } from 'expo-linear-gradient';
+import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
 
@@ -73,19 +74,22 @@ export default function AuditoriaScreen(): React.ReactElement {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Auditoría y Backup</Text>
-        <AppButton
-          title="Exportar Backup BD"
-          onPress={handleExportBackup}
-          variant="outline"
-          size="sm"
-          icon={Download}
-          loading={exportMutation.isPending}
-          style={styles.exportBtn}
-        />
-      </View>
+    <View style={styles.container}>
+      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <SafeAreaView edges={['top']}>
+          <Text style={styles.title}>Auditoría y Backup</Text>
+          <AppButton
+            title="Exportar Backup BD"
+            onPress={handleExportBackup}
+            variant="secondary"
+            size="sm"
+            icon={Download}
+            loading={exportMutation.isPending}
+            themeColor={commonColors.white}
+            style={styles.exportBtn}
+          />
+        </SafeAreaView>
+      </LinearGradient>
 
       {isLoading ? (
         <LoadingScreen message="Cargando logs..." />
@@ -111,7 +115,7 @@ export default function AuditoriaScreen(): React.ReactElement {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -123,14 +127,16 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   title: {
     ...typography.h1,
-    color: commonColors.text,
+    color: commonColors.white,
     marginBottom: spacing.md,
   },
   exportBtn: {
-    borderColor: BRAND,
+    alignSelf: 'flex-start',
   },
   listContent: {
     paddingHorizontal: spacing.lg,

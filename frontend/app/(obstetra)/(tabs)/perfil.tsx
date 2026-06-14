@@ -5,6 +5,7 @@ import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethos
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast } from '../../../src/components/ui';
+import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -97,13 +98,18 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <Text style={styles.headerTitle}>Mi Perfil</Text>
           <Text style={styles.headerSubtitle}>Ajustes de cuenta</Text>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <View style={styles.content}>
         {/* Profile Card */}
@@ -155,14 +161,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   safeAreaHeader: {
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  headerTitle: { ...typography.display, color: commonColors.text, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
-  content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace },
+  headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 4 },
+  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
+  content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace, paddingTop: 16 },
   profileCard: {
     backgroundColor: commonColors.surface,
     borderRadius: 24,

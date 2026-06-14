@@ -27,6 +27,7 @@ import {
   useRequestReschedule,
   useAppointmentAvailability,
 } from '../../../src/services/api-queries';
+import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -291,15 +292,17 @@ export default function AppointmentsScreen() {
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Mis Citas</Text>
-          <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
-        </View>
+      <View style={styles.container}>
+        <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+          <SafeAreaView edges={['top']}>
+            <Text style={styles.headerTitle}>Mis Citas</Text>
+            <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
+          </SafeAreaView>
+        </LinearGradient>
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
           <ListSkeleton count={4} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -308,11 +311,13 @@ export default function AppointmentsScreen() {
   const canRescheduleFromConfirmed = selected && (selected.estado === 'programada' || selected.estado === 'confirmada');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mis Citas</Text>
-        <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <SafeAreaView edges={['top']}>
+          <Text style={styles.headerTitle}>Mis Citas</Text>
+          <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
+        </SafeAreaView>
+      </LinearGradient>
 
       <View style={styles.tabContainer}>
         <ToggleTabs
@@ -495,7 +500,7 @@ export default function AppointmentsScreen() {
           onChangeText={setMotivo}
         />
       </AppModal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -520,13 +525,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: commonColors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.border,
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
-  headerTitle: { ...typography.h1, color: commonColors.text, marginBottom: 2 },
-  headerSubtitle: { ...typography.bodySmall, color: commonColors.textSecondary },
+  headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 2 },
+  headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
   tabContainer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   tab: {
     flexDirection: 'row',

@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
+import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -203,27 +204,31 @@ export default function PerfilScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={gestanteColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <Text style={styles.headerTitle}>Perfil</Text>
-        </SafeAreaView>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {isProfileLoading ? (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="small" color={BRAND} />
-            <Text style={styles.loadingText}>Cargando datos de perfil...</Text>
-          </View>
-        ) : (
-          <View style={styles.profileCard}>
+          <View style={styles.headerProfile}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <Text style={styles.profileName}>{displayName}</Text>
             <Text style={styles.profileRole}>Gestante</Text>
             {profileData?.user?.dni && <Text style={styles.profileDni}>DNI: {profileData.user.dni}</Text>}
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {isProfileLoading && (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color={BRAND} />
+            <Text style={styles.loadingText}>Cargando datos de perfil...</Text>
           </View>
         )}
 
@@ -394,16 +399,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
     paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
   headerTitle: {
-    ...typography.display,
-    color: commonColors.text,
+    ...typography.h1,
+    color: commonColors.white,
   },
-  content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace },
+  headerProfile: { alignItems: 'center', marginTop: spacing.md },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, paddingTop: spacing.lg },
   loadingCard: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
@@ -432,15 +440,15 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: gestanteColors.primaryLight,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  avatarText: { ...typography.display, color: BRAND },
-  profileName: { ...typography.h3, color: commonColors.text, marginBottom: 4, textAlign: 'center' },
-  profileRole: { ...typography.bodySmall, color: commonColors.textSecondary },
-  profileDni: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.sm },
+  avatarText: { ...typography.display, color: commonColors.white },
+  profileName: { ...typography.h3, color: commonColors.white, marginBottom: 4, textAlign: 'center' },
+  profileRole: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
+  profileDni: { ...typography.caption, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },
   sectionTitle: { ...typography.label, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: spacing.md, marginBottom: spacing.sm },
   menuCard: {
     backgroundColor: commonColors.surface,

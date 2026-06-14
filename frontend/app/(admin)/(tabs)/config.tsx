@@ -12,7 +12,8 @@ import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
-import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useSystemConfig, useUpdateSystemConfig } from '../../../src/services/admin-queries';
@@ -80,11 +81,13 @@ export default function ConfigScreen(): React.ReactElement {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Configuración del Sistema</Text>
-      </View>
-      
+    <View style={styles.container}>
+      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <SafeAreaView edges={['top']}>
+          <Text style={styles.title}>Configuración del Sistema</Text>
+        </SafeAreaView>
+      </LinearGradient>
+
       <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
         
         <View style={styles.section}>
@@ -198,7 +201,7 @@ export default function ConfigScreen(): React.ReactElement {
           loading={updateConfigMutation.isPending}
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -210,10 +213,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   title: {
     ...typography.h1,
-    color: commonColors.text,
+    color: commonColors.white,
   },
   formContainer: {
     padding: spacing.lg,

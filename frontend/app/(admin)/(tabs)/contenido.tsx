@@ -19,7 +19,8 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
-import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import {
@@ -167,16 +168,20 @@ export default function ContenidoScreen(): React.ReactElement {
   if (isLoading) return <LoadingScreen message="Cargando contenido..." />;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Contenido educativo</Text>
-          <Text style={styles.subtitle}>{items.length} recurso(s)</Text>
-        </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8}>
-          <Plus size={22} color={obstetraColors.onPrimary} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
+        <SafeAreaView edges={['top']}>
+          <View style={styles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>Contenido educativo</Text>
+              <Text style={styles.subtitle}>{items.length} recurso(s)</Text>
+            </View>
+            <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8}>
+              <Plus size={22} color={commonColors.white} />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       <FlatList
         data={items}
@@ -238,16 +243,17 @@ export default function ContenidoScreen(): React.ReactElement {
         <AppInput name="mediaUrl" control={control} label="URL del recurso (opcional)" placeholder="https://..." error={errors.mediaUrl?.message} themeColor={BRAND} />
         <AppInput name="duracionMin" control={control} label="Duración en minutos (opcional)" placeholder="Ej. 15" keyboardType="numeric" error={errors.duracionMin?.message} themeColor={BRAND} />
       </AppModal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
+  headerGradient: { borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl, paddingBottom: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  title: { ...typography.h1, color: commonColors.text },
-  subtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 2 },
-  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
+  title: { ...typography.h1, color: commonColors.white },
+  subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
