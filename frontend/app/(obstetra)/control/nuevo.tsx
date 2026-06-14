@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,8 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { useCreateControl } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -45,17 +48,24 @@ export default function NuevoControlScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.headerContainer}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ChevronLeft size={28} color={commonColors.text} />
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Nuevo Control</Text>
-            <Text style={styles.headerSubtitle}>Registro de control prenatal</Text>
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerContainer}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ChevronLeft size={28} color={commonColors.white} />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>Nuevo Control</Text>
+              <Text style={styles.headerSubtitle}>Registro de control prenatal</Text>
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.sectionCard}>
@@ -100,18 +110,17 @@ export default function NuevoControlScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerContainer: { 
-    backgroundColor: commonColors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.border,
-    paddingBottom: 16,
+    paddingBottom: spacing.md,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 8 },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, marginTop: spacing.sm },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm2 },
   headerTitleContainer: { flex: 1 },
-  headerTitle: { ...typography.h3, color: commonColors.text },
-  headerSubtitle: { ...typography.caption, color: commonColors.textSecondary },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
-  sectionCard: { backgroundColor: commonColors.surface, borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: commonColors.border },
+  headerTitle: { ...typography.h3, color: commonColors.white },
+  headerSubtitle: { ...typography.caption, color: 'rgba(255,255,255,0.85)' },
+  scrollContent: { paddingHorizontal: spacing.md, paddingTop: spacing.md2, paddingBottom: 40 },
+  sectionCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md, ...shadows.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
   sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { ...typography.bodyMedium, color: commonColors.text },

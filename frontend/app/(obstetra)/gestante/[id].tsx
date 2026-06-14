@@ -3,20 +3,22 @@ import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, Dimensions,
   StatusBar, Platform, TextInput, Alert
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Check, Plus, ClipboardList, Trash2, MoreVertical, Home
+  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home
 } from 'lucide-react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChart } from 'react-native-chart-kit';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
-import { shadows } from '../../../src/theme/shadows';
+import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
@@ -47,8 +49,8 @@ const TABS = [
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const designTokens = {
-  cardShadow: shadows.xs,
-  glassShadow: shadows.sm,
+  cardShadow: shadows.card,
+  glassShadow: shadows.card,
 };
 
 // ─── UTILS & SUBCOMPONENTS ────────────────────────────────────────────────────
@@ -113,42 +115,12 @@ const seccionStyles = StyleSheet.create({
   }
 });
 
-function CustomBadge({ label, riskLevel }: { label: string; riskLevel: string }) {
-  let bg: string = commonColors.surfaceAlt;
-  let text: string = commonColors.textSecondary;
-  if (riskLevel === 'Alto') { bg = riskColors.riskRedLight; text = riskColors.riskRed; }
-  else if (riskLevel === 'Medio') { bg = riskColors.riskYellowLight; text = riskColors.riskYellow; }
-  else if (riskLevel === 'Bajo') { bg = riskColors.riskGreenLight; text = riskColors.riskGreen; }
-
-  return (
-    <View style={[badgeStyles.container, { backgroundColor: bg, borderWidth: 1, borderColor: text + '20' }]}>
-      <View style={[badgeStyles.dot, { backgroundColor: text }]} />
-      <Text style={[badgeStyles.text, { color: text }]}>{label.toUpperCase()}</Text>
-    </View>
-  );
+/** Color sólido del semáforo de riesgo. */
+function riskTextColor(riskLevel?: string): string {
+  if (riskLevel === 'Alto') return riskColors.riskRed;
+  if (riskLevel === 'Medio') return riskColors.riskYellow;
+  return riskColors.riskGreen;
 }
-
-const badgeStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  text: {
-    ...typography.overline,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  }
-});
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function PatientProfileScreen(): React.ReactElement {
@@ -407,7 +379,31 @@ export default function PatientProfileScreen(): React.ReactElement {
     });
   };
 
-  if (isLoading) return <LoadingScreen message="Cargando historia clínica..." />;
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={obstetraColors.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerContainer}
+        >
+          <SafeAreaView edges={['top']}>
+            <View style={styles.headerNav}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.iconBtnGlass}>
+                <ChevronLeft size={24} color={commonColors.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Historia Clínica</Text>
+              <View style={{ width: 40 }} />
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+          <DashboardSkeleton count={3} />
+        </View>
+      </View>
+    );
+  }
 
   if (!patient) {
     return (
@@ -444,43 +440,53 @@ export default function PatientProfileScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      
-      {/* ── HEADER MINIMALISTA ── */}
-      <View style={styles.headerContainer}>
-        <View style={styles.headerNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <ChevronLeft size={24} color={commonColors.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Historia Clínica</Text>
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => router.push({
-              pathname: '/(obstetra)/gestante/tamizajes',
-              params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
-            } as any)}
-          >
-            <ClipboardList size={22} color={commonColors.text} />
-          </TouchableOpacity>
-        </View>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-        <View style={styles.headerContent}>
-          <View style={styles.avatarWrap}>
-            <Text style={styles.avatarText}>
-              {(patient.firstName?.[0] || '') + (patient.lastName?.[0] || '')}
-            </Text>
+      {/* ── HEADER GRADIENT ── */}
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerContainer}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerNav}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.iconBtnGlass}>
+              <ChevronLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Historia Clínica</Text>
+            <TouchableOpacity
+              style={styles.iconBtnGlass}
+              onPress={() => router.push({
+                pathname: '/(obstetra)/gestante/tamizajes',
+                params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
+              } as any)}
+            >
+              <ClipboardList size={22} color={commonColors.white} />
+            </TouchableOpacity>
           </View>
-          <View style={styles.headerInfo}>
-            <Text style={styles.patientName} numberOfLines={1}>
-              {patient.firstName} {patient.lastName}
-            </Text>
-            <Text style={styles.patientSub}>DNI {patient.documentNumber} • {patient.age || 28} años</Text>
-          </View>
-          <CustomBadge label={`Riesgo ${patient.riskLevel || 'Bajo'}`} riskLevel={patient.riskLevel} />
-        </View>
-      </View>
 
-      {/* ── KPI HIGHLIGHTS ── */}
+          <View style={styles.headerContent}>
+            <View style={styles.avatarWrap}>
+              <Text style={styles.avatarText}>
+                {(patient.firstName?.[0] || '') + (patient.lastName?.[0] || '')}
+              </Text>
+            </View>
+            <View style={styles.headerInfo}>
+              <Text style={styles.patientName} numberOfLines={1}>
+                {patient.firstName} {patient.lastName}
+              </Text>
+              <Text style={styles.patientSub}>DNI {patient.documentNumber} • {patient.age || 28} años</Text>
+            </View>
+            <View style={styles.riskPill}>
+              <View style={[styles.riskDot, { backgroundColor: riskTextColor(patient.riskLevel) }]} />
+              <Text style={styles.riskPillText}>{patient.riskLevel || 'Bajo'}</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      {/* ── KPI HIGHLIGHTS (glass, superpuestas al header) ── */}
       <View style={styles.kpiWrapper}>
         <View style={styles.kpiGrid}>
           {[
@@ -488,7 +494,7 @@ export default function PatientProfileScreen(): React.ReactElement {
             { label: 'Trimestre', value: patient.currentTrimester ? `${patient.currentTrimester}°` : '—' },
             { label: 'FPP', value: patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { month: 'short', day: 'numeric' }) : '—' },
             { label: 'IMC', value: displayImc },
-          ].map((kpi, idx) => (
+          ].map((kpi) => (
             <View key={kpi.label} style={[styles.kpiCard, designTokens.cardShadow]}>
               <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>{kpi.value}</Text>
               <Text style={styles.kpiLabel}>{kpi.label}</Text>
@@ -511,12 +517,10 @@ export default function PatientProfileScreen(): React.ReactElement {
               <TouchableOpacity
                 key={tid}
                 onPress={() => setActiveTab(tid)}
-                style={[
-                  styles.tabLine,
-                  isActive && styles.tabLineActive
-                ]}
+                style={[styles.tabPill, isActive && styles.tabPillActive]}
+                activeOpacity={0.8}
               >
-                <Icon size={16} color={isActive ? BRAND : commonColors.textSecondary} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={16} color={isActive ? commonColors.white : commonColors.textSecondary} strokeWidth={isActive ? 2.5 : 2} />
                 <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
                   {label}
                 </Text>
@@ -1292,30 +1296,30 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.background,
   },
   
-  // Header Minimalista
+  // Header gradient
   headerContainer: {
-    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 40,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    backgroundColor: commonColors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.border,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight : 24) : 0,
+    paddingBottom: 36,
+    paddingHorizontal: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   headerNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
+    marginTop: spacing.sm,
   },
-  iconBtn: {
+  iconBtnGlass: {
     width: 40, height: 40,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: 20,
   },
   headerTitle: {
     ...typography.h3,
-    color: commonColors.text,
+    color: commonColors.white,
   },
   headerContent: {
     flexDirection: 'row',
@@ -1324,53 +1328,63 @@ const styles = StyleSheet.create({
   avatarWrap: {
     width: 56, height: 56,
     borderRadius: 28,
-    backgroundColor: obstetraColors.primaryLight,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center', alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    marginRight: spacing.md,
   },
   avatarText: {
     ...typography.h3,
-    color: BRAND,
+    color: commonColors.white,
   },
   headerInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm2,
   },
   patientName: {
     ...typography.h2,
-    color: commonColors.text,
+    color: commonColors.white,
     marginBottom: 2,
   },
   patientSub: {
     ...typography.caption,
-    color: commonColors.textSecondary,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  riskPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: commonColors.white,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+  },
+  riskDot: { width: 7, height: 7, borderRadius: 4 },
+  riskPillText: {
+    ...typography.overline,
+    color: commonColors.text,
   },
 
-  // KPIs
+  // KPIs (glass superpuestas)
   kpiWrapper: {
-    paddingHorizontal: 16,
-    marginTop: 16,
+    paddingHorizontal: spacing.md,
+    marginTop: -spacing.lg,
   },
   kpiGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: spacing.sm,
   },
   kpiCard: {
     flex: 1,
     backgroundColor: commonColors.surface,
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.sm2,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: commonColors.border,
   },
   kpiValue: {
-    ...typography.h3,
+    ...typography.numericSm,
     color: commonColors.text,
     marginBottom: 2,
   },
@@ -1387,35 +1401,32 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   tabsWrapper: {
-    maxHeight: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.borderLight,
+    maxHeight: 56,
   },
   tabsScrollContent: {
-    paddingHorizontal: 16,
-    flexGrow: 1,
-    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm2,
+    gap: spacing.sm,
   },
-  tabLine: {
+  tabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.sm2,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.surface,
+    ...shadows.card,
   },
-  tabLineActive: {
-    borderBottomColor: BRAND,
+  tabPillActive: {
+    backgroundColor: BRAND,
   },
   tabText: {
-    ...typography.caption,
-    fontFamily: typography.label.fontFamily,
-    fontWeight: '600',
-    color: commonColors.textTertiary,
-    marginLeft: 6,
+    ...typography.buttonSm,
+    color: commonColors.textSecondary,
   },
   tabTextActive: {
-    color: BRAND,
+    color: commonColors.white,
   },
   scrollArea: {
     padding: 16,
@@ -1426,10 +1437,9 @@ const styles = StyleSheet.create({
   },
   insetGroup: {
     backgroundColor: commonColors.surface,
-    borderRadius: 12,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   section: {
     gap: 16,
@@ -1438,10 +1448,9 @@ const styles = StyleSheet.create({
   // Cards
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    ...shadows.card,
   },
   cardHeader: {
     ...typography.h3,
@@ -1462,10 +1471,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     backgroundColor: commonColors.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    ...shadows.card,
   },
   tamizajesIcon: {
     width: 44,
@@ -1483,8 +1491,9 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: borderRadius.full,
     gap: 6,
+    ...coloredGlow(BRAND),
   },
   primaryActionText: {
     ...typography.caption,
@@ -1495,11 +1504,10 @@ const styles = StyleSheet.create({
 
   controlCard: {
     backgroundColor: commonColors.surface,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md2,
+    marginBottom: spacing.md,
+    ...shadows.card,
   },
   ctrlHeader: {
     flexDirection: 'row',
@@ -1507,15 +1515,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ctrlDateBox: {
-    backgroundColor: commonColors.surfaceAlt,
-    borderRadius: 12,
+    backgroundColor: obstetraColors.primaryLight,
+    borderRadius: borderRadius.md,
     width: 52,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: commonColors.border,
-    marginRight: 16,
+    marginRight: spacing.md,
   },
   ctrlDay: {
     ...typography.h3,
@@ -1567,13 +1573,12 @@ const styles = StyleSheet.create({
   // Treatments specific
   pillCard: {
     backgroundColor: commonColors.surface,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md2,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    marginBottom: spacing.md,
+    ...shadows.card,
   },
   pillIconBox: {
     width: 48,
@@ -1629,13 +1634,13 @@ const styles = StyleSheet.create({
   alertBanner: {
     flexDirection: 'row',
     backgroundColor: semanticColors.dangerLight,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
-    marginTop: 8,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md2,
+    marginTop: spacing.sm,
     alignItems: 'flex-start',
-    borderWidth: 1,
-    borderColor: semanticColors.danger,
+    borderLeftWidth: 4,
+    borderLeftColor: semanticColors.danger,
   },
   alertBannerTextWrap: {
     marginLeft: 12,
@@ -1745,11 +1750,10 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
     borderColor: commonColors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    ...typography.bodySmall,
-    fontSize: 15,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm2,
+    ...typography.body,
     color: commonColors.text,
   },
   modalActions: {

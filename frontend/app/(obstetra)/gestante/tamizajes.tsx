@@ -3,6 +3,7 @@ import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
   TextInput, Alert, Switch, StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -20,6 +21,8 @@ import {
 } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const PINK = obstetraColors.primary;
 const hoy = () => new Date().toISOString().split('T')[0];
@@ -228,19 +231,26 @@ export default function TamizajesScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <SafeAreaView edges={['top']}>
-        <View style={styles.headerNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <ChevronLeft size={24} color={commonColors.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tamizajes y registros</Text>
-          <View style={{ width: 40 }} />
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={obstetraColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerNav}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.iconBtnGlass}>
+              <ChevronLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Tamizajes y registros</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          {nombre ? <Text style={styles.headerPatient}>{nombre}</Text> : null}
+        </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {nombre ? <Text style={styles.patientName}>{nombre}</Text> : null}
         <Text style={styles.subtitle}>Selecciona el registro clínico que deseas añadir.</Text>
 
         {CARDS.map(({ key, label, desc, icon: Icon, color, bg }) => (
@@ -429,13 +439,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surface },
-  headerTitle: { ...typography.h3, color: commonColors.text },
-  content: { padding: 20, paddingBottom: 48 },
-  patientName: { ...typography.h2, color: commonColors.text, marginBottom: 4 },
-  subtitle: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: 20 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: commonColors.surface, borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: commonColors.border },
+  headerWrapper: { paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm2 },
+  iconBtnGlass: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
+  headerTitle: { ...typography.h3, color: commonColors.white },
+  headerPatient: { ...typography.h2, color: commonColors.white, paddingHorizontal: spacing.lg, marginTop: spacing.xs },
+  content: { padding: spacing.lg, paddingBottom: 48 },
+  subtitle: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.md2 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md2, marginBottom: spacing.sm2, ...shadows.card },
   cardIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { ...typography.bodyMedium, color: commonColors.text },
   cardDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
