@@ -223,7 +223,10 @@ export async function createUser(
         email: input.email ?? null,
         consentAccepted: input.consentAccepted,
         consentDate: new Date(),
-        isVerified: input.role === 'gestante', // Gestantes verified immediately
+        // Todo auto-registro (gestante u obstetra) queda pendiente de aprobación
+        // del administrador. Las gestantes creadas por el obstetra ya quedan
+        // verificadas al ser dadas de alta en el sistema (ver patient.service).
+        isVerified: false,
       },
     });
 

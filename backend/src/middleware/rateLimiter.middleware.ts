@@ -49,6 +49,9 @@ export const authRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  // En el entorno de pruebas se desactiva para no provocar 429 falsos en suites
+  // que ejecutan muchos logins seguidos.
+  skip: () => process.env.NODE_ENV === 'test',
   keyGenerator: (req: Request): string => {
     return req.ip || 'unknown';
   },
