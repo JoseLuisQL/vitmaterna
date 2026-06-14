@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, Linking, StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
@@ -10,6 +11,7 @@ import api from '../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
+import { shadows } from '../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
@@ -147,21 +149,23 @@ export default function ChatbotScreen(): React.ReactElement {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <View style={styles.header}>
+      <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-              <ArrowLeft size={24} color={commonColors.surface} />
+              <ArrowLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <View style={styles.headerTitleWrap}>
-              <Bot size={22} color={commonColors.surface} />
+              <View style={styles.botAvatar}>
+                <Bot size={20} color={commonColors.white} />
+              </View>
               <Text style={styles.headerTitle}>Asistente 24/7</Text>
             </View>
             <View style={{ width: 40 }} />
           </View>
           <Text style={styles.headerSubtitle}>Orientación rápida de síntomas</Text>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         ref={scrollRef}
@@ -233,31 +237,32 @@ export default function ChatbotScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  header: { backgroundColor: BRAND, borderBottomLeftRadius: borderRadius.xl, borderBottomRightRadius: borderRadius.xl },
+  header: { borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   safeAreaHeader: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  headerTitle: { ...typography.h3, color: commonColors.surface },
-  headerSubtitle: { ...typography.bodySmall, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 4 },
+  botAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { ...typography.h3, color: commonColors.white },
+  headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 4 },
   chatContent: { padding: spacing.lg, paddingBottom: spacing.sm + 4 },
-  bubble: { maxWidth: '85%', padding: 14, borderRadius: borderRadius.lg, marginBottom: spacing.sm + 4 },
-  bubbleBot: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: commonColors.border },
-  bubbleBotText: { ...typography.bodySmall, fontSize: 15, color: commonColors.text, lineHeight: 22 },
-  bubbleUser: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: 4 },
-  bubbleUserText: { ...typography.bodySmall, fontSize: 15, color: commonColors.surface, lineHeight: 22 },
-  resultCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, borderLeftWidth: 4, padding: spacing.md, marginBottom: spacing.sm + 4, borderWidth: 1, borderColor: commonColors.border },
+  bubble: { maxWidth: '85%', padding: 14, borderRadius: borderRadius.xl, marginBottom: spacing.sm + 4 },
+  bubbleBot: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: borderRadius.xs, ...shadows.card },
+  bubbleBotText: { ...typography.body, color: commonColors.text, lineHeight: 22 },
+  bubbleUser: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: borderRadius.xs, ...shadows.card },
+  bubbleUserText: { ...typography.body, color: commonColors.white, lineHeight: 22 },
+  resultCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderLeftWidth: 4, padding: spacing.md, marginBottom: spacing.sm + 4, ...shadows.card },
   urgenciaBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full, marginBottom: spacing.sm },
   urgenciaText: { ...typography.overline, fontWeight: '800', letterSpacing: 0.5 },
   resultText: { ...typography.bodySmall, fontSize: 15, color: commonColors.text, lineHeight: 22 },
-  callCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: semanticColors.danger, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm },
+  callCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: semanticColors.danger, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm, ...shadows.card },
   callIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   callLabel: { ...typography.caption, color: 'rgba(255,255,255,0.85)' },
-  callPhone: { ...typography.h3, color: commonColors.surface, marginTop: 2 },
-  optionsWrap: { backgroundColor: commonColors.surface, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.lg, borderTopWidth: 1, borderColor: commonColors.border },
-  optionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 14, marginBottom: spacing.sm },
-  optionText: { flex: 1, ...typography.label, color: commonColors.text },
-  resetBtn: { backgroundColor: BRAND, borderRadius: borderRadius.full, paddingVertical: 14, alignItems: 'center' },
-  resetBtnText: { ...typography.button, fontSize: 15, color: commonColors.surface },
+  callPhone: { ...typography.h3, color: commonColors.white, marginTop: 2 },
+  optionsWrap: { backgroundColor: commonColors.surface, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.lg, ...shadows.modal },
+  optionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: 14, marginBottom: spacing.sm },
+  optionText: { flex: 1, ...typography.bodyMd, color: commonColors.text },
+  resetBtn: { backgroundColor: BRAND, borderRadius: borderRadius.full, paddingVertical: 14, alignItems: 'center', ...shadows.card },
+  resetBtnText: { ...typography.button, fontSize: 15, color: commonColors.white },
   disclaimer: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0, color: commonColors.textTertiary, textAlign: 'center', marginTop: spacing.sm + 4, lineHeight: 17 },
 });

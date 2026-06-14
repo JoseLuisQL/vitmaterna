@@ -3,18 +3,20 @@ import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Keyboard
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import api, { resolveMediaUrl } from '../../../src/services/api';
-import { AppHeader } from '../../../src/components/ui/AppHeader';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, useToast } from '../../../src/components/ui';
 import { usePatients } from '../../../src/services/api-queries';
 import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
-import { shadows } from '../../../src/theme/shadows';
+import { shadows, coloredGlow } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -280,18 +282,24 @@ export default function ObstetraChatScreen() {
   };
 
   if (!activeConv) {
-    if (isLoadingConvs) return <LoadingScreen message="Cargando consultas..." />;
-
     return (
       <View style={styles.container}>
-        <AppHeader title="Bandeja de Consultas" />
+        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bandejaHeader}>
+          <SafeAreaView edges={['top']}>
+            <Text style={styles.bandejaTitle}>Bandeja de Consultas</Text>
+            <Text style={styles.bandejaSubtitle}>Mensajes con tus gestantes</Text>
+            <TouchableOpacity style={styles.newChatBtn} onPress={() => setPickerVisible(true)} activeOpacity={0.85}>
+              <Plus size={18} color={commonColors.white} />
+              <Text style={styles.newChatBtnText}>Nueva conversación</Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+        </LinearGradient>
 
-        {/* Iniciar conversación con una gestante asignada */}
-        <TouchableOpacity style={styles.newChatBtn} onPress={() => setPickerVisible(true)} activeOpacity={0.85}>
-          <Plus size={18} color={obstetraColors.onPrimary} />
-          <Text style={styles.newChatBtnText}>Nueva conversación</Text>
-        </TouchableOpacity>
-
+        {isLoadingConvs ? (
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+            <ListSkeleton count={5} />
+          </View>
+        ) : (
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
@@ -306,6 +314,7 @@ export default function ObstetraChatScreen() {
             </View>
           }
         />
+        )}
         <TouchableOpacity
           style={styles.broadcastFab}
           onPress={() => router.push('/(obstetra)/mensaje-masivo')}
@@ -369,21 +378,25 @@ export default function ObstetraChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.activeChatHeader}>
-        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-          <ChevronLeft size={24} color={commonColors.text} />
-        </TouchableOpacity>
-        <View style={styles.activeHeaderTitleWrap}>
-          <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
-          <Text style={styles.activeHeaderSubtitle}>DNI: {activeConv.gestante?.user?.dni || ''}</Text>
-        </View>
-      </View>
-      
-      {!isConnected && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>Conectando al chat...</Text>
-        </View>
-      )}
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.activeChatHeader}>
+        <SafeAreaView edges={['top']} style={styles.activeChatHeaderRow}>
+          <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+            <ChevronLeft size={24} color={commonColors.white} />
+          </TouchableOpacity>
+          <View style={styles.activeHeaderAvatar}>
+            <Text style={styles.activeHeaderAvatarText}>
+              {`${activeConv.gestante?.user?.firstName?.[0] ?? ''}${activeConv.gestante?.user?.lastName?.[0] ?? ''}`}
+            </Text>
+          </View>
+          <View style={styles.activeHeaderTitleWrap}>
+            <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: isConnected ? semanticColors.successMid : 'rgba(255,255,255,0.5)' }]} />
+              <Text style={styles.activeHeaderSubtitle}>{isConnected ? 'En línea' : 'Conectando...'}</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       <FlatList
         ref={flatListRef}
@@ -438,15 +451,23 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: layout.tabBarSpace,
   },
+  bandejaHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
+  },
+  bandejaTitle: { ...typography.h1, color: commonColors.white },
+  bandejaSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   convItem: {
     flexDirection: 'row',
     backgroundColor: commonColors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    marginBottom: spacing.sm2,
     alignItems: 'center',
+    ...shadows.card,
   },
   convAvatar: {
     width: 44,
@@ -488,59 +509,56 @@ const styles = StyleSheet.create({
     color: commonColors.textSecondary,
   },
   activeChatHeader: {
-    flexDirection: 'row',
-    backgroundColor: commonColors.surface,
-    paddingTop: Platform.OS === 'ios' ? 44 : 20,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.border,
-    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
+  activeChatHeaderRow: { flexDirection: 'row', alignItems: 'center' },
   backBtn: {
-    padding: 6,
-    marginRight: 10,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginRight: spacing.sm,
   },
+  activeHeaderAvatar: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: spacing.sm2,
+  },
+  activeHeaderAvatarText: { ...typography.h4, color: commonColors.white },
   activeHeaderTitleWrap: {
     flex: 1,
   },
   activeHeaderTitle: {
     ...typography.h3,
-    color: commonColors.text,
+    color: commonColors.white,
   },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
   activeHeaderSubtitle: {
-    ...typography.overline,
-    letterSpacing: 0.1,
-    color: commonColors.textSecondary,
-    marginTop: 1,
-  },
-  offlineBanner: {
-    backgroundColor: commonColors.surfaceAlt,
-    padding: 8,
-    alignItems: 'center',
-  },
-  offlineText: {
-    ...typography.overline,
-    letterSpacing: 0.1,
-    color: commonColors.textSecondary,
+    ...typography.bodySm,
+    color: 'rgba(255,255,255,0.85)',
   },
   messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 12,
+    maxWidth: '78%',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm2,
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing.sm2,
   },
   messageMe: {
     alignSelf: 'flex-end',
     backgroundColor: BRAND,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: borderRadius.xs,
+    ...shadows.card,
   },
   messageOther: {
     alignSelf: 'flex-start',
     backgroundColor: commonColors.surface,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: borderRadius.xs,
+    ...shadows.card,
   },
   messageImage: {
     width: 200,
@@ -572,10 +590,10 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 12,
+    padding: spacing.sm2,
     backgroundColor: commonColors.surface,
     borderTopWidth: 1,
-    borderColor: commonColors.border,
+    borderColor: commonColors.borderLight,
     alignItems: 'flex-end',
     paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
@@ -591,14 +609,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: commonColors.surfaceAlt,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
-    minHeight: 40,
+    borderRadius: borderRadius.xxl,
+    paddingHorizontal: spacing.md,
+    paddingTop: 12,
+    paddingBottom: 12,
+    minHeight: 44,
     maxHeight: 120,
-    ...typography.bodySmall,
-    fontSize: 15,
+    ...typography.body,
     color: commonColors.text,
   },
   sendButton: {
@@ -608,8 +625,8 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
-    marginBottom: 2,
+    marginLeft: spacing.sm,
+    ...shadows.card,
   },
   sendButtonDisabled: {
     backgroundColor: commonColors.disabled,
@@ -638,16 +655,16 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND,
     paddingHorizontal: 20,
     paddingVertical: 14,
-    borderRadius: 99,
-    ...shadows.md,
+    borderRadius: borderRadius.full,
+    ...coloredGlow(BRAND),
   },
-  broadcastFabText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
+  broadcastFabText: { color: commonColors.white, ...typography.button, fontSize: 15 },
   newChatBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: BRAND, marginHorizontal: 20, marginTop: 12, marginBottom: 4,
-    paddingVertical: 12, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.18)', marginTop: spacing.md,
+    paddingVertical: 12, borderRadius: borderRadius.full,
   },
-  newChatBtnText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
+  newChatBtnText: { color: commonColors.white, ...typography.button, fontSize: 15 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1, borderColor: commonColors.border, borderRadius: 14, paddingHorizontal: 14, height: 48, marginBottom: 12,

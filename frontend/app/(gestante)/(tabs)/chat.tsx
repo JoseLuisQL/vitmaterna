@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import api, { resolveMediaUrl } from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useToast } from '../../../src/components/ui';
@@ -14,6 +15,7 @@ import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
@@ -229,31 +231,46 @@ export default function GestanteChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.headerGradient}>
+      <LinearGradient
+        colors={gestanteColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerTopRow}>
+            <View style={styles.headerAvatar}>
+              <Text style={styles.headerAvatarText}>
+                {obstetra ? `${obstetra.firstName?.[0] ?? ''}${obstetra.lastName?.[0] ?? ''}` : 'OB'}
+              </Text>
+            </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Consultas</Text>
-              <Text style={styles.headerSubtitle}>Habla con tu obstetra</Text>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {obstetra ? `Obst. ${obstetra.firstName} ${obstetra.lastName}` : 'Mi obstetra'}
+              </Text>
+              <View style={styles.statusRow}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: isConnected ? semanticColors.successMid : 'rgba(255,255,255,0.5)' },
+                  ]}
+                />
+                <Text style={styles.headerSubtitle}>
+                  {isConnected ? 'En línea' : 'Conectando...'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp">
-                <MessageCircle size={20} color={commonColors.surface} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/chatbot')} activeOpacity={0.8}>
-                <Bot size={20} color={BRAND} />
-                <Text style={styles.botBtnText}>Asistente 24/7</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp">
+              <MessageCircle size={20} color={commonColors.white} />
+            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/chatbot')} activeOpacity={0.85}>
+            <Bot size={18} color={commonColors.white} />
+            <Text style={styles.botBtnText}>Asistente 24/7 · respuesta inmediata</Text>
+          </TouchableOpacity>
         </SafeAreaView>
-      </View>
-      
-      {!isConnected && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>Conectando al chat...</Text>
-        </View>
-      )}
+      </LinearGradient>
 
       <FlatList
         ref={flatListRef}
@@ -306,41 +323,56 @@ export default function GestanteChatScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerGradient: {
-    paddingBottom: spacing.lg,
-    backgroundColor: commonColors.surface,
-    borderBottomLeftRadius: borderRadius.xl,
-    borderBottomRightRadius: borderRadius.xl,
-    borderBottomWidth: 1,
-    borderColor: commonColors.border,
+    paddingBottom: spacing.md,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
-  headerTopRow: { flexDirection: 'row', alignItems: 'center' },
-  headerTitle: { ...typography.h1, color: commonColors.text, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: commonColors.textSecondary },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2 },
+  headerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: { ...typography.h4, color: commonColors.white },
+  headerTitle: { ...typography.h3, color: commonColors.white },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
   waBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
-  botBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 10 },
-  botBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: BRAND },
-  offlineBanner: { backgroundColor: commonColors.surfaceAlt, padding: spacing.sm, alignItems: 'center' },
-  offlineText: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary },
-  listContent: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
-  messageBubble: { maxWidth: '80%', padding: spacing.md, borderRadius: borderRadius.xl, marginBottom: spacing.sm + 4, borderWidth: 1, borderColor: commonColors.border },
-  messageMe: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: 4, borderColor: BRAND },
-  messageOther: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: 4 },
+  botBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginTop: spacing.sm2,
+  },
+  botBtnText: { ...typography.label, fontWeight: '700', color: commonColors.white },
+  listContent: { padding: spacing.lg, paddingBottom: spacing.lg },
+  messageBubble: { maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm2, borderRadius: borderRadius.xl, marginBottom: spacing.sm2 },
+  messageMe: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: borderRadius.xs, ...shadows.card },
+  messageOther: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: borderRadius.xs, ...shadows.card },
   messageImage: { width: 200, height: 200, borderRadius: borderRadius.lg, marginBottom: 6, backgroundColor: commonColors.surfaceAlt },
-  messageText: { ...typography.bodyMedium, marginBottom: 6 },
-  messageTextMe: { color: commonColors.surface },
+  messageText: { ...typography.body, marginBottom: 4 },
+  messageTextMe: { color: commonColors.white },
   messageTextOther: { color: commonColors.text },
   timeText: { ...typography.caption, fontSize: 11, alignSelf: 'flex-end' },
-  timeTextMe: { color: 'rgba(255,255,255,0.7)' },
+  timeTextMe: { color: 'rgba(255,255,255,0.75)' },
   timeTextOther: { color: commonColors.textTertiary },
-  inputContainer: { flexDirection: 'row', padding: spacing.md, backgroundColor: commonColors.surface, borderTopWidth: 1, borderColor: commonColors.border, alignItems: 'flex-end', paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.md },
-  attachButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: gestanteColors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },
-  input: { flex: 1, backgroundColor: commonColors.background, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: 14, minHeight: 48, maxHeight: 120, ...typography.bodyMedium, color: commonColors.text, borderWidth: 1, borderColor: commonColors.border },
-  sendButton: { backgroundColor: BRAND, width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginLeft: spacing.sm + 4, marginBottom: 0 },
+  inputContainer: { flexDirection: 'row', padding: spacing.sm2, backgroundColor: commonColors.surface, borderTopWidth: 1, borderColor: commonColors.borderLight, alignItems: 'flex-end', paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.sm2 },
+  attachButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: gestanteColors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },
+  input: { flex: 1, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.xxl, paddingHorizontal: spacing.md, paddingTop: 12, paddingBottom: 12, minHeight: 44, maxHeight: 120, ...typography.body, color: commonColors.text },
+  sendButton: { backgroundColor: BRAND, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginLeft: spacing.sm, ...shadows.card },
   sendButtonDisabled: { backgroundColor: commonColors.disabled },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 80 },
   emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl, lineHeight: 22 },
