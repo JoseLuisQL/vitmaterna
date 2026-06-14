@@ -874,6 +874,21 @@ export default function PatientProfileScreen(): React.ReactElement {
         <View style={{ gap: 14 }}>
           <View style={styles.inputFieldGroup}>
             <Text style={styles.inputLabel}>Tipo de Examen</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+              {['Hemoglobina', 'Glucemia', 'VIH', 'VDRL', 'Orina'].map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={{
+                    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14,
+                    backgroundColor: labTipo === t ? obstetraColors.primaryLight : commonColors.surfaceAlt,
+                    borderWidth: 1, borderColor: labTipo === t ? BRAND : commonColors.border,
+                  }}
+                  onPress={() => setLabTipo(t)}
+                >
+                  <Text style={{ ...typography.caption, color: labTipo === t ? BRAND : commonColors.textSecondary, fontWeight: labTipo === t ? '700' : '500' }}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <TextInput
               style={styles.textInput}
               placeholder="Ej. Hemoglobina, Glucemia, VIH..."

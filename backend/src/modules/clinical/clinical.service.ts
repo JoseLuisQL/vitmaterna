@@ -525,7 +525,17 @@ export class ClinicalService {
     let valCorregido = data.valorCorregido !== undefined ? Number(data.valorCorregido) : undefined;
     let resultado = data.resultado;
 
-    if (labData.tipoExamen === 'Hemoglobina' && valNum !== undefined) {
+    // Detección robusta de hemoglobina (insensible a mayúsculas/acentos y a
+    // variantes como "Hemoglobina (Hb)" o "hb"), para que la corrección por
+    // altitud se aplique siempre que corresponda.
+    const tipoNorm = String(labData.tipoExamen || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+    const esHemoglobina = tipoNorm.includes('hemoglobina') || tipoNorm === 'hb';
+
+    if (esHemoglobina && valNum !== undefined && !Number.isNaN(valNum)) {
       const { analyzeHemoglobin } = await import('../../utils/hemoglobinCorrection.js');
       const { getAltitudeMsnm } = await import('../../utils/systemSettings.js');
       const altitud = await getAltitudeMsnm();
