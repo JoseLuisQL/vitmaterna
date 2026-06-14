@@ -1,6 +1,10 @@
 import { db } from './index';
 
 export function initializeDatabase() {
+  // SQLite local solo está disponible en móvil (no en web). Si no hay db, salir.
+  if (!db) {
+    return;
+  }
   try {
     // Enable Write-Ahead Logging for better performance
     db.execSync('PRAGMA journal_mode = WAL;');
