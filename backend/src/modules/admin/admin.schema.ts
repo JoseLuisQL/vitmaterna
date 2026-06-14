@@ -59,7 +59,7 @@ export const createUserSchema = {
     dni: z.string().length(8, 'El DNI debe tener 8 dígitos').regex(/^\d{8}$/, 'El DNI debe contener solo dígitos'),
     firstName: z.string().min(2, 'El nombre debe tener al menos 2 letras').max(100),
     lastName: z.string().min(2, 'El apellido debe tener al menos 2 letras').max(100),
-    phone: z.string().regex(/^\+?51\d{9}$/, 'Formato de teléfono inválido (+51999999999)').optional(),
+    phone: z.string().regex(/^(?:\+?51|0051)?\s?\d{9}$/, 'El teléfono debe tener 9 dígitos (ej. 987654321)').optional(),
     email: z.string().email('Formato de correo electrónico inválido').optional().or(z.literal('')),
     password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
     role: z.enum(['obstetra', 'admin', 'gestante']),

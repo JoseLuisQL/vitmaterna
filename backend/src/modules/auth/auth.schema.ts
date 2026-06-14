@@ -6,6 +6,17 @@ const dniField = z
   .length(8, 'DNI must be exactly 8 digits')
   .regex(/^\d{8}$/, 'DNI must contain only digits');
 
+/**
+ * Teléfono peruano flexible: acepta 9 dígitos (celular nacional) o con prefijo
+ * de país opcional (+51 / 51 / 0051). El usuario puede ingresar solo 9 dígitos.
+ */
+const phoneField = z
+  .string()
+  .regex(
+    /^(?:\+?51|0051)?\s?\d{9}$/,
+    'El teléfono debe tener 9 dígitos (ej. 987654321)',
+  );
+
 const passwordField = z
   .string()
   .min(8, 'Password must be at least 8 characters')
@@ -44,10 +55,7 @@ export const registerSchema = z.object({
     .min(2, 'Last name must be at least 2 characters')
     .max(100)
     .trim(),
-  phone: z
-    .string()
-    .regex(/^\+?51\d{9}$/, 'Phone must be a valid Peruvian number (+51XXXXXXXXX)')
-    .optional(),
+  phone: phoneField.optional(),
   email: z.string().email('Invalid email format').optional(),
   password: passwordField,
   confirmPassword: z.string(),
@@ -90,10 +98,7 @@ export type RefreshInput = z.infer<typeof refreshSchema>;
 // ---- Forgot Password ----
 export const forgotPasswordSchema = z.object({
   dni: dniField,
-  phone: z
-    .string()
-    .regex(/^\+?51\d{9}$/, 'Phone must be a valid Peruvian number')
-    .optional(),
+  phone: phoneField.optional(),
 });
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
@@ -115,10 +120,7 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export const updateProfileSchema = z.object({
   firstName: z.string().min(2).max(100).trim().optional(),
   lastName: z.string().min(2).max(100).trim().optional(),
-  phone: z
-    .string()
-    .regex(/^\+?51\d{9}$/, 'Phone must be a valid Peruvian number')
-    .optional(),
+  phone: phoneField.optional(),
   email: z.string().email().optional(),
   notificationPreferences: z
     .object({
