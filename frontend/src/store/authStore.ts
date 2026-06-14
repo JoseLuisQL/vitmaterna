@@ -124,6 +124,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Proceed with local logout even if API call fails
     } finally {
       await clearStoredTokens();
+      // Limpiar la caché persistente de React Query para no filtrar datos de un
+      // usuario al siguiente que inicie sesión en el mismo dispositivo.
+      try {
+        const { clearQueryCache } = await import('../services/queryClient');
+        await clearQueryCache();
+      } catch {
+        // ignore
+      }
       set({
         user: null,
         token: null,

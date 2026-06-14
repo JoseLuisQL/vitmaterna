@@ -12,7 +12,7 @@
  * La UI usa `enqueue()` desde las mutaciones cuando `isOnline()` es false, y
  * `flush()` se dispara solo al reconectar / volver a foreground.
  */
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import type { QueryClient } from '@tanstack/react-query';
 import api from './api';
 import { getDb } from '../database/index';
@@ -243,6 +243,12 @@ export function initOutbox(queryClient: QueryClient): void {
       void flush();
     }
   });
+  // Al volver la app a primer plano (nativo), intentar vaciar.
+  if (Platform.OS !== 'web') {
+    AppState.addEventListener('change', (status) => {
+      if (status === 'active') void flush();
+    });
+  }
   // Intento inicial (por si quedó algo de una sesión anterior).
   setTimeout(() => {
     void flush();

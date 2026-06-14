@@ -21,6 +21,7 @@ import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
+import { useOfflinePrefetch } from '../src/hooks/useOfflinePrefetch';
 import { queryClient, startQueryPersistence } from '../src/services/queryClient';
 import { initNetwork } from '../src/services/network';
 import { initOutbox } from '../src/services/outbox';
@@ -72,6 +73,7 @@ export default function RootLayout(): React.ReactElement | null {
  */
 function AppNavigator(): React.ReactElement {
   usePushNotifications();
+  useOfflinePrefetch();
 
   return (
     <Stack

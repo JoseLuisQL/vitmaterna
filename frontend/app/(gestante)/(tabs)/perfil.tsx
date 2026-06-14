@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity, Home
+  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity, Home, CloudOff
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { usePendingSync } from '../../../src/hooks/usePendingSync';
 
 const BRAND = gestanteColors.primary;
 
@@ -38,6 +39,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
 
 export default function PerfilScreen(): React.ReactElement {
   const { user: authUser, logout } = useAuthStore();
+  const pendingSync = usePendingSync();
   const toast = useToast();
   const router = useRouter();
 
@@ -220,6 +222,14 @@ export default function PerfilScreen(): React.ReactElement {
             <Text style={styles.profileName}>{displayName}</Text>
             <Text style={styles.profileRole}>Gestante</Text>
             {profileData?.user?.dni && <Text style={styles.profileDni}>DNI: {profileData.user.dni}</Text>}
+            {pendingSync > 0 && (
+              <View style={styles.syncChip}>
+                <CloudOff size={13} color={commonColors.white} />
+                <Text style={styles.syncChipText}>
+                  {pendingSync} cambio{pendingSync > 1 ? 's' : ''} por sincronizar
+                </Text>
+              </View>
+            )}
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -449,6 +459,17 @@ const styles = StyleSheet.create({
   profileName: { ...typography.h3, color: commonColors.white, marginBottom: 4, textAlign: 'center' },
   profileRole: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
   profileDni: { ...typography.caption, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },
+  syncChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: 5,
+    marginTop: spacing.sm2,
+  },
+  syncChipText: { ...typography.caption, color: commonColors.white, fontWeight: '600' },
   sectionTitle: { ...typography.label, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: spacing.md, marginBottom: spacing.sm },
   menuCard: {
     backgroundColor: commonColors.surface,
