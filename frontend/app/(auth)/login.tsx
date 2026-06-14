@@ -14,13 +14,15 @@ import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { CreditCard, Lock } from 'lucide-react-native';
+
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
-import { useAuthStore } from '../../src/store/authStore';
 import { VitMaternaLogo } from '../../src/components/ui/VitMaternaLogo';
+import { useAuthStore } from '../../src/store/authStore';
 import { obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
-import { spacing } from '../../src/theme/spacing';
+import { spacing, borderRadius } from '../../src/theme/spacing';
+import { shadows } from '../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -55,7 +57,7 @@ export default function LoginScreen(): React.ReactElement {
       try {
         const validated = loginSchema.parse(data);
         await login(validated.dni, validated.password);
-        
+
         const user = useAuthStore.getState().user;
         if (user) {
           if (user.role === 'gestante') router.replace('/(gestante)/(tabs)');
@@ -67,26 +69,34 @@ export default function LoginScreen(): React.ReactElement {
         Alert.alert('Error', message);
       }
     },
-    [login],
+    [login, router],
   );
 
   return (
     <View style={styles.container}>
+      {/* Blobs de color decorativos */}
+      <View style={styles.blobTop} />
+      <View style={styles.blobBottom} />
+
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            
-            <View style={styles.headerSection}>
-              <View style={styles.header}>
-                <View style={styles.logoContainer}>
-                  <VitMaternaLogo size={160} color="pink" />
-                </View>
-                <Text style={styles.title}>
-                  <Text style={styles.titleBrand}>Vit</Text>
-                  <Text style={styles.titleRest}>Materna</Text>
-                </Text>
-                <Text style={styles.tagline}>Tu salud prenatal, siempre contigo</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.flex}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <VitMaternaLogo size={150} color="pink" />
               </View>
+              <Text style={styles.title}>
+                <Text style={styles.titleBrand}>Vit</Text>
+                <Text style={styles.titleRest}>Materna</Text>
+              </Text>
+              <Text style={styles.tagline}>Tu salud prenatal, siempre contigo</Text>
             </View>
 
             <View style={styles.card}>
@@ -117,7 +127,11 @@ export default function LoginScreen(): React.ReactElement {
                 autoCapitalize="none"
               />
 
-              <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotButton} hitSlop={12}>
+              <Pressable
+                onPress={() => router.push('/(auth)/forgot-password')}
+                style={styles.forgotButton}
+                hitSlop={12}
+              >
                 <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
               </Pressable>
 
@@ -127,8 +141,10 @@ export default function LoginScreen(): React.ReactElement {
                 loading={isLoading}
                 fullWidth
                 size="lg"
-                themeColor={BRAND}
-                style={{ marginTop: 8 }}
+                rounded
+                gradient
+                themeGradient={obstetraColors.gradient}
+                style={{ marginTop: spacing.xs }}
               />
             </View>
 
@@ -138,7 +154,6 @@ export default function LoginScreen(): React.ReactElement {
                 <Text style={styles.registerLink}>Regístrate</Text>
               </Pressable>
             </View>
-
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -147,44 +162,59 @@ export default function LoginScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
+  container: { flex: 1, backgroundColor: commonColors.background, overflow: 'hidden' },
   safeArea: { flex: 1 },
   flex: { flex: 1 },
+  blobTop: {
+    position: 'absolute',
+    top: -120,
+    right: -80,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: obstetraColors.primaryLight,
+    opacity: 0.7,
+  },
+  blobBottom: {
+    position: 'absolute',
+    bottom: -140,
+    left: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#F3EEFF',
+    opacity: 0.8,
+  },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
   },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
   header: {
     alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   logoContainer: {
     marginBottom: spacing.md,
   },
   title: {
-    ...typography.display,
-    fontSize: 40,
-    marginBottom: 4,
+    ...typography.displayXl,
+    marginBottom: spacing.xs,
   },
   titleBrand: { color: BRAND },
   titleRest: { color: commonColors.text },
   tagline: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
     letterSpacing: 0.3,
   },
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: 20,
+    borderRadius: borderRadius.xxl,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.modal,
   },
   formTitle: {
     ...typography.h2,
@@ -198,9 +228,9 @@ const styles = StyleSheet.create({
     marginTop: -spacing.sm,
   },
   forgotText: {
-    ...typography.bodySmall,
+    ...typography.label,
     color: BRAND,
-    fontFamily: typography.label.fontFamily,
+    fontWeight: '600',
   },
   registerSection: {
     flexDirection: 'row',
@@ -208,12 +238,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    ...typography.bodySmall,
+    ...typography.body,
     color: commonColors.textSecondary,
   },
   registerLink: {
-    ...typography.bodySmall,
+    ...typography.body,
     color: BRAND,
-    fontFamily: typography.label.fontFamily,
+    fontWeight: '600',
   },
 });

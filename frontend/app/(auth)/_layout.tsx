@@ -12,7 +12,7 @@ export default function AuthLayout(): React.ReactElement {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: commonColors.background },
-        animation: 'slide_from_right',
+        animation: 'fade',
       }}
     >
       <Stack.Screen name="login" />

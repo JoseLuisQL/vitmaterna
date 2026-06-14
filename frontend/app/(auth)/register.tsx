@@ -31,6 +31,7 @@ import type { UserRole, RegisterRequest } from '../../src/types/user';
 import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
+import { shadows } from '../../src/theme/shadows';
 
 const registerSchema = z
   .object({
@@ -222,8 +223,10 @@ export default function RegisterScreen(): React.ReactElement {
                 loading={isLoading}
                 fullWidth
                 size="lg"
-                themeColor={themeColor}
-                style={{ marginTop: 16 }}
+                rounded
+                gradient
+                themeGradient={isGestante ? gestanteColors.gradient : obstetraColors.gradient}
+                style={{ marginTop: spacing.md }}
               />
             </View>
 
@@ -283,16 +286,15 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.xxl,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.modal,
   },
   roleSelector: {
     flexDirection: 'row',
     backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.full,
     padding: 4,
     marginBottom: spacing.lg,
   },
@@ -302,13 +304,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.sm + 4,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
     gap: spacing.sm,
   },
   roleOptionActive: {
     backgroundColor: commonColors.surface,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   roleText: {
     ...typography.label,

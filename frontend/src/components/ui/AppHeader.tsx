@@ -1,148 +1,207 @@
 /**
- * VITMATERNA - AppHeader Component
- * Screen header with title, optional back button, and right action.
+ * VITMATERNA - AppHeader
+ * Header unificado con SafeArea automática. Variantes: flat (ice-blue/blanco),
+ * gradient (LinearGradient del rol) y transparent. Soporta back, acción
+ * derecha (ícono/label/nodo) y subtítulo.
+ *
+ * API legacy conservada: showBack, rightIcon, rightLabel, onRightPress.
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, LucideIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { spacing, layout } from '../../theme/spacing';
+import { spacing, borderRadius } from '../../theme/spacing';
+
+type HeaderVariant = 'flat' | 'gradient' | 'transparent';
 
 interface AppHeaderProps {
   title: string;
+  subtitle?: string;
   showBack?: boolean;
   onBackPress?: () => void;
   rightIcon?: LucideIcon;
   rightLabel?: string;
   onRightPress?: () => void;
-  style?: ViewStyle;
+  /** Nodo custom a la derecha (campana, avatar...). Prioritario sobre icon/label. */
+  rightNode?: React.ReactNode;
+  variant?: HeaderVariant;
+  /** Colores del gradient (variant='gradient'). */
+  gradientColors?: readonly [string, string, ...string[]];
+  /** Color de acento (texto/íconos sobre flat/transparent). */
   themeColor?: string;
+  /** Alinea el título a la izquierda (default centrado en flat). */
+  align?: 'center' | 'left';
+  style?: ViewStyle;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   title,
+  subtitle,
   showBack = false,
   onBackPress,
   rightIcon: RightIcon,
   rightLabel,
   onRightPress,
-  style,
+  rightNode,
+  variant = 'flat',
+  gradientColors,
   themeColor,
+  align,
+  style,
 }) => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const isGradient = variant === 'gradient';
+  const contentColor = isGradient ? commonColors.white : themeColor ?? commonColors.text;
+  const titleAlign = align ?? (isGradient ? 'left' : 'center');
 
   const handleBack = () => {
-    if (onBackPress) {
-      onBackPress();
-    } else if (router.canGoBack()) {
-      router.back();
-    }
+    if (onBackPress) onBackPress();
+    else if (router.canGoBack()) router.back();
   };
 
-  return (
-    <View style={[styles.header, style]}>
-      {/* Left Section */}
-      <View style={styles.leftSection}>
+  const right = rightNode ?? (
+    (RightIcon || rightLabel) && onRightPress ? (
+      <Pressable
+        onPress={onRightPress}
+        style={[styles.iconButton, isGradient && styles.iconButtonOnGradient]}
+        accessibilityLabel={rightLabel || 'Acción'}
+        accessibilityRole="button"
+        hitSlop={8}
+      >
+        {RightIcon ? (
+          <RightIcon size={22} color={contentColor} />
+        ) : (
+          <Text style={[styles.rightLabel, { color: contentColor }]}>{rightLabel}</Text>
+        )}
+      </Pressable>
+    ) : null
+  );
+
+  const inner = (
+    <View style={styles.row}>
+      <View style={styles.side}>
         {showBack && (
           <Pressable
             onPress={handleBack}
-            style={styles.backButton}
+            style={[styles.iconButton, isGradient && styles.iconButtonOnGradient]}
             accessibilityLabel="Volver"
             accessibilityRole="button"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={8}
           >
-            <ChevronLeft
-              size={24}
-              color={themeColor || commonColors.text}
-            />
+            <ChevronLeft size={24} color={contentColor} />
           </Pressable>
         )}
       </View>
 
-      {/* Title */}
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
-
-      {/* Right Section */}
-      <View style={styles.rightSection}>
-        {(RightIcon || rightLabel) && onRightPress && (
-          <Pressable
-            onPress={onRightPress}
-            style={styles.rightButton}
-            accessibilityLabel={rightLabel || 'Acción'}
-            accessibilityRole="button"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      <View style={[styles.titleWrap, titleAlign === 'left' && styles.titleLeft]}>
+        <Text
+          style={[styles.title, { color: contentColor, textAlign: titleAlign }]}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: isGradient ? 'rgba(255,255,255,0.85)' : commonColors.textSecondary,
+                textAlign: titleAlign,
+              },
+            ]}
+            numberOfLines={1}
           >
-            {RightIcon && (
-              <RightIcon
-                size={22}
-                color={themeColor || commonColors.text}
-              />
-            )}
-            {rightLabel && !RightIcon && (
-              <Text
-                style={[
-                  styles.rightLabel,
-                  { color: themeColor || commonColors.text },
-                ]}
-              >
-                {rightLabel}
-              </Text>
-            )}
-          </Pressable>
-        )}
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
+
+      <View style={[styles.side, styles.sideRight]}>{right}</View>
+    </View>
+  );
+
+  if (isGradient) {
+    return (
+      <LinearGradient
+        colors={gradientColors ?? ['#5B9FFF', '#3A86FF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.gradientContainer, { paddingTop: insets.top + spacing.sm }, style]}
+      >
+        {inner}
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.flatContainer,
+        variant === 'transparent' ? styles.transparent : styles.flat,
+        { paddingTop: insets.top + spacing.xs },
+        style,
+      ]}
+    >
+      {inner}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: layout.headerHeight,
+  gradientContainer: {
     paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  flatContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  flat: {
     backgroundColor: commonColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: commonColors.borderLight,
   },
-  leftSection: {
-    width: 48,
+  transparent: {
+    backgroundColor: commonColors.transparent,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+  },
+  side: {
+    width: 44,
     alignItems: 'flex-start',
+    justifyContent: 'center',
   },
-  backButton: {
+  sideRight: { alignItems: 'flex-end' },
+  iconButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: borderRadius.full,
   },
+  iconButtonOnGradient: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  titleWrap: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xs },
+  titleLeft: { alignItems: 'flex-start' },
   title: {
-    flex: 1,
-    fontFamily: typography.h3.fontFamily,
-    fontSize: typography.h3.fontSize,
-    fontWeight: typography.h3.fontWeight,
-    color: commonColors.text,
-    textAlign: 'center',
+    ...typography.h3,
   },
-  rightSection: {
-    width: 48,
-    alignItems: 'flex-end',
-  },
-  rightButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
+  subtitle: {
+    ...typography.bodySm,
+    marginTop: 1,
   },
   rightLabel: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
+    ...typography.label,
     fontWeight: '600',
   },
 });

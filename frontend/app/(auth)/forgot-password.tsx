@@ -22,6 +22,7 @@ import { getApiErrorMessage } from '../../src/utils/apiError';
 import { obstetraColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
+import { shadows } from '../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -149,7 +150,9 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                   loading={isSubmitting}
                   fullWidth
                   size="lg"
-                  themeColor={BRAND}
+                  rounded
+                  gradient
+                  themeGradient={obstetraColors.gradient}
                 />
               </View>
             )}
@@ -196,7 +199,9 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                   loading={isSubmitting}
                   fullWidth
                   size="lg"
-                  themeColor={BRAND}
+                  rounded
+                  gradient
+                  themeGradient={obstetraColors.gradient}
                 />
                 <Pressable onPress={dniForm.handleSubmit(onRequest)} hitSlop={8} style={{ marginTop: spacing.md, alignItems: 'center' }}>
                   <Text style={styles.resendText}>Reenviar código</Text>
@@ -219,7 +224,9 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                     onPress={() => router.replace('/(auth)/login')}
                     fullWidth
                     size="lg"
-                    themeColor={BRAND}
+                    rounded
+                    gradient
+                    themeGradient={obstetraColors.gradient}
                   />
                 </View>
               </View>
@@ -265,10 +272,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.xxl,
     padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.modal,
   },
   successContainer: {
     alignItems: 'center',

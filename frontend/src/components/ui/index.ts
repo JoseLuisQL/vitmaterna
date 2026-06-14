@@ -44,6 +44,7 @@ export type { RiskLevel } from './RiskIndicator';
 export { ToggleTabs } from './ToggleTabs';
 export type { ToggleTab } from './ToggleTabs';
 export { DateSelector } from './DateSelector';
+export { PillTabBar } from './PillTabBar';
 
 // Misc
 export { ProfileInfoModal } from './ProfileInfoModal';
