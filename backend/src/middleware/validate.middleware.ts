@@ -17,7 +17,10 @@ export function validate(schemas: ValidationSchemas) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       if (schemas.body) {
-        req.body = schemas.body.parse(req.body);
+        // Si no llega cuerpo (POST sin body), se valida como objeto vacío para
+        // que los esquemas con todos sus campos opcionales/por-defecto pasen.
+        const bodyToValidate = req.body === undefined || req.body === null ? {} : req.body;
+        req.body = schemas.body.parse(bodyToValidate);
       }
       if (schemas.params) {
         req.params = schemas.params.parse(req.params) as typeof req.params;

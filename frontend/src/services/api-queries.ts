@@ -221,7 +221,8 @@ export const fetchTreatments = async () => {
 };
 
 export const logTreatment = async (treatmentId: string) => {
-  const res = await api.post(`/clinical/treatments/${treatmentId}/log`);
+  // Se envía un cuerpo explícito (tomado=true) para evitar body vacío.
+  const res = await api.post(`/clinical/treatments/${treatmentId}/log`, { tomado: true });
   return res.data;
 };
 
