@@ -91,7 +91,13 @@ export default function ObstetraDashboard(): React.ReactElement {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Distribución de Riesgo</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { marginBottom: 0, marginTop: 0 }]}>Distribución de Riesgo</Text>
+          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/reportes')} style={styles.reportLink}>
+            <TrendingUp size={16} color={BRAND} />
+            <Text style={styles.sectionLink}>Ver reportes</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.riskCard}>
           <View style={styles.riskRow}>
             <View style={styles.riskItem}>
@@ -210,6 +216,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: 16 },
   sectionLink: { ...typography.label, color: BRAND },
+  reportLink: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   riskCard: {
     backgroundColor: commonColors.surface,
     borderRadius: 24,
