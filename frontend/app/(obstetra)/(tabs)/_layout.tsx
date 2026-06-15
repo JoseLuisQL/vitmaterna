@@ -4,11 +4,16 @@
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Baby, Calendar, MessageCircle, User } from 'lucide-react-native';
+import { Home, Baby, Calendar, AlertTriangle, MessageCircle } from 'lucide-react-native';
 import { obstetraColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
+import { useObstetraDashboard } from '../../../src/services/api-queries';
 
 export default function ObstetraTabsLayout(): React.ReactElement {
+  // Badge de alertas pendientes en la barra inferior (seguridad de la paciente).
+  const { data: stats } = useObstetraDashboard();
+  const alerts = stats?.alerts ?? 0;
+
   return (
     <Tabs
       screenOptions={{ headerShown: false }}
@@ -31,8 +36,16 @@ export default function ObstetraTabsLayout(): React.ReactElement {
       <Tabs.Screen
         name="cronograma"
         options={{
-          title: 'Cronograma',
+          title: 'Agenda',
           tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="alertas"
+        options={{
+          title: 'Alertas',
+          tabBarIcon: ({ color, size }) => <AlertTriangle size={size} color={color} />,
+          tabBarBadge: alerts > 0 ? alerts : undefined,
         }}
       />
       <Tabs.Screen
@@ -42,15 +55,8 @@ export default function ObstetraTabsLayout(): React.ReactElement {
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="perfil"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="perfil" options={{ title: 'Perfil', href: null }} />
       <Tabs.Screen name="reportes" options={{ title: 'Reportes', href: null }} />
-      <Tabs.Screen name="alertas" options={{ title: 'Alertas', href: null }} />
     </Tabs>
   );
 }

@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Download, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Download, Users, TrendingUp, CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -62,6 +63,7 @@ const semaforoStyles = StyleSheet.create({
 });
 
 export default function ReportesScreen(): React.ReactElement {
+  const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['clinic-reports'],
     queryFn: async (): Promise<ReportData> => {
@@ -148,6 +150,15 @@ export default function ReportesScreen(): React.ReactElement {
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Volver"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.pageTitle}>Reportes</Text>
               <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
@@ -243,6 +254,7 @@ const styles = StyleSheet.create({
   },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   pageTitle: { ...typography.h1, color: commonColors.white },
   pageSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 4 },

@@ -184,7 +184,15 @@ export default function CronogramaScreen(): React.ReactElement {
           </Text>
         </View>
 
-        <View style={styles.appointmentContent}>
+        <TouchableOpacity
+          style={styles.appointmentContent}
+          activeOpacity={item.gestanteId ? 0.6 : 1}
+          disabled={!item.gestanteId}
+          onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir historia de ${item.patientName || 'la paciente'}`}
+          accessibilityHint="Abre la ficha clínica de la gestante"
+        >
           <View style={styles.appointmentHeaderRow}>
             <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
             {!showActions && <AppBadge label={statusText} variant={variant} />}
@@ -248,7 +256,7 @@ export default function CronogramaScreen(): React.ReactElement {
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };

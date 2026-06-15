@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope, TrendingUp, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast } from '../../../src/components/ui';
@@ -106,8 +106,21 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
       >
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Mi Perfil</Text>
-          <Text style={styles.headerSubtitle}>Ajustes de cuenta</Text>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Volver"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Mi Perfil</Text>
+              <Text style={styles.headerSubtitle}>Ajustes de cuenta</Text>
+            </View>
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -125,6 +138,12 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
           {user?.dni && (
             <Text style={styles.profileDni}>DNI: {user.dni}</Text>
           )}
+        </View>
+
+        {/* Herramientas */}
+        <Text style={styles.sectionTitle}>Herramientas</Text>
+        <View style={styles.menuCard}>
+          <MenuItem icon={<TrendingUp size={20} color={BRAND} />} title="Reportes e indicadores" onPress={() => router.push('/(obstetra)/(tabs)/reportes')} />
         </View>
 
         {/* Menu Items */}
@@ -168,6 +187,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
   content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace, paddingTop: 16 },

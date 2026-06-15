@@ -66,9 +66,15 @@ export default function ObstetraDashboard(): React.ReactElement {
             </View>
             <View style={styles.headerActions}>
               <NotificationBell href="/(obstetra)/notificaciones" />
-              <View style={styles.avatarWrap}>
+              <TouchableOpacity
+                style={styles.avatarWrap}
+                onPress={() => router.push('/(obstetra)/(tabs)/perfil')}
+                accessibilityRole="button"
+                accessibilityLabel="Mi perfil"
+                accessibilityHint="Abre tu perfil y ajustes de cuenta"
+              >
                 <Text style={styles.avatarText}>{displayName.charAt(4) || 'O'}</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
