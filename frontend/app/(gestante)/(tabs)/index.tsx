@@ -5,9 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +17,6 @@ import {
   Phone,
   ChevronRight,
   Heart,
-  Activity,
   BookOpen,
   MessageCircle,
 } from 'lucide-react-native';
@@ -29,10 +26,10 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { ProgressRing } from '../../../src/components/ui/ProgressRing';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, useToast } from '../../../src/components/ui';
+import { useToast } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
-import { useGestanteDashboard, useConfirmAppointment, reportDangerSign } from '../../../src/services/api-queries';
+import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
@@ -53,32 +50,6 @@ export default function GestanteDashboard(): React.ReactElement {
   const toast = useToast();
   useRefetchOnFocus([refetch]);
   const confirmMutation = useConfirmAppointment();
-
-  const [isModalVisible, setIsModalVisible] = React.useState(false);
-  const [selectedSign, setSelectedSign] = React.useState('');
-  const [notes, setNotes] = React.useState('');
-
-  const reportMutation = useMutation({
-    mutationFn: () =>
-      reportDangerSign({
-        tipo_signo: selectedSign,
-        descripcion: notes || undefined,
-        severidad: 'grave',
-      }),
-    onSuccess: (res: any) => {
-      setIsModalVisible(false);
-      setSelectedSign('');
-      setNotes('');
-      if (res?.queued) {
-        toast.info('Alerta guardada', 'Sin conexión: se enviará a tu obstetra al reconectar.');
-      } else {
-        toast.success('Alerta enviada', 'Tu obstetra fue notificada de tu signo de alarma.');
-      }
-    },
-    onError: () => {
-      toast.error('No se pudo enviar', 'Inténtalo de nuevo. Si es urgente, llama al centro de salud.');
-    },
-  });
 
   const emergencyMutation = useMutation({
     mutationFn: (coords: { latitude: number; longitude: number }) => {
@@ -182,15 +153,6 @@ export default function GestanteDashboard(): React.ReactElement {
     if (level === 'amarillo') return 'warning';
     return 'success';
   };
-
-  const DANGER_SIGNS = [
-    'Sangrado vaginal',
-    'Fiebre',
-    'Bebé no se mueve',
-    'Dolor de cabeza intenso',
-    'Hinchazón repentina',
-    'Otro',
-  ];
 
   return (
     <View style={styles.container}>
@@ -331,7 +293,7 @@ export default function GestanteDashboard(): React.ReactElement {
           {/* Quick Actions */}
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
           <View style={styles.quickActions}>
-            <AppCard style={styles.quickActionCard} onPress={() => setIsModalVisible(true)}>
+            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
               <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.dangerLight }]}>
                 <AlertTriangle size={24} color={semanticColors.danger} />
               </View>
@@ -347,12 +309,12 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionSubtitle}>Pedir Auxilio</Text>
             </AppCard>
 
-            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
+            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/chat')}>
               <View style={[styles.quickActionIcon, { backgroundColor: gestanteColors.primaryLight }]}>
-                <Activity size={24} color={BRAND} />
+                <MessageCircle size={24} color={BRAND} />
               </View>
-              <Text style={styles.quickActionTitle}>Mis Signos</Text>
-              <Text style={styles.quickActionSubtitle}>Reportar varios</Text>
+              <Text style={styles.quickActionTitle}>Chat</Text>
+              <Text style={styles.quickActionSubtitle}>Consulta</Text>
             </AppCard>
           </View>
 
@@ -365,60 +327,12 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionSubtitle}>Aprende más</Text>
             </AppCard>
 
-            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/chat')}>
-              <View style={[styles.quickActionIcon, { backgroundColor: gestanteColors.primaryLight }]}>
-                <MessageCircle size={24} color={BRAND} />
-              </View>
-              <Text style={styles.quickActionTitle}>Chat</Text>
-              <Text style={styles.quickActionSubtitle}>Consulta</Text>
-            </AppCard>
-
+            <View style={[styles.quickActionCard, { opacity: 0 }]} pointerEvents="none" />
             <View style={[styles.quickActionCard, { opacity: 0 }]} pointerEvents="none" />
           </View>
 
         </View>
       </ScrollView>
-
-      {/* Modal de reporte de signo de alarma */}
-      <AppModal
-        visible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        title="Reportar alarma"
-        subtitle="Selecciona el síntoma que presentas. Si es grave, acude a emergencia de inmediato."
-        footer={
-          <>
-            <AppButton title="Cancelar" variant="outline" onPress={() => setIsModalVisible(false)} style={{ flex: 1 }} disabled={reportMutation.isPending} />
-            <AppButton
-              title={reportMutation.isPending ? 'Enviando...' : 'Enviar'}
-              onPress={() => reportMutation.mutate()}
-              style={{ flex: 1, backgroundColor: semanticColors.danger }}
-              disabled={!selectedSign || reportMutation.isPending}
-            />
-          </>
-        }
-      >
-        {DANGER_SIGNS.map((sign) => (
-          <TouchableOpacity
-            key={sign}
-            style={[styles.signOption, selectedSign === sign && styles.signOptionSelected]}
-            onPress={() => setSelectedSign(sign)}
-          >
-            <Text style={[styles.signOptionText, selectedSign === sign && styles.signOptionTextSelected]}>{sign}</Text>
-          </TouchableOpacity>
-        ))}
-
-        {selectedSign === 'Otro' && (
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Describe el síntoma..."
-            placeholderTextColor={commonColors.textTertiary}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-          />
-        )}
-      </AppModal>
     </View>
   );
 }
@@ -526,9 +440,5 @@ const styles = StyleSheet.create({
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   quickActionTitle: { ...typography.label, color: commonColors.text, textAlign: 'center' },
   quickActionSubtitle: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary, textAlign: 'center' },
-  signOption: { padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: commonColors.border, marginBottom: spacing.sm + 4 },
-  signOptionSelected: { borderColor: semanticColors.danger, backgroundColor: semanticColors.dangerLight, borderWidth: 2 },
-  signOptionText: { ...typography.bodyMedium, color: commonColors.textSecondary },
-  signOptionTextSelected: { fontFamily: typography.bodyMedium.fontFamily, fontWeight: '700', color: semanticColors.danger },
-  notesInput: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, padding: spacing.md, ...typography.bodyMedium, color: commonColors.text, minHeight: 100, textAlignVertical: 'top', marginTop: spacing.sm + 4, backgroundColor: commonColors.surface },
+
 });

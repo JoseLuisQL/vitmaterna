@@ -6,12 +6,16 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pill, CheckCircle, Clock, Info } from 'lucide-react-native';
+import { useQuery } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
+import { ProgressRing } from '../../../src/components/ui/ProgressRing';
+import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { useToast } from '../../../src/components/ui';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
+import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -109,6 +113,85 @@ const calStyles = StyleSheet.create({
   legendText: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary },
 });
 
+interface AdherenceReport {
+  adherencePercentage: number;
+  totalSupplements: number;
+  takenSupplements: number;
+  history: { date: string; taken: number; total: number }[];
+}
+
+/**
+ * Resumen de adherencia (anillo + últimos 7 días). Antes vivía en la pantalla
+ * "Mi Progreso" (tab oculto, ya eliminado); ahora se integra aquí para que toda
+ * la información del tratamiento esté en un solo lugar.
+ */
+function ResumenAdherencia(): React.ReactElement | null {
+  const { data } = useQuery({
+    queryKey: ['adherence'],
+    queryFn: async () => {
+      const res = await api.get('/reports/adherence');
+      return res.data.data as AdherenceReport;
+    },
+  });
+
+  const adherence = data?.adherencePercentage ?? 0;
+  const history = data?.history ?? [];
+  const chartData: ChartBarDatum[] = React.useMemo(
+    () =>
+      history.slice(-7).map((h) => ({
+        label: h.date.substring(8, 10),
+        value: h.total > 0 ? Math.round((h.taken / h.total) * 100) : 0,
+      })),
+    [history],
+  );
+
+  if (!data) return null;
+
+  return (
+    <View style={progresoStyles.card}>
+      <Text style={progresoStyles.cardTitle}>Mi Progreso</Text>
+      <View style={progresoStyles.ringWrap}>
+        <ProgressRing value={adherence} size={140} strokeWidth={13} color={BRAND} sublabel="adherencia" />
+      </View>
+      <View style={progresoStyles.summaryBox}>
+        <Text style={progresoStyles.summaryValue}>{data.takenSupplements ?? 0}</Text>
+        <Text style={progresoStyles.summaryLabel}>de {data.totalSupplements ?? 0} medicamentos</Text>
+      </View>
+      {chartData.length > 0 && (
+        <View style={progresoStyles.chartSection}>
+          <Text style={progresoStyles.chartTitle}>Últimos 7 días (%)</Text>
+          <ChartBar data={chartData} color={BRAND} maxValue={100} height={140} showValues style={{ marginTop: spacing.sm }} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+const progresoStyles = StyleSheet.create({
+  card: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+  },
+  cardTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md, textAlign: 'center' },
+  ringWrap: { alignItems: 'center' },
+  summaryBox: {
+    backgroundColor: gestanteColors.primaryLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  summaryValue: { ...typography.numeric, color: BRAND },
+  summaryLabel: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 4 },
+  chartSection: { marginTop: spacing.lg },
+  chartTitle: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, fontWeight: '700', color: commonColors.text, marginBottom: 4, textAlign: 'center' },
+});
+
 export default function TratamientoScreen(): React.ReactElement {
   const { data: treatments, isLoading, refetch, isRefetching } = useTreatments();
   const { mutate: logTreatment } = useLogTreatment();
@@ -185,6 +268,8 @@ export default function TratamientoScreen(): React.ReactElement {
           </View>
         )}
       </View>
+
+      <ResumenAdherencia />
     </>
   );
 

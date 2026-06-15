@@ -151,7 +151,7 @@ export function NotificationsScreen({
     } else if (n.tipo === 'recordatorio_suplemento' && role === 'gestante') {
       target = '/(gestante)/(tabs)/tratamiento';
     } else if (n.tipo === 'fpp_proxima' && role === 'gestante') {
-      target = '/(gestante)/(tabs)/mi-progreso';
+      target = '/(gestante)/(tabs)/tratamiento';
     }
 
     if (target) {

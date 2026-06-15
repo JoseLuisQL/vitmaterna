@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Activity, Home, CloudOff
+  User, Bell, HelpCircle, LogOut, ChevronRight, Home, CloudOff
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -90,32 +90,14 @@ export default function PerfilScreen(): React.ReactElement {
     );
   };
 
-  const abrirConfiguracion = () => setInfoModal({
-    title: 'Configuración de cuenta',
-    description: 'Configuración segura para tu cuenta de gestante.',
-    rows: [
-      { label: 'Sesión', value: 'Persistente con token seguro' },
-      { label: 'Privacidad', value: 'Tus datos clínicos solo son visibles para el personal autorizado' },
-      { label: 'Soporte', value: 'Usa el chat para consultas no urgentes' },
-    ],
-  });
-
-  const abrirPrivacidad = () => setInfoModal({
-    title: 'Privacidad y seguridad',
-    description: 'VITMATERNA protege tus datos personales y de salud con autenticación, roles y validación de acceso.',
-    rows: [
-      { label: 'Datos sensibles', value: 'Historial clínico, controles, tratamientos y tamizajes' },
-      { label: 'Acceso', value: 'Solo tú y el equipo clínico autorizado' },
-      { label: 'Trazabilidad', value: 'Las acciones importantes quedan registradas para auditoría' },
-    ],
-  });
-
   const mostrarAyuda = () => setInfoModal({
-    title: 'Ayuda y soporte',
-    description: 'Para consultas comunícate con tu obstetra desde el chat de la app. Si es urgente, llama o acude al centro de salud.',
+    title: 'Ayuda y privacidad',
+    description: 'Para consultas comunícate con tu obstetra desde el chat de la app. Si es urgente, llama o acude al centro de salud. Tus datos de salud están protegidos y solo son visibles para el equipo clínico autorizado.',
     rows: [
       { label: 'Centro de Salud Talavera', value: '083 - 421800' },
-      { label: 'Emergencia', value: 'Usa el botón de emergencia o el asistente 24/7' },
+      { label: 'Consultas no urgentes', value: 'Escribe a tu obstetra desde el chat' },
+      { label: 'Emergencia', value: 'Usa el botón de emergencia del inicio' },
+      { label: 'Privacidad', value: 'Tu historial solo lo ve el personal autorizado' },
     ],
   });
 
@@ -246,20 +228,11 @@ export default function PerfilScreen(): React.ReactElement {
         <View style={styles.menuCard}>
           <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Activity size={20} color={BRAND} />} title="Mi Progreso" onPress={() => router.push('/(gestante)/(tabs)/mi-progreso')} />
-          <View style={styles.menuDivider} />
           <MenuItem icon={<Home size={20} color={BRAND} />} title="Visitas Domiciliarias" onPress={() => router.push('/(gestante)/visitas')} />
           <View style={styles.menuDivider} />
           <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
-        </View>
-
-        <Text style={styles.sectionTitle}>Preferencias</Text>
-        <View style={styles.menuCard}>
-          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={abrirConfiguracion} />
           <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={abrirPrivacidad} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={mostrarAyuda} />
+          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
         </View>
 
         <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>

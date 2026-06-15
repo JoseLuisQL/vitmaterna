@@ -265,9 +265,9 @@ export default function GestanteChatScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/chatbot')} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/alarmas')} activeOpacity={0.85}>
             <Bot size={18} color={commonColors.white} />
-            <Text style={styles.botBtnText}>Asistente 24/7 · respuesta inmediata</Text>
+            <Text style={styles.botBtnText}>Reportar un síntoma a mi obstetra</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </LinearGradient>

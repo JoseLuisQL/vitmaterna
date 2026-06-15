@@ -49,7 +49,6 @@ export default function GestanteTabsLayout(): React.ReactElement {
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
-      <Tabs.Screen name="mi-progreso" options={{ title: 'Mi Progreso', href: null }} />
       <Tabs.Screen name="educacion" options={{ title: 'Educación', href: null }} />
     </Tabs>
   );
