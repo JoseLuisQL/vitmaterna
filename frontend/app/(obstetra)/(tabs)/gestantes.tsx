@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, StatusBar, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Baby, Search, ChevronRight, Plus } from 'lucide-react-native';
@@ -7,11 +7,12 @@ import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
-import { usePatients } from '../../../src/services/api-queries';
+import { usePatientsInfinite } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 
 const BRAND = obstetraColors.primary;
 
@@ -20,34 +21,29 @@ export default function GestantesScreen(): React.ReactElement {
   const [filterMode, setFilterMode] = useState<'todas' | 'bajo' | 'medio' | 'alto'>('todas');
   const router = useRouter();
 
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  React.useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(search), 500);
-    return () => clearTimeout(handler);
-  }, [search]);
+  const debouncedSearch = useDebouncedValue(search, 400);
 
-  const { data: patients, isLoading, refetch } = usePatients(debouncedSearch);
+  const {
+    data, isLoading, refetch, isRefetching,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = usePatientsInfinite(debouncedSearch);
+
+  // Aplana todas las páginas cargadas (orden del backend: última registrada primero).
+  const allPatients = React.useMemo(
+    () => (data?.pages || []).flatMap((pg: any) => pg.items),
+    [data],
+  );
 
   const processedPatients = React.useMemo(() => {
-    if (!patients) return [];
-    let p = patients;
-
+    let p = allPatients;
     switch (filterMode) {
-      case 'bajo':
-        p = p.filter((x: any) => x.riskLevel === 'Bajo');
-        break;
-      case 'medio':
-        p = p.filter((x: any) => x.riskLevel === 'Medio');
-        break;
-      case 'alto':
-        p = p.filter((x: any) => x.riskLevel === 'Alto');
-        break;
-      case 'todas':
-      default:
-        break;
+      case 'bajo': p = p.filter((x: any) => x.riskLevel === 'Bajo'); break;
+      case 'medio': p = p.filter((x: any) => x.riskLevel === 'Medio'); break;
+      case 'alto': p = p.filter((x: any) => x.riskLevel === 'Alto'); break;
+      default: break;
     }
     return p;
-  }, [patients, filterMode]);
+  }, [allPatients, filterMode]);
 
   const renderHeader = () => (
     <View style={{ paddingBottom: 16 }}>
@@ -201,7 +197,12 @@ export default function GestantesScreen(): React.ReactElement {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={BRAND} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
+        onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          isFetchingNextPage ? <ActivityIndicator size="small" color={BRAND} style={{ marginVertical: spacing.lg }} /> : null
+        }
       />
 
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)}>

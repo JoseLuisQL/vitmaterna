@@ -21,6 +21,7 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -233,14 +234,15 @@ export default function ContenidoScreen(): React.ReactElement {
     </View>
   );
 
+  const debouncedSearch = useDebouncedValue(search, 400);
   const filteredItems = React.useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return items.filter((it) => {
       if (filterCat && (it.categoria || 'general') !== filterCat) return false;
       if (q && !(`${it.titulo} ${it.contenido}`.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [items, search, filterCat]);
+  }, [items, debouncedSearch, filterCat]);
 
   const availableCats = React.useMemo(() => {
     const set = new Set<string>();

@@ -12,6 +12,7 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { usePatients } from '../../../src/services/api-queries';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -30,15 +31,16 @@ export default function AdminGestantesScreen(): React.ReactElement {
   const [search, setSearch] = useState('');
   const [risk, setRisk] = useState<string | null>(null);
   const { data: patients = [], isLoading } = usePatients();
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return (patients as any[]).filter((p) => {
       if (risk && p.riskLevel !== risk) return false;
       if (q && !(`${p.firstName} ${p.lastName} ${p.documentNumber || ''}`.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [patients, search, risk]);
+  }, [patients, debouncedSearch, risk]);
 
   return (
     <View style={styles.container}>

@@ -25,6 +25,7 @@ import {
   useEducationCatalog, useRecommendContent,
 } from '../../../src/services/api-queries';
 import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 import { confirmAction } from '../../../src/utils/confirm';
 
@@ -196,11 +197,12 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { data: catalog = [], isLoading: catalogLoading } = useEducationCatalog();
   const { mutate: recommendContent, isPending: isRecommending } = useRecommendContent();
 
+  const debouncedRecSearch = useDebouncedValue(recSearch, 400);
   const recFiltered = React.useMemo(() => {
-    const q = recSearch.trim().toLowerCase();
+    const q = debouncedRecSearch.trim().toLowerCase();
     if (!q) return catalog;
     return catalog.filter((c) => `${c.titulo} ${c.contenido}`.toLowerCase().includes(q));
-  }, [catalog, recSearch]);
+  }, [catalog, debouncedRecSearch]);
 
   const handleRecommend = (contentId: string, titulo: string) => {
     if (!patient || isRecommending) return;

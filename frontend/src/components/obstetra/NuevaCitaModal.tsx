@@ -13,6 +13,7 @@ import {
   useAppointmentAvailability,
 } from '../../services/api-queries';
 import { AppModal, AppButton } from '../ui';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -58,10 +59,11 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     });
   }, []);
 
-  const filteredPatients = patients?.filter((p: any) => 
-    p.firstName?.toLowerCase().includes(search.toLowerCase()) || 
-    p.lastName?.toLowerCase().includes(search.toLowerCase()) ||
-    p.documentNumber?.includes(search)
+  const debouncedSearch = useDebouncedValue(search, 400);
+  const filteredPatients = patients?.filter((p: any) =>
+    p.firstName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    p.lastName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    p.documentNumber?.includes(debouncedSearch)
   ) || [];
 
   const handleSelectPatient = (id: string, name: string) => {

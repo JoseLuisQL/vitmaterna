@@ -18,6 +18,7 @@ import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
 import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser } from '../../../src/services/admin-queries';
 import { confirmAction, notify } from '../../../src/utils/confirm';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 
 const BRAND = obstetraColors.primary;
 import { useAuthStore } from '../../../src/store/authStore';
@@ -61,14 +62,7 @@ const detailRowStyles = StyleSheet.create({
 
 export default function UsuariosScreen(): React.ReactElement {
   const [search, setSearch] = useState('');
-  
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  React.useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [search]);
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const { data: users, isLoading, refetch } = useAdminUsers();
   const createUserMutation = useCreateUser();

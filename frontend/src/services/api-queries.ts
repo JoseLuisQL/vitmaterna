@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import api from './api';
 import { isOnline } from './network';
 import { enqueue } from './outbox';
@@ -441,6 +441,28 @@ export const useLogTreatment = () => {
 
 export const useObstetraDashboard = () => useQuery({ queryKey: ['obstetraDashboard'], queryFn: fetchObstetraDashboard });
 export const usePatients = (search?: string) => useQuery({ queryKey: ['patients', search], queryFn: () => fetchPatients(search) });
+
+/** Página de pacientes con metadatos de paginación. */
+const PATIENTS_PAGE_SIZE = 15;
+export const fetchPatientsPage = async (search: string, page: number) => {
+  const res = await api.get('/patients', { params: { search: search || undefined, page, limit: PATIENTS_PAGE_SIZE } });
+  const items = (res.data?.data || []).map(mapPatient);
+  const meta = res.data?.meta || { page, totalPages: 1 };
+  return { items, page: meta.page ?? page, totalPages: meta.totalPages ?? 1 };
+};
+
+/**
+ * Lista de pacientes con scroll infinito (carga por páginas). El backend ya
+ * ordena por fecha de registro descendente (la última registrada primero).
+ */
+export const usePatientsInfinite = (search?: string) =>
+  useInfiniteQuery({
+    queryKey: ['patientsInfinite', search || ''],
+    queryFn: ({ pageParam }) => fetchPatientsPage(search || '', pageParam as number),
+    initialPageParam: 1,
+    getNextPageParam: (last: { page: number; totalPages: number }) =>
+      last.page < last.totalPages ? last.page + 1 : undefined,
+  });
 export const usePatientProfile = (id: string) => useQuery({ queryKey: ['patient', id], queryFn: () => fetchPatientProfile(id), enabled: !!id });
 
 export const useCreateControl = () => {

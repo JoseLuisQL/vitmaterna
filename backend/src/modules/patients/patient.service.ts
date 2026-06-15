@@ -70,7 +70,8 @@ export class PatientService {
             },
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        // La última gestante registrada aparece primero (más comprensible).
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 

@@ -14,6 +14,7 @@ import { usePatients } from '../../../src/services/api-queries';
 import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search, Check, CheckCheck } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -122,11 +123,12 @@ export default function ObstetraChatScreen() {
     }
   };
 
+  const debouncedPickerSearch = useDebouncedValue(pickerSearch, 400);
   const filteredPatients = (patients || []).filter((p: any) => {
-    const q = pickerSearch.toLowerCase();
+    const q = debouncedPickerSearch.toLowerCase();
     return (
       `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
-      String(p.documentNumber || '').includes(pickerSearch)
+      String(p.documentNumber || '').includes(debouncedPickerSearch)
     );
   });
 
