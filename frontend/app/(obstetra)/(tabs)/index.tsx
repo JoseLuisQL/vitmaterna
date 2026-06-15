@@ -2,11 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TrendingUp, ChevronRight, Activity, Calendar, Users, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
+import { ChevronRight, Activity, Calendar, Users, AlertTriangle, ChevronRight as Chevron } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
-import { KpiCard } from '../../../src/components/ui/KpiCard';
-import { AutoGrid } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -18,6 +16,12 @@ import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
+
+/** Inicial del nombre mostrado, robusta (antes usaba charAt(4), frágil). */
+function getInitial(user: { firstName?: string; lastName?: string } | null): string {
+  const src = user?.lastName || user?.firstName || 'O';
+  return src.trim().charAt(0).toUpperCase() || 'O';
+}
 
 export default function ObstetraDashboard(): React.ReactElement {
   const router = useRouter();
@@ -44,21 +48,17 @@ export default function ObstetraDashboard(): React.ReactElement {
     refetchAppts();
   };
 
-  const { totalPatients = 0, alerts = 0, appointmentsToday = 0, completed = 0, riskDistribution = { low: 0, medium: 0, high: 0 } } = stats || {};
+  const { totalPatients = 0, alerts = 0, appointmentsToday = 0, riskDistribution = { low: 0, medium: 0, high: 0 } } = stats || {};
   const isRefetching = isRefetchingStats || isRefetchingAppts;
+  const totalRisk = (riskDistribution.low || 0) + (riskDistribution.medium || 0) + (riskDistribution.high || 0);
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient
-        colors={obstetraColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
-      >
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerWrapper}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.greeting}>Bienvenida,</Text>
               <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
               <Text style={styles.todayDate}>
@@ -72,9 +72,8 @@ export default function ObstetraDashboard(): React.ReactElement {
                 onPress={() => router.push('/(obstetra)/(tabs)/perfil')}
                 accessibilityRole="button"
                 accessibilityLabel="Mi perfil"
-                accessibilityHint="Abre tu perfil y ajustes de cuenta"
               >
-                <Text style={styles.avatarText}>{displayName.charAt(4) || 'O'}</Text>
+                <Text style={styles.avatarText}>{getInitial(user)}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -82,34 +81,39 @@ export default function ObstetraDashboard(): React.ReactElement {
       </LinearGradient>
 
       <View style={styles.topCardsWrapper}>
-        <AutoGrid minColumnWidth={150} maxColumns={4} style={styles.statsGrid}>
-          <KpiCard label="Citas Hoy" value={appointmentsToday} icon={Calendar} accentColor={BRAND} />
-          <KpiCard label="Pacientes" value={totalPatients} icon={Users} accentColor={semanticColors.success} />
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
-            <KpiCard
-              label="Alertas"
-              value={alerts}
-              icon={AlertTriangle}
-              accentColor={semanticColors.danger}
-              badge={alerts > 0 ? 'Pendientes' : 'Ver'}
-              badgeTone={alerts > 0 ? 'negative' : 'neutral'}
-            />
+        {/* Resumen del día: 3 KPIs accionables */}
+        <View style={styles.kpiRow}>
+          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/(tabs)/cronograma')}>
+            <View style={[styles.kpiIcon, { backgroundColor: obstetraColors.primaryLight }]}>
+              <Calendar size={20} color={BRAND} />
+            </View>
+            <Text style={styles.kpiValue}>{appointmentsToday}</Text>
+            <Text style={styles.kpiLabel}>Citas hoy</Text>
           </TouchableOpacity>
-          <KpiCard
-            label="Completadas"
-            value={completed}
-            icon={CheckCircle2}
-            accentColor={semanticColors.success}
-            badge={completed > 0 ? 'Hoy' : undefined}
-            badgeTone="positive"
-          />
-        </AutoGrid>
 
+          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/(tabs)/gestantes')}>
+            <View style={[styles.kpiIcon, { backgroundColor: semanticColors.successLight }]}>
+              <Users size={20} color={semanticColors.success} />
+            </View>
+            <Text style={styles.kpiValue}>{totalPatients}</Text>
+            <Text style={styles.kpiLabel}>Pacientes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
+            <View style={[styles.kpiIcon, { backgroundColor: semanticColors.dangerLight }]}>
+              <AlertTriangle size={20} color={semanticColors.danger} />
+            </View>
+            <Text style={[styles.kpiValue, alerts > 0 && { color: semanticColors.danger }]}>{alerts}</Text>
+            <Text style={styles.kpiLabel}>Alertas</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Distribución de riesgo: compacta, con enlace a reportes */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { marginBottom: 0, marginTop: 0 }]}>Distribución de Riesgo</Text>
-          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/reportes')} style={styles.reportLink}>
-            <TrendingUp size={16} color={BRAND} />
+          <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
+          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/reportes')} style={styles.linkRow} accessibilityRole="button">
             <Text style={styles.sectionLink}>Ver reportes</Text>
+            <Chevron size={14} color={BRAND} />
           </TouchableOpacity>
         </View>
         <View style={styles.riskCard}>
@@ -130,16 +134,18 @@ export default function ObstetraDashboard(): React.ReactElement {
               <Text style={styles.riskLabel}>Alto</Text>
             </View>
           </View>
-          <View style={styles.riskBarContainer}>
-            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 1), backgroundColor: riskColors.riskGreen }]} />
-            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 1), backgroundColor: riskColors.riskYellow }]} />
-            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 1), backgroundColor: riskColors.riskRed }]} />
-          </View>
+          {totalRisk > 0 && (
+            <View style={styles.riskBarContainer}>
+              <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 0.001), backgroundColor: riskColors.riskGreen }]} />
+              <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 0.001), backgroundColor: riskColors.riskYellow }]} />
+              <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 0.001), backgroundColor: riskColors.riskRed }]} />
+            </View>
+          )}
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Próximas Citas</Text>
-          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')}>
+          <Text style={styles.sectionTitle}>Citas de hoy</Text>
+          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} accessibilityRole="button">
             <Text style={styles.sectionLink}>Ver todas</Text>
           </TouchableOpacity>
         </View>
@@ -183,10 +189,10 @@ export default function ObstetraDashboard(): React.ReactElement {
             </View>
             <View style={styles.appointmentContent}>
               <View style={styles.appointmentHeader}>
-                <Text style={styles.patientName}>{item.patientName || 'Paciente'}</Text>
+                <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
                 <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
               </View>
-              <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
+              <Text style={styles.appointmentType} numberOfLines={1}>{item.type || 'Control Prenatal'}</Text>
             </View>
             <ChevronRight size={20} color={commonColors.textTertiary} />
           </TouchableOpacity>
@@ -205,30 +211,28 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },
-  safeAreaHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
+  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
   greeting: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginBottom: 2 },
   name: { ...typography.display, color: commonColors.white },
   avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   avatarText: { ...typography.h2, color: commonColors.white },
   topCardsWrapper: { paddingHorizontal: spacing.lg, marginTop: -spacing.lg },
   todayDate: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', textTransform: 'capitalize', marginTop: 2 },
-  statsGrid: { marginBottom: spacing.lg },
+
+  kpiRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  kpiCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  kpiValue: { ...typography.h2, color: commonColors.text },
+  kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, marginTop: spacing.sm },
-  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md },
+  sectionTitle: { ...typography.h3, color: commonColors.text },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   sectionLink: { ...typography.label, color: BRAND, fontWeight: '600' },
-  reportLink: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  riskCard: {
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    ...shadows.card,
-  },
+
+  riskCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, ...shadows.card },
   riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   riskItem: { alignItems: 'center', flex: 1 },
   riskDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
@@ -236,6 +240,7 @@ const styles = StyleSheet.create({
   riskLabel: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
   riskBarContainer: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
   riskBarSegment: { height: '100%' },
+
   appointmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,19 +251,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm2,
     ...shadows.card,
   },
-  timeLine: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingRight: 16,
-    borderRightWidth: 1,
-    borderRightColor: commonColors.borderLight,
-    minWidth: 70,
-  },
+  timeLine: { alignItems: 'center', justifyContent: 'center', paddingRight: 16, borderRightWidth: 1, borderRightColor: commonColors.borderLight, minWidth: 70 },
   timeText: { ...typography.h3, color: BRAND },
   timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
   appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
-  appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1, marginRight: 8 },
+  appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: spacing.sm },
+  patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1 },
   appointmentType: { ...typography.bodySmall, color: commonColors.textSecondary },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

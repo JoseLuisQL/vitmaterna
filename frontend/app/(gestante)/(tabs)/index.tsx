@@ -174,7 +174,6 @@ export default function GestanteDashboard(): React.ReactElement {
               <View style={styles.headerGreeting}>
                 <Text style={styles.greeting}>Hola,</Text>
                 <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-                <Text style={styles.headerTrimester}>{trimesterText}</Text>
               </View>
               <View style={styles.headerActions}>
                 <View style={styles.weekBadge}>
