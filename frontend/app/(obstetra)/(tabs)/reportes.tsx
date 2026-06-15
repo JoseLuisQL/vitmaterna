@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, RefreshControl, Dimensions, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, RefreshControl, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,9 @@ import api from '../../../src/services/api';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
+import { useToast } from '../../../src/components/ui';
+import { useAuthStore } from '../../../src/store/authStore';
+import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -64,6 +67,9 @@ const semaforoStyles = StyleSheet.create({
 
 export default function ReportesScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
+  const { user } = useAuthStore();
+  const [exporting, setExporting] = React.useState(false);
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['clinic-reports'],
     queryFn: async (): Promise<ReportData> => {
@@ -73,25 +79,29 @@ export default function ReportesScreen(): React.ReactElement {
   });
 
   const exportPDF = async () => {
-    if (!data) return;
+    if (!data || exporting) return;
+    setExporting(true);
     try {
-      const html = `<html><body style="font-family:Arial;padding:40px">
-        <h1 style="color:${BRAND}">Reporte VitMaterna</h1>
-        <p>Fecha: ${new Date().toLocaleDateString('es-PE')}</p>
-        <h2>Resumen</h2>
-        <ul>
-          <li>Total gestantes: ${data.totalGestantes}</li>
-          <li>Adherencia promedio: ${data.averageAdherence}%</li>
-          <li>En alto riesgo: ${data.enAltoRiesgo}</li>
-          <li>Con 6+ controles: ${data.con6Controles}</li>
-        </ul>
-        <h2>Indicadores MINSA</h2>
-        <ul>${data.kpisMinsa.map((k) => `<li>${k.label}: ${k.pct}% (meta: ${k.meta}%)</li>`).join('')}</ul>
-      </body></html>`;
+      const html = buildClinicReportHtml({
+        title: 'Reporte Clínico de Gestantes',
+        subtitle: 'Resumen de indicadores de seguimiento prenatal',
+        preparedBy: user?.lastName ? `Obst. ${user.firstName ?? ''} ${user.lastName}`.trim() : undefined,
+        kpis: [
+          { label: 'Pacientes', value: data.totalGestantes },
+          { label: 'Adherencia prom.', value: `${data.averageAdherence}%` },
+          { label: '6+ controles', value: data.con6Controles },
+          { label: 'Alto riesgo', value: data.enAltoRiesgo },
+        ],
+        minsa: (data.kpisMinsa || []).map((k) => ({ label: k.label, pct: k.pct, meta: k.meta })),
+        risk: (data.riskDistribution || []).map((r) => ({ label: r.name, count: r.population, color: r.color })),
+        priority: (data.gestantesMenorAdherencia || []).map((g) => ({ nombre: g.nombre, pct: g.pct, riesgo: g.riesgo })),
+      });
       const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: 'Compartir reporte VITMATERNA' });
     } catch {
-      Alert.alert('Error', 'No se pudo generar el reporte PDF.');
+      toast.error('No se pudo generar', 'Ocurrió un problema al crear el reporte PDF.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -164,9 +174,13 @@ export default function ReportesScreen(): React.ReactElement {
               <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7}>
-                <Download size={18} color={commonColors.white} />
-                <Text style={styles.exportBtnText}>PDF</Text>
+              <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting}>
+                {exporting ? (
+                  <ActivityIndicator size="small" color={commonColors.white} />
+                ) : (
+                  <Download size={18} color={commonColors.white} />
+                )}
+                <Text style={styles.exportBtnText}>{exporting ? 'Generando…' : 'PDF'}</Text>
               </TouchableOpacity>
               <NotificationBell href="/(obstetra)/notificaciones" />
             </View>
