@@ -5,8 +5,9 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
-  BookOpen, AlertTriangle, Calculator, Phone,
+  BookOpen, AlertTriangle, Calculator, Phone, ArrowLeft,
   Pill, Heart, Activity, Baby, Wind, ClipboardList,
   Frown, Thermometer, Droplets, Droplet, Zap, Eye,
   AlertCircle, Clock, Users, HeartPulse,
@@ -158,6 +159,7 @@ const calcStyles = StyleSheet.create({
 type Seccion = 'contenido' | 'alarmas' | 'calculadora';
 
 export default function EducacionScreen(): React.ReactElement {
+  const router = useRouter();
   const [seccion, setSeccion] = useState<Seccion>('contenido');
   const [trimestre, setTrimestre] = useState<1 | 2 | 3>(2);
 
@@ -191,6 +193,15 @@ export default function EducacionScreen(): React.ReactElement {
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(gestante)/(tabs)'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Volver"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Educación</Text>
               <Text style={styles.headerSubtitle}>Aprende sobre tu embarazo</Text>
@@ -285,7 +296,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
-  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitle: {
     ...typography.display,
     color: commonColors.white,

@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Bell, HelpCircle, LogOut, ChevronRight, Home, CloudOff
+  User, Bell, HelpCircle, LogOut, ChevronRight, Home, CloudOff, BookOpen
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -224,11 +224,16 @@ export default function PerfilScreen(): React.ReactElement {
           </View>
         )}
 
+        <Text style={styles.sectionTitle}>Mi salud</Text>
+        <View style={styles.menuCard}>
+          <MenuItem icon={<BookOpen size={20} color={BRAND} />} title="Educación" onPress={() => router.push('/(gestante)/(tabs)/educacion')} />
+          <View style={styles.menuDivider} />
+          <MenuItem icon={<Home size={20} color={BRAND} />} title="Visitas Domiciliarias" onPress={() => router.push('/(gestante)/visitas')} />
+        </View>
+
         <Text style={styles.sectionTitle}>Cuenta</Text>
         <View style={styles.menuCard}>
           <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<Home size={20} color={BRAND} />} title="Visitas Domiciliarias" onPress={() => router.push('/(gestante)/visitas')} />
           <View style={styles.menuDivider} />
           <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
           <View style={styles.menuDivider} />
