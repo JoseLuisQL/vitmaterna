@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api, { resolveMediaUrl } from '../../../src/services/api';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, useToast } from '../../../src/components/ui';
 import { TypingDots } from '../../../src/components/shared/TypingDots';
@@ -298,7 +298,7 @@ export default function ObstetraChatScreen() {
     );
   }
 
-  if (isLoadingHistory && messages.length === 0) return <LoadingScreen message="Cargando chat..." />;
+  if (isLoadingHistory && messages.length === 0) return <View style={styles.container}><ChatSkeleton count={7} /></View>;
 
   const activePatientName = `${activeConv.gestante?.user?.firstName || 'Gestante'} ${activeConv.gestante?.user?.lastName || ''}`;
 

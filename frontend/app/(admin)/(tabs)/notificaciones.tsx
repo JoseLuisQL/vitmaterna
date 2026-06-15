@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MessageSquare, Phone, CheckCircle2, AlertCircle, Send } from 'lucide-react-native';
 import { AppButton } from '../../../src/components/ui/AppButton';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import {
   useChannelsConfig, useUpdateSmsConfig, useUpdateWhatsAppConfig, useTestChannel,
@@ -110,8 +110,6 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
     );
   };
 
-  if (isLoading) return <LoadingScreen message="Cargando configuración..." />;
-
   return (
     <View style={styles.container}>
       <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
@@ -134,6 +132,12 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
+      {isLoading ? (
+        <View style={styles.content}>
+          <CardSkeleton />
+          <CardSkeleton style={{ marginTop: spacing.lg }} />
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* ─── SMS (Twilio) ─── */}
         <View style={styles.card}>
@@ -216,6 +220,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           guardar credenciales válidas, las notificaciones se envían de forma real.
         </Text>
       </ScrollView>
+      )}
     </View>
   );
 }

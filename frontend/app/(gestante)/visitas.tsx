@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMyProfile, useHomeVisits, useUpdateUbicacion } from '../../src/services/api-queries';
 import { useToast } from '../../src/components/ui';
-import { LoadingScreen } from '../../src/components/ui/LoadingScreen';
+import { CardSkeleton } from '../../src/components/ui/SkeletonLoader';
 import { gestanteColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../src/theme/spacing';
@@ -76,8 +76,6 @@ export default function VisitasGestante(): React.ReactElement {
     );
   };
 
-  if (loadingProfile) return <LoadingScreen message="Cargando…" />;
-
   return (
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
@@ -89,6 +87,12 @@ export default function VisitasGestante(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
+      {loadingProfile ? (
+        <View style={styles.content}>
+          <CardSkeleton />
+          <CardSkeleton style={{ marginTop: spacing.lg }} />
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Ubicación */}
         <View style={styles.card}>
@@ -147,6 +151,7 @@ export default function VisitasGestante(): React.ReactElement {
           ))
         )}
       </ScrollView>
+      )}
     </View>
   );
 }

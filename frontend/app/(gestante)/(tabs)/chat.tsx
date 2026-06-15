@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import api, { resolveMediaUrl } from '../../../src/services/api';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { TypingDots } from '../../../src/components/shared/TypingDots';
@@ -158,7 +158,9 @@ export default function GestanteChatScreen() {
     );
   };
 
-  if (isResolvingConv || (isLoadingHistory && messages.length === 0)) return <LoadingScreen message="Cargando chat..." />;
+  if (isResolvingConv || (isLoadingHistory && messages.length === 0)) {
+    return <View style={styles.container}><ChatSkeleton count={7} /></View>;
+  }
 
   return (
     <KeyboardAvoidingView 

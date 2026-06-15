@@ -11,7 +11,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppButton } from '../../../src/components/ui/AppButton';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
@@ -130,7 +130,7 @@ export default function AuditoriaScreen(): React.ReactElement {
       </LinearGradient>
 
       {isLoading ? (
-        <LoadingScreen message="Cargando logs..." />
+        <View style={styles.listContent}><ListSkeleton count={7} /></View>
       ) : !logs || logs.length === 0 ? (
         <EmptyState
           icon={ShieldAlert as any}

@@ -24,6 +24,7 @@ import { gestanteColors, commonColors, semanticColors } from '../../../src/theme
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { resolveMediaUrl } from '../../../src/services/api';
 import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
@@ -314,7 +315,7 @@ export default function EducacionScreen(): React.ReactElement {
           />
         )}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={!isLoading ? renderEmpty : null}
+        ListEmptyComponent={isLoading ? <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View> : renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />

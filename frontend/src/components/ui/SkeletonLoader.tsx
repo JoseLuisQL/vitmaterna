@@ -119,6 +119,26 @@ export const ListSkeleton: React.FC<{ count?: number }> = ({ count = 5 }) => (
   </View>
 );
 
+/** Skeleton de chat: burbujas alternadas (izquierda/derecha). */
+export const ChatSkeleton: React.FC<{ count?: number }> = ({ count = 6 }) => (
+  <View style={styles.chat}>
+    {Array.from({ length: count }).map((_, i) => {
+      const mine = i % 2 === 1;
+      const w = 55 + ((i * 13) % 30); // ancho variable 55-85%
+      return (
+        <Skeleton
+          key={i}
+          shape="rect"
+          width={`${w}%` as DimensionValue}
+          height={i % 3 === 0 ? 56 : 38}
+          radius={borderRadius.xl}
+          style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}
+        />
+      );
+    })}
+  </View>
+);
+
 const styles = StyleSheet.create({
   base: {
     backgroundColor: commonColors.surfaceHover,
@@ -141,5 +161,9 @@ const styles = StyleSheet.create({
   kpiRow: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  chat: {
+    gap: spacing.md,
+    padding: spacing.lg,
   },
 });

@@ -18,7 +18,7 @@ import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { AppModal } from '../../../src/components/ui/AppModal';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
@@ -250,7 +250,7 @@ export default function ContenidoScreen(): React.ReactElement {
     return EDUCATION_CATEGORIAS.filter((c) => set.has(c));
   }, [items]);
 
-  if (isLoading) return <LoadingScreen message="Cargando contenido..." />;
+
 
   const totalViews = React.useMemo(() => items.reduce((a, i) => a + (i.viewsCount || 0), 0), [items]);
   const topRead = React.useMemo(
@@ -328,7 +328,7 @@ export default function ContenidoScreen(): React.ReactElement {
       </LinearGradient>
 
       <FlatList
-        data={filteredItems}
+        data={isLoading ? [] : filteredItems}
         keyExtractor={(i) => i.id}
         renderItem={renderItem}
         ListHeaderComponent={renderListHeader}
@@ -336,9 +336,13 @@ export default function ContenidoScreen(): React.ReactElement {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
         ListEmptyComponent={
-          <View style={{ marginTop: 60 }}>
-            <EmptyState icon={BookOpen} title="Sin contenido" description={search || filterCat ? 'No hay recursos con ese filtro.' : 'Crea el primer recurso educativo para las gestantes.'} themeColor={BRAND} />
-          </View>
+          isLoading ? (
+            <View style={{ paddingTop: spacing.md }}><ListSkeleton count={6} /></View>
+          ) : (
+            <View style={{ marginTop: 60 }}>
+              <EmptyState icon={BookOpen} title="Sin contenido" description={search || filterCat ? 'No hay recursos con ese filtro.' : 'Crea el primer recurso educativo para las gestantes.'} themeColor={BRAND} />
+            </View>
+          )
         }
       />
 

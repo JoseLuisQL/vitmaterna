@@ -18,6 +18,7 @@ export {
   ListItemSkeleton,
   DashboardSkeleton,
   ListSkeleton,
+  ChatSkeleton,
 } from './SkeletonLoader';
 
 // Layout

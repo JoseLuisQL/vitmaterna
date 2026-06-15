@@ -3,7 +3,7 @@
  * Displays gestante profile menu and allows editing personal/clinical data (FUM, dates).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User, Bell, HelpCircle, LogOut, ChevronRight, Home, CloudOff, BookOpen
@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
+import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -217,12 +218,7 @@ export default function PerfilScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {isProfileLoading && (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="small" color={BRAND} />
-            <Text style={styles.loadingText}>Cargando datos de perfil...</Text>
-          </View>
-        )}
+        {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
 
         <Text style={styles.sectionTitle}>Mi salud</Text>
         <View style={styles.menuCard}>

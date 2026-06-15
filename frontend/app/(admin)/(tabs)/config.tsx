@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
-import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
+import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -78,10 +78,6 @@ export default function ConfigScreen(): React.ReactElement {
     });
   };
 
-  if (isLoading) {
-    return <LoadingScreen message="Cargando configuración..." />;
-  }
-
   return (
     <View style={styles.container}>
       <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
@@ -101,6 +97,13 @@ export default function ConfigScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
+      {isLoading ? (
+        <View style={styles.formContainer}>
+          <CardSkeleton />
+          <CardSkeleton style={{ marginTop: spacing.lg }} />
+          <CardSkeleton style={{ marginTop: spacing.lg }} />
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
         
         <View style={styles.section}>
@@ -214,6 +217,7 @@ export default function ConfigScreen(): React.ReactElement {
           loading={updateConfigMutation.isPending}
         />
       </ScrollView>
+      )}
     </View>
   );
 }
