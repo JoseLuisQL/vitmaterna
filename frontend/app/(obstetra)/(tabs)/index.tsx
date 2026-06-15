@@ -6,6 +6,7 @@ import { TrendingUp, ChevronRight, Activity, Calendar, Users, AlertTriangle, Che
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { KpiCard } from '../../../src/components/ui/KpiCard';
+import { AutoGrid } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -81,32 +82,28 @@ export default function ObstetraDashboard(): React.ReactElement {
       </LinearGradient>
 
       <View style={styles.topCardsWrapper}>
-        <View style={styles.statsGrid}>
-          <View style={styles.statsRow}>
-            <KpiCard label="Citas Hoy" value={appointmentsToday} icon={Calendar} accentColor={BRAND} />
-            <KpiCard label="Pacientes" value={totalPatients} icon={Users} accentColor={semanticColors.success} />
-          </View>
-          <View style={styles.statsRow}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.8} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
-              <KpiCard
-                label="Alertas"
-                value={alerts}
-                icon={AlertTriangle}
-                accentColor={semanticColors.danger}
-                badge={alerts > 0 ? 'Pendientes' : 'Ver'}
-                badgeTone={alerts > 0 ? 'negative' : 'neutral'}
-              />
-            </TouchableOpacity>
+        <AutoGrid minColumnWidth={150} maxColumns={4} style={styles.statsGrid}>
+          <KpiCard label="Citas Hoy" value={appointmentsToday} icon={Calendar} accentColor={BRAND} />
+          <KpiCard label="Pacientes" value={totalPatients} icon={Users} accentColor={semanticColors.success} />
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
             <KpiCard
-              label="Completadas"
-              value={completed}
-              icon={CheckCircle2}
-              accentColor={semanticColors.success}
-              badge={completed > 0 ? 'Hoy' : undefined}
-              badgeTone="positive"
+              label="Alertas"
+              value={alerts}
+              icon={AlertTriangle}
+              accentColor={semanticColors.danger}
+              badge={alerts > 0 ? 'Pendientes' : 'Ver'}
+              badgeTone={alerts > 0 ? 'negative' : 'neutral'}
             />
-          </View>
-        </View>
+          </TouchableOpacity>
+          <KpiCard
+            label="Completadas"
+            value={completed}
+            icon={CheckCircle2}
+            accentColor={semanticColors.success}
+            badge={completed > 0 ? 'Hoy' : undefined}
+            badgeTone="positive"
+          />
+        </AutoGrid>
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { marginBottom: 0, marginTop: 0 }]}>Distribución de Riesgo</Text>
@@ -220,8 +217,7 @@ const styles = StyleSheet.create({
   avatarText: { ...typography.h2, color: commonColors.white },
   topCardsWrapper: { paddingHorizontal: spacing.lg, marginTop: -spacing.lg },
   todayDate: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', textTransform: 'capitalize', marginTop: 2 },
-  statsGrid: { marginBottom: spacing.lg, gap: spacing.sm2 },
-  statsRow: { flexDirection: 'row', gap: spacing.sm2 },
+  statsGrid: { marginBottom: spacing.lg },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, marginTop: spacing.sm },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md },
   sectionLink: { ...typography.label, color: BRAND, fontWeight: '600' },

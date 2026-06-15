@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, RefreshControl, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import api from '../../../src/services/api';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
-import { useToast } from '../../../src/components/ui';
+import { useToast, AutoGrid } from '../../../src/components/ui';
 import { useAuthStore } from '../../../src/store/authStore';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
@@ -20,7 +20,6 @@ import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
-const screenWidth = Dimensions.get('window').width - 40; // 20 padding horizontal
 
 interface ReportData {
   totalGestantes: number;
@@ -190,7 +189,7 @@ export default function ReportesScreen(): React.ReactElement {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
         {/* KPIs principales */}
-        <View style={styles.kpiGrid}>
+        <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.lg }}>
           {[
             { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: obstetraColors.primaryLight },
             { icon: TrendingUp, label: 'Adherencia', value: `${data?.averageAdherence || 0}%`, color: semanticColors.success, bg: semanticColors.successLight },
@@ -205,7 +204,7 @@ export default function ReportesScreen(): React.ReactElement {
               <Text style={styles.kpiLabel}>{label}</Text>
             </View>
           ))}
-        </View>
+        </AutoGrid>
 
         {/* Indicadores MINSA */}
         <View style={styles.card}>
@@ -275,8 +274,7 @@ const styles = StyleSheet.create({
   exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },
   exportBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.white },
   content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, marginTop: -24 },
-  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm2, marginBottom: spacing.lg },
-  kpiCard: { width: (screenWidth - 12) / 2, padding: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, ...shadows.card },
+  kpiCard: { padding: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, ...shadows.card },
   kpiIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm2 },
   kpiValue: { ...typography.numericMd, marginBottom: 2 },
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary },

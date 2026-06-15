@@ -47,6 +47,7 @@ export { ToggleTabs } from './ToggleTabs';
 export type { ToggleTab } from './ToggleTabs';
 export { DateSelector } from './DateSelector';
 export { DateTimeField } from './DateTimeField';
+export { AutoGrid } from './AutoGrid';
 export { PillTabBar } from './PillTabBar';
 
 // Misc
