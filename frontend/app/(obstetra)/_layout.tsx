@@ -5,9 +5,11 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { commonColors } from '../../src/theme/colors';
+import { RoleGuard } from '../../src/components/layout/RoleGuard';
 
 export default function ObstetraLayout(): React.ReactElement {
   return (
+    <RoleGuard allow="obstetra">
     <Stack
       screenOptions={{
         headerShown: false,
@@ -20,5 +22,6 @@ export default function ObstetraLayout(): React.ReactElement {
       <Stack.Screen name="mensaje-masivo" options={{ animation: 'slide_from_bottom', presentation: 'card' }} />
       <Stack.Screen name="notificaciones" options={{ animation: 'slide_from_right' }} />
     </Stack>
+    </RoleGuard>
   );
 }

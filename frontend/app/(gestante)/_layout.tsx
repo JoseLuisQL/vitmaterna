@@ -5,9 +5,11 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { commonColors } from '../../src/theme/colors';
+import { RoleGuard } from '../../src/components/layout/RoleGuard';
 
 export default function GestanteLayout(): React.ReactElement {
   return (
+    <RoleGuard allow="gestante">
     <Stack
       screenOptions={{
         headerShown: false,
@@ -20,5 +22,6 @@ export default function GestanteLayout(): React.ReactElement {
       <Stack.Screen name="notificaciones" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="visitas" options={{ animation: 'slide_from_right' }} />
     </Stack>
+    </RoleGuard>
   );
 }

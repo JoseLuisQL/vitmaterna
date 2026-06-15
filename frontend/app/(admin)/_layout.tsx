@@ -5,9 +5,11 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { commonColors } from '../../src/theme/colors';
+import { RoleGuard } from '../../src/components/layout/RoleGuard';
 
 export default function AdminLayout(): React.ReactElement {
   return (
+    <RoleGuard allow="admin">
     <Stack
       screenOptions={{
         headerShown: false,
@@ -19,5 +21,6 @@ export default function AdminLayout(): React.ReactElement {
       <Stack.Screen name="supervision/gestantes" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="supervision/citas" options={{ animation: 'slide_from_right' }} />
     </Stack>
+    </RoleGuard>
   );
 }

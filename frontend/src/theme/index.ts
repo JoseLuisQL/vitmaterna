@@ -25,3 +25,11 @@ export { gestanteTheme } from './gestanteTheme';
 export type { GestanteTheme } from './gestanteTheme';
 export { obstetraTheme } from './obstetraTheme';
 export type { ObstetraTheme } from './obstetraTheme';
+export {
+  useResponsive,
+  getBreakpoint,
+  resolveResponsive,
+  columnsForWidth,
+  BREAKPOINTS,
+} from './responsive';
+export type { Breakpoint, Responsive, ResponsiveInfo } from './responsive';
