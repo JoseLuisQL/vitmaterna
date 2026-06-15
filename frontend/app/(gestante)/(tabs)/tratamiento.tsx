@@ -160,7 +160,7 @@ function ResumenAdherencia(): React.ReactElement | null {
       {chartData.length > 0 && (
         <View style={progresoStyles.chartSection}>
           <Text style={progresoStyles.chartTitle}>Últimos 7 días (%)</Text>
-          <ChartBar data={chartData} color={BRAND} maxValue={100} height={140} showValues style={{ marginTop: spacing.sm }} />
+          <ChartBar data={chartData} color={BRAND} maxValue={100} height={150} showValues yUnit="%" style={{ marginTop: spacing.sm }} />
         </View>
       )}
     </View>

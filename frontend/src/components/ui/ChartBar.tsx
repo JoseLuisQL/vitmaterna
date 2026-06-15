@@ -1,12 +1,13 @@
 /**
  * VITMATERNA - ChartBar
- * Gráfica de barras con react-native-svg: barras redondeadas con track gris
- * detrás, animación de llenado al montar y etiquetas debajo. Reemplaza
+ * Gráfica de barras clara y precisa con react-native-svg: grilla horizontal de
+ * referencia, etiquetas del eje Y, barras redondeadas con animación de llenado,
+ * valor opcional encima de cada barra y etiquetas del eje X. Reemplaza
  * react-native-chart-kit para casos simples.
  */
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -35,18 +36,28 @@ interface ChartBarProps {
   maxValue?: number;
   /** Muestra el valor encima de cada barra. */
   showValues?: boolean;
+  /** Muestra grilla horizontal + etiquetas del eje Y (default true). */
+  showGrid?: boolean;
+  /** Sufijo de las etiquetas del eje Y (p. ej. '%'). */
+  yUnit?: string;
   style?: ViewStyle;
 }
+
+const PADDING_LEFT = 30;
+const PADDING_RIGHT = 6;
+const VALUE_SPACE = 16; // espacio reservado arriba para el valor
+const Y_TICKS = 4;
 
 interface AnimatedBarProps {
   x: number;
   barWidth: number;
+  top: number;
   fullHeight: number;
   ratio: number;
   color: string;
 }
 
-function AnimatedBar({ x, barWidth, fullHeight, ratio, color }: AnimatedBarProps) {
+function AnimatedBar({ x, barWidth, top, fullHeight, ratio, color }: AnimatedBarProps) {
   const progress = useSharedValue(0);
   useEffect(() => {
     progress.value = withTiming(ratio, { duration: 600, easing: Easing.out(Easing.cubic) });
@@ -54,26 +65,13 @@ function AnimatedBar({ x, barWidth, fullHeight, ratio, color }: AnimatedBarProps
 
   const animatedProps = useAnimatedProps(() => {
     const h = Math.max(0, fullHeight * progress.value);
-    return { y: fullHeight - h, height: h };
+    return { y: top + fullHeight - h, height: h };
   });
 
   return (
     <>
-      <Rect
-        x={x}
-        y={0}
-        width={barWidth}
-        height={fullHeight}
-        rx={barWidth / 2}
-        fill={commonColors.surfaceAlt}
-      />
-      <AnimatedRect
-        x={x}
-        width={barWidth}
-        rx={barWidth / 2}
-        fill={color}
-        animatedProps={animatedProps}
-      />
+      <Rect x={x} y={top} width={barWidth} height={fullHeight} rx={barWidth / 2} fill={commonColors.surfaceAlt} />
+      <AnimatedRect x={x} width={barWidth} rx={barWidth / 2} fill={color} animatedProps={animatedProps} />
     </>
   );
 }
@@ -84,41 +82,80 @@ export function ChartBar({
   color = gestanteColors.primary,
   maxValue,
   showValues = false,
+  showGrid = true,
+  yUnit = '',
   style,
 }: ChartBarProps): React.ReactElement {
   const [width, setWidth] = React.useState(0);
   const max = Math.max(1, maxValue ?? Math.max(...data.map((d) => d.value), 1));
   const n = Math.max(1, data.length);
-  const slot = width / n;
+
+  const left = showGrid ? PADDING_LEFT : 0;
+  const top = showValues ? VALUE_SPACE : 4;
+  const plotW = Math.max(0, width - left - PADDING_RIGHT);
+  const plotH = Math.max(0, height - top);
+  const slot = plotW / n;
   const barWidth = Math.min(28, slot * 0.5);
+
+  const yTicks = Array.from({ length: Y_TICKS + 1 }, (_, i) => (max * i) / Y_TICKS);
+  const yPos = (v: number) => top + plotH - (v / max) * plotH;
 
   return (
     <View style={style} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {width > 0 && (
         <>
           <Svg width={width} height={height}>
+            {/* Grilla horizontal + etiquetas eje Y */}
+            {showGrid &&
+              yTicks.map((t, i) => (
+                <React.Fragment key={`y${i}`}>
+                  <Line
+                    x1={left}
+                    y1={yPos(t)}
+                    x2={width - PADDING_RIGHT}
+                    y2={yPos(t)}
+                    stroke={commonColors.borderLight}
+                    strokeWidth={1}
+                  />
+                  <SvgText x={left - 6} y={yPos(t) + 3} fontSize={9} fill={commonColors.textTertiary} textAnchor="end">
+                    {`${Math.round(t)}${yUnit}`}
+                  </SvgText>
+                </React.Fragment>
+              ))}
+
+            {/* Barras */}
             {data.map((d, i) => {
-              const x = i * slot + (slot - barWidth) / 2;
+              const x = left + i * slot + (slot - barWidth) / 2;
               return (
                 <AnimatedBar
                   key={i}
                   x={x}
                   barWidth={barWidth}
-                  fullHeight={height}
+                  top={top}
+                  fullHeight={plotH}
                   ratio={d.value / max}
                   color={d.color ?? color}
                 />
               );
             })}
+
+            {/* Valor encima de cada barra */}
+            {showValues &&
+              data.map((d, i) => {
+                const cx = left + i * slot + slot / 2;
+                const vy = Math.max(10, yPos(d.value) - 5);
+                return (
+                  <SvgText key={`v${i}`} x={cx} y={vy} fontSize={10} fontWeight="700" fill={commonColors.text} textAnchor="middle">
+                    {`${d.value}${yUnit}`}
+                  </SvgText>
+                );
+              })}
           </Svg>
-          <View style={styles.labels}>
+
+          {/* Etiquetas eje X */}
+          <View style={[styles.labels, { paddingLeft: left, paddingRight: PADDING_RIGHT }]}>
             {data.map((d, i) => (
               <View key={i} style={[styles.labelCol, { width: slot }]}>
-                {showValues ? (
-                  <Text style={styles.value} numberOfLines={1}>
-                    {d.value}
-                  </Text>
-                ) : null}
                 <Text style={styles.label} numberOfLines={1}>
                   {d.label}
                 </Text>
@@ -138,5 +175,4 @@ const styles = StyleSheet.create({
   },
   labelCol: { alignItems: 'center' },
   label: { ...typography.caption, color: commonColors.textSecondary },
-  value: { ...typography.label, color: commonColors.text, marginBottom: 2 },
 });
