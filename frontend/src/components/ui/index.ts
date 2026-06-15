@@ -33,6 +33,8 @@ export { ProgressRing } from './ProgressRing';
 export { CircularProgress } from './CircularProgress';
 export { ChartBar } from './ChartBar';
 export type { ChartBarDatum } from './ChartBar';
+export { LineChartSvg } from './LineChartSvg';
+export type { LineSeries } from './LineChartSvg';
 export { InfoRow } from './InfoRow';
 export { ListItem } from './ListItem';
 export { StatusChip } from './StatusChip';

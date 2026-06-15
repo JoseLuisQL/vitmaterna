@@ -4,11 +4,12 @@
  * (CLAP/MINSA) para detectar restricción o exceso de crecimiento.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { View, Text, StyleSheet } from 'react-native';
+import { LineChartSvg } from '../ui/LineChartSvg';
 import { commonColors, obstetraColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
 import { interpolateAU, classifyAlturaUterina } from '../../utils/clinicalReferences';
 
 interface ControlPoint {
@@ -20,13 +21,6 @@ interface Props {
   controls: ControlPoint[];
   themeColor?: string;
 }
-
-const hexToRgba = (hex: string, opacity = 1): string => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-};
 
 export function AlturaUterinaChart({ controls, themeColor = obstetraColors.primary }: Props): React.ReactElement | null {
   const points = useMemo(
@@ -56,34 +50,25 @@ export function AlturaUterinaChart({ controls, themeColor = obstetraColors.prima
     sin_referencia: { label: 'Sin referencia', color: commonColors.textSecondary },
   }[estado];
 
-  const screenWidth = Dimensions.get('window').width;
-
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Altura Uterina vs Edad Gestacional</Text>
 
-      <LineChart
-        data={{
-          labels,
-          datasets: [
-            { data: p10Data, color: (o = 1) => hexToRgba(commonColors.textTertiary, o * 0.7), strokeWidth: 1, withDots: false },
-            { data: p90Data, color: (o = 1) => hexToRgba(commonColors.textTertiary, o * 0.7), strokeWidth: 1, withDots: false },
-            { data: auData, color: (o = 1) => hexToRgba(themeColor, o), strokeWidth: 3 },
-          ],
-          legend: ['P10', 'P90', 'AU (cm)'],
-        }}
-        width={screenWidth - 72}
+      <LineChartSvg
+        labels={labels}
         height={200}
-        chartConfig={{
-          backgroundColor: commonColors.surface,
-          backgroundGradientFrom: commonColors.surface,
-          backgroundGradientTo: commonColors.surface,
-          decimalPlaces: 1,
-          color: (o = 1) => hexToRgba(themeColor, o),
-          labelColor: (o = 1) => hexToRgba(commonColors.textSecondary, o),
-          propsForDots: { r: '4', strokeWidth: '2', stroke: themeColor },
-        }}
-        style={{ marginLeft: -10, marginTop: 10, borderRadius: borderRadius.lg }}
+        decimals={1}
+        series={[
+          { data: p10Data, color: commonColors.textTertiary, strokeWidth: 1.5, withDots: false, dashed: true },
+          { data: p90Data, color: commonColors.textTertiary, strokeWidth: 1.5, withDots: false, dashed: true },
+          { data: auData, color: themeColor, strokeWidth: 3 },
+        ]}
+        legend={[
+          { label: 'P10', color: commonColors.textTertiary },
+          { label: 'P90', color: commonColors.textTertiary },
+          { label: 'AU (cm)', color: themeColor },
+        ]}
+        style={{ marginTop: spacing.sm }}
       />
 
       <View style={[styles.statusPill, { backgroundColor: estadoMeta.color + '20' }]}>
@@ -102,8 +87,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   title: { ...typography.h3, color: commonColors.text, marginBottom: spacing.sm },
   statusPill: {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, StyleSheet, Text, ScrollView, TouchableOpacity, Dimensions,
+  View, StyleSheet, Text, ScrollView, TouchableOpacity,
   StatusBar, Platform, TextInput, Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,7 @@ import {
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home
 } from 'lucide-react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
-import { LineChart } from 'react-native-chart-kit';
+import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
@@ -26,17 +26,7 @@ import {
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 import { confirmAction } from '../../../src/utils/confirm';
 
-const { width: screenWidth } = Dimensions.get('window');
 const BRAND = obstetraColors.primary;
-
-/** Convierte un color hex (#RRGGBB) a rgba() para react-native-chart-kit. */
-const hexToRgba = (hex: string, opacity = 1): string => {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.substring(0, 2), 16);
-  const g = parseInt(h.substring(2, 4), 16);
-  const b = parseInt(h.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-};
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -633,26 +623,13 @@ export default function PatientProfileScreen(): React.ReactElement {
               {hasWeightChart ? (
                 <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
                   <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
-                  <LineChart
-                    data={{
-                      labels: weekLabels,
-                      datasets: [{ data: weightData, color: () => BRAND, strokeWidth: 3 }],
-                      legend: ['Peso (kg)'],
-                    }}
-                    width={screenWidth - 72}
+                  <LineChartSvg
+                    labels={weekLabels}
                     height={180}
-                    fromZero={false}
-                    chartConfig={{
-                      backgroundColor: commonColors.surface,
-                      backgroundGradientFrom: commonColors.surface,
-                      backgroundGradientTo: commonColors.surface,
-                      decimalPlaces: 1,
-                      color: (opacity = 1) => hexToRgba(BRAND, opacity),
-                      labelColor: (opacity = 1) => hexToRgba(commonColors.textSecondary, opacity),
-                      propsForDots: { r: '4', strokeWidth: '2', stroke: BRAND },
-                    }}
-                    bezier
-                    style={{ marginLeft: -10, marginTop: 10 }}
+                    decimals={1}
+                    series={[{ data: weightData, color: BRAND, strokeWidth: 3 }]}
+                    legend={[{ label: 'Peso (kg)', color: BRAND }]}
+                    style={{ marginTop: spacing.sm }}
                   />
                 </View>
               ) : (
