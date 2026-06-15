@@ -29,11 +29,14 @@ import { confirmAction } from '../../../src/utils/confirm';
 const BRAND = obstetraColors.primary;
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
+// Orden según el flujo clínico real de una atención prenatal:
+// Datos → Controles → Laboratorios → Tamizajes → Tratamiento → Vacunas → Visitas.
 const TABS = [
   { id: 'datos', label: 'Datos', icon: User },
   { id: 'controles', label: 'Controles', icon: Stethoscope },
-  { id: 'tratamiento', label: 'Medicinas', icon: Pill },
   { id: 'laboratorio', label: 'Lab.', icon: FlaskConical },
+  { id: 'tamizajes', label: 'Tamizajes', icon: ClipboardList },
+  { id: 'tratamiento', label: 'Medicinas', icon: Pill },
   { id: 'vacunas', label: 'Vacunas', icon: Syringe },
   { id: 'visitas', label: 'Visitas', icon: Home },
 ];
@@ -119,7 +122,7 @@ export default function PatientProfileScreen(): React.ReactElement {
   const router = useRouter();
   // Permite abrir el perfil directamente en una pestaña (p. ej. desde el flujo
   // "Atender cita" hacia Laboratorios o Tratamiento).
-  const VALID_TABS = ['datos', 'controles', 'tratamiento', 'laboratorio', 'vacunas', 'visitas'];
+  const VALID_TABS = ['datos', 'controles', 'laboratorio', 'tamizajes', 'tratamiento', 'vacunas', 'visitas'];
   const [activeTab, setActiveTab] = useState(tab && VALID_TABS.includes(tab) ? tab : 'datos');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
@@ -595,8 +598,15 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <Fila label="Talla" value={patient.talla ? `${patient.talla} cm` : undefined} />
                 <Fila label="Grupo sanguíneo" value={patient.bloodType} isLast />
               </View>
+            </View>
+          )}
 
-              <Seccion titulo="Tamizajes y registros clínicos" />
+          {/* ── TAB: TAMIZAJES ── */}
+          {activeTab === 'tamizajes' && (
+            <View style={styles.section}>
+              <Text style={styles.tamizajesIntro}>
+                Registra tamizajes y evaluaciones clínicas de la gestante.
+              </Text>
               <TouchableOpacity
                 style={[styles.tamizajesBtn, designTokens.cardShadow]}
                 onPress={() => router.push({
@@ -610,7 +620,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.tamizajesTitle}>SRQ-18, violencia, patologías y más</Text>
-                  <Text style={styles.tamizajesDesc}>Registrar tamizajes, consejería nutricional y peso</Text>
+                  <Text style={styles.tamizajesDesc}>Salud mental, violencia, patologías CIE-10, ecografía, consejería nutricional, peso y odontograma</Text>
                 </View>
                 <Plus size={20} color={commonColors.textTertiary} />
               </TouchableOpacity>
@@ -1467,6 +1477,7 @@ const styles = StyleSheet.create({
   },
   tamizajesTitle: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.text },
   tamizajesDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  tamizajesIntro: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 20 },
   primaryActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

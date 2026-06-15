@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { ChevronLeft, Activity, Baby, Stethoscope } from 'lucide-react-native';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
+import { useToast } from '../../../src/components/ui';
 import { useCreateControl } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -21,8 +22,13 @@ const controlSchema = z.object({
   week: z.string().min(1, 'La semana es obligatoria'),
   weight: z.string().min(1, 'El peso es obligatorio'),
   bloodPressure: z.string().min(1, 'La presión arterial es obligatoria'),
+  temperatura: z.string().optional(),
+  pulsoMaterno: z.string().optional(),
   fetalHeartRate: z.string().min(1, 'La FCF es obligatoria'),
   fundalHeight: z.string().min(1, 'La altura uterina es obligatoria'),
+  movimientoFetal: z.string().optional(),
+  proteinuria: z.string().optional(),
+  edema: z.string().optional(),
   indications: z.string().optional(),
 });
 
@@ -31,22 +37,49 @@ type ControlFormData = z.infer<typeof controlSchema>;
 export default function NuevoControlScreen(): React.ReactElement {
   const { patientId, appointmentId } = useLocalSearchParams<{ patientId: string; appointmentId?: string }>();
   const router = useRouter();
+  const toast = useToast();
   const { mutate: createControl, isPending } = useCreateControl();
 
   const { control, handleSubmit, formState: { errors } } = useForm<ControlFormData>({
     resolver: zodResolver(controlSchema),
-    defaultValues: { week: '', weight: '', bloodPressure: '', fetalHeartRate: '', fundalHeight: '', indications: '' },
+    defaultValues: {
+      week: '', weight: '', bloodPressure: '', temperatura: '', pulsoMaterno: '',
+      fetalHeartRate: '', fundalHeight: '', movimientoFetal: '', proteinuria: '', edema: '', indications: '',
+    },
   });
 
   const onSubmit = (data: ControlFormData) => {
-    if (!patientId) return Alert.alert('Error', 'Falta el ID de la paciente.');
+    if (!patientId) return toast.error('Falta la paciente', 'No se pudo identificar a la gestante.');
+    // Solo se envían los campos opcionales con valor. pulsoMaterno es numérico
+    // en el backend; el resto se envían como texto (temperatura acepta ambos).
+    const optionals: Record<string, string | number> = {};
+    (['temperatura', 'movimientoFetal', 'proteinuria', 'edema'] as const).forEach((k) => {
+      const v = (data[k] || '').trim();
+      if (v) optionals[k] = v;
+    });
+    const pulso = (data.pulsoMaterno || '').trim();
+    if (pulso && !Number.isNaN(Number(pulso))) optionals.pulsoMaterno = Number(pulso);
     // Si el control nace de una cita (flujo "Atender cita"), se liga al
     // appointmentId para que la cita quede con su evidencia clínica.
     createControl(
-      { patientId, ...(appointmentId ? { appointmentId } : {}), ...data, date: new Date().toISOString() },
       {
-        onSuccess: () => Alert.alert('Éxito', 'Control registrado correctamente.', [{ text: 'OK', onPress: () => router.back() }]),
-        onError: () => Alert.alert('Error', 'No se pudo registrar el control. Intenta de nuevo.'),
+        patientId,
+        ...(appointmentId ? { appointmentId } : {}),
+        week: data.week,
+        weight: data.weight,
+        bloodPressure: data.bloodPressure,
+        fetalHeartRate: data.fetalHeartRate,
+        fundalHeight: data.fundalHeight,
+        indications: data.indications,
+        ...optionals,
+        date: new Date().toISOString(),
+      },
+      {
+        onSuccess: () => {
+          toast.success('Control registrado', 'El control prenatal se guardó correctamente.');
+          router.back();
+        },
+        onError: () => toast.error('No se pudo registrar', 'Revisa los datos e inténtalo de nuevo.'),
       },
     );
   };
@@ -82,6 +115,8 @@ export default function NuevoControlScreen(): React.ReactElement {
             <AppInput control={control} name="week" label="Semana Gestacional" placeholder="Ej. 24" keyboardType="numeric" error={errors.week?.message} />
             <AppInput control={control} name="weight" label="Peso (kg)" placeholder="Ej. 65.5" keyboardType="numeric" error={errors.weight?.message} />
             <AppInput control={control} name="bloodPressure" label="Presión Arterial (mmHg)" placeholder="Ej. 120/80" error={errors.bloodPressure?.message} />
+            <AppInput control={control} name="temperatura" label="Temperatura (°C) — opcional" placeholder="Ej. 36.5" keyboardType="numeric" error={errors.temperatura?.message} />
+            <AppInput control={control} name="pulsoMaterno" label="Pulso materno (lpm) — opcional" placeholder="Ej. 78" keyboardType="numeric" error={errors.pulsoMaterno?.message} />
           </View>
         </View>
 
@@ -93,6 +128,18 @@ export default function NuevoControlScreen(): React.ReactElement {
           <View style={styles.formGroup}>
             <AppInput control={control} name="fetalHeartRate" label="Frecuencia Cardíaca Fetal (lpm)" placeholder="Ej. 140" keyboardType="numeric" error={errors.fetalHeartRate?.message} />
             <AppInput control={control} name="fundalHeight" label="Altura Uterina (cm)" placeholder="Ej. 22" keyboardType="numeric" error={errors.fundalHeight?.message} />
+            <AppInput control={control} name="movimientoFetal" label="Movimiento fetal — opcional" placeholder="Ej. Presente / Ausente" error={errors.movimientoFetal?.message} />
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
+            <Text style={styles.sectionTitle}>Examen complementario</Text>
+          </View>
+          <View style={styles.formGroup}>
+            <AppInput control={control} name="proteinuria" label="Proteinuria — opcional" placeholder="Ej. Negativo / +" error={errors.proteinuria?.message} />
+            <AppInput control={control} name="edema" label="Edema — opcional" placeholder="Ej. Ausente / + / ++" error={errors.edema?.message} />
           </View>
         </View>
 
