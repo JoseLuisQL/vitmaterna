@@ -31,13 +31,12 @@ import { NotificationBell } from '../../../src/components/shared/NotificationBel
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
-import { useMutation } from '@tanstack/react-query';
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
-import { confirmAction } from '../../../src/utils/confirm';
+import { EmergencyAlert, type EmergencyCoords } from '../../../src/components/shared/EmergencyAlert';
 
 const BRAND = gestanteColors.primary;
 
@@ -51,44 +50,18 @@ export default function GestanteDashboard(): React.ReactElement {
   useRefetchOnFocus([refetch]);
   const confirmMutation = useConfirmAppointment();
 
-  const emergencyMutation = useMutation({
-    mutationFn: (coords: { latitude: number; longitude: number }) => {
-      return api.post('/chat/emergencia', coords);
-    },
-    onSuccess: () => {
-      toast.warning('Emergencia enviada', 'Tu obstetra recibió la alerta con tu ubicación GPS.');
-    },
-    onError: () => {
-      toast.error('No se pudo enviar', 'No se pudo enviar la alerta de emergencia.');
-    }
-  });
+  const [emergencyVisible, setEmergencyVisible] = React.useState(false);
 
-  const handleEmergencyPress = async () => {
-    const ok = await confirmAction({
-      title: '¿Enviar Alerta de Emergencia?',
-      message: 'Se enviará tu ubicación GPS y una notificación de auxilio inmediata a tu obstetra y centro de salud.',
-      confirmText: 'Enviar Alerta',
-      destructive: true,
+  // El envío real de la alerta. El modal EmergencyAlert gestiona GPS, estados
+  // y errores; aquí solo se hace la llamada (debe lanzar si falla).
+  const sendEmergency = React.useCallback(async (coords: EmergencyCoords) => {
+    await api.post('/chat/emergencia', {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
     });
-    if (!ok) return;
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          emergencyMutation.mutate({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.warn('Geolocation error, falling back to Talavera:', error);
-          emergencyMutation.mutate({ latitude: -13.654881, longitude: -73.42595 });
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 },
-      );
-    } else {
-      emergencyMutation.mutate({ latitude: -13.654881, longitude: -73.42595 });
-    }
-  };
+  }, []);
+
+  const handleEmergencyPress = () => setEmergencyVisible(true);
 
   const nextAppointment = data?.nextAppointment;
   const todayTreatments = data?.todayTreatments || [];
@@ -327,6 +300,12 @@ export default function GestanteDashboard(): React.ReactElement {
 
         </View>
       </ScrollView>
+
+      <EmergencyAlert
+        visible={emergencyVisible}
+        onClose={() => setEmergencyVisible(false)}
+        onSend={sendEmergency}
+      />
     </View>
   );
 }

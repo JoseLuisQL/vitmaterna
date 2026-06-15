@@ -16,6 +16,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { useAuthStore } from '../src/store/authStore';
 import { ToastProvider } from '../src/components/ui/ToastProvider';
+import { ConfirmHost } from '../src/components/ui/ConfirmHost';
 import { MobileFrame } from '../src/components/ui/MobileFrame';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
@@ -63,6 +64,7 @@ export default function RootLayout(): React.ReactElement | null {
               <AppNavigator />
             </MobileFrame>
             <OfflineBanner />
+            <ConfirmHost />
           </ToastProvider>
         </QueryClientProvider>
       </ThemeProvider>

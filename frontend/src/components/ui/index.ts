@@ -56,3 +56,6 @@ export { PillTabBar } from './PillTabBar';
 
 // Misc
 export { ProfileInfoModal } from './ProfileInfoModal';
+export { ConfirmDialog, ValidationModal } from './ConfirmDialog';
+export type { ConfirmTone } from './ConfirmDialog';
+export { ConfirmHost } from './ConfirmHost';
