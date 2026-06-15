@@ -28,6 +28,11 @@ export class AdminController {
     return res.status(200).json(successResponse({ id: user.id, isActive: user.isActive }));
   }
 
+  async getDashboard(_req: Request, res: Response) {
+    const data = await adminService.getDashboard();
+    return res.status(200).json(successResponse(data));
+  }
+
   async getUser(req: Request, res: Response) {
     const id = req.params.id as string;
     const user = await adminService.getUserById(id);

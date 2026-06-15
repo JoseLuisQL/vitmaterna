@@ -23,6 +23,9 @@ export const adminRoutes = Router();
 // All admin routes are protected
 adminRoutes.use(authenticate, rbac('admin'));
 
+// Dashboard / resumen global
+adminRoutes.get('/dashboard', adminController.getDashboard);
+
 // Users
 adminRoutes.get(
   '/users',

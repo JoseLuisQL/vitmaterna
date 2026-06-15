@@ -389,6 +389,55 @@ export class AdminService {
     return { ok: true };
   }
 
+  /** Resumen global del sistema para el dashboard del administrador. */
+  async getDashboard() {
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
+    const in7days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalAdmins, totalObstetras, totalGestantesUsers, obstetrasPendientes,
+      gestantesActivas, gestantesRiesgoAlto,
+      citasHoy, citasProximas, alertasPendientes,
+      contenidoActivo, contenidoTotal, vistasAgg,
+    ] = await Promise.all([
+      prisma.user.count({ where: { role: 'admin', deletedAt: null } }),
+      prisma.user.count({ where: { role: 'obstetra', deletedAt: null } }),
+      prisma.user.count({ where: { role: 'gestante', deletedAt: null } }),
+      // Obstetras pendientes de aprobación: inactivos o no verificados.
+      prisma.user.count({ where: { role: 'obstetra', deletedAt: null, OR: [{ isActive: false }, { isVerified: false }] } }),
+      prisma.gestante.count({ where: { estado: 'activa' } }),
+      prisma.gestante.count({ where: { estado: 'activa', nivelRiesgo: 'rojo' } }),
+      prisma.appointment.count({ where: { fecha: { gte: startOfDay, lte: endOfDay }, deletedAt: null } }),
+      prisma.appointment.count({ where: { fecha: { gt: endOfDay, lte: in7days }, estado: { in: ['programada', 'confirmada', 'reprogramada'] }, deletedAt: null } }),
+      prisma.dangerSign.count({ where: { estado: 'pendiente' } }),
+      prisma.educationalContent.count({ where: { activo: true } }),
+      prisma.educationalContent.count(),
+      prisma.educationalContent.aggregate({ _sum: { viewsCount: true } }),
+    ]);
+
+    const { getChannelsStatus } = await import('../notifications/channels.js');
+    const channels = await getChannelsStatus();
+
+    return {
+      usuarios: {
+        total: totalAdmins + totalObstetras + totalGestantesUsers,
+        admins: totalAdmins,
+        obstetras: totalObstetras,
+        gestantes: totalGestantesUsers,
+        obstetrasPendientes,
+      },
+      gestantes: { activas: gestantesActivas, altoRiesgo: gestantesRiesgoAlto },
+      citas: { hoy: citasHoy, proximas7dias: citasProximas },
+      alertas: { pendientes: alertasPendientes },
+      contenido: { publicado: contenidoActivo, total: contenidoTotal, vistasTotales: vistasAgg._sum.viewsCount ?? 0 },
+      notificaciones: {
+        smsConfigurado: channels.sms.configured,
+        whatsappConfigurado: channels.whatsapp.configured,
+      },
+    };
+  }
+
   // ── Establecimientos de salud (RF-10.02) ──
 
   async listFacilities() {
