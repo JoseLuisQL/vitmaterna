@@ -14,7 +14,7 @@ import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -1121,28 +1121,23 @@ export default function PatientProfileScreen(): React.ReactElement {
         }
       >
         <View style={{ gap: 14 }}>
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>FUM — Fecha de última menstruación (AAAA-MM-DD)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. 2026-01-01"
-              placeholderTextColor={commonColors.textTertiary}
-              value={embFum}
-              onChangeText={setEmbFum}
-              autoCapitalize="none"
-            />
-          </View>
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>FPP por ecografía (opcional, AAAA-MM-DD)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. 2026-10-05"
-              placeholderTextColor={commonColors.textTertiary}
-              value={embFppEco}
-              onChangeText={setEmbFppEco}
-              autoCapitalize="none"
-            />
-          </View>
+          <DateTimeField
+            label="FUM — Fecha de última menstruación"
+            mode="date"
+            value={embFum}
+            onChange={setEmbFum}
+            themeColor={BRAND}
+            maximumDate={new Date()}
+            placeholder="Seleccionar fecha"
+          />
+          <DateTimeField
+            label="FPP por ecografía (opcional)"
+            mode="date"
+            value={embFppEco}
+            onChange={setEmbFppEco}
+            themeColor={BRAND}
+            placeholder="Seleccionar fecha"
+          />
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={[styles.inputFieldGroup, { flex: 1 }]}>
               <Text style={styles.inputLabel}>Peso habitual (kg)</Text>

@@ -26,7 +26,7 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { ProgressRing } from '../../../src/components/ui/ProgressRing';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { useToast } from '../../../src/components/ui';
+import { useToast, AutoGrid } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
@@ -292,7 +292,7 @@ export default function GestanteDashboard(): React.ReactElement {
 
           {/* Quick Actions */}
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-          <View style={styles.quickActions}>
+          <AutoGrid minColumnWidth={100} maxColumns={4}>
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
               <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.dangerLight }]}>
                 <AlertTriangle size={24} color={semanticColors.danger} />
@@ -316,9 +316,7 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionTitle}>Chat</Text>
               <Text style={styles.quickActionSubtitle}>Consulta</Text>
             </AppCard>
-          </View>
 
-          <View style={[styles.quickActions, { marginTop: spacing.sm + 4 }]}>
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/educacion')}>
               <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.infoLight }]}>
                 <BookOpen size={24} color={semanticColors.info} />
@@ -326,10 +324,7 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionTitle}>Educación</Text>
               <Text style={styles.quickActionSubtitle}>Aprende más</Text>
             </AppCard>
-
-            <View style={[styles.quickActionCard, { opacity: 0 }]} pointerEvents="none" />
-            <View style={[styles.quickActionCard, { opacity: 0 }]} pointerEvents="none" />
-          </View>
+          </AutoGrid>
 
         </View>
       </ScrollView>
@@ -435,7 +430,6 @@ const styles = StyleSheet.create({
   treatmentInfoValue: { ...typography.h4, color: commonColors.text },
   treatmentInfoLabel: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md, marginTop: spacing.sm },
-  quickActions: { flexDirection: 'row', gap: spacing.sm + 4 },
   quickActionCard: { flex: 1, alignItems: 'center', padding: spacing.md, gap: spacing.sm + 4 },
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   quickActionTitle: { ...typography.label, color: commonColors.text, textAlign: 'center' },
