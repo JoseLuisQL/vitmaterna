@@ -10,7 +10,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Building2, Settings, ShieldAlert, LogOut, ChevronRight, Bell } from 'lucide-react-native';
+import { Building2, Settings, ShieldAlert, LogOut, ChevronRight, Bell, TrendingUp, Baby, Calendar } from 'lucide-react-native';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
@@ -73,7 +73,33 @@ export default function AdminMasScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Administración</Text>
+        {/* Supervisión — datos clínicos en modo lectura */}
+        <Text style={styles.sectionTitle}>Supervisión</Text>
+        <View style={styles.menuCard}>
+          <MenuItem
+            icon={<TrendingUp size={20} color={BRAND} />}
+            title="Reportes e indicadores"
+            subtitle="KPIs clínicos y MINSA del sistema"
+            onPress={() => router.push('/(admin)/supervision/reportes')}
+          />
+          <View style={styles.divider} />
+          <MenuItem
+            icon={<Baby size={20} color={BRAND} />}
+            title="Gestantes"
+            subtitle="Todas las gestantes registradas"
+            onPress={() => router.push('/(admin)/supervision/gestantes')}
+          />
+          <View style={styles.divider} />
+          <MenuItem
+            icon={<Calendar size={20} color={BRAND} />}
+            title="Citas"
+            subtitle="Agenda global del sistema"
+            onPress={() => router.push('/(admin)/supervision/citas')}
+          />
+        </View>
+
+        {/* Sistema */}
+        <Text style={styles.sectionTitle}>Sistema</Text>
         <View style={styles.menuCard}>
           <MenuItem
             icon={<Building2 size={20} color={BRAND} />}
@@ -95,7 +121,11 @@ export default function AdminMasScreen(): React.ReactElement {
             subtitle="SMS y WhatsApp (credenciales y prueba)"
             onPress={() => router.push('/(admin)/(tabs)/notificaciones')}
           />
-          <View style={styles.divider} />
+        </View>
+
+        {/* Seguridad */}
+        <Text style={styles.sectionTitle}>Seguridad</Text>
+        <View style={styles.menuCard}>
           <MenuItem
             icon={<ShieldAlert size={20} color={BRAND} />}
             title="Auditoría y backup"
@@ -104,7 +134,9 @@ export default function AdminMasScreen(): React.ReactElement {
           />
         </View>
 
-        <View style={[styles.menuCard, { marginTop: spacing.lg }]}>
+        {/* Cuenta */}
+        <Text style={styles.sectionTitle}>Cuenta</Text>
+        <View style={styles.menuCard}>
           <MenuItem
             icon={<LogOut size={20} color={semanticColors.danger} />}
             title="Cerrar Sesión"

@@ -15,6 +15,9 @@ export default function AdminLayout(): React.ReactElement {
       }}
     >
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="supervision/reportes" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="supervision/gestantes" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="supervision/citas" options={{ animation: 'slide_from_right' }} />
     </Stack>
   );
 }
