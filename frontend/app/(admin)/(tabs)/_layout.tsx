@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Users, FileText, LayoutGrid } from 'lucide-react-native';
+import { Home, Users, FileText, LayoutGrid } from 'lucide-react-native';
 import { adminColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
 
@@ -14,6 +14,13 @@ export default function AdminTabsLayout(): React.ReactElement {
       screenOptions={{ headerShown: false }}
       tabBar={(props) => <PillTabBar {...props} accentColor={adminColors.primary} />}
     >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Inicio',
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="usuarios"
         options={{

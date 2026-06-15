@@ -61,7 +61,7 @@ export default function LoginScreen(): React.ReactElement {
         const user = useAuthStore.getState().user;
         if (user) {
           if (user.role === 'gestante') router.replace('/(gestante)/(tabs)');
-          else if (user.role === 'admin') router.replace('/(admin)/(tabs)/usuarios' as any);
+          else if (user.role === 'admin') router.replace('/(admin)/(tabs)' as any);
           else router.replace('/(obstetra)/(tabs)');
         }
       } catch (error) {

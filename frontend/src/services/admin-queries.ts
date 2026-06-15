@@ -262,3 +262,65 @@ export const useTestChannel = () =>
       return res.data;
     },
   });
+
+// --- Admin Dashboard (resumen global) ---
+export interface AdminDashboard {
+  usuarios: { total: number; admins: number; obstetras: number; gestantes: number; obstetrasPendientes: number };
+  gestantes: { activas: number; altoRiesgo: number };
+  citas: { hoy: number; proximas7dias: number };
+  alertas: { pendientes: number };
+  contenido: { publicado: number; total: number; vistasTotales: number };
+  notificaciones: { smsConfigurado: boolean; whatsappConfigurado: boolean };
+}
+
+export const fetchAdminDashboard = async (): Promise<AdminDashboard> => {
+  const res = await api.get('/admin/dashboard');
+  return res.data?.data;
+};
+
+export const useAdminDashboard = () =>
+  useQuery({ queryKey: ['adminDashboard'], queryFn: fetchAdminDashboard });
+
+// --- Admin: gestión avanzada de usuarios ---
+export const useAdminUserDetail = (id: string) =>
+  useQuery({
+    queryKey: ['adminUser', id],
+    queryFn: async () => {
+      const res = await api.get(`/admin/users/${id}`);
+      return res.data?.data;
+    },
+    enabled: !!id,
+  });
+
+export const useUpdateUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+      const res = await api.put(`/admin/users/${id}`, data);
+      return res.data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['adminUsers'] });
+      qc.invalidateQueries({ queryKey: ['adminUser', vars.id] });
+    },
+  });
+};
+
+export const useResetUserPassword = () =>
+  useMutation({
+    mutationFn: async ({ id, newPassword }: { id: string; newPassword: string }) => {
+      const res = await api.post(`/admin/users/${id}/reset-password`, { newPassword });
+      return res.data;
+    },
+  });
+
+export const useDeleteUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/admin/users/${id}`);
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['adminUsers'] }),
+  });
+};
