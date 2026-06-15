@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pill, CheckCircle, Clock, Info } from 'lucide-react-native';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useToast } from '../../../src/components/ui';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
@@ -158,10 +159,15 @@ export default function TratamientoScreen(): React.ReactElement {
       >
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Mi Tratamiento</Text>
-          {semanaGestacional && (
-            <Text style={styles.headerSubtitle}>Semana {semanaGestacional} de gestación</Text>
-          )}
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Mi Tratamiento</Text>
+              {semanaGestacional && (
+                <Text style={styles.headerSubtitle}>Semana {semanaGestacional} de gestación</Text>
+              )}
+            </View>
+            <NotificationBell href="/(gestante)/notificaciones" />
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -282,6 +288,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: {
     ...typography.display,
     color: commonColors.white,

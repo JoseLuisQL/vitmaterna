@@ -6,6 +6,7 @@ import { Baby, Search, ChevronRight, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { usePatients } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -58,8 +59,13 @@ export default function GestantesScreen(): React.ReactElement {
       >
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Gestantes</Text>
-          <Text style={styles.headerSubtitle}>Tus pacientes asignadas</Text>
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Gestantes</Text>
+              <Text style={styles.headerSubtitle}>Tus pacientes asignadas</Text>
+            </View>
+            <NotificationBell href="/(obstetra)/notificaciones" />
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -216,6 +222,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
   searchContainer: {

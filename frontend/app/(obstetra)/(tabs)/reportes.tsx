@@ -9,6 +9,7 @@ import { Download, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-
 import api from '../../../src/services/api';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -147,14 +148,17 @@ export default function ReportesScreen(): React.ReactElement {
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.pageTitle}>Reportes</Text>
               <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
             </View>
-            <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7}>
-              <Download size={18} color={commonColors.white} />
-              <Text style={styles.exportBtnText}>Exportar PDF</Text>
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7}>
+                <Download size={18} color={commonColors.white} />
+                <Text style={styles.exportBtnText}>PDF</Text>
+              </TouchableOpacity>
+              <NotificationBell href="/(obstetra)/notificaciones" />
+            </View>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -238,7 +242,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: borderRadius.xxxl,
   },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   pageTitle: { ...typography.h1, color: commonColors.white },
   pageSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
   exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },

@@ -6,6 +6,7 @@ import { TrendingUp, ChevronRight, Activity, Calendar, Users, AlertTriangle, Che
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { KpiCard } from '../../../src/components/ui/KpiCard';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
@@ -63,8 +64,11 @@ export default function ObstetraDashboard(): React.ReactElement {
                 {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
               </Text>
             </View>
-            <View style={styles.avatarWrap}>
-              <Text style={styles.avatarText}>{displayName.charAt(4) || 'O'}</Text>
+            <View style={styles.headerActions}>
+              <NotificationBell href="/(obstetra)/notificaciones" />
+              <View style={styles.avatarWrap}>
+                <Text style={styles.avatarText}>{displayName.charAt(4) || 'O'}</Text>
+              </View>
             </View>
           </View>
         </SafeAreaView>
@@ -203,6 +207,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   greeting: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginBottom: 2 },
   name: { ...typography.display, color: commonColors.white },
   avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },

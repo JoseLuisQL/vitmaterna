@@ -6,6 +6,7 @@ import { Bell, AlertTriangle, User, Clock, CheckCircle, Share2 } from 'lucide-re
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { confirmAction } from '../../../src/utils/confirm';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -133,12 +134,17 @@ export default function AlertasScreen(): React.ReactElement {
     >
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-        <Text style={styles.headerTitle}>Alertas</Text>
-        <Text style={styles.headerSubtitle}>
-          {pendingCount > 0
-            ? `${pendingCount} signo(s) de alarma por revisar`
-            : 'Signos de alarma de pacientes'}
-        </Text>
+        <View style={styles.headerTopRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Alertas</Text>
+            <Text style={styles.headerSubtitle}>
+              {pendingCount > 0
+                ? `${pendingCount} signo(s) de alarma por revisar`
+                : 'Signos de alarma de pacientes'}
+            </Text>
+          </View>
+          <NotificationBell href="/(obstetra)/notificaciones" />
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -250,6 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
   listContent: { paddingBottom: layout.tabBarSpace },

@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { AppModal, AppButton, useToast, ToggleTabs, ListSkeleton } from '../../../src/components/ui';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -314,8 +315,13 @@ export default function AppointmentsScreen() {
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.headerTitle}>Mis Citas</Text>
-          <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Mis Citas</Text>
+              <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
+            </View>
+            <NotificationBell href="/(gestante)/notificaciones" />
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -529,6 +535,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 2 },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
   tabContainer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },

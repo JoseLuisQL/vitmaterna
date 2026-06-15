@@ -578,7 +578,24 @@ export const useMarkNotificationRead = () => {
       const res = await api.patch(`/notifications/${id}/read`);
       return res.data;
     },
-    onSuccess: () => {
+    // Optimista: marca leída al instante en la lista y baja el contador del badge.
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const prev = queryClient.getQueryData<AppNotification[]>(['notifications']);
+      queryClient.setQueryData<AppNotification[]>(['notifications'], (old) =>
+        Array.isArray(old)
+          ? old.map((n) => (n.id === id && !n.leidaAt ? { ...n, leidaAt: new Date().toISOString() } : n))
+          : old,
+      );
+      queryClient.setQueryData<number>(['notifications', 'unread'], (c) =>
+        typeof c === 'number' && c > 0 ? c - 1 : c,
+      );
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['notifications'], ctx.prev);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
@@ -591,7 +608,20 @@ export const useMarkAllNotificationsRead = () => {
       const res = await api.patch('/notifications/read-all');
       return res.data;
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const prev = queryClient.getQueryData<AppNotification[]>(['notifications']);
+      const now = new Date().toISOString();
+      queryClient.setQueryData<AppNotification[]>(['notifications'], (old) =>
+        Array.isArray(old) ? old.map((n) => (n.leidaAt ? n : { ...n, leidaAt: now })) : old,
+      );
+      queryClient.setQueryData<number>(['notifications', 'unread'], 0);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['notifications'], ctx.prev);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });

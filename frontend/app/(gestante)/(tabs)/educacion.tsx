@@ -15,6 +15,7 @@ import { gestanteColors, commonColors, semanticColors } from '../../../src/theme
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { ToggleTabs } from '../../../src/components/ui';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
 
 const BRAND = gestanteColors.primary;
@@ -189,8 +190,13 @@ export default function EducacionScreen(): React.ReactElement {
       >
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Educación</Text>
-          <Text style={styles.headerSubtitle}>Aprende sobre tu embarazo</Text>
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Educación</Text>
+              <Text style={styles.headerSubtitle}>Aprende sobre tu embarazo</Text>
+            </View>
+            <NotificationBell href="/(gestante)/notificaciones" />
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -279,6 +285,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
+  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: {
     ...typography.display,
     color: commonColors.white,
