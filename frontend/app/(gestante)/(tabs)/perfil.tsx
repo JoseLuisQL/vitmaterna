@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from '../../../src/services/api-queries';
-import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
+import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -306,30 +306,26 @@ export default function PerfilScreen(): React.ReactElement {
             />
           </View>
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Fecha de Nacimiento (YYYY-MM-DD) *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. 1998-08-25"
-              placeholderTextColor={commonColors.textTertiary}
-              value={fechaNacimiento}
-              onChangeText={setFechaNacimiento}
-            />
-          </View>
+          <DateTimeField
+            label="Fecha de Nacimiento *"
+            mode="date"
+            value={fechaNacimiento}
+            onChange={setFechaNacimiento}
+            themeColor={BRAND}
+            maximumDate={new Date()}
+            placeholder="Seleccionar fecha"
+          />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Fecha Última Menstruación (FUM) (YYYY-MM-DD) *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. 2026-03-17"
-              placeholderTextColor={commonColors.textTertiary}
-              value={fum}
-              onChangeText={setFum}
-            />
-            <Text style={styles.hintText}>
-              Nota: Modificar tu FUM reprogramará automáticamente tu cronograma de 8 controles prenatales MINSA.
-            </Text>
-          </View>
+          <DateTimeField
+            label="Fecha Última Menstruación (FUM) *"
+            mode="date"
+            value={fum}
+            onChange={setFum}
+            themeColor={BRAND}
+            maximumDate={new Date()}
+            placeholder="Seleccionar fecha"
+            helperText="Modificar tu FUM reprograma tu cronograma de 8 controles prenatales MINSA."
+          />
         </View>
       </AppModal>
 

@@ -8,6 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
+import { DateTimeField } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
@@ -195,7 +196,21 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                 <AppInput name="lastName" control={control} label="APELLIDOS *" placeholder="" />
                 <AppInput name="dni" control={control} label="DNI *" keyboardType="number-pad" maxLength={8} />
                 <AppInput name="historiaClinica" control={control} label="N° HISTORIA CLÍNICA" />
-                <AppInput name="fechaNacimiento" control={control} label="FECHA DE NACIMIENTO" placeholder="Ej. 1995-12-25" />
+                <Controller
+                  control={control}
+                  name="fechaNacimiento"
+                  render={({ field: { value, onChange } }) => (
+                    <DateTimeField
+                      label="Fecha de Nacimiento"
+                      mode="date"
+                      value={value || ''}
+                      onChange={onChange}
+                      themeColor={BRAND}
+                      maximumDate={new Date()}
+                      placeholder="Seleccionar fecha"
+                    />
+                  )}
+                />
                 <AppInput name="direccion" control={control} label="DIRECCIÓN" />
                 <AppInput name="localidad" control={control} label="LOCALIDAD" />
                 <AppInput name="phone" control={control} label="TELÉFONO" keyboardType="phone-pad" maxLength={9} />
@@ -235,7 +250,21 @@ export default function NuevaGestanteScreen(): React.ReactElement {
             {currentStep === 4 && (
               <View style={styles.formGrid}>
                  <Text style={styles.subTitle}>Embarazo Actual</Text>
-                 <AppInput name="fum" control={control} label="FECHA DE ÚLTIMA MENSTRUACIÓN (FUM) *" placeholder="Ej. 2026-01-15" />
+                 <Controller
+                   control={control}
+                   name="fum"
+                   render={({ field: { value, onChange } }) => (
+                     <DateTimeField
+                       label="Fecha de Última Menstruación (FUM) *"
+                       mode="date"
+                       value={value || ''}
+                       onChange={onChange}
+                       themeColor={BRAND}
+                       maximumDate={new Date()}
+                       placeholder="Seleccionar fecha"
+                     />
+                   )}
+                 />
                  
                  <TouchableOpacity 
                    style={styles.checkboxRow}
