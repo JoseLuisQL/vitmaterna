@@ -13,6 +13,7 @@ export class AdminService {
       prisma.user.findMany({
         skip,
         take: limit,
+        where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -46,7 +47,7 @@ export class AdminService {
           }
         }
       }),
-      prisma.user.count(),
+      prisma.user.count({ where: { deletedAt: null } }),
     ]);
 
     return {
@@ -286,6 +287,106 @@ export class AdminService {
 
       return user;
     });
+  }
+
+  /** Detalle completo de un usuario (incluye perfil de gestante/obstetra). */
+  async getUserById(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, dni: true, firstName: true, lastName: true, role: true,
+        isActive: true, isVerified: true, phone: true, email: true,
+        createdAt: true, lastLoginAt: true, deletedAt: true,
+        gestante: {
+          select: {
+            id: true, fechaNacimiento: true, nivelRiesgo: true, estado: true,
+            departamento: true, provincia: true, distrito: true, establecimiento: true,
+          },
+        },
+        obstetra: { select: { id: true, cop: true, establecimiento: true, especialidad: true } },
+      },
+    });
+    if (!user) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Usuario no encontrado');
+    }
+    return user;
+  }
+
+  /** Edita datos básicos de un usuario (y COP/especialidad si es obstetra). */
+  async updateUser(userId: string, data: any) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, include: { obstetra: true } });
+    if (!user) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Usuario no encontrado');
+    }
+
+    const userData: Record<string, unknown> = {};
+    if (data.firstName !== undefined) userData.firstName = data.firstName;
+    if (data.lastName !== undefined) userData.lastName = data.lastName;
+    if (data.phone !== undefined) userData.phone = data.phone || null;
+    if (data.email !== undefined) userData.email = data.email || null;
+
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: userData,
+        select: {
+          id: true, dni: true, firstName: true, lastName: true, role: true,
+          isActive: true, phone: true, email: true,
+        },
+      });
+      // Campos del perfil obstetra
+      if (user.role === 'obstetra' && user.obstetra && (data.cop !== undefined || data.especialidad !== undefined)) {
+        await tx.obstetra.update({
+          where: { id: user.obstetra.id },
+          data: {
+            ...(data.cop !== undefined ? { cop: data.cop } : {}),
+            ...(data.especialidad !== undefined ? { especialidad: data.especialidad } : {}),
+          },
+        });
+      }
+      return updated;
+    });
+  }
+
+  /** Establece una nueva contraseña para un usuario (hash bcrypt; nunca se devuelve). */
+  async resetUserPassword(userId: string, newPassword: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Usuario no encontrado');
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
+    });
+    return { ok: true };
+  }
+
+  /**
+   * Baja lógica de un usuario (soft delete): marca deletedAt + isActive=false.
+   * Guardas: no permite auto-eliminarse ni eliminar al último admin activo.
+   */
+  async deleteUser(userId: string, requesterId?: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Usuario no encontrado');
+    }
+    if (requesterId && requesterId === userId) {
+      throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'No puedes eliminar tu propia cuenta.');
+    }
+    if (user.role === 'admin') {
+      const activeAdmins = await prisma.user.count({
+        where: { role: 'admin', isActive: true, deletedAt: null },
+      });
+      if (activeAdmins <= 1) {
+        throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'No se puede eliminar al último administrador activo.');
+      }
+    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false, deletedAt: new Date() },
+    });
+    return { ok: true };
   }
 
   // ── Establecimientos de salud (RF-10.02) ──

@@ -28,6 +28,30 @@ export class AdminController {
     return res.status(200).json(successResponse({ id: user.id, isActive: user.isActive }));
   }
 
+  async getUser(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const user = await adminService.getUserById(id);
+    return res.status(200).json(successResponse(user));
+  }
+
+  async updateUser(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const user = await adminService.updateUser(id, req.body);
+    return res.status(200).json(successResponse(user));
+  }
+
+  async resetUserPassword(req: Request, res: Response) {
+    const id = req.params.id as string;
+    await adminService.resetUserPassword(id, req.body.newPassword);
+    return res.status(200).json(successResponse({ ok: true }));
+  }
+
+  async deleteUser(req: Request, res: Response) {
+    const id = req.params.id as string;
+    await adminService.deleteUser(id, req.user?.userId);
+    return res.status(200).json(successResponse({ ok: true }));
+  }
+
   async listConfigs(req: Request, res: Response) {
     const configs = await adminService.listConfigs();
     return res.status(200).json(successResponse(configs));

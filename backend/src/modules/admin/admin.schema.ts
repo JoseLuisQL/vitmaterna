@@ -85,6 +85,29 @@ export const createUserSchema = {
   }),
 };
 
+export const updateUserSchema = {
+  params: z.object({ id: z.string().uuid() }),
+  body: z.object({
+    firstName: z.string().min(2).max(100).optional(),
+    lastName: z.string().min(2).max(100).optional(),
+    phone: z.string().regex(/^(?:\+?51|0051)?\s?\d{9}$/, 'El teléfono debe tener 9 dígitos').optional().or(z.literal('')),
+    email: z.string().email('Correo inválido').optional().or(z.literal('')),
+    cop: z.string().optional(),
+    especialidad: z.string().optional(),
+  }),
+};
+
+export const resetUserPasswordSchema = {
+  params: z.object({ id: z.string().uuid() }),
+  body: z.object({
+    newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  }),
+};
+
+export const deleteUserSchema = {
+  params: z.object({ id: z.string().uuid() }),
+};
+
 // ── Establecimientos de salud (RF-10.02) ──
 
 const facilityBody = z.object({

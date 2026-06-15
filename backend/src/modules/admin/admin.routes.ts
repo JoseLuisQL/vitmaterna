@@ -8,6 +8,9 @@ import {
   updateEducationSchema,
   approveUserSchema,
   createUserSchema,
+  updateUserSchema,
+  resetUserPasswordSchema,
+  deleteUserSchema,
   createFacilitySchema,
   updateFacilitySchema,
   deleteFacilitySchema,
@@ -43,6 +46,30 @@ adminRoutes.put(
   '/users/:id/toggle-active',
   validate(approveUserSchema),
   adminController.toggleUserActive
+);
+
+adminRoutes.get(
+  '/users/:id',
+  validate(approveUserSchema),
+  adminController.getUser
+);
+
+adminRoutes.put(
+  '/users/:id',
+  validate(updateUserSchema),
+  adminController.updateUser
+);
+
+adminRoutes.post(
+  '/users/:id/reset-password',
+  validate(resetUserPasswordSchema),
+  adminController.resetUserPassword
+);
+
+adminRoutes.delete(
+  '/users/:id',
+  validate(deleteUserSchema),
+  adminController.deleteUser
 );
 
 // System Config
