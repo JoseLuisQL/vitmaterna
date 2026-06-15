@@ -39,6 +39,15 @@ function routeForNotification(role: string | undefined, data: Record<string, any
     if (role === 'gestante') return '/(gestante)/(tabs)/tratamiento';
   }
 
+  // Contenido educativo recomendado → abrir el artículo (o la sección Educación).
+  if (tipo === 'educacion') {
+    if (role === 'gestante') {
+      return data?.contentId
+        ? `/(gestante)/educacion/${data.contentId}`
+        : '/(gestante)/(tabs)/educacion';
+    }
+  }
+
   // Por defecto, abrir la bandeja de notificaciones del rol.
   if (role === 'obstetra') return '/(obstetra)/notificaciones';
   if (role === 'gestante') return '/(gestante)/notificaciones';

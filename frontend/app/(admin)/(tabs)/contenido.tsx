@@ -86,8 +86,9 @@ export default function ContenidoScreen(): React.ReactElement {
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
+  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       titulo: '', contenido: '', tipo: 'articulo', categoria: 'general',
@@ -122,26 +123,43 @@ export default function ContenidoScreen(): React.ReactElement {
     setModalVisible(true);
   };
 
+  // Sube una imagen de la galería y devuelve su ruta /uploads/..., o null.
+  const uploadImageFromGallery = async (): Promise<string | null> => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      toast.info('Permiso requerido', 'Permite el acceso a tus fotos para subir la imagen.');
+      return null;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6, base64: true });
+    if (result.canceled || !result.assets?.[0]?.base64) return null;
+    const asset = result.assets[0];
+    const res = await api.post('/chat/upload', { base64: asset.base64, mimeType: asset.mimeType || 'image/jpeg' });
+    return res.data?.data?.mediaUrl || null;
+  };
+
   const pickThumbnail = async () => {
     if (uploadingThumb) return;
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        toast.info('Permiso requerido', 'Permite el acceso a tus fotos para subir una portada.');
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6, base64: true });
-      if (result.canceled || !result.assets?.[0]?.base64) return;
       setUploadingThumb(true);
-      const asset = result.assets[0];
-      const res = await api.post('/chat/upload', { base64: asset.base64, mimeType: asset.mimeType || 'image/jpeg' });
-      const url = res.data?.data?.mediaUrl;
-      if (!url) throw new Error('upload failed');
-      setThumbUrl(url);
+      const url = await uploadImageFromGallery();
+      if (url) setThumbUrl(url);
     } catch {
       toast.error('No se pudo subir', 'Inténtalo nuevamente con otra imagen.');
     } finally {
       setUploadingThumb(false);
+    }
+  };
+
+  const pickMediaImage = async () => {
+    if (uploadingMedia) return;
+    try {
+      setUploadingMedia(true);
+      const url = await uploadImageFromGallery();
+      if (url) setValue('mediaUrl', url);
+    } catch {
+      toast.error('No se pudo subir', 'Inténtalo nuevamente con otra imagen.');
+    } finally {
+      setUploadingMedia(false);
     }
   };
 
@@ -364,6 +382,13 @@ export default function ContenidoScreen(): React.ReactElement {
         </View>
 
         <AppInput name="mediaUrl" control={control} label="URL del recurso (opcional)" placeholder="https://… (video, audio, infografía)" error={errors.mediaUrl?.message} themeColor={BRAND} />
+        <TouchableOpacity style={styles.uploadMediaBtn} onPress={pickMediaImage} activeOpacity={0.7} disabled={uploadingMedia}>
+          {uploadingMedia ? <ActivityIndicator size="small" color={BRAND} /> : <ImagePlus size={16} color={BRAND} />}
+          <Text style={styles.uploadMediaText}>{uploadingMedia ? 'Subiendo…' : 'Subir imagen (infografía)'}</Text>
+        </TouchableOpacity>
+        {watch('mediaUrl') && (watch('mediaUrl') || '').startsWith('/uploads/') ? (
+          <Image source={{ uri: resolveMediaUrl(watch('mediaUrl')) || undefined }} style={styles.mediaPreview} resizeMode="cover" />
+        ) : null}
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
@@ -436,4 +461,7 @@ const styles = StyleSheet.create({
   thumbPlaceholderText: { ...typography.caption, color: commonColors.textTertiary },
   thumbRemove: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: spacing.sm },
   thumbRemoveText: { ...typography.caption, color: semanticColors.danger },
+  uploadMediaBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: spacing.sm },
+  uploadMediaText: { ...typography.caption, color: BRAND, fontWeight: '600' },
+  mediaPreview: { width: '100%', height: 140, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, marginTop: spacing.sm },
 });
