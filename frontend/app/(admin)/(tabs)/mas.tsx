@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Building2, Settings, ShieldAlert, LogOut, ChevronRight, Bell, TrendingUp, Baby, Calendar } from 'lucide-react-native';
 import { useAuthStore } from '../../../src/store/authStore';
-import { useToast } from '../../../src/components/ui';
+import { useToast, ThemeToggle } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -132,6 +132,12 @@ export default function AdminMasScreen(): React.ReactElement {
             subtitle="Registro de acciones y respaldo de datos"
             onPress={() => router.push('/(admin)/(tabs)/auditoria')}
           />
+        </View>
+
+        {/* Apariencia */}
+        <Text style={styles.sectionTitle}>Apariencia</Text>
+        <View style={[styles.menuCard, { padding: spacing.sm2 }]}>
+          <ThemeToggle accentColor={BRAND} />
         </View>
 
         {/* Cuenta */}

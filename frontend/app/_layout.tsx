@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from '../src/store/authStore';
 import { ToastProvider } from '../src/components/ui/ToastProvider';
 import { MobileFrame } from '../src/components/ui/MobileFrame';
+import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
@@ -54,17 +55,25 @@ export default function RootLayout(): React.ReactElement | null {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <StatusBar style="dark" />
-          <MobileFrame>
-            <AppNavigator />
-          </MobileFrame>
-          <OfflineBanner />
-        </ToastProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <ThemedStatusBar />
+            <MobileFrame>
+              <AppNavigator />
+            </MobileFrame>
+            <OfflineBanner />
+          </ToastProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
+}
+
+/** StatusBar que se adapta al tema activo. */
+function ThemedStatusBar(): React.ReactElement {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
 }
 
 /**

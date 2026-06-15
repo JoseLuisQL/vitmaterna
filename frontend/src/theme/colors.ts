@@ -39,6 +39,34 @@ export const commonColors = {
   black: '#1E2A3A',
 } as const;
 
+/**
+ * Neutros en MODO OSCURO. Mismas claves que commonColors para poder
+ * intercambiarlos vía tema. Fondo azul-grafito profundo, superficies elevadas
+ * y texto claro, manteniendo el carácter "ice-blue" de la marca.
+ */
+export const commonColorsDark = {
+  background: '#0E1420', // fondo principal (grafito azulado)
+  backgroundWarm: '#16111F', // gestante (lila muy oscuro)
+  backgroundCool: '#0E1726', // obstetra (azul muy oscuro)
+  surface: '#182230', // tarjetas y paneles flotantes
+  surfaceAlt: '#1F2A3A', // superficie secundaria / inputs
+  surfaceHover: '#26354A', // hover/pressed
+
+  text: '#EAF0FA', // texto principal (casi blanco azulado)
+  textSecondary: '#A6B4CC', // texto secundario
+  textTertiary: '#6C7C99', // placeholders y meta
+
+  border: '#26303F', // borde suave
+  borderLight: '#1C2533', // divisor casi invisible
+  borderStrong: '#3A4860', // borde con presencia
+
+  disabled: '#3A4659',
+  overlay: 'rgba(0, 0, 0, 0.55)', // dimmed detrás de modales
+  transparent: 'transparent',
+  white: '#FFFFFF',
+  black: '#0E1420',
+} as const;
+
 /** Acento del rol gestante (púrpura/violeta) */
 export const gestanteColors = {
   primary: '#7C3AED', // púrpura profundo

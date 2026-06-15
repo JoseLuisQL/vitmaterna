@@ -6,6 +6,7 @@ export { AppButton } from './AppButton';
 export { AppCard } from './AppCard';
 export { AppText } from './AppText';
 export { PressableScale } from './PressableScale';
+export { ThemeToggle } from './ThemeToggle';
 export { AppInput } from './AppInput';
 export { AppBadge } from './AppBadge';
 
