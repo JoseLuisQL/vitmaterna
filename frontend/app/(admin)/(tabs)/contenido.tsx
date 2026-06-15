@@ -5,13 +5,15 @@
  */
 import React, { useState } from 'react';
 import {
-  View, StyleSheet, Text, ScrollView, FlatList, TouchableOpacity, RefreshControl, Switch, TextInput,
+  View, StyleSheet, Text, ScrollView, FlatList, TouchableOpacity, RefreshControl, Switch, TextInput, Image, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Pencil, Trash2, BookOpen, Search, X } from 'lucide-react-native';
+import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus } from 'lucide-react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import * as ImagePicker from 'expo-image-picker';
+import api, { resolveMediaUrl } from '../../../src/services/api';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { AppModal } from '../../../src/components/ui/AppModal';
@@ -63,6 +65,7 @@ const schema = z.object({
   semanaInicio: z.string().optional(),
   semanaFin: z.string().optional(),
   mediaUrl: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
   duracionMin: z.string().optional(),
   orden: z.string().optional(),
   activo: z.boolean().optional(),
@@ -81,23 +84,27 @@ export default function ContenidoScreen(): React.ReactElement {
   const [editing, setEditing] = useState<EducationContent | null>(null);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       titulo: '', contenido: '', tipo: 'articulo', categoria: 'general',
-      trimestre: '', semanaInicio: '', semanaFin: '', mediaUrl: '', duracionMin: '', orden: '', activo: true,
+      trimestre: '', semanaInicio: '', semanaFin: '', mediaUrl: '', thumbnailUrl: '', duracionMin: '', orden: '', activo: true,
     },
   });
 
   const openCreate = () => {
     setEditing(null);
-    reset({ titulo: '', contenido: '', tipo: 'articulo', categoria: 'general', trimestre: '', semanaInicio: '', semanaFin: '', mediaUrl: '', duracionMin: '', orden: '', activo: true });
+    setThumbUrl(null);
+    reset({ titulo: '', contenido: '', tipo: 'articulo', categoria: 'general', trimestre: '', semanaInicio: '', semanaFin: '', mediaUrl: '', thumbnailUrl: '', duracionMin: '', orden: '', activo: true });
     setModalVisible(true);
   };
 
   const openEdit = (item: EducationContent) => {
     setEditing(item);
+    setThumbUrl(item.thumbnailUrl || null);
     reset({
       titulo: item.titulo,
       contenido: item.contenido,
@@ -107,11 +114,35 @@ export default function ContenidoScreen(): React.ReactElement {
       semanaInicio: item.semanaInicio ? String(item.semanaInicio) : '',
       semanaFin: item.semanaFin ? String(item.semanaFin) : '',
       mediaUrl: item.mediaUrl || '',
+      thumbnailUrl: item.thumbnailUrl || '',
       duracionMin: item.duracionMin ? String(item.duracionMin) : '',
       orden: item.orden ? String(item.orden) : '',
       activo: item.activo,
     });
     setModalVisible(true);
+  };
+
+  const pickThumbnail = async () => {
+    if (uploadingThumb) return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        toast.info('Permiso requerido', 'Permite el acceso a tus fotos para subir una portada.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6, base64: true });
+      if (result.canceled || !result.assets?.[0]?.base64) return;
+      setUploadingThumb(true);
+      const asset = result.assets[0];
+      const res = await api.post('/chat/upload', { base64: asset.base64, mimeType: asset.mimeType || 'image/jpeg' });
+      const url = res.data?.data?.mediaUrl;
+      if (!url) throw new Error('upload failed');
+      setThumbUrl(url);
+    } catch {
+      toast.error('No se pudo subir', 'Inténtalo nuevamente con otra imagen.');
+    } finally {
+      setUploadingThumb(false);
+    }
   };
 
   const onSubmit = (data: FormValues) => {
@@ -124,6 +155,7 @@ export default function ContenidoScreen(): React.ReactElement {
       semanaInicio: data.semanaInicio ? parseInt(data.semanaInicio, 10) : null,
       semanaFin: data.semanaFin ? parseInt(data.semanaFin, 10) : null,
       mediaUrl: data.mediaUrl || null,
+      thumbnailUrl: thumbUrl || null,
       duracionMin: data.duracionMin ? parseInt(data.duracionMin, 10) : null,
       orden: data.orden ? parseInt(data.orden, 10) : 0,
       activo: data.activo ?? true,
@@ -274,6 +306,27 @@ export default function ContenidoScreen(): React.ReactElement {
           </>
         }
       >
+        {/* Portada (thumbnail) */}
+        <Text style={styles.label}>Imagen de portada (opcional)</Text>
+        <TouchableOpacity style={styles.thumbPicker} onPress={pickThumbnail} activeOpacity={0.8} disabled={uploadingThumb}>
+          {uploadingThumb ? (
+            <ActivityIndicator color={BRAND} />
+          ) : thumbUrl ? (
+            <Image source={{ uri: resolveMediaUrl(thumbUrl) || undefined }} style={styles.thumbPreview} resizeMode="cover" />
+          ) : (
+            <View style={styles.thumbPlaceholder}>
+              <ImagePlus size={26} color={commonColors.textTertiary} />
+              <Text style={styles.thumbPlaceholderText}>Subir portada</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        {thumbUrl && !uploadingThumb ? (
+          <TouchableOpacity onPress={() => setThumbUrl(null)} style={styles.thumbRemove}>
+            <X size={14} color={semanticColors.danger} />
+            <Text style={styles.thumbRemoveText}>Quitar portada</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <AppInput name="titulo" control={control} label="Título" placeholder="Ej. Cuidados en el primer trimestre" error={errors.titulo?.message} themeColor={BRAND} />
         <AppInput name="contenido" control={control} label="Contenido" placeholder="Texto del artículo o descripción" error={errors.contenido?.message} themeColor={BRAND} multiline numberOfLines={4} containerStyle={{ minHeight: 110 }} />
 
@@ -377,4 +430,10 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
   switchLabel: { ...typography.bodyMedium, color: commonColors.text, fontWeight: '600' },
   switchHint: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  thumbPicker: { height: 140, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  thumbPreview: { width: '100%', height: '100%' },
+  thumbPlaceholder: { alignItems: 'center', gap: 6 },
+  thumbPlaceholderText: { ...typography.caption, color: commonColors.textTertiary },
+  thumbRemove: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: spacing.sm },
+  thumbRemoveText: { ...typography.caption, color: semanticColors.danger },
 });

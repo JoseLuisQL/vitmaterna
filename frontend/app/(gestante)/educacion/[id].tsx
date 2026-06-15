@@ -6,7 +6,7 @@
  * abrir recurso). Marca el artículo como leído al abrirlo.
  */
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, StatusBar, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -56,6 +56,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
   const TypeIcon = ty.icon;
   const fav = isFavorite(item.id);
   const media = resolveMediaUrl(item.mediaUrl);
+  const thumb = resolveMediaUrl(item.thumbnailUrl);
   const isPlayable = item.tipo === 'video' || item.tipo === 'audio';
 
   return (
@@ -107,6 +108,11 @@ export default function EducacionDetalleScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Portada */}
+        {thumb ? (
+          <Image source={{ uri: thumb }} style={styles.cover} resizeMode="cover" accessibilityLabel="Portada del artículo" />
+        ) : null}
+
         {/* Recurso multimedia */}
         {media ? (
           <TouchableOpacity style={styles.mediaCard} onPress={() => Linking.openURL(media)} activeOpacity={0.85}>
@@ -143,6 +149,7 @@ const styles = StyleSheet.create({
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 5 },
   metaChipText: { ...typography.caption, color: commonColors.white, fontWeight: '600' },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  cover: { width: '100%', height: 180, borderRadius: borderRadius.xl, backgroundColor: commonColors.surfaceAlt, marginBottom: spacing.lg },
   mediaCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.xl,

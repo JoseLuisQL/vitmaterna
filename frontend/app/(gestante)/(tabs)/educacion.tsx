@@ -11,7 +11,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, TextInput,
-  Linking, StatusBar, FlatList,
+  Linking, StatusBar, FlatList, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
+import { resolveMediaUrl } from '../../../src/services/api';
 import { useEducation, EducationContentItem } from '../../../src/services/api-queries';
 import { useEducationProgress } from '../../../src/hooks/useEducationProgress';
 import { categoryMeta, typeMeta, readingTime, CATEGORY_META } from '../../../src/utils/educationMeta';
@@ -116,11 +117,16 @@ function ContentCard({ item, leido, fav, onPress, onToggleFav }: {
   const ty = typeMeta(item.tipo);
   const CatIcon = cat.icon;
   const TypeIcon = ty.icon;
+  const thumb = resolveMediaUrl(item.thumbnailUrl);
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={item.titulo}>
-      <View style={[styles.cardIcon, { backgroundColor: cat.bg }]}>
-        <CatIcon size={22} color={cat.color} />
-      </View>
+      {thumb ? (
+        <Image source={{ uri: thumb }} style={styles.cardThumb} resizeMode="cover" />
+      ) : (
+        <View style={[styles.cardIcon, { backgroundColor: cat.bg }]}>
+          <CatIcon size={22} color={cat.color} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
         <View style={styles.cardTopRow}>
           <Text style={[styles.cardCategory, { color: cat.color }]} numberOfLines={1}>{cat.label}</Text>
@@ -362,6 +368,7 @@ const styles = StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border,
   },
   cardIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  cardThumb: { width: 56, height: 56, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   cardCategory: { ...typography.overline, textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
   cardTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, marginTop: 2 },

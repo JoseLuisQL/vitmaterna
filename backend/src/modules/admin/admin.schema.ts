@@ -19,6 +19,16 @@ export const updateConfigSchema = {
   }),
 };
 
+// Acepta una URL absoluta (http/https) o una ruta relativa subida al servidor
+// (p. ej. /uploads/chat/archivo.jpg desde el endpoint de subida de imágenes).
+const urlOrUploadPath = z
+  .string()
+  .refine((v) => /^https?:\/\//.test(v) || v.startsWith('/uploads/'), {
+    message: 'Debe ser una URL válida o un archivo subido',
+  })
+  .optional()
+  .nullable();
+
 const educationBody = z.object({
   titulo: z.string().min(1),
   contenido: z.string().min(1),
@@ -28,8 +38,8 @@ const educationBody = z.object({
   semanaInicio: z.number().int().min(1).max(42).optional().nullable(),
   semanaFin: z.number().int().min(1).max(42).optional().nullable(),
   idioma: z.string().default('es'),
-  mediaUrl: z.string().url().optional().nullable(),
-  thumbnailUrl: z.string().url().optional().nullable(),
+  mediaUrl: urlOrUploadPath,
+  thumbnailUrl: urlOrUploadPath,
   duracionMin: z.number().int().optional().nullable(),
   orden: z.number().int().default(0),
   activo: z.boolean().default(true),
