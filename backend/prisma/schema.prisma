@@ -742,6 +742,7 @@ model EducationalContent {
   duracionMin  Int?               @map("duracion_min")
   orden        Int                @default(0)
   activo       Boolean            @default(true)
+  viewsCount   Int                @default(0) @map("views_count")
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
 

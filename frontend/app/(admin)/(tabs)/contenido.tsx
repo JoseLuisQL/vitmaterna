@@ -8,7 +8,7 @@ import {
   View, StyleSheet, Text, ScrollView, FlatList, TouchableOpacity, RefreshControl, Switch, TextInput, Image, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus } from 'lucide-react-native';
+import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus, Eye, TrendingUp } from 'lucide-react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -217,6 +217,10 @@ export default function ContenidoScreen(): React.ReactElement {
           <View style={styles.tag}><Text style={styles.tagText}>{TIPO_LABEL[item.tipo || ''] || item.tipo || '—'}</Text></View>
           <View style={styles.tag}><Text style={styles.tagText}>{CATEGORIA_LABEL[item.categoria || ''] || 'General'}</Text></View>
           {item.trimestre ? <View style={styles.tag}><Text style={styles.tagText}>T{item.trimestre}</Text></View> : null}
+          <View style={styles.viewsTag}>
+            <Eye size={11} color={commonColors.textSecondary} />
+            <Text style={styles.tagText}>{item.viewsCount ?? 0}</Text>
+          </View>
           {!item.activo ? <View style={[styles.tag, styles.tagInactive]}><Text style={styles.tagInactiveText}>Inactivo</Text></View> : null}
         </View>
       </View>
@@ -246,8 +250,37 @@ export default function ContenidoScreen(): React.ReactElement {
 
   if (isLoading) return <LoadingScreen message="Cargando contenido..." />;
 
+  const totalViews = React.useMemo(() => items.reduce((a, i) => a + (i.viewsCount || 0), 0), [items]);
+  const topRead = React.useMemo(
+    () => [...items].filter((i) => (i.viewsCount || 0) > 0).sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0)).slice(0, 3),
+    [items],
+  );
+
   const renderListHeader = () => (
     <View>
+      {/* Resumen de lecturas */}
+      <View style={styles.statsCard}>
+        <View style={styles.statsHeaderRow}>
+          <TrendingUp size={16} color={BRAND} />
+          <Text style={styles.statsTitle}>Estadísticas de lectura</Text>
+          <Text style={styles.statsTotal}>{totalViews} vistas</Text>
+        </View>
+        {topRead.length > 0 ? (
+          topRead.map((it, i) => (
+            <View key={it.id} style={styles.topRow}>
+              <Text style={styles.topRank}>{i + 1}</Text>
+              <Text style={styles.topTitle} numberOfLines={1}>{it.titulo}</Text>
+              <View style={styles.viewsTag}>
+                <Eye size={11} color={commonColors.textSecondary} />
+                <Text style={styles.tagText}>{it.viewsCount}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.statsEmpty}>Aún no hay lecturas registradas.</Text>
+        )}
+      </View>
+
       <View style={styles.searchBox}>
         <Search size={18} color={commonColors.textTertiary} />
         <TextInput
@@ -464,4 +497,13 @@ const styles = StyleSheet.create({
   uploadMediaBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: spacing.sm },
   uploadMediaText: { ...typography.caption, color: BRAND, fontWeight: '600' },
   mediaPreview: { width: '100%', height: 140, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, marginTop: spacing.sm },
+  viewsTag: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.sm, paddingHorizontal: 8, paddingVertical: 2 },
+  statsCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: commonColors.border },
+  statsHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
+  statsTitle: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, flex: 1 },
+  statsTotal: { ...typography.caption, fontWeight: '700', color: BRAND },
+  statsEmpty: { ...typography.caption, color: commonColors.textTertiary },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 },
+  topRank: { ...typography.caption, fontWeight: '800', color: BRAND, width: 16 },
+  topTitle: { flex: 1, ...typography.caption, color: commonColors.text },
 });

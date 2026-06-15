@@ -531,6 +531,15 @@ export const useEducationCatalog = () =>
     },
   });
 
+/** Registra una vista de contenido educativo (best-effort, no bloquea la UI). */
+export const registerContentView = async (contentId: string): Promise<void> => {
+  try {
+    await api.post(`/education/${contentId}/view`);
+  } catch {
+    /* no crítico */
+  }
+};
+
 /** El obstetra recomienda un contenido educativo a una gestante (vía chat + push). */
 export const useRecommendContent = () =>
   useMutation({

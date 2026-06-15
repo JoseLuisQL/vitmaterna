@@ -68,6 +68,7 @@ export interface EducationContent {
   duracionMin?: number | null;
   orden: number;
   activo: boolean;
+  viewsCount?: number;
 }
 
 export const fetchEducationContent = async (): Promise<EducationContent[]> => {

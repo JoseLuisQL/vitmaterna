@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Heart, Clock, ExternalLink, PlayCircle, CheckCircle2 } from 'lucide-react-native';
 import { resolveMediaUrl } from '../../../src/services/api';
-import { useEducation } from '../../../src/services/api-queries';
+import { useEducation, registerContentView } from '../../../src/services/api-queries';
 import { useEducationProgress } from '../../../src/hooks/useEducationProgress';
 import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
 import { gestanteColors, commonColors } from '../../../src/theme/colors';
@@ -34,7 +34,11 @@ export default function EducacionDetalleScreen(): React.ReactElement {
   );
 
   useEffect(() => {
-    if (item?.id) markRead(item.id);
+    if (item?.id) {
+      markRead(item.id);
+      // Registra la vista en el backend (para estadísticas del admin), una vez.
+      registerContentView(item.id);
+    }
   }, [item?.id, markRead]);
 
   if (!item) {

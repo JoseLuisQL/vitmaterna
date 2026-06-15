@@ -59,3 +59,17 @@ export async function getActiveContentCatalog() {
     orderBy: [{ orden: 'asc' }, { createdAt: 'desc' }],
   });
 }
+
+/** Incrementa el contador de vistas de un contenido (cuando una gestante lo abre). */
+export async function registerContentView(contentId: string) {
+  const exists = await prisma.educationalContent.findUnique({ where: { id: contentId } });
+  if (!exists) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Contenido educativo no encontrado');
+  }
+  const updated = await prisma.educationalContent.update({
+    where: { id: contentId },
+    data: { viewsCount: { increment: 1 } },
+    select: { id: true, viewsCount: true },
+  });
+  return updated;
+}

@@ -17,3 +17,10 @@ export async function getCatalog(_req: Request, res: Response): Promise<void> {
   const data = await educationService.getActiveContentCatalog();
   res.json(successResponse(data));
 }
+
+/** Registra una vista del contenido (cuando la gestante abre el artículo). */
+export async function registerView(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const data = await educationService.registerContentView(id as string);
+  res.json(successResponse(data));
+}

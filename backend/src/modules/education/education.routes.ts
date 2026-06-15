@@ -20,5 +20,6 @@ router.use(authenticate);
  */
 router.get('/', educationController.getEducation);
 router.get('/catalog', educationController.getCatalog);
+router.post('/:id/view', educationController.registerView);
 
 export default router;
