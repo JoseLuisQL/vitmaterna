@@ -115,9 +115,12 @@ function riskTextColor(riskLevel?: string): string {
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function PatientProfileScreen(): React.ReactElement {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('datos');
+  // Permite abrir el perfil directamente en una pestaña (p. ej. desde el flujo
+  // "Atender cita" hacia Laboratorios o Tratamiento).
+  const VALID_TABS = ['datos', 'controles', 'tratamiento', 'laboratorio', 'vacunas', 'visitas'];
+  const [activeTab, setActiveTab] = useState(tab && VALID_TABS.includes(tab) ? tab : 'datos');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
 

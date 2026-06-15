@@ -29,7 +29,7 @@ const controlSchema = z.object({
 type ControlFormData = z.infer<typeof controlSchema>;
 
 export default function NuevoControlScreen(): React.ReactElement {
-  const { patientId } = useLocalSearchParams<{ patientId: string }>();
+  const { patientId, appointmentId } = useLocalSearchParams<{ patientId: string; appointmentId?: string }>();
   const router = useRouter();
   const { mutate: createControl, isPending } = useCreateControl();
 
@@ -40,10 +40,15 @@ export default function NuevoControlScreen(): React.ReactElement {
 
   const onSubmit = (data: ControlFormData) => {
     if (!patientId) return Alert.alert('Error', 'Falta el ID de la paciente.');
-    createControl({ patientId, ...data, date: new Date().toISOString() }, {
-      onSuccess: () => Alert.alert('Éxito', 'Control registrado correctamente.', [{ text: 'OK', onPress: () => router.back() }]),
-      onError: () => Alert.alert('Error', 'No se pudo registrar el control. Intenta de nuevo.')
-    });
+    // Si el control nace de una cita (flujo "Atender cita"), se liga al
+    // appointmentId para que la cita quede con su evidencia clínica.
+    createControl(
+      { patientId, ...(appointmentId ? { appointmentId } : {}), ...data, date: new Date().toISOString() },
+      {
+        onSuccess: () => Alert.alert('Éxito', 'Control registrado correctamente.', [{ text: 'OK', onPress: () => router.back() }]),
+        onError: () => Alert.alert('Error', 'No se pudo registrar el control. Intenta de nuevo.'),
+      },
+    );
   };
 
   return (

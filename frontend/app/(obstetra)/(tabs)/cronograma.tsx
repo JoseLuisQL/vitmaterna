@@ -128,6 +128,14 @@ export default function CronogramaScreen(): React.ReactElement {
       updateStatus({ id, status: newStatus });
     };
 
+    // "Atender" abre el flujo encadenado de registro clínico de la cita.
+    const handleAtender = () => {
+      router.push({
+        pathname: '/(obstetra)/atender/[appointmentId]',
+        params: { appointmentId: item.id, gestanteId: item.gestanteId || '', patientName: item.patientName || '' },
+      } as any);
+    };
+
     const isRescheduleRequest = item.status === 'solicitud_reprogramacion';
     const showActions = item.status === 'programada' || item.status === 'confirmada';
     const esDomiciliaria = item.modalidad === 'domiciliaria';
@@ -243,9 +251,12 @@ export default function CronogramaScreen(): React.ReactElement {
             <View style={styles.actionButtonsContainer}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.btnAsistio]}
-                onPress={() => handleStatusUpdate(item.id, 'asistida')}
+                onPress={handleAtender}
+                accessibilityRole="button"
+                accessibilityLabel={`Atender a ${item.patientName || 'la paciente'}`}
+                accessibilityHint="Abre el registro clínico de la cita: control, laboratorios, tamizajes y tratamiento"
               >
-                <Text style={styles.btnAsistioText}>Asistió</Text>
+                <Text style={styles.btnAsistioText}>Atender</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
