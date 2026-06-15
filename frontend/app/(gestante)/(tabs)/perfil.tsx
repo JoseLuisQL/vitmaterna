@@ -3,7 +3,7 @@
  * Displays gestante profile menu and allows editing personal/clinical data (FUM, dates).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, ActivityIndicator, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User, Bell, HelpCircle, LogOut, ChevronRight, Home, CloudOff, BookOpen
@@ -103,7 +103,7 @@ export default function PerfilScreen(): React.ReactElement {
 
   const openEditModal = () => {
     if (!profileData) {
-      return Alert.alert('Cargando', 'Los datos del perfil se están descargando. Intenta en un momento.');
+      return toast.info('Cargando', 'Los datos del perfil se están descargando. Intenta en un momento.');
     }
     const { user, profile } = profileData;
     setFirstName(user?.firstName || '');
@@ -123,24 +123,24 @@ export default function PerfilScreen(): React.ReactElement {
 
   const handleSave = () => {
     if (!firstName || !lastName) {
-      return Alert.alert('Error', 'Nombres y Apellidos son campos obligatorios.');
+      return toast.error('Datos incompletos', 'Nombres y Apellidos son obligatorios.');
     }
     
     if (!fechaNacimiento) {
-      return Alert.alert('Error', 'La fecha de nacimiento es obligatoria.');
+      return toast.error('Datos incompletos', 'La fecha de nacimiento es obligatoria.');
     }
 
     // Date formats (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(fechaNacimiento)) {
-      return Alert.alert('Error', 'La fecha de nacimiento debe estar en formato YYYY-MM-DD.');
+      return toast.error('Formato inválido', 'La fecha de nacimiento debe estar en formato AAAA-MM-DD.');
     }
     if (fum && !dateRegex.test(fum)) {
-      return Alert.alert('Error', 'La fecha FUM debe estar en formato YYYY-MM-DD.');
+      return toast.error('Formato inválido', 'La fecha FUM debe estar en formato AAAA-MM-DD.');
     }
 
     if (!profileData?.profile?.id) {
-      return Alert.alert('Error', 'No se ha podido localizar el identificador de tu perfil clínico.');
+      return toast.error('Error', 'No se pudo localizar el identificador de tu perfil clínico.');
     }
 
     updatePatientMutation.mutate({
