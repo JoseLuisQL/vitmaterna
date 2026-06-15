@@ -315,6 +315,83 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
 };
 
 /**
+ * Recomienda un contenido educativo a una gestante concreta. Crea (o reutiliza)
+ * la conversación obstetra-gestante y envía un mensaje con el título del recurso
+ * y una nota opcional, más notificación push si la gestante tiene token.
+ */
+export const recommendContent = async (
+  userId: string,
+  gestanteId: string,
+  contentId: string,
+  nota?: string,
+) => {
+  const obstetra = await prisma.obstetra.findUnique({ where: { userId } });
+  if (!obstetra) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Perfil de obstetra no encontrado');
+  }
+
+  const gestante = await prisma.gestante.findUnique({
+    where: { id: gestanteId },
+    include: { user: true },
+  });
+  if (!gestante) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
+  }
+
+  const content = await prisma.educationalContent.findUnique({ where: { id: contentId } });
+  if (!content) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Contenido educativo no encontrado');
+  }
+
+  let conversation = await prisma.conversation.findFirst({
+    where: { gestanteId: gestante.id, obstetraId: obstetra.id },
+  });
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: { gestanteId: gestante.id, obstetraId: obstetra.id },
+    });
+  }
+
+  const texto = `📘 Tu obstetra te recomienda leer: "${content.titulo}"${nota ? `\n\n${nota}` : ''}\n\nEntra a la sección Educación de la app para verlo.`;
+
+  const message = await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      senderId: userId,
+      contenido: texto,
+      tipo: 'texto',
+    },
+    include: { sender: { select: { id: true, firstName: true, lastName: true, role: true } } },
+  });
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { ultimoMensaje: new Date() },
+  });
+
+  // Emite en tiempo real si la conversación está abierta.
+  try {
+    const { getIO } = await import('../../config/socketRegistry.js');
+    const io = getIO();
+    if (io) io.to(`conversation:${conversation.id}`).emit('receive_message', message);
+  } catch {
+    /* socket opcional */
+  }
+
+  const prefs = gestante.user?.notificationPreferences as Record<string, any> | null;
+  if (prefs?.expoPushToken) {
+    const { sendPushNotification } = await import('../notifications/notification.service.js');
+    await sendPushNotification(
+      [prefs.expoPushToken],
+      'Tu obstetra te recomienda un contenido',
+      content.titulo,
+      { conversationId: conversation.id, contentId: content.id, tipo: 'educacion' },
+    );
+  }
+
+  return { conversationId: conversation.id, messageId: message.id };
+};
+
+/**
  * Envía un mensaje masivo del obstetra a las gestantes que cumplan el filtro
  * (RF-9.03). Filtros opcionales: trimestre (1-3) y nivel de riesgo. El mensaje
  * se crea en la conversación de cada gestante (creándola si no existe) y se

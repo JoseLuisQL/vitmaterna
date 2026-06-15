@@ -25,6 +25,14 @@ export const broadcastSchema = {
   }),
 };
 
+export const recommendContentSchema = {
+  body: z.object({
+    gestanteId: z.string().uuid('gestanteId no válido'),
+    contentId: z.string().uuid('contentId no válido'),
+    nota: z.string().max(500).optional(),
+  }),
+};
+
 export const uploadImageSchema = {
   body: z.object({
     // Imagen en base64 (con o sin prefijo data:). Límite ~10MB acorde al body parser.

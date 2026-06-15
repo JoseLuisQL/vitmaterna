@@ -51,3 +51,11 @@ export async function getEducationalContentForGestante(userId: string) {
 
   return { currentTrimester, contents };
 }
+
+/** Devuelve todo el contenido activo, ordenado, para recomendación por el obstetra. */
+export async function getActiveContentCatalog() {
+  return prisma.educationalContent.findMany({
+    where: { activo: true },
+    orderBy: [{ orden: 'asc' }, { createdAt: 'desc' }],
+  });
+}

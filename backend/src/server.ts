@@ -31,6 +31,10 @@ async function bootstrap(): Promise<void> {
 
   setupChatSockets(io);
 
+  // Registrar la instancia para que servicios REST puedan emitir en tiempo real.
+  const { setIO } = await import('./config/socketRegistry.js');
+  setIO(io);
+
   // Start server
   const server = httpServer.listen(env.PORT, () => {
     logger.info(

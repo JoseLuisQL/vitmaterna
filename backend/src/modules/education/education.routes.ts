@@ -19,5 +19,6 @@ router.use(authenticate);
  *         description: Educational content list
  */
 router.get('/', educationController.getEducation);
+router.get('/catalog', educationController.getCatalog);
 
 export default router;

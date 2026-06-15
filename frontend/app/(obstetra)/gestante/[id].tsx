@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home
+  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home, BookOpen, Search, Send, X
 } from 'lucide-react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
@@ -22,7 +22,9 @@ import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
+  useEducationCatalog, useRecommendContent,
 } from '../../../src/services/api-queries';
+import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 import { confirmAction } from '../../../src/utils/confirm';
 
@@ -187,6 +189,33 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { mutate: deleteAntecedente } = useDeleteAntecedente();
   const { mutate: updateTreatment, isPending: isUpdatingTreat } = useUpdateTreatment();
   const { mutate: updatePatient, isPending: isSavingEmb } = useUpdatePatient();
+
+  // Recomendar contenido educativo a esta gestante
+  const [recommendVisible, setRecommendVisible] = useState(false);
+  const [recSearch, setRecSearch] = useState('');
+  const { data: catalog = [], isLoading: catalogLoading } = useEducationCatalog();
+  const { mutate: recommendContent, isPending: isRecommending } = useRecommendContent();
+
+  const recFiltered = React.useMemo(() => {
+    const q = recSearch.trim().toLowerCase();
+    if (!q) return catalog;
+    return catalog.filter((c) => `${c.titulo} ${c.contenido}`.toLowerCase().includes(q));
+  }, [catalog, recSearch]);
+
+  const handleRecommend = (contentId: string, titulo: string) => {
+    if (!patient || isRecommending) return;
+    recommendContent(
+      { gestanteId: patient.id, contentId },
+      {
+        onSuccess: () => {
+          toast.success('Contenido recomendado', `Se envió "${titulo}" a ${patient.firstName} por el chat.`);
+          setRecommendVisible(false);
+          setRecSearch('');
+        },
+        onError: () => toast.error('No se pudo recomendar', 'Inténtalo nuevamente.'),
+      },
+    );
+  };
 
   const openEmbModal = () => {
     if (!patient) return;
@@ -453,15 +482,25 @@ export default function PatientProfileScreen(): React.ReactElement {
               <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Historia Clínica</Text>
-            <TouchableOpacity
-              style={styles.iconBtnGlass}
-              onPress={() => router.push({
-                pathname: '/(obstetra)/gestante/tamizajes',
-                params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
-              } as any)}
-            >
-              <ClipboardList size={22} color={commonColors.white} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <TouchableOpacity
+                style={styles.iconBtnGlass}
+                onPress={() => setRecommendVisible(true)}
+                accessibilityLabel="Recomendar contenido educativo"
+                accessibilityRole="button"
+              >
+                <BookOpen size={22} color={commonColors.white} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconBtnGlass}
+                onPress={() => router.push({
+                  pathname: '/(obstetra)/gestante/tamizajes',
+                  params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
+                } as any)}
+              >
+                <ClipboardList size={22} color={commonColors.white} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.headerContent}>
@@ -1272,12 +1311,71 @@ export default function PatientProfileScreen(): React.ReactElement {
           </View>
         </View>
       </AppModal>
+
+      {/* MODAL: RECOMENDAR CONTENIDO EDUCATIVO */}
+      <AppModal
+        visible={recommendVisible}
+        onClose={() => setRecommendVisible(false)}
+        title="Recomendar contenido"
+        subtitle={`Envía un recurso educativo a ${patient.firstName} por el chat.`}
+      >
+        <View style={styles.recSearchBox}>
+          <Search size={18} color={commonColors.textTertiary} />
+          <TextInput
+            style={styles.recSearchInput}
+            value={recSearch}
+            onChangeText={setRecSearch}
+            placeholder="Buscar contenido…"
+            placeholderTextColor={commonColors.textTertiary}
+          />
+          {recSearch ? (
+            <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
+          ) : null}
+        </View>
+        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+          {catalogLoading ? (
+            <Text style={styles.recEmpty}>Cargando contenido…</Text>
+          ) : recFiltered.length === 0 ? (
+            <Text style={styles.recEmpty}>No hay contenido disponible.</Text>
+          ) : (
+            recFiltered.map((c) => {
+              const cm = categoryMeta(c.categoria);
+              const CIcon = cm.icon;
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.recRow}
+                  onPress={() => handleRecommend(c.id, c.titulo)}
+                  disabled={isRecommending}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.recIcon, { backgroundColor: cm.bg }]}>
+                    <CIcon size={18} color={cm.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.recTitle} numberOfLines={1}>{c.titulo}</Text>
+                    <Text style={styles.recMeta}>{cm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''}</Text>
+                  </View>
+                  <Send size={18} color={BRAND} />
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </ScrollView>
+      </AppModal>
     </View>
   );
 }
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  recSearchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44, marginBottom: spacing.md },
+  recSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
+  recEmpty: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl },
+  recRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm2, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  recIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  recTitle: { ...typography.bodyMedium, color: commonColors.text, fontWeight: '600' },
+  recMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   container: {
     flex: 1,
     backgroundColor: commonColors.background,

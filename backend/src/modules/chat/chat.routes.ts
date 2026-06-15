@@ -37,4 +37,11 @@ router.post(
   chatController.sendBroadcast
 );
 
+router.post(
+  '/recommend-content',
+  rbac('obstetra', 'admin'),
+  validate(chatSchema.recommendContentSchema),
+  chatController.recommendContent
+);
+
 export default router;

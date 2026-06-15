@@ -11,3 +11,9 @@ export async function getEducation(req: Request, res: Response): Promise<void> {
     successResponse(data)
   );
 }
+
+/** Catálogo de contenido activo (para que el obstetra elija qué recomendar). */
+export async function getCatalog(_req: Request, res: Response): Promise<void> {
+  const data = await educationService.getActiveContentCatalog();
+  res.json(successResponse(data));
+}

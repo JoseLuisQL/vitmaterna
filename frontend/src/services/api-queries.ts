@@ -521,6 +521,25 @@ export const fetchEducation = async (): Promise<EducationResponse> => {
 export const useEducation = () =>
   useQuery({ queryKey: ['education'], queryFn: fetchEducation });
 
+/** Lista de contenido educativo para que el obstetra elija qué recomendar. */
+export const useEducationCatalog = () =>
+  useQuery({
+    queryKey: ['educationCatalog'],
+    queryFn: async (): Promise<EducationContentItem[]> => {
+      const res = await api.get('/education/catalog');
+      return res.data?.data || [];
+    },
+  });
+
+/** El obstetra recomienda un contenido educativo a una gestante (vía chat + push). */
+export const useRecommendContent = () =>
+  useMutation({
+    mutationFn: async (vars: { gestanteId: string; contentId: string; nota?: string }) => {
+      const res = await api.post('/chat/recommend-content', vars);
+      return res.data;
+    },
+  });
+
 export const useMyProfile = () => useQuery({
   queryKey: ['myProfile'],
   queryFn: fetchMyProfile

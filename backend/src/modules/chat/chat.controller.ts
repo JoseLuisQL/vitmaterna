@@ -95,6 +95,17 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const recommendContent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { gestanteId, contentId, nota } = req.body;
+    const data = await chatService.recommendContent(userId, gestanteId, contentId, nota);
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendBroadcast = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
