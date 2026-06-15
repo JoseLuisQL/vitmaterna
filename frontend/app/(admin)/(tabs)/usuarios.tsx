@@ -10,12 +10,13 @@ import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, LogOut } from
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { Pencil, KeyRound, Trash2 } from 'lucide-react-native';
 import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
-import { useAdminUsers, useCreateUser, useToggleUserActive } from '../../../src/services/admin-queries';
+import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser } from '../../../src/services/admin-queries';
 import { confirmAction, notify } from '../../../src/utils/confirm';
 
 const BRAND = obstetraColors.primary;
@@ -72,8 +73,89 @@ export default function UsuariosScreen(): React.ReactElement {
   const { data: users, isLoading, refetch } = useAdminUsers();
   const createUserMutation = useCreateUser();
   const toggleUserActiveMutation = useToggleUserActive();
-  const { logout } = useAuthStore();
+  const updateUserMutation = useUpdateUser();
+  const resetPasswordMutation = useResetUserPassword();
+  const deleteUserMutation = useDeleteUser();
+  const toast = useToast();
+  const { logout, user: authUser } = useAuthStore();
   const router = useRouter();
+
+  // Edición / reset / baja
+  const [isEditVisible, setIsEditVisible] = useState(false);
+  const [isResetVisible, setIsResetVisible] = useState(false);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editCop, setEditCop] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  const openEdit = () => {
+    if (!selectedUser) return;
+    setEditFirstName(selectedUser.firstName || '');
+    setEditLastName(selectedUser.lastName || '');
+    setEditPhone(selectedUser.phone || '');
+    setEditEmail(selectedUser.email || '');
+    setEditCop(selectedUser.obstetra?.cop || '');
+    setIsEditVisible(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedUser) return;
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      return toast.error('Datos incompletos', 'Nombre y apellido son obligatorios.');
+    }
+    const data: Record<string, unknown> = {
+      firstName: editFirstName.trim(), lastName: editLastName.trim(),
+      phone: editPhone.trim(), email: editEmail.trim(),
+    };
+    if (selectedUser.role === 'obstetra' && editCop.trim()) data.cop = editCop.trim();
+    updateUserMutation.mutate({ id: selectedUser.id, data }, {
+      onSuccess: () => {
+        toast.success('Usuario actualizado', 'Los datos se guardaron correctamente.');
+        setSelectedUser({ ...selectedUser, ...data, obstetra: selectedUser.obstetra ? { ...selectedUser.obstetra, cop: data.cop ?? selectedUser.obstetra.cop } : undefined });
+        setIsEditVisible(false);
+      },
+      onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo actualizar.'),
+    });
+  };
+
+  const handleResetPassword = () => {
+    if (!selectedUser) return;
+    if (newPassword.trim().length < 8) {
+      return toast.error('Contraseña inválida', 'Debe tener al menos 8 caracteres.');
+    }
+    resetPasswordMutation.mutate({ id: selectedUser.id, newPassword: newPassword.trim() }, {
+      onSuccess: () => {
+        toast.success('Contraseña actualizada', `Nueva contraseña establecida para ${selectedUser.firstName}.`);
+        setNewPassword('');
+        setIsResetVisible(false);
+      },
+      onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo restablecer.'),
+    });
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    if (authUser?.id === selectedUser.id) {
+      return toast.error('Acción no permitida', 'No puedes eliminar tu propia cuenta.');
+    }
+    const ok = await confirmAction({
+      title: 'Eliminar usuario',
+      message: `¿Dar de baja a ${selectedUser.firstName} ${selectedUser.lastName}? No podrá iniciar sesión.`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteUserMutation.mutate(selectedUser.id, {
+      onSuccess: () => {
+        toast.success('Usuario dado de baja', 'La cuenta fue desactivada.');
+        setIsDetailModalVisible(false);
+        setSelectedUser(null);
+      },
+      onError: (e: any) => toast.error('No se pudo eliminar', e?.response?.data?.error?.message || 'Inténtalo nuevamente.'),
+    });
+  };
 
   const handleLogout = async () => {
     const ok = await confirmAction({
@@ -362,10 +444,76 @@ export default function UsuariosScreen(): React.ReactElement {
                   </Text>
                 )}
               </TouchableOpacity>
+
+              {/* Acciones de gestión */}
+              <View style={styles.actionsRow}>
+                <TouchableOpacity style={styles.actionBtn} onPress={openEdit} activeOpacity={0.8}>
+                  <Pencil size={18} color={BRAND} />
+                  <Text style={styles.actionBtnText}>Editar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => { setNewPassword(''); setIsResetVisible(true); }} activeOpacity={0.8}>
+                  <KeyRound size={18} color={BRAND} />
+                  <Text style={styles.actionBtnText}>Contraseña</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDanger]} onPress={handleDeleteUser} activeOpacity={0.8}>
+                  <Trash2 size={18} color={semanticColors.danger} />
+                  <Text style={[styles.actionBtnText, { color: semanticColors.danger }]}>Eliminar</Text>
+                </TouchableOpacity>
+              </View>
         </View>
       </AppModal>
     );
   };
+
+  // Modal: editar datos del usuario
+  const renderEditModal = () => (
+    <AppModal
+      visible={isEditVisible}
+      onClose={() => setIsEditVisible(false)}
+      title="Editar usuario"
+      footer={
+        <>
+          <AppButton title="Cancelar" variant="outline" onPress={() => setIsEditVisible(false)} style={{ flex: 1 }} disabled={updateUserMutation.isPending} />
+          <AppButton title="Guardar" onPress={handleSaveEdit} style={{ flex: 1 }} themeColor={BRAND} loading={updateUserMutation.isPending} />
+        </>
+      }
+    >
+      <View style={{ gap: 12 }}>
+        <View><Text style={styles.fieldLabel}>Nombres *</Text>
+          <TextInput style={styles.fieldInput} value={editFirstName} onChangeText={setEditFirstName} placeholder="Nombres" placeholderTextColor={commonColors.textTertiary} /></View>
+        <View><Text style={styles.fieldLabel}>Apellidos *</Text>
+          <TextInput style={styles.fieldInput} value={editLastName} onChangeText={setEditLastName} placeholder="Apellidos" placeholderTextColor={commonColors.textTertiary} /></View>
+        <View><Text style={styles.fieldLabel}>Teléfono</Text>
+          <TextInput style={styles.fieldInput} value={editPhone} onChangeText={setEditPhone} placeholder="987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" /></View>
+        <View><Text style={styles.fieldLabel}>Correo electrónico</Text>
+          <TextInput style={styles.fieldInput} value={editEmail} onChangeText={setEditEmail} placeholder="correo@ejemplo.com" placeholderTextColor={commonColors.textTertiary} keyboardType="email-address" autoCapitalize="none" /></View>
+        {selectedUser?.role === 'obstetra' && (
+          <View><Text style={styles.fieldLabel}>Número COP</Text>
+            <TextInput style={styles.fieldInput} value={editCop} onChangeText={setEditCop} placeholder="COP" placeholderTextColor={commonColors.textTertiary} /></View>
+        )}
+      </View>
+    </AppModal>
+  );
+
+  // Modal: resetear contraseña
+  const renderResetModal = () => (
+    <AppModal
+      visible={isResetVisible}
+      onClose={() => setIsResetVisible(false)}
+      title="Restablecer contraseña"
+      subtitle={selectedUser ? `Nueva contraseña para ${selectedUser.firstName} ${selectedUser.lastName}` : undefined}
+      footer={
+        <>
+          <AppButton title="Cancelar" variant="outline" onPress={() => setIsResetVisible(false)} style={{ flex: 1 }} disabled={resetPasswordMutation.isPending} />
+          <AppButton title="Restablecer" onPress={handleResetPassword} style={{ flex: 1 }} themeColor={BRAND} loading={resetPasswordMutation.isPending} />
+        </>
+      }
+    >
+      <Text style={styles.fieldLabel}>Nueva contraseña (mín. 8 caracteres)</Text>
+      <TextInput style={styles.fieldInput} value={newPassword} onChangeText={setNewPassword} placeholder="Nueva contraseña" placeholderTextColor={commonColors.textTertiary} secureTextEntry autoCapitalize="none" />
+      <Text style={styles.resetHint}>El usuario deberá iniciar sesión con esta nueva contraseña.</Text>
+    </AppModal>
+  );
 
   return (
     <View style={styles.container}>
@@ -531,11 +679,20 @@ export default function UsuariosScreen(): React.ReactElement {
 
       {/* MODAL: DETAIL USER */}
       {renderDetailModal()}
+      {renderEditModal()}
+      {renderResetModal()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  actionBtnDanger: { backgroundColor: semanticColors.dangerLight, borderColor: semanticColors.danger },
+  actionBtnText: { ...typography.caption, fontWeight: '700', color: BRAND },
+  fieldLabel: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary, marginBottom: 4 },
+  fieldInput: { backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4, ...typography.body, fontSize: 15, color: commonColors.text },
+  resetHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.sm, lineHeight: 18 },
   container: {
     flex: 1,
     backgroundColor: commonColors.background,
