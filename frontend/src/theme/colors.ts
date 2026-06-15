@@ -59,14 +59,14 @@ export const obstetraColors = {
   gradient: ['#5B9FFF', '#3A86FF'] as const, // headers
 } as const;
 
-/** Acento del rol admin (slate profesional) */
+/** Acento del rol admin (slate azulado profesional, con más vida) */
 export const adminColors = {
-  primary: '#334155', // slate oscuro
-  primaryDark: '#1E293B',
-  primaryLight: '#F1F5F9',
-  primaryMid: '#E2E8F0',
+  primary: '#3D5A80', // slate con matiz azul (más vivo que el gris neutro)
+  primaryDark: '#2C4566',
+  primaryLight: '#EEF3FA', // fondo ultra suave azulado
+  primaryMid: '#DCE7F5', // chips y badges
   onPrimary: '#FFFFFF',
-  gradient: ['#475569', '#334155'] as const,
+  gradient: ['#4A6E96', '#3D5A80'] as const, // headers
 } as const;
 
 /** CTA secundario compartido (teal) — conservado para compatibilidad */
