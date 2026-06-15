@@ -497,6 +497,11 @@ export interface EducationContentItem {
   tipo?: string;
   categoria?: string;
   trimestre?: number | null;
+  semanaInicio?: number | null;
+  semanaFin?: number | null;
+  mediaUrl?: string | null;
+  thumbnailUrl?: string | null;
+  duracionMin?: number | null;
 }
 
 export interface EducationResponse {
