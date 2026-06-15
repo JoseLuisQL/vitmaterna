@@ -8,8 +8,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import api, { resolveMediaUrl } from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { useToast } from '../../../src/components/ui';
-import { Send, Bot, MessageCircle, ImagePlus } from 'lucide-react-native';
+import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
+import { TypingDots } from '../../../src/components/shared/TypingDots';
+import { Send, Bot, ImagePlus, Check, CheckCheck } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
+import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
 import { useAuthStore } from '../../../src/store/authStore';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
@@ -19,26 +22,21 @@ import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
-interface ChatMessage {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt: string;
-  tipo?: string;
-  mediaUrl?: string | null;
-}
-
 export default function GestanteChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [obstetra, setObstetra] = useState<{ firstName: string; lastName: string; phone?: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  const {
+    messages, isLoadingHistory, isLoadingMore, hasMore,
+    otherTyping, otherOnline, loadOlder, sendText, sendImage, notifyTyping,
+  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id });
 
   const { isLoading: isResolvingConv } = useQuery({
     queryKey: ['chat-conversation'],
@@ -56,6 +54,13 @@ export default function GestanteChatScreen() {
     },
   });
 
+  // Auto-scroll al final cuando llegan/envían mensajes (no al cargar antiguos).
+  useEffect(() => {
+    if (!isLoadingMore) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
+    }
+  }, [messages.length]);
+
   const handleWhatsApp = async () => {
     if (!obstetra?.phone) {
       toast.info('WhatsApp no disponible', 'Tu obstetra no tiene un número registrado.');
@@ -66,80 +71,10 @@ export default function GestanteChatScreen() {
     if (!ok) toast.error('No se pudo abrir WhatsApp', 'Verifica que tengas WhatsApp instalado.');
   };
 
-  const { isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['chat-history', conversationId],
-    queryFn: async () => {
-      if (!conversationId) return [];
-      try {
-        const res = await api.get(`/chat/history/${conversationId}`);
-        const history = res.data.data || [];
-        const mappedHistory = history.map((m: any) => ({
-          id: m.id,
-          senderId: m.senderId,
-          text: m.contenido,
-          createdAt: m.createdAt,
-          tipo: m.tipo,
-          mediaUrl: m.mediaUrl,
-        }));
-        const sortedHistory = [...mappedHistory].reverse();
-        setMessages(sortedHistory);
-        return sortedHistory;
-      } catch (error) {
-        return [];
-      }
-    },
-    enabled: !!conversationId,
-  });
-
-  useEffect(() => {
-    if (socket && conversationId) {
-      emit('join_conversation', conversationId);
-
-      socket.on('receive_message', (message: any) => {
-        const chatMsg: ChatMessage = {
-          id: message.id,
-          senderId: message.senderId,
-          text: message.contenido,
-          createdAt: message.createdAt,
-          tipo: message.tipo,
-          mediaUrl: message.mediaUrl,
-        };
-
-        setMessages(prev => {
-          if (prev.some(m => m.id === chatMsg.id)) return prev;
-          const filtered = prev.filter(m => !(m.senderId === 'me' && m.text === chatMsg.text && m.id.length < 15));
-          return [...filtered, chatMsg];
-        });
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('receive_message');
-        if (conversationId) {
-          emit('leave_conversation', conversationId);
-        }
-      }
-    };
-  }, [socket, conversationId]);
-
   const handleSend = () => {
     if (!inputText.trim() || !conversationId) return;
-
-    const newMessage = { conversationId, content: inputText.trim(), type: 'texto' };
-    emit('send_message', newMessage);
-
-    const optimisticMessage: ChatMessage = {
-      id: Date.now().toString(),
-      senderId: user?.id || 'me',
-      text: inputText.trim(),
-      createdAt: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, optimisticMessage]);
+    sendText(inputText);
     setInputText('');
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   const handleAttachPhoto = async () => {
@@ -163,19 +98,7 @@ export default function GestanteChatScreen() {
       const res = await api.post('/chat/upload', { base64: asset.base64, mimeType });
       const mediaUrl = res.data?.data?.mediaUrl;
       if (!mediaUrl) throw new Error('upload failed');
-
-      emit('send_message', { conversationId, content: '📷 Foto', type: 'imagen', mediaUrl });
-
-      const optimistic: ChatMessage = {
-        id: Date.now().toString(),
-        senderId: user?.id || 'me',
-        text: '📷 Foto',
-        createdAt: new Date().toISOString(),
-        tipo: 'imagen',
-        mediaUrl,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      sendImage(mediaUrl);
     } catch (e) {
       toast.error('No se pudo enviar la foto', 'Inténtalo nuevamente.');
     } finally {
@@ -216,14 +139,26 @@ export default function GestanteChatScreen() {
             {item.text}
           </Text>
         )}
-        <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
-          {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
+            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          {/* Estado de envío / visto (solo en mis mensajes) */}
+          {isMe && (
+            item.pending ? (
+              <Check size={13} color="rgba(255,255,255,0.6)" />
+            ) : item.leido ? (
+              <CheckCheck size={14} color="#9BE7FF" />
+            ) : (
+              <CheckCheck size={14} color="rgba(255,255,255,0.6)" />
+            )
+          )}
+        </View>
       </View>
     );
   };
 
-  if (isResolvingConv || isLoadingHistory) return <LoadingScreen message="Cargando chat..." />;
+  if (isResolvingConv || (isLoadingHistory && messages.length === 0)) return <LoadingScreen message="Cargando chat..." />;
 
   return (
     <KeyboardAvoidingView 
@@ -249,19 +184,25 @@ export default function GestanteChatScreen() {
                 {obstetra ? `Obst. ${obstetra.firstName} ${obstetra.lastName}` : 'Mi obstetra'}
               </Text>
               <View style={styles.statusRow}>
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: isConnected ? semanticColors.successMid : 'rgba(255,255,255,0.5)' },
-                  ]}
-                />
-                <Text style={styles.headerSubtitle}>
-                  {isConnected ? 'En línea' : 'Conectando...'}
-                </Text>
+                {otherTyping ? (
+                  <Text style={styles.headerSubtitle}>escribiendo…</Text>
+                ) : (
+                  <>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        { backgroundColor: otherOnline ? semanticColors.successMid : 'rgba(255,255,255,0.5)' },
+                      ]}
+                    />
+                    <Text style={styles.headerSubtitle}>
+                      {otherOnline ? 'En línea' : isConnected ? 'Desconectada' : 'Conectando...'}
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
-            <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp">
-              <MessageCircle size={20} color={commonColors.white} />
+            <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp" accessibilityRole="button">
+              <WhatsAppIcon size={22} color={commonColors.white} />
             </TouchableOpacity>
           </View>
 
@@ -278,7 +219,14 @@ export default function GestanteChatScreen() {
         keyExtractor={item => item.id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onStartReached={hasMore ? loadOlder : undefined}
+        onStartReachedThreshold={0.2}
+        ListHeaderComponent={
+          isLoadingMore ? (
+            <ActivityIndicator size="small" color={BRAND} style={{ marginVertical: spacing.md }} />
+          ) : null
+        }
+        ListFooterComponent={otherTyping ? <TypingDots color={commonColors.textSecondary} /> : null}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Envía un mensaje a tu obstetra para comenzar la consulta.</Text>
@@ -302,7 +250,7 @@ export default function GestanteChatScreen() {
         <TextInput
           style={styles.input}
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={(t) => { setInputText(t); notifyTyping(); }}
           placeholder="Escribe tu mensaje..."
           placeholderTextColor={commonColors.textTertiary}
           multiline
@@ -366,7 +314,8 @@ const styles = StyleSheet.create({
   messageText: { ...typography.body, marginBottom: 4 },
   messageTextMe: { color: commonColors.white },
   messageTextOther: { color: commonColors.text },
-  timeText: { ...typography.caption, fontSize: 11, alignSelf: 'flex-end' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
+  timeText: { ...typography.caption, fontSize: 11 },
   timeTextMe: { color: 'rgba(255,255,255,0.75)' },
   timeTextOther: { color: commonColors.textTertiary },
   inputContainer: { flexDirection: 'row', padding: spacing.sm2, backgroundColor: commonColors.surface, borderTopWidth: 1, borderColor: commonColors.borderLight, alignItems: 'flex-end', paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.sm2 },

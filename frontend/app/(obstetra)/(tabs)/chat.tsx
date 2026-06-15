@@ -9,9 +9,11 @@ import api, { resolveMediaUrl } from '../../../src/services/api';
 import { LoadingScreen } from '../../../src/components/ui/LoadingScreen';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, useToast } from '../../../src/components/ui';
+import { TypingDots } from '../../../src/components/shared/TypingDots';
 import { usePatients } from '../../../src/services/api-queries';
-import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search } from 'lucide-react-native';
+import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search, Check, CheckCheck } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
+import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -20,22 +22,12 @@ import { shadows, coloredGlow } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
-interface ChatMessage {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt: string;
-  tipo?: string;
-  mediaUrl?: string | null;
-}
-
 export default function ObstetraChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
   const [activeConv, setActiveConv] = useState<any>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -45,6 +37,18 @@ export default function ObstetraChatScreen() {
 
   // Gestantes asignadas a esta obstetra (para iniciar una conversación nueva).
   const { data: patients = [] } = usePatients();
+
+  const conversationId = activeConv?.id || null;
+  const {
+    messages, isLoadingHistory, isLoadingMore, hasMore,
+    otherTyping, otherOnline, loadOlder, sendText, sendImage, notifyTyping,
+  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id });
+
+  useEffect(() => {
+    if (!isLoadingMore) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
+    }
+  }, [messages.length]);
 
   // 1. Fetch active conversations for this obstetra
   const { data: conversations, isLoading: isLoadingConvs, refetch: refetchConvs } = useQuery({
@@ -60,83 +64,10 @@ export default function ObstetraChatScreen() {
     },
   });
 
-  // 2. Fetch history for active conversation
-  const conversationId = activeConv?.id || null;
-  const { isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['chat-history', conversationId],
-    queryFn: async () => {
-      if (!conversationId) return [];
-      try {
-        const res = await api.get(`/chat/history/${conversationId}`);
-        const history = res.data.data || [];
-        const mappedHistory = history.map((m: any) => ({
-          id: m.id,
-          senderId: m.senderId,
-          text: m.contenido,
-          createdAt: m.createdAt,
-          tipo: m.tipo,
-          mediaUrl: m.mediaUrl,
-        }));
-        const sortedHistory = [...mappedHistory].reverse();
-        setMessages(sortedHistory);
-        return sortedHistory;
-      } catch (error) {
-        return [];
-      }
-    },
-    enabled: !!conversationId,
-  });
-
-  // 3. Socket listener for active conversation
-  useEffect(() => {
-    if (socket && conversationId) {
-      emit('join_conversation', conversationId);
-
-      socket.on('receive_message', (message: any) => {
-        const chatMsg: ChatMessage = {
-          id: message.id,
-          senderId: message.senderId,
-          text: message.contenido,
-          createdAt: message.createdAt,
-          tipo: message.tipo,
-          mediaUrl: message.mediaUrl,
-        };
-
-        setMessages(prev => {
-          if (prev.some(m => m.id === chatMsg.id)) return prev;
-          const filtered = prev.filter(m => !(m.senderId === 'me' && m.text === chatMsg.text && m.id.length < 15));
-          return [...filtered, chatMsg];
-        });
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('receive_message');
-        if (conversationId) {
-          emit('leave_conversation', conversationId);
-        }
-      }
-    };
-  }, [socket, conversationId]);
-
   const handleSend = () => {
     if (!inputText.trim() || !conversationId) return;
-
-    const newMessage = { conversationId, content: inputText.trim(), type: 'texto' };
-    emit('send_message', newMessage);
-
-    const optimisticMessage: ChatMessage = {
-      id: Date.now().toString(),
-      senderId: user?.id || 'me',
-      text: inputText.trim(),
-      createdAt: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, optimisticMessage]);
+    sendText(inputText);
     setInputText('');
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   const handleAttachPhoto = async () => {
@@ -160,19 +91,7 @@ export default function ObstetraChatScreen() {
       const res = await api.post('/chat/upload', { base64: asset.base64, mimeType });
       const mediaUrl = res.data?.data?.mediaUrl;
       if (!mediaUrl) throw new Error('upload failed');
-
-      emit('send_message', { conversationId, content: '📷 Foto', type: 'imagen', mediaUrl });
-
-      const optimistic: ChatMessage = {
-        id: Date.now().toString(),
-        senderId: user?.id || 'me',
-        text: '📷 Foto',
-        createdAt: new Date().toISOString(),
-        tipo: 'imagen',
-        mediaUrl,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      sendImage(mediaUrl);
     } catch (e) {
       toast.error('No se pudo enviar la foto', 'Inténtalo nuevamente.');
     } finally {
@@ -182,7 +101,6 @@ export default function ObstetraChatScreen() {
 
   const handleBack = () => {
     setActiveConv(null);
-    setMessages([]);
     refetchConvs();
   };
 
@@ -196,7 +114,6 @@ export default function ObstetraChatScreen() {
       if (!conv?.id) throw new Error('sin conversación');
       setPickerVisible(false);
       setPickerSearch('');
-      setMessages([]);
       setActiveConv({ ...conv, gestante: { user: { firstName: nombre } } });
     } catch (e) {
       toast.error('No se pudo abrir el chat', 'Inténtalo nuevamente.');
@@ -246,9 +163,20 @@ export default function ObstetraChatScreen() {
             {item.text}
           </Text>
         )}
-        <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
-          {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
+            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          {isMe && (
+            item.pending ? (
+              <Check size={13} color={obstetraColors.primaryLight} />
+            ) : item.leido ? (
+              <CheckCheck size={14} color="#9BE7FF" />
+            ) : (
+              <CheckCheck size={14} color={obstetraColors.primaryLight} />
+            )
+          )}
+        </View>
       </View>
     );
   };
@@ -368,7 +296,7 @@ export default function ObstetraChatScreen() {
     );
   }
 
-  if (isLoadingHistory) return <LoadingScreen message="Cargando chat..." />;
+  if (isLoadingHistory && messages.length === 0) return <LoadingScreen message="Cargando chat..." />;
 
   const activePatientName = `${activeConv.gestante?.user?.firstName || 'Gestante'} ${activeConv.gestante?.user?.lastName || ''}`;
 
@@ -391,8 +319,14 @@ export default function ObstetraChatScreen() {
           <View style={styles.activeHeaderTitleWrap}>
             <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
             <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: isConnected ? semanticColors.successMid : 'rgba(255,255,255,0.5)' }]} />
-              <Text style={styles.activeHeaderSubtitle}>{isConnected ? 'En línea' : 'Conectando...'}</Text>
+              {otherTyping ? (
+                <Text style={styles.activeHeaderSubtitle}>escribiendo…</Text>
+              ) : (
+                <>
+                  <View style={[styles.statusDot, { backgroundColor: otherOnline ? semanticColors.successMid : 'rgba(255,255,255,0.5)' }]} />
+                  <Text style={styles.activeHeaderSubtitle}>{otherOnline ? 'En línea' : isConnected ? 'Desconectada' : 'Conectando...'}</Text>
+                </>
+              )}
             </View>
           </View>
         </SafeAreaView>
@@ -404,7 +338,14 @@ export default function ObstetraChatScreen() {
         keyExtractor={item => item.id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onStartReached={hasMore ? loadOlder : undefined}
+        onStartReachedThreshold={0.2}
+        ListHeaderComponent={
+          isLoadingMore ? (
+            <ActivityIndicator size="small" color={BRAND} style={{ marginVertical: spacing.md }} />
+          ) : null
+        }
+        ListFooterComponent={otherTyping ? <TypingDots color={commonColors.textSecondary} /> : null}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No hay mensajes en esta conversación. Envía uno para comenzar.</Text>
@@ -424,7 +365,7 @@ export default function ObstetraChatScreen() {
         <TextInput
           style={styles.input}
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={(t) => { setInputText(t); notifyTyping(); }}
           placeholder="Escribe tu mensaje..."
           placeholderTextColor={commonColors.textTertiary}
           multiline
@@ -578,9 +519,9 @@ const styles = StyleSheet.create({
   messageTextOther: {
     color: commonColors.text,
   },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
   timeText: {
     fontSize: 12,
-    alignSelf: 'flex-end',
   },
   timeTextMe: {
     color: obstetraColors.primaryLight,
