@@ -5,8 +5,8 @@
  * son tarjetas blancas flotantes con sombra `card`. En Android se usa
  * `elevation`; en iOS/web una sombra tenue.
  *
- * Presets nuevos: card · float · modal · coloredGlow(color)
- * Alias legacy: none · xs · sm · md · lg · xl · button · buttonPressed
+ * Tres niveles de elevación consistentes en toda la app:
+ *   none · card (default) · float (FAB) · modal (overlays) · coloredGlow(color)
  */
 import { Platform, ViewStyle } from 'react-native';
 
@@ -41,17 +41,8 @@ export const shadows = {
   card: make(SHADOW_BASE, 2, 12, 0.06, 3),
   /** Botón FAB y elementos elevados (glow azul) */
   float: make('#3A86FF', 4, 16, 0.2, 8),
-  /** Modal / bottom sheet */
+  /** Modal / bottom sheet / toast */
   modal: make(SHADOW_BASE, 8, 24, 0.12, 12),
-
-  // ---- Alias legacy (compatibilidad) ----
-  xs: make(SHADOW_BASE, 1, 2, 0.04, 1),
-  sm: make(SHADOW_BASE, 2, 4, 0.05, 2),
-  md: make(SHADOW_BASE, 2, 12, 0.06, 3),
-  lg: make(SHADOW_BASE, 8, 20, 0.1, 6),
-  xl: make(SHADOW_BASE, 8, 24, 0.12, 12),
-  button: make(SHADOW_BASE, 0, 0, 0, 0),
-  buttonPressed: make(SHADOW_BASE, 0, 0, 0, 0),
 } as const;
 
 export const applyShadow = (preset: ShadowPreset): ViewStyle => ({ ...preset });

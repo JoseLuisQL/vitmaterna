@@ -14,7 +14,7 @@ import {
   Users, Baby, Calendar, AlertTriangle, BookOpen, Bell, UserCheck, ChevronRight,
   ShieldCheck, FileText,
 } from 'lucide-react-native';
-import { AutoGrid } from '../../../src/components/ui';
+import { AutoGrid, PressableScale } from '../../../src/components/ui';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAdminDashboard } from '../../../src/services/admin-queries';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -132,15 +132,15 @@ export default function AdminInicioScreen(): React.ReactElement {
         {/* Accesos rápidos */}
         <Text style={styles.sectionTitle}>Gestión</Text>
         <View style={styles.quickGrid}>
-          <TouchableOpacity style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/usuarios')} activeOpacity={0.8}>
+          <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/usuarios')}>
             <Users size={22} color={BRAND} /><Text style={styles.quickText}>Usuarios</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/contenido')} activeOpacity={0.8}>
+          </PressableScale>
+          <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/contenido')}>
             <BookOpen size={22} color={BRAND} /><Text style={styles.quickText}>Contenido</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/mas')} activeOpacity={0.8}>
+          </PressableScale>
+          <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/mas')}>
             <ShieldCheck size={22} color={BRAND} /><Text style={styles.quickText}>Más</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </ScrollView>
     </View>

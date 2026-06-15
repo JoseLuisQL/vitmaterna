@@ -38,7 +38,7 @@ export function BottomSheet({ visible, onClose, children, scroll = true }: Botto
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Animated.View style={[styles.backdrop, { opacity }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cerrar" />
-        <Animated.View style={[styles.sheet, shadows.lg, { transform: [{ translateY }] }]}>
+        <Animated.View style={[styles.sheet, shadows.modal, { transform: [{ translateY }] }]}>
           <View style={styles.handle} />
           <Content
             showsVerticalScrollIndicator={false}

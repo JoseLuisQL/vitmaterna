@@ -29,10 +29,20 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   style,
   themeColor,
 }) => {
+  // Si se pasa themeColor, el icono usa un halo con el color de acento (más
+  // cálido); si no, cae al gris neutro por defecto.
+  const accent = themeColor;
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconContainer}>
-        <Icon size={48} color={commonColors.disabled} strokeWidth={1.5} />
+      <View style={[styles.halo, accent ? { backgroundColor: accent + '14' } : null]}>
+        <View
+          style={[
+            styles.iconContainer,
+            accent ? { backgroundColor: accent + '1F' } : null,
+          ]}
+        >
+          <Icon size={40} color={accent || commonColors.disabled} strokeWidth={1.6} />
+        </View>
       </View>
       <Text style={styles.title}>{title}</Text>
       {description && <Text style={styles.description}>{description}</Text>}
@@ -59,14 +69,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xxl,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  halo: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     backgroundColor: commonColors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
+  },
+  iconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: commonColors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontFamily: typography.h3.fontFamily,

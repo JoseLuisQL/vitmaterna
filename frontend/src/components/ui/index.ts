@@ -4,6 +4,7 @@
 // Primitives
 export { AppButton } from './AppButton';
 export { AppCard } from './AppCard';
+export { PressableScale } from './PressableScale';
 export { AppInput } from './AppInput';
 export { AppBadge } from './AppBadge';
 

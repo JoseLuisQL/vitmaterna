@@ -76,7 +76,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }): Reac
       {children}
       {toast && toastStyle && Icon && (
         <Animated.View style={[styles.wrap, { opacity, transform: [{ translateY }] }]} pointerEvents="box-none">
-          <View style={[styles.toast, shadows.lg]} accessibilityRole="alert">
+          <View style={[styles.toast, shadows.modal]} accessibilityRole="alert">
             <View style={[styles.iconWrap, { backgroundColor: toastStyle.bg }]}>
               <Icon size={20} color={toastStyle.color} />
             </View>

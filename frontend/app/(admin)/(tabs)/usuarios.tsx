@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
+    ...shadows.card,
   },
   // Modal styles
   modalOverlay: {
@@ -817,7 +817,7 @@ const styles = StyleSheet.create({
     gap: 16,
     borderWidth: 1,
     borderColor: commonColors.border,
-    ...shadows.md,
+    ...shadows.card,
   },
   modalHeaderRow: {
     flexDirection: 'row',

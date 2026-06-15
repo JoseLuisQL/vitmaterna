@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     maxHeight: SCREEN_HEIGHT * 0.9,
     minHeight: SCREEN_HEIGHT * 0.6,
-    ...shadows.lg,
+    ...shadows.modal,
   },
   dragPill: {
     width: 48,

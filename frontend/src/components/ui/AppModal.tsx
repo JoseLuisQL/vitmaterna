@@ -60,7 +60,7 @@ export function AppModal({
           onPress={dismissable ? onClose : undefined}
           accessibilityLabel="Cerrar modal tocando el fondo"
         />
-        <Animated.View style={[styles.card, shadows.lg, { transform: [{ scale }] }]}>
+        <Animated.View style={[styles.card, shadows.modal, { transform: [{ scale }] }]}>
           {(title || dismissable) && (
             <View style={styles.header}>
               <View style={styles.headerText}>
