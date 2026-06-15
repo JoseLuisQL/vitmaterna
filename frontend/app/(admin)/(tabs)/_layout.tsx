@@ -39,6 +39,7 @@ export default function AdminTabsLayout(): React.ReactElement {
       <Tabs.Screen name="sedes" options={{ title: 'Sedes', href: null }} />
       <Tabs.Screen name="config" options={{ title: 'Config', href: null }} />
       <Tabs.Screen name="auditoria" options={{ title: 'Auditoría', href: null }} />
+      <Tabs.Screen name="notificaciones" options={{ title: 'Notificaciones', href: null }} />
     </Tabs>
   );
 }

@@ -6,7 +6,7 @@ import React from 'react';
 import { View, StyleSheet, Text, FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ShieldAlert, Download, ArrowLeft } from 'lucide-react-native';
+import { ShieldAlert, Download, ArrowLeft, Plus, Pencil, Trash2, RefreshCw } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { AppCard } from '../../../src/components/ui/AppCard';
@@ -20,6 +20,25 @@ import { typography } from '../../../src/theme/typography';
 import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
 
 const BRAND = obstetraColors.primary;
+
+// Etiquetas legibles para acción HTTP y entidad afectada.
+const ACCION_LABEL: Record<string, string> = {
+  POST: 'Creación', PUT: 'Actualización', PATCH: 'Actualización', DELETE: 'Eliminación',
+};
+const ENTIDAD_LABEL: Record<string, string> = {
+  admin: 'Administración', patients: 'Pacientes', appointments: 'Citas',
+  clinical: 'Datos clínicos', education: 'Educación', chat: 'Mensajería',
+  notifications: 'Notificaciones', 'home-visits': 'Visitas domiciliarias',
+  reports: 'Reportes', auth: 'Cuenta', sync: 'Sincronización', desconocido: 'Sistema',
+};
+
+function accionMeta(accion?: string) {
+  const a = (accion || '').toUpperCase();
+  if (a === 'POST') return { label: 'Creación', Icon: Plus, color: semanticColors.success };
+  if (a === 'PUT' || a === 'PATCH') return { label: 'Actualización', Icon: Pencil, color: semanticColors.info };
+  if (a === 'DELETE') return { label: 'Eliminación', Icon: Trash2, color: semanticColors.danger };
+  return { label: ACCION_LABEL[a] || a || 'Acción', Icon: RefreshCw, color: commonColors.textSecondary };
+}
 
 export default function AuditoriaScreen(): React.ReactElement {
   const router = useRouter();
@@ -56,24 +75,30 @@ export default function AuditoriaScreen(): React.ReactElement {
     });
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <AppCard style={styles.card}>
-      <View style={styles.cardContent}>
-        <View style={styles.iconContainer}>
-          <ShieldAlert size={20} color={semanticColors.warning} />
+  const renderItem = ({ item }: { item: any }) => {
+    const { label, Icon, color } = accionMeta(item.accion);
+    const entidad = ENTIDAD_LABEL[item.entidad as string] || item.entidad || 'Sistema';
+    const usuario = item.user
+      ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim() || 'Usuario'
+      : 'Sistema';
+    const rol = item.user?.role ? ` · ${item.user.role}` : '';
+    return (
+      <AppCard style={styles.card}>
+        <View style={styles.cardContent}>
+          <View style={[styles.iconContainer, { backgroundColor: color + '1A' }]}>
+            <Icon size={18} color={color} />
+          </View>
+          <View style={styles.info}>
+            <Text style={styles.action}>{label} · {entidad}</Text>
+            <Text style={styles.details}>Por: {usuario}{rol}</Text>
+            <Text style={styles.date}>
+              {item.createdAt ? new Date(item.createdAt).toLocaleString('es-PE') : 'Fecha desconocida'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.info}>
-          <Text style={styles.action}>{item.action || 'Acción desconocida'}</Text>
-          <Text style={styles.details}>
-            Usuario: {item.userEmail || item.userId || 'Sistema'}
-          </Text>
-          <Text style={styles.date}>
-            {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Fecha desconocida'}
-          </Text>
-        </View>
-      </View>
-    </AppCard>
-  );
+      </AppCard>
+    );
+  };
 
   return (
     <View style={styles.container}>

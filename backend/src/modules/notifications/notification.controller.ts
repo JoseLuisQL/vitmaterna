@@ -127,3 +127,56 @@ export async function saveToken(req: Request, res: Response): Promise<void> {
 
   res.json(successResponse({ message: 'Push token saved successfully' }));
 }
+
+// ─── Configuración de canales (SMS / WhatsApp) — solo admin ────────────────────
+
+import {
+  getChannelsStatus, resolveSmsCredentials, resolveWhatsAppCredentials,
+  sendTwilioSms, sendWhatsAppCloud,
+} from './channels.js';
+import { setConfigValue } from '../../utils/systemSettings.js';
+
+/** Devuelve el estado de configuración de los canales (sin exponer secretos). */
+export async function getChannelsConfig(_req: Request, res: Response): Promise<void> {
+  const status = await getChannelsStatus();
+  res.json(successResponse(status));
+}
+
+/** Guarda credenciales SMS (Twilio) en SystemConfig. */
+export async function updateSmsConfig(req: Request, res: Response): Promise<void> {
+  await setConfigValue('smsConfig', req.body, req.user?.userId, 'Credenciales SMS (Twilio)');
+  const status = await getChannelsStatus();
+  res.json(successResponse(status));
+}
+
+/** Guarda credenciales WhatsApp (Cloud API) en SystemConfig. */
+export async function updateWhatsAppConfig(req: Request, res: Response): Promise<void> {
+  await setConfigValue('whatsappConfig', req.body, req.user?.userId, 'Credenciales WhatsApp Cloud API');
+  const status = await getChannelsStatus();
+  res.json(successResponse(status));
+}
+
+/** Prueba la conexión enviando un mensaje real al destino indicado. */
+export async function testChannel(req: Request, res: Response): Promise<void> {
+  const { canal, destino } = req.body as { canal: 'sms' | 'whatsapp'; destino: string };
+  const mensaje = 'VITMATERNA: mensaje de prueba de conexión. Si lo recibes, el canal está configurado correctamente.';
+  try {
+    if (canal === 'sms') {
+      const c = await resolveSmsCredentials();
+      if (c.provider !== 'twilio' || !c.accountSid || !c.authToken || !c.fromNumber) {
+        throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Configura las credenciales de Twilio antes de probar.');
+      }
+      await sendTwilioSms(c, destino, mensaje);
+    } else {
+      const c = await resolveWhatsAppCredentials();
+      if (c.provider !== 'whatsapp_cloud' || !c.apiToken || !c.phoneNumberId) {
+        throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Configura las credenciales de WhatsApp antes de probar.');
+      }
+      await sendWhatsAppCloud(c, destino, mensaje);
+    }
+    res.json(successResponse({ ok: true, mensaje: 'Mensaje de prueba enviado correctamente.' }));
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(502, ErrorCodes.EXTERNAL_SERVICE_ERROR, `Falló la prueba de conexión: ${(error as Error).message}`);
+  }
+}

@@ -218,3 +218,47 @@ export const useDeleteFacility = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminFacilities'] }),
   });
 };
+
+// --- Notification Channels (SMS / WhatsApp) ---
+export interface ChannelsStatus {
+  sms: { provider: string; configured: boolean; fromNumber: string | null };
+  whatsapp: { provider: string; configured: boolean; phoneNumberId: string | null };
+}
+
+export const fetchChannelsConfig = async (): Promise<ChannelsStatus> => {
+  const res = await api.get('/notifications/channels/config');
+  return res.data?.data;
+};
+
+export const useChannelsConfig = () =>
+  useQuery({ queryKey: ['channelsConfig'], queryFn: fetchChannelsConfig });
+
+export const useUpdateSmsConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { provider: 'twilio' | 'mock'; accountSid?: string; authToken?: string; fromNumber?: string }) => {
+      const res = await api.put('/notifications/channels/sms', data);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['channelsConfig'] }),
+  });
+};
+
+export const useUpdateWhatsAppConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { provider: 'whatsapp_cloud' | 'mock'; apiToken?: string; phoneNumberId?: string }) => {
+      const res = await api.put('/notifications/channels/whatsapp', data);
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['channelsConfig'] }),
+  });
+};
+
+export const useTestChannel = () =>
+  useMutation({
+    mutationFn: async (data: { canal: 'sms' | 'whatsapp'; destino: string }) => {
+      const res = await api.post('/notifications/channels/test', data);
+      return res.data;
+    },
+  });

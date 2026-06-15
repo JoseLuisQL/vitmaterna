@@ -10,7 +10,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Building2, Settings, ShieldAlert, LogOut, ChevronRight } from 'lucide-react-native';
+import { Building2, Settings, ShieldAlert, LogOut, ChevronRight, Bell } from 'lucide-react-native';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
@@ -87,6 +87,13 @@ export default function AdminMasScreen(): React.ReactElement {
             title="Configuración"
             subtitle="Parámetros del sistema"
             onPress={() => router.push('/(admin)/(tabs)/config')}
+          />
+          <View style={styles.divider} />
+          <MenuItem
+            icon={<Bell size={20} color={BRAND} />}
+            title="Notificaciones"
+            subtitle="SMS y WhatsApp (credenciales y prueba)"
+            onPress={() => router.push('/(admin)/(tabs)/notificaciones')}
           />
           <View style={styles.divider} />
           <MenuItem

@@ -12,6 +12,20 @@ export async function getConfigValue(clave: string): Promise<unknown> {
   return cfg?.valor;
 }
 
+/** Crea o actualiza un valor de configuración por clave. */
+export async function setConfigValue(
+  clave: string,
+  valor: unknown,
+  updatedBy?: string,
+  descripcion?: string,
+): Promise<void> {
+  await prisma.systemConfig.upsert({
+    where: { clave },
+    create: { clave, valor: valor as object, updatedBy: updatedBy ?? null, descripcion: descripcion ?? null },
+    update: { valor: valor as object, updatedBy: updatedBy ?? null },
+  });
+}
+
 /**
  * Altitud (msnm) usada para corregir la hemoglobina. Toma el valor de
  * SystemConfig.altitudMsnm si está definido y es válido; si no, usa

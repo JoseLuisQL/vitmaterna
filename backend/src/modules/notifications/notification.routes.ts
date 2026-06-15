@@ -1,10 +1,19 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.middleware.js';
+import { rbac } from '../../middleware/rbac.middleware.js';
+import { validate } from '../../middleware/validate.middleware.js';
 import * as notificationController from './notification.controller.js';
+import * as notificationSchema from './notification.schema.js';
 
 const router = Router();
 
 router.use(authenticate);
+
+// ─── Configuración de canales SMS / WhatsApp (solo admin) ──────────────────────
+router.get('/channels/config', rbac('admin'), notificationController.getChannelsConfig);
+router.put('/channels/sms', rbac('admin'), validate(notificationSchema.smsConfigSchema), notificationController.updateSmsConfig);
+router.put('/channels/whatsapp', rbac('admin'), validate(notificationSchema.whatsappConfigSchema), notificationController.updateWhatsAppConfig);
+router.post('/channels/test', rbac('admin'), validate(notificationSchema.testChannelSchema), notificationController.testChannel);
 
 /**
  * @swagger
