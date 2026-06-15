@@ -1,32 +1,37 @@
 /**
- * VITMATERNA — MobileFrame
+ * VITMATERNA — MobileFrame (contenedor responsivo)
  *
- * La app es mobile-first. En web/tablet (pantallas anchas) el contenido se
- * estiraba a todo el ancho y se veía deformado. Este frame centra la app en
- * una columna de ancho máximo tipo teléfono y pinta el resto con el fondo
- * ice-blue. En móvil nativo (o ventanas angostas) es transparente y ocupa
- * todo el alto, sin afectar el layout.
+ * La app es mobile-first, pero en navegador de escritorio debe aprovechar la
+ * pantalla. Este contenedor:
+ *  - En móvil nativo (o web angosto): transparente, ocupa todo el alto y ancho.
+ *  - En web ancho: usa todo el alto de la ventana y centra el contenido en una
+ *    columna de ancho máximo cómodo (no un teléfono diminuto, ni estirado de
+ *    borde a borde en monitores muy anchos). El fondo lateral es ice-blue.
  */
 import React from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { commonColors } from '../../theme/colors';
 
-/** Ancho máximo del "teléfono" en pantallas anchas. */
-const MAX_WIDTH = 440;
+/**
+ * Ancho máximo del contenido en web de escritorio. Cómodo para lectura y para
+ * los layouts de una sola columna, sin verse como un teléfono.
+ */
+const CONTENT_MAX_WIDTH = 920;
 
 export function MobileFrame({ children }: { children: React.ReactNode }): React.ReactElement {
   const { width } = useWindowDimensions();
 
-  // Solo aplicamos el marco en web cuando la ventana es más ancha que un móvil.
-  const framed = Platform.OS === 'web' && width > MAX_WIDTH;
+  // Sólo centramos en web cuando la ventana supera el ancho máximo del
+  // contenido. En móvil y en ventanas angostas, ocupa todo el ancho.
+  const centered = Platform.OS === 'web' && width > CONTENT_MAX_WIDTH;
 
-  if (!framed) {
+  if (!centered) {
     return <View style={styles.full}>{children}</View>;
   }
 
   return (
     <View style={styles.backdrop}>
-      <View style={[styles.frame, { width: MAX_WIDTH }]}>{children}</View>
+      <View style={[styles.content, { maxWidth: CONTENT_MAX_WIDTH }]}>{children}</View>
     </View>
   );
 }
@@ -38,13 +43,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: commonColors.surfaceHover,
   },
-  frame: {
+  content: {
     flex: 1,
+    width: '100%',
     backgroundColor: commonColors.background,
-    overflow: 'hidden',
-    // Sombra sutil para separar el "teléfono" del fondo (solo web).
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 0 40px rgba(30,42,58,0.12)' as unknown as undefined }
-      : {}),
   },
 });
