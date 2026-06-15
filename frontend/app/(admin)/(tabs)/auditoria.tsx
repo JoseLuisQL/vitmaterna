@@ -3,16 +3,16 @@
  * View audit logs and export database backup.
  */
 import React from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ShieldAlert, Download, ArrowLeft, Plus, Pencil, Trash2, RefreshCw } from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { exportTextFile } from '../../../src/utils/exportFile';
+import { useToast } from '../../../src/components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -42,6 +42,7 @@ function accionMeta(accion?: string) {
 
 export default function AuditoriaScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const { data: logs, isLoading, refetch } = useAuditLogs();
   const exportMutation = useExportBackup();
 
@@ -51,26 +52,16 @@ export default function AuditoriaScreen(): React.ReactElement {
         try {
           const jsonString = typeof backupData === 'string' ? backupData : JSON.stringify(backupData, null, 2);
           const filename = `vitmaterna_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-          const fileUri = `${FileSystem.documentDirectory}${filename}`;
-          
-          await FileSystem.writeAsStringAsync(fileUri, jsonString, {
-            encoding: FileSystem.EncodingType.UTF8,
-          });
-
-          if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(fileUri, {
-              mimeType: 'application/json',
-              dialogTitle: 'Exportar Backup de BD',
-            });
-          } else {
-            Alert.alert('Éxito', 'Backup generado, pero no se puede compartir en este dispositivo.');
-          }
+          // exportTextFile resuelve web (descarga) y nativo (compartir).
+          const ok = await exportTextFile(filename, jsonString, 'application/json');
+          if (ok) toast.success('Backup generado', 'El respaldo de la base de datos se exportó correctamente.');
+          else toast.error('No se pudo exportar', 'El backup se generó pero no fue posible descargarlo o compartirlo.');
         } catch (err) {
-          Alert.alert('Error', 'No se pudo guardar o compartir el archivo de backup.');
+          toast.error('Error', 'No se pudo guardar o compartir el archivo de backup.');
         }
       },
       onError: (error: any) => {
-        Alert.alert('Error', error.response?.data?.message || 'Error al generar backup');
+        toast.error('Error', error.response?.data?.message || 'Error al generar backup');
       },
     });
   };

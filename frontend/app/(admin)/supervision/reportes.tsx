@@ -8,15 +8,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { ArrowLeft, Download, Sheet, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { AutoGrid, useToast } from '../../../src/components/ui';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
-import { buildCsv, exportTextFile } from '../../../src/utils/exportFile';
+import { exportPdf } from '../../../src/utils/exportPdf';
+import { exportExcel } from '../../../src/utils/exportExcel';
 import { commonColors, adminColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -37,7 +36,7 @@ export default function AdminReportesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const [exporting, setExporting] = React.useState(false);
-  const [exportingCsv, setExportingCsv] = React.useState(false);
+  const [exportingXlsx, setExportingXlsx] = React.useState(false);
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['clinic-reports'],
     queryFn: async (): Promise<ReportData> => (await api.get('/reports/clinic')).data.data as ReportData,
@@ -59,34 +58,53 @@ export default function AdminReportesScreen(): React.ReactElement {
         risk: (data.riskDistribution || []).map((r) => ({ label: r.name, count: r.population, color: r.color })),
         priority: (data.gestantesMenorAdherencia || []).map((g) => ({ nombre: g.nombre, pct: g.pct, riesgo: g.riesgo })),
       });
-      const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: 'Compartir reporte VITMATERNA' });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const ok = await exportPdf({ html, fileName: `vitmaterna_reporte_admin_${stamp}`, dialogTitle: 'Compartir reporte VITMATERNA' });
+      if (ok) toast.success('Reporte listo', 'Se generó el PDF del reporte.');
+      else toast.error('No se pudo generar', 'Error al crear el PDF.');
     } catch { toast.error('No se pudo generar', 'Error al crear el PDF.'); }
     finally { setExporting(false); }
   };
 
-  const exportCSV = async () => {
-    if (!data || exportingCsv) return;
-    setExportingCsv(true);
+  const exportXLSX = async () => {
+    if (!data || exportingXlsx) return;
+    setExportingXlsx(true);
     try {
       const stamp = new Date().toISOString().slice(0, 10);
-      const content = [
-        'VITMATERNA — Reporte Clínico (administración)',
-        `Generado,${new Date().toLocaleString('es-PE')}`, '',
-        'RESUMEN',
-        buildCsv(['Métrica', 'Valor'], [
-          ['Total gestantes', data.totalGestantes], ['Adherencia promedio (%)', data.averageAdherence],
-          ['Con 6+ controles', data.con6Controles], ['En alto riesgo', data.enAltoRiesgo],
-        ]), '',
-        'INDICADORES MINSA',
-        buildCsv(['Indicador', 'Valor (%)', 'Meta (%)', 'Cumple'], (data.kpisMinsa || []).map((k) => [k.label, k.pct, k.meta, k.pct >= k.meta ? 'Sí' : 'No'])), '',
-        'PACIENTES PRIORITARIAS',
-        buildCsv(['Gestante', 'Adherencia (%)', 'Riesgo'], (data.gestantesMenorAdherencia || []).map((g) => [g.nombre, g.pct, g.riesgo])),
-      ].join('\r\n');
-      const okFile = await exportTextFile(`vitmaterna_reporte_${stamp}.csv`, content, 'text/csv');
-      if (!okFile) toast.error('No se pudo exportar', 'No fue posible generar el CSV.');
-    } catch { toast.error('No se pudo exportar', 'Error al crear el CSV.'); }
-    finally { setExportingCsv(false); }
+      const ok = await exportExcel(`vitmaterna_reporte_admin_${stamp}`, [
+        {
+          name: 'Resumen',
+          colWidths: [28, 16],
+          rows: [
+            ['Métrica', 'Valor'],
+            ['Total gestantes', data.totalGestantes],
+            ['Adherencia promedio (%)', data.averageAdherence],
+            ['Con 6+ controles', data.con6Controles],
+            ['En alto riesgo', data.enAltoRiesgo],
+            ['Generado', new Date().toLocaleString('es-PE')],
+          ],
+        },
+        {
+          name: 'Indicadores MINSA',
+          colWidths: [32, 12, 12, 10],
+          rows: [
+            ['Indicador', 'Valor (%)', 'Meta (%)', 'Cumple'],
+            ...(data.kpisMinsa || []).map((k) => [k.label, k.pct, k.meta, k.pct >= k.meta ? 'Sí' : 'No']),
+          ],
+        },
+        {
+          name: 'Pacientes prioritarias',
+          colWidths: [32, 16, 12],
+          rows: [
+            ['Gestante', 'Adherencia (%)', 'Riesgo'],
+            ...(data.gestantesMenorAdherencia || []).map((g) => [g.nombre, g.pct, g.riesgo]),
+          ],
+        },
+      ]);
+      if (ok) toast.success('Excel listo', 'Se generó el archivo .xlsx del reporte.');
+      else toast.error('No se pudo exportar', 'No fue posible generar el Excel.');
+    } catch { toast.error('No se pudo exportar', 'Error al crear el Excel.'); }
+    finally { setExportingXlsx(false); }
   };
 
   const riskBars: ChartBarDatum[] = (data?.riskDistribution || []).map((r) => ({ label: r.name, value: r.population, color: r.color }));
@@ -105,11 +123,11 @@ export default function AdminReportesScreen(): React.ReactElement {
               <Text style={styles.subtitle}>Indicadores globales</Text>
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.expBtn} onPress={exportCSV} disabled={exportingCsv}>
-                {exportingCsv ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
-                <Text style={styles.expBtnText}>CSV</Text>
+              <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+                {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
+                <Text style={styles.expBtnText}>Excel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting}>
+              <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
                 {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
                 <Text style={styles.expBtnText}>PDF</Text>
               </TouchableOpacity>
