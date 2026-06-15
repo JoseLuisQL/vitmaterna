@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronLeft, MapPin, CheckCircle2, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useMyProfile, useHomeVisits, useUpdateUbicacion } from '../../src/services/api-queries';
 import { useToast } from '../../src/components/ui';
@@ -81,7 +81,7 @@ export default function VisitasGestante(): React.ReactElement {
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']} style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={commonColors.white} />
+            <ChevronLeft size={24} color={commonColors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Visitas domiciliarias</Text>
         </SafeAreaView>
@@ -100,13 +100,13 @@ export default function VisitasGestante(): React.ReactElement {
           <Text style={styles.cardSub}>Comparte la ubicación de tu domicilio para que tu obstetra pueda visitarte fácilmente.</Text>
 
           <TouchableOpacity style={styles.locBtn} onPress={capturar} disabled={capturing}>
-            {capturing ? <ActivityIndicator size="small" color={BRAND} /> : <Ionicons name="location" size={18} color={BRAND} />}
+            {capturing ? <ActivityIndicator size="small" color={BRAND} /> : <MapPin size={18} color={BRAND} />}
             <Text style={styles.locBtnText}>{coords ? 'Actualizar mi ubicación actual' : 'Usar mi ubicación actual'}</Text>
           </TouchableOpacity>
 
           {coords && (
             <View style={styles.coordsBox}>
-              <Ionicons name="checkmark-circle" size={16} color={semanticColors.success} />
+              <CheckCircle2 size={16} color={semanticColors.success} />
               <Text style={styles.coordsText}>{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</Text>
             </View>
           )}
@@ -131,7 +131,7 @@ export default function VisitasGestante(): React.ReactElement {
           <ActivityIndicator color={BRAND} style={{ marginTop: spacing.lg }} />
         ) : visits.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Ionicons name="home-outline" size={40} color={commonColors.textTertiary} />
+            <Home size={40} color={commonColors.textTertiary} />
             <Text style={styles.emptyText}>Aún no has recibido visitas domiciliarias.</Text>
           </View>
         ) : (

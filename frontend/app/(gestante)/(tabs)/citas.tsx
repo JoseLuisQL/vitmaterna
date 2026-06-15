@@ -13,7 +13,10 @@ import {
 import { AppModal, AppButton, useToast, ToggleTabs, ListSkeleton } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Calendar, CheckCircle2, Flag, XCircle, Hourglass, Clock, Info,
+  ChevronRight, CalendarX, User, FileText, type LucideIcon,
+} from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   format,
@@ -75,19 +78,19 @@ function fechaLarga(fechaIso?: string | null): string {
 
 const STATUS_META: Record<
   string,
-  { label: string; bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }
+  { label: string; bg: string; text: string; icon: LucideIcon }
 > = {
-  programada: { label: 'Programada', bg: semanticColors.infoLight, text: semanticColors.info, icon: 'calendar-outline' },
-  confirmada: { label: 'Confirmada', bg: semanticColors.successLight, text: semanticColors.success, icon: 'checkmark-circle-outline' },
-  asistida: { label: 'Asistida', bg: gestanteColors.primaryLight, text: gestanteColors.primary, icon: 'flag-outline' },
-  no_asistida: { label: 'No asististe', bg: semanticColors.dangerLight, text: semanticColors.danger, icon: 'close-circle-outline' },
-  solicitud_reprogramacion: { label: 'Solicitud enviada', bg: semanticColors.warningLight, text: semanticColors.warning, icon: 'hourglass-outline' },
-  reprogramada: { label: 'Reprogramada', bg: semanticColors.warningLight, text: semanticColors.warning, icon: 'time-outline' },
-  cancelada: { label: 'Cancelada', bg: semanticColors.dangerLight, text: semanticColors.danger, icon: 'close-circle-outline' },
+  programada: { label: 'Programada', bg: semanticColors.infoLight, text: semanticColors.info, icon: Calendar },
+  confirmada: { label: 'Confirmada', bg: semanticColors.successLight, text: semanticColors.success, icon: CheckCircle2 },
+  asistida: { label: 'Asistida', bg: gestanteColors.primaryLight, text: gestanteColors.primary, icon: Flag },
+  no_asistida: { label: 'No asististe', bg: semanticColors.dangerLight, text: semanticColors.danger, icon: XCircle },
+  solicitud_reprogramacion: { label: 'Solicitud enviada', bg: semanticColors.warningLight, text: semanticColors.warning, icon: Hourglass },
+  reprogramada: { label: 'Reprogramada', bg: semanticColors.warningLight, text: semanticColors.warning, icon: Clock },
+  cancelada: { label: 'Cancelada', bg: semanticColors.dangerLight, text: semanticColors.danger, icon: XCircle },
 };
 
 function statusMeta(estado: string) {
-  return STATUS_META[estado] || { label: estado, bg: commonColors.surfaceAlt, text: commonColors.textSecondary, icon: 'information-circle-outline' as const };
+  return STATUS_META[estado] || { label: estado, bg: commonColors.surfaceAlt, text: commonColors.textSecondary, icon: Info };
 }
 
 export default function AppointmentsScreen() {
@@ -255,7 +258,7 @@ export default function AppointmentsScreen() {
             <View style={styles.cardBody}>
               <Text style={styles.cardTitle} numberOfLines={1}>{item.motivo}</Text>
               <View style={styles.metaRow}>
-                <Ionicons name="time-outline" size={13} color={commonColors.textSecondary} />
+                <Clock size={13} color={commonColors.textSecondary} />
                 <Text style={styles.metaText}>{horaTexto(item.hora)}</Text>
                 {item.obstetraNombre ? (
                   <>
@@ -265,12 +268,12 @@ export default function AppointmentsScreen() {
                 ) : null}
               </View>
               <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
-                <Ionicons name={meta.icon} size={12} color={meta.text} />
+                {React.createElement(meta.icon, { size: 12, color: meta.text })}
                 <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>
               </View>
             </View>
 
-            <Ionicons name="chevron-forward" size={20} color={commonColors.textTertiary} />
+            <ChevronRight size={20} color={commonColors.textTertiary} />
           </View>
         </View>
       </TouchableOpacity>
@@ -279,7 +282,7 @@ export default function AppointmentsScreen() {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="calendar-clear-outline" size={56} color={commonColors.textTertiary} />
+      <CalendarX size={56} color={commonColors.textTertiary} />
       <Text style={styles.emptyTitle}>
         {activeTab === 'upcoming' ? 'No tienes citas próximas' : 'Sin historial de citas'}
       </Text>
@@ -385,20 +388,20 @@ export default function AppointmentsScreen() {
         {selected && selMeta && (
           <View>
             <View style={[styles.detailStatus, { backgroundColor: selMeta.bg }]}>
-              <Ionicons name={selMeta.icon} size={16} color={selMeta.text} />
+              {React.createElement(selMeta.icon, { size: 16, color: selMeta.text })}
               <Text style={[styles.detailStatusText, { color: selMeta.text }]}>{selMeta.label}</Text>
             </View>
 
-            <DetailRow icon="calendar-outline" label="Fecha" value={fechaLarga(selected.fecha)} />
-            <DetailRow icon="time-outline" label="Hora" value={horaTexto(selected.hora)} />
+            <DetailRow icon={Calendar} label="Fecha" value={fechaLarga(selected.fecha)} />
+            <DetailRow icon={Clock} label="Hora" value={horaTexto(selected.hora)} />
             {selected.obstetraNombre ? (
-              <DetailRow icon="person-outline" label="Profesional" value={selected.obstetraNombre} />
+              <DetailRow icon={User} label="Profesional" value={selected.obstetraNombre} />
             ) : null}
             {selected.numeroControl ? (
-              <DetailRow icon="documents-outline" label="N.º de control" value={`Control ${selected.numeroControl}`} />
+              <DetailRow icon={FileText} label="N.º de control" value={`Control ${selected.numeroControl}`} />
             ) : null}
             {selected.observaciones ? (
-              <DetailRow icon="information-circle-outline" label="Indicaciones" value={selected.observaciones} />
+              <DetailRow icon={Info} label="Indicaciones" value={selected.observaciones} />
             ) : null}
 
             {selected.estado === 'solicitud_reprogramacion' && (
@@ -510,11 +513,11 @@ export default function AppointmentsScreen() {
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
+function DetailRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <View style={styles.detailRow}>
       <View style={styles.detailIcon}>
-        <Ionicons name={icon} size={16} color={BRAND} />
+        <Icon size={16} color={BRAND} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.detailLabel}>{label}</Text>

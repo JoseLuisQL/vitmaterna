@@ -12,7 +12,10 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, SectionList, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  CheckCircle2, Hourglass, Calendar, XCircle, AlertTriangle, AlertCircle,
+  TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, type LucideIcon,
+} from 'lucide-react-native';
 import { CheckCheck } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
@@ -38,30 +41,30 @@ interface Props {
 }
 
 /** Icono y color por tipo de notificación. */
-function metaFor(tipo: string): { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string } {
+function metaFor(tipo: string): { icon: LucideIcon; color: string; bg: string } {
   switch (tipo) {
     case 'cita_confirmada':
-      return { icon: 'checkmark-circle', color: semanticColors.success, bg: semanticColors.successLight };
+      return { icon: CheckCircle2, color: semanticColors.success, bg: semanticColors.successLight };
     case 'solicitud_reprogramacion':
-      return { icon: 'hourglass', color: semanticColors.warning, bg: semanticColors.warningLight };
+      return { icon: Hourglass, color: semanticColors.warning, bg: semanticColors.warningLight };
     case 'reprogramacion_aprobada':
-      return { icon: 'calendar', color: semanticColors.success, bg: semanticColors.successLight };
+      return { icon: Calendar, color: semanticColors.success, bg: semanticColors.successLight };
     case 'reprogramacion_rechazada':
-      return { icon: 'close-circle', color: semanticColors.danger, bg: semanticColors.dangerLight };
+      return { icon: XCircle, color: semanticColors.danger, bg: semanticColors.dangerLight };
     case 'signo_alarma':
-      return { icon: 'warning', color: semanticColors.danger, bg: semanticColors.dangerLight };
+      return { icon: AlertTriangle, color: semanticColors.danger, bg: semanticColors.dangerLight };
     case 'inasistencia':
-      return { icon: 'alert-circle', color: semanticColors.danger, bg: semanticColors.dangerLight };
+      return { icon: AlertCircle, color: semanticColors.danger, bg: semanticColors.dangerLight };
     case 'baja_adherencia':
-      return { icon: 'trending-down', color: semanticColors.warning, bg: semanticColors.warningLight };
+      return { icon: TrendingDown, color: semanticColors.warning, bg: semanticColors.warningLight };
     case 'recordatorio_suplemento':
-      return { icon: 'medkit', color: semanticColors.info, bg: semanticColors.infoLight };
+      return { icon: Pill, color: semanticColors.info, bg: semanticColors.infoLight };
     case 'fpp_proxima':
-      return { icon: 'heart', color: gestanteColors.primary, bg: gestanteColors.primaryLight };
+      return { icon: Heart, color: gestanteColors.primary, bg: gestanteColors.primaryLight };
     case 'examenes_pendientes':
-      return { icon: 'flask', color: semanticColors.info, bg: semanticColors.infoLight };
+      return { icon: FlaskConical, color: semanticColors.info, bg: semanticColors.infoLight };
     default:
-      return { icon: 'notifications', color: commonColors.textSecondary, bg: commonColors.surfaceAlt };
+      return { icon: Bell, color: commonColors.textSecondary, bg: commonColors.surfaceAlt };
   }
 }
 
@@ -175,7 +178,7 @@ export function NotificationsScreen({
           ]}
         >
           <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}>
-            <Ionicons name={meta.icon} size={20} color={meta.color} />
+            {React.createElement(meta.icon, { size: 20, color: meta.color })}
           </View>
           <View style={styles.body}>
             <View style={styles.titleRow}>
@@ -199,7 +202,7 @@ export function NotificationsScreen({
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-                <Ionicons name="chevron-back" size={24} color={commonColors.white} />
+                <ChevronLeft size={24} color={commonColors.white} />
               </TouchableOpacity>
               <View>
                 <Text style={styles.headerTitle}>Notificaciones</Text>
