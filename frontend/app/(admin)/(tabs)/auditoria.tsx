@@ -3,9 +3,10 @@
  * View audit logs and export database backup.
  */
 import React from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, Text, FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ShieldAlert, Download } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ShieldAlert, Download, ArrowLeft } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { AppCard } from '../../../src/components/ui/AppCard';
@@ -21,6 +22,7 @@ import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queri
 const BRAND = obstetraColors.primary;
 
 export default function AuditoriaScreen(): React.ReactElement {
+  const router = useRouter();
   const { data: logs, isLoading, refetch } = useAuditLogs();
   const exportMutation = useExportBackup();
 
@@ -77,7 +79,18 @@ export default function AuditoriaScreen(): React.ReactElement {
     <View style={styles.container}>
       <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.title}>Auditoría y Backup</Text>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/mas'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Volver"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Auditoría y Backup</Text>
+          </View>
           <AppButton
             title="Exportar Backup BD"
             onPress={handleExportBackup}
@@ -130,6 +143,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   title: {
     ...typography.h1,
     color: commonColors.white,

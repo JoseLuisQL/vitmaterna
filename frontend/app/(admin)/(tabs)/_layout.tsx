@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Users, FileText, Settings, ShieldAlert, Building2 } from 'lucide-react-native';
+import { Users, FileText, LayoutGrid } from 'lucide-react-native';
 import { adminColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
 
@@ -29,26 +29,16 @@ export default function AdminTabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
-        name="sedes"
+        name="mas"
         options={{
-          title: 'Sedes',
-          tabBarIcon: ({ color, size }) => <Building2 size={size} color={color} />,
+          title: 'Más',
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="config"
-        options={{
-          title: 'Config',
-          tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="auditoria"
-        options={{
-          title: 'Auditoría',
-          tabBarIcon: ({ color, size }) => <ShieldAlert size={size} color={color} />,
-        }}
-      />
+      {/* Funciones esporádicas: accesibles desde 'Más' (ocultas de la barra) */}
+      <Tabs.Screen name="sedes" options={{ title: 'Sedes', href: null }} />
+      <Tabs.Screen name="config" options={{ title: 'Config', href: null }} />
+      <Tabs.Screen name="auditoria" options={{ title: 'Auditoría', href: null }} />
     </Tabs>
   );
 }

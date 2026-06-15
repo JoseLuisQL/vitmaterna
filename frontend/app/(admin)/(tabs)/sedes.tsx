@@ -4,7 +4,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain, ArrowLeft } from 'lucide-react-native';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -34,6 +35,7 @@ const emptyForm: FacilityForm = {
 };
 
 export default function SedesScreen(): React.ReactElement {
+  const router = useRouter();
   const toast = useToast();
   const { data: facilities, isLoading } = useFacilities();
   const createMut = useCreateFacility();
@@ -143,9 +145,20 @@ export default function SedesScreen(): React.ReactElement {
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.headerTitle}>Establecimientos</Text>
-              <Text style={styles.headerSubtitle}>Sedes del centro de salud</Text>
+            <View style={styles.headerLeft}>
+              <TouchableOpacity
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/mas'))}
+                style={styles.backBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel="Volver"
+                accessibilityRole="button"
+              >
+                <ArrowLeft size={22} color={commonColors.white} />
+              </TouchableOpacity>
+              <View>
+                <Text style={styles.headerTitle}>Establecimientos</Text>
+                <Text style={styles.headerSubtitle}>Sedes del centro de salud</Text>
+              </View>
             </View>
             <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
               <Plus size={18} color={commonColors.white} />
@@ -200,6 +213,8 @@ const styles = StyleSheet.create({
   headerWrapper: { paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitle: { ...typography.h1, color: commonColors.white },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },

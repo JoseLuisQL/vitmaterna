@@ -3,9 +3,10 @@
  * Fetch and edit system-wide parameters.
  */
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, Alert, Switch } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, Alert, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Save } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Settings, Save, ArrowLeft } from 'lucide-react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +33,7 @@ const schema = z.object({
 type ConfigFormValues = z.infer<typeof schema>;
 
 export default function ConfigScreen(): React.ReactElement {
+  const router = useRouter();
   const { data: config, isLoading } = useSystemConfig();
   const updateConfigMutation = useUpdateSystemConfig();
 
@@ -84,7 +86,18 @@ export default function ConfigScreen(): React.ReactElement {
     <View style={styles.container}>
       <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.title}>Configuración del Sistema</Text>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/mas'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Volver"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={24} color={commonColors.white} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Configuración del Sistema</Text>
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -216,6 +229,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   title: {
     ...typography.h1,
     color: commonColors.white,
