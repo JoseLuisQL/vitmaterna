@@ -23,6 +23,7 @@ import {
   parseISO,
   addDays,
   isValid,
+  differenceInCalendarDays,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import api from '../../../src/services/api';
@@ -73,6 +74,22 @@ function fechaLarga(fechaIso?: string | null): string {
     return format(d, "EEEE d 'de' MMMM, yyyy", { locale: es });
   } catch {
     return 'Fecha por definir';
+  }
+}
+
+/** Texto humano de cuánto falta para una cita (hoy/mañana/en N días). */
+function cuentaRegresiva(fechaIso?: string | null): { texto: string; urgente: boolean } | null {
+  if (!fechaIso) return null;
+  try {
+    const d = parseISO(fechaIso);
+    if (!isValid(d)) return null;
+    const dias = differenceInCalendarDays(d, new Date());
+    if (dias < 0) return null;
+    if (dias === 0) return { texto: 'Es hoy', urgente: true };
+    if (dias === 1) return { texto: 'Es mañana', urgente: true };
+    return { texto: `En ${dias} días`, urgente: dias <= 3 };
+  } catch {
+    return null;
   }
 }
 
@@ -171,6 +188,13 @@ export default function AppointmentsScreen() {
 
   const displayed = activeTab === 'upcoming' ? upcoming : history;
 
+  // Progreso de controles prenatales (meta MINSA: 8 controles).
+  const META_CONTROLES = 8;
+  const completados = useMemo(
+    () => appointments.filter((a) => a.estado === 'asistida').length,
+    [appointments],
+  );
+
   // ── Acciones ──
   const openDetail = (appt: Appointment) => {
     setSelected(appt);
@@ -239,6 +263,7 @@ export default function AppointmentsScreen() {
   const renderCard = ({ item, index }: { item: Appointment; index: number }) => {
     const isNext = activeTab === 'upcoming' && index === 0;
     const meta = statusMeta(item.estado);
+    const countdown = isNext ? cuentaRegresiva(item.fecha) : null;
 
     return (
       <TouchableOpacity activeOpacity={0.7} onPress={() => openDetail(item)}>
@@ -267,9 +292,17 @@ export default function AppointmentsScreen() {
                   </>
                 ) : null}
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
-                {React.createElement(meta.icon, { size: 12, color: meta.text })}
-                <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>
+              <View style={styles.badgeRow}>
+                <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
+                  {React.createElement(meta.icon, { size: 12, color: meta.text })}
+                  <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>
+                </View>
+                {countdown && (
+                  <View style={[styles.countdownBadge, countdown.urgente && styles.countdownBadgeUrgent]}>
+                    <Clock size={11} color={countdown.urgente ? semanticColors.danger : BRAND} />
+                    <Text style={[styles.countdownText, countdown.urgente && { color: semanticColors.danger }]}>{countdown.texto}</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -346,6 +379,24 @@ export default function AppointmentsScreen() {
         renderItem={renderCard}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          activeTab === 'upcoming' ? (
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeaderRow}>
+                <Text style={styles.progressTitle}>Controles prenatales</Text>
+                <Text style={styles.progressCount}>{completados} de {META_CONTROLES}</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${Math.min(100, (completados / META_CONTROLES) * 100)}%` }]} />
+              </View>
+              <Text style={styles.progressHint}>
+                {completados >= META_CONTROLES
+                  ? '¡Completaste tus controles MINSA! Sigue las indicaciones de tu obstetra.'
+                  : `Te faltan ${META_CONTROLES - completados} control${META_CONTROLES - completados > 1 ? 'es' : ''} para cumplir la meta MINSA.`}
+              </Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={renderEmpty}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND]} tintColor={BRAND} />}
       />
@@ -499,12 +550,18 @@ export default function AppointmentsScreen() {
           </View>
         )}
 
-        <Text style={styles.inputLabel}>Motivo</Text>
+        <View style={styles.motivoLabelRow}>
+          <Text style={styles.inputLabel}>Motivo</Text>
+          <Text style={[styles.motivoCount, motivo.trim().length >= 5 ? styles.motivoCountOk : null]}>
+            {motivo.trim().length < 5 ? `Mínimo 5 caracteres` : `${motivo.trim().length} caracteres`}
+          </Text>
+        </View>
         <TextInput
           style={[styles.modalInput, { height: 80 }]}
           placeholder="Cuéntale a tu obstetra por qué necesitas reprogramar"
           placeholderTextColor={commonColors.textTertiary}
           multiline
+          maxLength={300}
           value={motivo}
           onChangeText={setMotivo}
         />
@@ -560,6 +617,20 @@ const styles = StyleSheet.create({
   badgeNumActive: { color: commonColors.white },
   badgeNumInactive: { color: commonColors.textSecondary },
   listContainer: { padding: spacing.md, paddingBottom: layout.tabBarSpace },
+  progressCard: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm + 4,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+  },
+  progressHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  progressTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  progressCount: { ...typography.label, color: BRAND, fontWeight: '700' },
+  progressTrack: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.full, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: borderRadius.full, backgroundColor: BRAND },
+  progressHint: { ...typography.caption, color: commonColors.textSecondary, marginTop: spacing.sm },
   card: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,
@@ -607,6 +678,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statusText: { ...typography.overline, letterSpacing: 0 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginTop: 2 },
+  countdownBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: borderRadius.md,
+    backgroundColor: gestanteColors.primaryLight,
+  },
+  countdownBadgeUrgent: { backgroundColor: semanticColors.dangerLight },
+  countdownText: { ...typography.overline, letterSpacing: 0, color: BRAND, fontWeight: '700' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: spacing.lg },
   emptyTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.md, marginBottom: spacing.sm },
   emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center' },
@@ -646,6 +729,9 @@ const styles = StyleSheet.create({
   pendingHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 6, fontStyle: 'italic' },
   // Reprogramación
   inputLabel: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.md },
+  motivoLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  motivoCount: { ...typography.caption, color: commonColors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md },
+  motivoCountOk: { color: semanticColors.success },
   helperText: { ...typography.bodySmall, color: commonColors.textTertiary, paddingVertical: spacing.sm },
   dateScroll: { flexDirection: 'row' },
   dateChip: {

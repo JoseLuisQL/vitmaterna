@@ -72,7 +72,7 @@ export default function AdminMasScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Supervisión — datos clínicos en modo lectura */}
         <Text style={styles.sectionTitle}>Supervisión</Text>
         <View style={styles.menuCard}>
@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerTitle: { ...typography.h1, color: commonColors.white },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginLeft: spacing.md },
   menuCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, overflow: 'hidden', borderWidth: 1, borderColor: commonColors.border },

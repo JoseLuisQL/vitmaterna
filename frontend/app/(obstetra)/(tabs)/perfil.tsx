@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope, TrendingUp, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -124,7 +124,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
@@ -163,7 +163,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         <View style={[styles.menuCard, { marginTop: 24 }]}>
           <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
         </View>
-      </View>
+      </ScrollView>
 
       <ProfileInfoModal
         visible={!!infoModal}
@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 4 },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
+  scroll: { flex: 1 },
   content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace, paddingTop: 16 },
   profileCard: {
     backgroundColor: commonColors.surface,

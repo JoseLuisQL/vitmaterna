@@ -218,7 +218,7 @@ export default function PerfilScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
 
         <Text style={styles.sectionTitle}>Mi salud</Text>
@@ -397,6 +397,7 @@ const styles = StyleSheet.create({
     color: commonColors.white,
   },
   headerProfile: { alignItems: 'center', marginTop: spacing.md },
+  scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, paddingTop: spacing.lg },
   loadingCard: {
     backgroundColor: commonColors.surface,
