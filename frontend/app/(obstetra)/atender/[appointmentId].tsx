@@ -19,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
+import { confirmAction } from '../../../src/utils/confirm';
 import { useAppointments, useUpdateAppointmentStatus } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -103,8 +104,20 @@ export default function AtenderCitaScreen(): React.ReactElement {
 
   const completedCount = Object.values(done).filter(Boolean).length;
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (!appointmentId) return;
+
+    // Si quedan registros sin completar, pedir confirmación explícita.
+    if (completedCount < STEPS.length) {
+      const faltan = STEPS.length - completedCount;
+      const ok = await confirmAction({
+        title: 'Finalizar con registros pendientes',
+        message: `Aún ${faltan === 1 ? 'queda 1 registro' : `quedan ${faltan} registros`} sin completar. ¿Marcar la cita como asistida de todas formas?`,
+        confirmText: 'Sí, finalizar',
+      });
+      if (!ok) return;
+    }
+
     updateStatus(
       { id: appointmentId, status: 'asistida' },
       {
@@ -140,10 +153,13 @@ export default function AtenderCitaScreen(): React.ReactElement {
           <View style={styles.progressPill}>
             <Text style={styles.progressText}>{completedCount} de {STEPS.length} registros</Text>
           </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${(completedCount / STEPS.length) * 100}%` }]} />
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.intro}>
           Registra los datos de esta consulta en orden. Puedes abrir y completar cada
           sección; lo registrado queda ligado a esta cita.
@@ -215,6 +231,9 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   progressPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 5, marginTop: spacing.md },
   progressText: { ...typography.caption, color: commonColors.white, fontWeight: '700' },
+  progressTrack: { height: 6, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.25)', overflow: 'hidden', marginTop: spacing.sm },
+  progressFill: { height: '100%', borderRadius: borderRadius.full, backgroundColor: commonColors.white },
+  scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   intro: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
   stepCard: {
