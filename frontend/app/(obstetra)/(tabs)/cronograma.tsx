@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, Plus, Home } from 'lucide-react-native';
@@ -289,7 +290,7 @@ export default function CronogramaScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={processedAppointments}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}

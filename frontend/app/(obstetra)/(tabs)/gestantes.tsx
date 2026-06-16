@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, StatusBar, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, TextInput, StatusBar, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Baby, Search, ChevronRight, Plus } from 'lucide-react-native';
@@ -189,7 +190,7 @@ export default function GestantesScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={processedPatients}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}

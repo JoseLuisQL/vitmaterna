@@ -3,7 +3,8 @@
  * Lista global de gestantes del sistema con buscador y filtro de riesgo.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, StatusBar } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -59,7 +60,7 @@ export default function AdminGestantesScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <FlatList
+      <FlashList
         data={isLoading ? [] : filtered}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={

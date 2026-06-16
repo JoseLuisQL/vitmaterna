@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Text, FlatList, StatusBar, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, StatusBar, TouchableOpacity, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, AlertTriangle, User, Clock, CheckCircle, Share2 } from 'lucide-react-native';
@@ -229,7 +230,7 @@ export default function AlertasScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={sortedData}
         keyExtractor={(item) => item.id || Math.random().toString()}
         renderItem={renderItem}

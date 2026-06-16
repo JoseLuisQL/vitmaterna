@@ -3,7 +3,8 @@
  * Fetch and display all users with options to view detail and activate/deactivate.
  */
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, FlatList, RefreshControl, TextInput, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, RefreshControl, TextInput, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, LogOut } from 'lucide-react-native';
@@ -511,7 +512,7 @@ export default function UsuariosScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={filteredUsers}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}
