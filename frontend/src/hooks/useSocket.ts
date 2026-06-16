@@ -52,13 +52,13 @@ export const useSocket = () => {
 
   const emit = useCallback(
     (event: string, data: any) => {
-      if (socket && isConnected) {
-        socket.emit(event, data);
-      } else {
-        console.warn('Cannot emit, socket not connected');
-      }
+      if (!socket) return; // Aún no hay socket: ignorar en silencio.
+      // socket.io-client encola (buffer) los emits mientras (re)conecta y los
+      // envía automáticamente al conectar. Por eso emitimos siempre que exista
+      // el socket: no se pierden eventos y no hace falta avisar "not connected".
+      socket.emit(event, data);
     },
-    [socket, isConnected]
+    [socket]
   );
 
   return { socket, isConnected, emit };

@@ -116,9 +116,15 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
   useEffect(() => {
     if (!socket || !conversationId) return;
 
-    emit('join_conversation', conversationId);
-    // Al abrir, marcamos como leídos los mensajes recibidos.
-    emit('mark_read', { conversationId });
+    // Unirse a la sala y marcar leído. Se hace ahora y también en cada
+    // (re)conexión, para no perder el join si el socket aún no estaba conectado
+    // o si se cae y vuelve.
+    const joinAndRead = () => {
+      emit('join_conversation', conversationId);
+      emit('mark_read', { conversationId });
+    };
+    joinAndRead();
+    socket.on('connect', joinAndRead);
 
     const onReceive = (message: any) => {
       const incoming = mapServerMessage(message);
@@ -163,6 +169,7 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     socket.on('messages_read', onRead);
 
     return () => {
+      socket.off('connect', joinAndRead);
       socket.off('receive_message', onReceive);
       socket.off('typing', onTyping);
       socket.off('presence', onPresence);
