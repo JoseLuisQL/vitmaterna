@@ -11,8 +11,9 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, TextInput,
-  Linking, StatusBar, FlatList, Image,
+  Linking, StatusBar, Image,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -186,6 +187,12 @@ export default function EducacionScreen(): React.ReactElement {
     });
   }, [allContents, seccion, currentTrimester, categoria, query, isFavorite]);
 
+  // Nº de favoritos para mostrarlo en la pestaña.
+  const favCount = useMemo(
+    () => allContents.filter((c) => isFavorite(c.id)).length,
+    [allContents, isFavorite],
+  );
+
   const renderHeader = () => (
     <View>
       {/* Buscador */}
@@ -211,7 +218,7 @@ export default function EducacionScreen(): React.ReactElement {
         tabs={[
           { key: 'parati', label: 'Para ti' },
           { key: 'biblioteca', label: 'Biblioteca' },
-          { key: 'favoritos', label: 'Favoritos' },
+          { key: 'favoritos', label: 'Favoritos', badge: favCount || undefined },
         ]}
         value={seccion}
         onChange={(k) => setSeccion(k as Seccion)}
@@ -302,7 +309,7 @@ export default function EducacionScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <FlatList
+      <FlashList
         data={isLoading ? [] : filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
