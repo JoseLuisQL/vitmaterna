@@ -150,6 +150,34 @@ export class AdminController {
     const result = await adminService.deleteFacility(req.params.id as string);
     return res.status(200).json(successResponse(result));
   }
+
+  // ── Feature flags (alcance de módulos) ──
+
+  /** Devuelve el mapa de banderas con sus etiquetas (lectura). */
+  async getFeatureFlags(_req: Request, res: Response) {
+    const { getFeatureFlags, FEATURE_LABELS } = await import('../../utils/featureFlags.js');
+    const flags = await getFeatureFlags();
+    return res.status(200).json(successResponse({ flags, labels: FEATURE_LABELS }));
+  }
+
+  /** Actualiza una o varias banderas (solo admin). */
+  async updateFeatureFlags(req: Request, res: Response) {
+    const { getFeatureFlags, DEFAULT_FEATURE_FLAGS } = await import('../../utils/featureFlags.js');
+    const { setConfigValue } = await import('../../utils/systemSettings.js');
+    const current = await getFeatureFlags();
+    const incoming = (req.body?.flags ?? req.body ?? {}) as Record<string, unknown>;
+
+    const next = { ...current };
+    for (const key of Object.keys(DEFAULT_FEATURE_FLAGS) as (keyof typeof DEFAULT_FEATURE_FLAGS)[]) {
+      const v = incoming[key];
+      if (typeof v === 'boolean') next[key] = v;
+      else if (v === 'true') next[key] = true;
+      else if (v === 'false') next[key] = false;
+    }
+
+    await setConfigValue('featureFlags', next, req.user?.userId, 'Alcance de módulos del sistema');
+    return res.status(200).json(successResponse({ flags: next }));
+  }
 }
 
 export const adminController = new AdminController();

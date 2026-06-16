@@ -20,8 +20,15 @@ import { rbac } from '../../middleware/rbac.middleware.js';
 
 export const adminRoutes = Router();
 
-// All admin routes are protected
+// Lectura de feature flags: accesible a cualquier usuario autenticado para que
+// la app sepa qué módulos mostrar. Va ANTES del gate rbac('admin').
+adminRoutes.get('/feature-flags', authenticate, adminController.getFeatureFlags);
+
+// All admin routes below are protected (admin only)
 adminRoutes.use(authenticate, rbac('admin'));
+
+// Escritura de feature flags (solo admin)
+adminRoutes.put('/feature-flags', adminController.updateFeatureFlags);
 
 // Dashboard / resumen global
 adminRoutes.get('/dashboard', adminController.getDashboard);
