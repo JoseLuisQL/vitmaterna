@@ -84,7 +84,7 @@ export default function ConfigScreen(): React.ReactElement {
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
             <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/mas'))}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
               style={styles.backBtn}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityLabel="Volver"

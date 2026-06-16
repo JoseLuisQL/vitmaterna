@@ -190,11 +190,11 @@ export default function GestantesScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
+      {renderHeader()}
       <FlashList
         data={processedPatients}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

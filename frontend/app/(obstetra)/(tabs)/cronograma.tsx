@@ -319,11 +319,14 @@ export default function CronogramaScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
+      {/* Header fuera del FlashList: evita problemas de nodos de texto/whitespace
+          en web cuando el ListHeaderComponent contiene StatusBar/elementos que
+          renderizan null. */}
+      {renderHeader()}
       <FlashList
         data={processedAppointments}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

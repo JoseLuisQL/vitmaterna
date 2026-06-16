@@ -496,11 +496,11 @@ export default function UsuariosScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
+      {renderHeader()}
       <FlashList
         data={filteredUsers}
         keyExtractor={(item) => item.id || item._id}
         renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           isLoading ? (
             <View style={{ paddingHorizontal: spacing.lg }}>

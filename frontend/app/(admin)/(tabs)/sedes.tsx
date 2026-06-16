@@ -147,7 +147,7 @@ export default function SedesScreen(): React.ReactElement {
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <TouchableOpacity
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/mas'))}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
                 style={styles.backBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 accessibilityLabel="Volver"
