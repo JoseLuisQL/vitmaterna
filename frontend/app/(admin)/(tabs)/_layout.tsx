@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Users, FileText, LayoutGrid } from 'lucide-react-native';
+import { Home, Users, FileText } from 'lucide-react-native';
 import { adminColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
 
@@ -35,14 +35,11 @@ export default function AdminTabsLayout(): React.ReactElement {
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="mas"
-        options={{
-          title: 'Más',
-          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
-        }}
-      />
-      {/* Funciones esporádicas: accesibles desde 'Más' (ocultas de la barra) */}
+      {/* 'Más' ya no es un tab: su contenido vive en el sidebar (menú lateral),
+          igual que en gestante y obstetra. Se mantiene la ruta oculta por si
+          algún enlace antiguo apunta a ella. */}
+      <Tabs.Screen name="mas" options={{ title: 'Más', href: null }} />
+      {/* Funciones esporádicas: viven en el sidebar (ocultas de la barra) */}
       <Tabs.Screen name="sedes" options={{ title: 'Sedes', href: null }} />
       <Tabs.Screen name="config" options={{ title: 'Config', href: null }} />
       <Tabs.Screen name="auditoria" options={{ title: 'Auditoría', href: null }} />

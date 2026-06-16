@@ -7,7 +7,8 @@ import { View, StyleSheet, Text, RefreshControl, TextInput, ActivityIndicator, A
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, LogOut } from 'lucide-react-native';
+import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, Menu } from 'lucide-react-native';
+import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -23,7 +24,6 @@ import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 
 const BRAND = obstetraColors.primary;
 import { useAuthStore } from '../../../src/store/authStore';
-import { useRouter } from 'expo-router';
 
 // ─── UTILS & SUBCOMPONENTS ────────────────────────────────────────────────────
 function DetailRow({ label, value, isLast = false }: { label: string; value?: string | number | null; isLast?: boolean }) {
@@ -72,8 +72,8 @@ export default function UsuariosScreen(): React.ReactElement {
   const resetPasswordMutation = useResetUserPassword();
   const deleteUserMutation = useDeleteUser();
   const toast = useToast();
-  const { logout, user: authUser } = useAuthStore();
-  const router = useRouter();
+  const { open: openSidebar } = useSidebar();
+  const { user: authUser } = useAuthStore();
 
   // Edición / reset / baja
   const [isEditVisible, setIsEditVisible] = useState(false);
@@ -150,22 +150,6 @@ export default function UsuariosScreen(): React.ReactElement {
       },
       onError: (e: any) => toast.error('No se pudo eliminar', e?.response?.data?.error?.message || 'Inténtalo nuevamente.'),
     });
-  };
-
-  const handleLogout = async () => {
-    const ok = await confirmAction({
-      title: 'Cerrar Sesión',
-      message: '¿Está seguro de que desea cerrar la sesión actual?',
-      confirmText: 'Cerrar Sesión',
-      destructive: true,
-    });
-    if (!ok) return;
-    try {
-      await logout();
-      router.replace('/(auth)/login');
-    } catch (err) {
-      notify('Error', 'No se pudo cerrar la sesión.');
-    }
   };
 
   // Modal States
@@ -267,14 +251,14 @@ export default function UsuariosScreen(): React.ReactElement {
       >
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity onPress={openSidebar} style={styles.logoutBtn} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Abrir menú">
+              <Menu size={22} color={commonColors.white} />
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Gestión de Usuarios</Text>
               <Text style={styles.headerSubtitle}>Administra los accesos y roles de la plataforma</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-              <LogOut size={22} color={commonColors.white} />
-            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>

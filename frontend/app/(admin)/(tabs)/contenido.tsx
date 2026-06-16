@@ -8,7 +8,8 @@ import {
   View, StyleSheet, Text, ScrollView, FlatList, TouchableOpacity, RefreshControl, Switch, TextInput, Image, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus, Eye, TrendingUp } from 'lucide-react-native';
+import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus, Eye, TrendingUp, Menu } from 'lucide-react-native';
+import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -76,6 +77,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function ContenidoScreen(): React.ReactElement {
   const toast = useToast();
+  const { open: openSidebar } = useSidebar();
   const { data: items = [], isLoading, refetch, isRefetching } = useEducationContent();
   const createMut = useCreateEducationContent();
   const updateMut = useUpdateEducationContent();
@@ -316,6 +318,9 @@ export default function ContenidoScreen(): React.ReactElement {
       <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
         <SafeAreaView edges={['top']}>
           <View style={styles.header}>
+            <TouchableOpacity style={styles.menuBtn} onPress={openSidebar} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Abrir menú">
+              <Menu size={22} color={commonColors.white} />
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>Contenido educativo</Text>
               <Text style={styles.subtitle}>{items.length} recurso(s) · {items.filter((i) => i.activo).length} activos</Text>
@@ -455,7 +460,8 @@ export default function ContenidoScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerGradient: { borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl, paddingBottom: spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  menuBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   title: { ...typography.h1, color: commonColors.white },
   subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
