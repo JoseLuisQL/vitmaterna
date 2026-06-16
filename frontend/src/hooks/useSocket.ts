@@ -43,6 +43,14 @@ export const useSocket = () => {
       console.log('Socket disconnected');
     });
 
+    // Si el socket YA estaba conectado antes de registrar el listener (el evento
+    // 'connect' pudo dispararse antes), sincronizamos el estado de inmediato.
+    // Sin esto, isConnected se quedaba en false y el header mostraba
+    // "Conectando..." de forma permanente.
+    if (newSocket.connected) {
+      setIsConnected(true);
+    }
+
     setSocket(newSocket);
 
     return () => {
