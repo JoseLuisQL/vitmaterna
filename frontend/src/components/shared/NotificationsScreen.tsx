@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CheckCircle2, Hourglass, Calendar, XCircle, AlertTriangle, AlertCircle,
-  TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, type LucideIcon,
+  TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, Siren, type LucideIcon,
 } from 'lucide-react-native';
 import { CheckCheck } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -40,9 +40,14 @@ interface Props {
   gradient?: readonly [string, string, ...string[]];
 }
 
+/** Tipos que representan una urgencia clínica (realce especial). */
+const URGENT_TYPES = new Set(['emergencia', 'signo_alarma', 'inasistencia']);
+
 /** Icono y color por tipo de notificación. */
 function metaFor(tipo: string): { icon: LucideIcon; color: string; bg: string } {
   switch (tipo) {
+    case 'emergencia':
+      return { icon: Siren, color: semanticColors.danger, bg: semanticColors.dangerLight };
     case 'cita_confirmada':
       return { icon: CheckCircle2, color: semanticColors.success, bg: semanticColors.successLight };
     case 'solicitud_reprogramacion':
@@ -144,7 +149,9 @@ export function NotificationsScreen({
     ];
 
     let target: string | null = null;
-    if (citaTipos.includes(n.tipo)) {
+    if (n.tipo === 'emergencia' && role === 'obstetra') {
+      target = '/(obstetra)/(tabs)/chat';
+    } else if (citaTipos.includes(n.tipo)) {
       target = role === 'obstetra' ? '/(obstetra)/(tabs)/cronograma' : '/(gestante)/(tabs)/citas';
     } else if (n.tipo === 'signo_alarma' && role === 'obstetra') {
       target = '/(obstetra)/(tabs)/alertas';
@@ -169,12 +176,17 @@ export function NotificationsScreen({
   const renderItem = ({ item }: { item: AppNotification }) => {
     const meta = metaFor(item.tipo);
     const unread = !item.leidaAt;
+    const urgent = URGENT_TYPES.has(item.tipo);
+    // Urgente: borde rojo siempre (leída o no). No urgente sin leer: borde del rol.
+    const borderColor = urgent ? semanticColors.danger : unread ? themeColor : undefined;
     return (
       <TouchableOpacity activeOpacity={0.7} onPress={() => handlePress(item)}>
         <View
           style={[
             styles.card,
-            unread ? { borderLeftWidth: 4, borderLeftColor: themeColor } : styles.cardRead,
+            borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : null,
+            urgent && unread ? styles.cardUrgent : null,
+            !unread && !urgent ? styles.cardRead : null,
           ]}
         >
           <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}>
@@ -340,6 +352,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   cardRead: { opacity: 0.78 },
+  cardUrgent: { backgroundColor: semanticColors.dangerLight },
   iconCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 3 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
