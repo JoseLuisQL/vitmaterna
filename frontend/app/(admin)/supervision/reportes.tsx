@@ -139,7 +139,7 @@ export default function AdminReportesScreen(): React.ReactElement {
       {isLoading ? (
         <View style={{ padding: spacing.lg }}><DashboardSkeleton count={2} /></View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
           <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.lg }}>
             {[
               { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: adminColors.primaryLight },

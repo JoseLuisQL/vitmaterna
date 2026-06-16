@@ -111,7 +111,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Portada */}
         {thumb ? (
           <Image source={{ uri: thumb }} style={styles.cover} resizeMode="cover" accessibilityLabel="Portada del artículo" />
@@ -152,6 +152,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 5 },
   metaChipText: { ...typography.caption, color: commonColors.white, fontWeight: '600' },
+  scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   cover: { width: '100%', height: 180, borderRadius: borderRadius.xl, backgroundColor: commonColors.surfaceAlt, marginBottom: spacing.lg },
   mediaCard: {

@@ -83,7 +83,7 @@ export default function MensajeMasivoScreen(): React.ReactElement {
         </View>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.iconWrap}>
           <Megaphone size={28} color={BRAND} />
         </View>

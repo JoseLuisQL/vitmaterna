@@ -250,7 +250,7 @@ export default function TamizajesScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.subtitle}>Selecciona el registro clínico que deseas añadir.</Text>
 
         {CARDS.map(({ key, label, desc, icon: Icon, color, bg }) => (
@@ -444,6 +444,7 @@ const styles = StyleSheet.create({
   iconBtnGlass: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitle: { ...typography.h3, color: commonColors.white },
   headerPatient: { ...typography.h2, color: commonColors.white, paddingHorizontal: spacing.lg, marginTop: spacing.xs },
+  scroll: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 48 },
   subtitle: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.md2 },
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md2, marginBottom: spacing.sm2, ...shadows.card },

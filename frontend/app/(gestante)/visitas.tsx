@@ -93,7 +93,7 @@ export default function VisitasGestante(): React.ReactElement {
           <CardSkeleton style={{ marginTop: spacing.lg }} />
         </View>
       ) : (
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Ubicación */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Mi ubicación</Text>

@@ -138,7 +138,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           <CardSkeleton style={{ marginTop: spacing.lg }} />
         </View>
       ) : (
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* ─── SMS (Twilio) ─── */}
         <View style={styles.card}>
           <View style={styles.cardHead}>

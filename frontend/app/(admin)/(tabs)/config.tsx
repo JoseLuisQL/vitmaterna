@@ -104,7 +104,7 @@ export default function ConfigScreen(): React.ReactElement {
           <CardSkeleton style={{ marginTop: spacing.lg }} />
         </View>
       ) : (
-      <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Límites y Accesos</Text>
