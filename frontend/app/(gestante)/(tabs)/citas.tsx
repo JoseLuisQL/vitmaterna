@@ -586,8 +586,6 @@ function DetailRow({ icon: Icon, label, value }: { icon: LucideIcon; label: stri
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: commonColors.background },
-  loadingText: { marginTop: spacing.sm + 4, ...typography.bodyMedium, color: commonColors.textSecondary },
   header: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -596,26 +594,9 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: borderRadius.xxl,
   },
   headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 2 },
+  headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 2 },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
   tabContainer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 9,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.xl,
-    backgroundColor: commonColors.surfaceAlt,
-  },
-  activeTab: { backgroundColor: BRAND },
-  tabText: { ...typography.label, color: commonColors.textSecondary },
-  activeTabText: { color: commonColors.white },
-  badge: { paddingHorizontal: 7, paddingVertical: 1, borderRadius: 10, marginLeft: spacing.sm },
-  badgeActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  badgeInactive: { backgroundColor: commonColors.border },
-  badgeNum: { ...typography.overline, letterSpacing: 0 },
-  badgeNumActive: { color: commonColors.white },
-  badgeNumInactive: { color: commonColors.textSecondary },
   listContainer: { padding: spacing.md, paddingBottom: layout.tabBarSpace },
   progressCard: {
     backgroundColor: commonColors.surface,
