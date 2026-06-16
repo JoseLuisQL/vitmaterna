@@ -366,10 +366,13 @@ export class ClinicalService {
     });
   }
 
-  async getDangerSigns(estado?: string | any) {
+  async getDangerSigns(estado?: string | any, gestanteId?: string) {
     const whereCondition: any = {};
     if (estado) {
       whereCondition.estado = estado;
+    }
+    if (gestanteId) {
+      whereCondition.gestanteId = gestanteId;
     }
 
     return prisma.dangerSign.findMany({

@@ -39,12 +39,6 @@ const SECTIONS: Record<UserRole, SidebarSection[]> = {
         { icon: MapPin, label: 'Visitas domiciliarias', description: 'Historial de visitas', href: '/(gestante)/visitas' },
       ],
     },
-    {
-      title: 'Cuenta',
-      items: [
-        { icon: Bell, label: 'Notificaciones', description: 'Avisos y recordatorios', href: '/(gestante)/notificaciones' },
-      ],
-    },
   ],
   obstetra: [
     {
@@ -57,7 +51,6 @@ const SECTIONS: Record<UserRole, SidebarSection[]> = {
       title: 'Comunicación',
       items: [
         { icon: Send, label: 'Mensaje masivo', description: 'Enviar a varias gestantes', href: '/(obstetra)/mensaje-masivo' },
-        { icon: Bell, label: 'Notificaciones', description: 'Avisos del sistema', href: '/(obstetra)/notificaciones' },
       ],
     },
     {

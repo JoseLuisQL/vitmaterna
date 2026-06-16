@@ -110,7 +110,7 @@ export default function ObstetraDashboard(): React.ReactElement {
             <Text style={styles.kpiLabel}>Pacientes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/(tabs)/alertas')}>
+          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/notificaciones')}>
             <View style={[styles.kpiIcon, { backgroundColor: semanticColors.dangerLight }]}>
               <AlertTriangle size={20} color={semanticColors.danger} />
             </View>

@@ -29,9 +29,18 @@ function routeForNotification(role: string | undefined, data: Record<string, any
     if (role === 'gestante') return '/(gestante)/(tabs)/citas';
   }
 
-  // Signo de alarma / emergencia → el obstetra va a su bandeja/alertas.
+  // Emergencia (botón de pánico) → el obstetra va al chat (donde actúa).
+  if (tipo === 'emergencia') {
+    if (role === 'obstetra') return '/(obstetra)/(tabs)/chat';
+  }
+
+  // Signo de alarma → el obstetra va a la ficha de la gestante (sección
+  // Alarmas) si viene el id; si no, a la lista de gestantes.
   if (tipo === 'signo_alarma' || data?.dangerSignId) {
-    if (role === 'obstetra') return '/(obstetra)/(tabs)/alertas';
+    if (role === 'obstetra') {
+      const gid = data?.gestanteId as string | undefined;
+      return gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
+    }
   }
 
   // Recordatorio de suplemento → tratamiento de la gestante.

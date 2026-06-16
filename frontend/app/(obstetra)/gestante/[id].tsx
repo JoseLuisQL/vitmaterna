@@ -25,6 +25,7 @@ import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
   useEducationCatalog, useRecommendContent,
+  usePatientDangerSigns, useUpdateDangerSign,
 } from '../../../src/services/api-queries';
 import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
@@ -43,6 +44,7 @@ const TABS = [
   { id: 'laboratorio', label: 'Lab.', icon: FlaskConical },
   { id: 'tamizajes', label: 'Tamizajes', icon: ClipboardList },
   { id: 'tratamiento', label: 'Medicinas', icon: Pill },
+  { id: 'alarmas', label: 'Alarmas', icon: AlertTriangle },
   { id: 'vacunas', label: 'Vacunas', icon: Syringe },
   { id: 'visitas', label: 'Visitas', icon: Home },
 ];
@@ -212,6 +214,8 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { mutate: deleteAntecedente } = useDeleteAntecedente();
   const { mutate: updateTreatment, isPending: isUpdatingTreat } = useUpdateTreatment();
   const { mutate: updatePatient, isPending: isSavingEmb } = useUpdatePatient();
+  const { data: dangerSigns = [] } = usePatientDangerSigns(id || '');
+  const { mutate: updateDangerSign, isPending: isUpdatingDanger } = useUpdateDangerSign();
 
   // Recomendar contenido educativo a esta gestante
   const [recommendVisible, setRecommendVisible] = useState(false);
@@ -851,6 +855,64 @@ export default function PatientProfileScreen(): React.ReactElement {
                   />
                 )}
               </View>
+            </View>
+          )}
+
+          {/* ── TAB: ALARMAS (signos de alarma de la gestante) ── */}
+          {activeTab === 'alarmas' && (
+            <View style={{ gap: spacing.sm2 }}>
+              <Seccion titulo="Signos de alarma reportados" />
+              {dangerSigns.length === 0 ? (
+                <View style={[styles.card, designTokens.cardShadow]}>
+                  <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>
+                    Esta gestante no ha reportado signos de alarma.
+                  </Text>
+                </View>
+              ) : (
+                dangerSigns.map((s) => {
+                  const grave = (s.severidad || '').toLowerCase() === 'grave';
+                  const color = grave ? semanticColors.danger : semanticColors.warning;
+                  const pendiente = s.estado === 'pendiente';
+                  const estadoLabel = s.estado === 'atendido' ? 'Atendido' : s.estado === 'derivado' ? 'Derivado' : 'Pendiente';
+                  return (
+                    <View key={s.id} style={[styles.card, designTokens.cardShadow, { borderLeftWidth: 4, borderLeftColor: color }]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                          <AlertTriangle size={16} color={color} />
+                          <Text style={{ ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, flex: 1 }} numberOfLines={2}>{s.tipoSigno}</Text>
+                        </View>
+                        <View style={{ backgroundColor: color + '1A', paddingHorizontal: 10, paddingVertical: 3, borderRadius: borderRadius.full }}>
+                          <Text style={{ ...typography.overline, color, fontWeight: '700' }}>{grave ? 'GRAVE' : 'LEVE'}</Text>
+                        </View>
+                      </View>
+                      {s.descripcion ? (
+                        <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: 6 }}>{s.descripcion}</Text>
+                      ) : null}
+                      <Text style={{ ...typography.caption, color: commonColors.textTertiary, marginBottom: pendiente ? 10 : 0 }}>
+                        {new Date(s.createdAt).toLocaleString('es-PE')} · {estadoLabel}
+                      </Text>
+                      {pendiente && (
+                        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                          <TouchableOpacity
+                            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: borderRadius.lg, backgroundColor: semanticColors.warningLight }}
+                            disabled={isUpdatingDanger}
+                            onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'derivado' })}
+                          >
+                            <Text style={{ ...typography.label, color: semanticColors.warning, fontWeight: '700' }}>Derivar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: borderRadius.lg, backgroundColor: semanticColors.successLight }}
+                            disabled={isUpdatingDanger}
+                            onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'atendido' })}
+                          >
+                            <Text style={{ ...typography.label, color: semanticColors.success, fontWeight: '700' }}>Atender</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
             </View>
           )}
 

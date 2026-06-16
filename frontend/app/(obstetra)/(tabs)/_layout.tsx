@@ -4,15 +4,16 @@
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Baby, Calendar, AlertTriangle, MessageCircle } from 'lucide-react-native';
+import { Home, Baby, Calendar, MessageCircle } from 'lucide-react-native';
 import { obstetraColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
-import { useObstetraDashboard } from '../../../src/services/api-queries';
+import { useUnreadCount } from '../../../src/services/api-queries';
 
 export default function ObstetraTabsLayout(): React.ReactElement {
-  // Badge de alertas pendientes en la barra inferior (seguridad de la paciente).
-  const { data: stats } = useObstetraDashboard();
-  const alerts = stats?.alerts ?? 0;
+  // Badge en el Chat: avisos sin leer (incluye signos de alarma / emergencias,
+  // que ahora viven en el chat). El módulo "Alertas" se eliminó para evitar
+  // redundancia con Notificaciones y Chat.
+  const { data: unread = 0 } = useUnreadCount();
 
   return (
     <Tabs
@@ -41,20 +42,14 @@ export default function ObstetraTabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
-        name="alertas"
-        options={{
-          title: 'Alertas',
-          tabBarIcon: ({ color, size }) => <AlertTriangle size={size} color={color} />,
-          tabBarBadge: alerts > 0 ? alerts : undefined,
-        }}
-      />
-      <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
+          tabBarBadge: unread > 0 ? unread : undefined,
         }}
       />
+      <Tabs.Screen name="alertas" options={{ title: 'Alertas', href: null }} />
       <Tabs.Screen name="perfil" options={{ title: 'Perfil', href: null }} />
       <Tabs.Screen name="reportes" options={{ title: 'Reportes', href: null }} />
     </Tabs>

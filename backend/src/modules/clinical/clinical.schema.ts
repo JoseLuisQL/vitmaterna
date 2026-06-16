@@ -148,6 +148,7 @@ export const createDangerSignSchema = {
 export const getDangerSignsSchema = {
   query: z.object({
     estado: z.enum(['pendiente', 'atendido', 'derivado']).optional(),
+    gestanteId: z.string().uuid().optional(),
   }),
 };
 

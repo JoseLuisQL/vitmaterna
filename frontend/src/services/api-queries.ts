@@ -1051,3 +1051,48 @@ export const useUpdateTreatment = () => {
     },
   });
 };
+
+// ── Signos de alarma de una gestante (gestión en su ficha clínica) ──
+
+export interface PatientDangerSign {
+  id: string;
+  tipoSigno: string;
+  descripcion?: string | null;
+  severidad?: string | null;
+  estado: string; // pendiente | atendido | derivado
+  accionTomada?: string | null;
+  createdAt: string;
+}
+
+export const usePatientDangerSigns = (gestanteId: string) =>
+  useQuery({
+    queryKey: ['dangerSigns', gestanteId],
+    queryFn: async (): Promise<PatientDangerSign[]> => {
+      const res = await api.get('/clinical/danger-signs', { params: { gestanteId } });
+      return (res.data?.data || []).map((d: any) => ({
+        id: d.id,
+        tipoSigno: d.tipoSigno,
+        descripcion: d.descripcion,
+        severidad: d.severidad,
+        estado: d.estado,
+        accionTomada: d.accionTomada,
+        createdAt: d.createdAt || d.fechaReporte,
+      }));
+    },
+    enabled: !!gestanteId,
+  });
+
+export const useUpdateDangerSign = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, estado }: { id: string; gestanteId: string; estado: 'atendido' | 'derivado' }) => {
+      const accionTomada = estado === 'atendido' ? 'Atendido por el obstetra' : 'Derivado al equipo de salud';
+      const res = await api.patch(`/clinical/danger-signs/${id}`, { estado, accionTomada });
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['dangerSigns', variables.gestanteId] });
+      queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
+    },
+  });
+};

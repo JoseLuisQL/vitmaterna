@@ -154,7 +154,10 @@ export function NotificationsScreen({
     } else if (citaTipos.includes(n.tipo)) {
       target = role === 'obstetra' ? '/(obstetra)/(tabs)/cronograma' : '/(gestante)/(tabs)/citas';
     } else if (n.tipo === 'signo_alarma' && role === 'obstetra') {
-      target = '/(obstetra)/(tabs)/alertas';
+      // El signo de alarma se gestiona en la ficha de la gestante (sección
+      // Signos de alarma). Si no hay gestanteId, cae a la lista de gestantes.
+      const gid = (n.datos as { gestanteId?: string })?.gestanteId;
+      target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
     } else if (n.tipo === 'examenes_pendientes' && role === 'obstetra') {
       const gid = (n.datos as { gestanteId?: string })?.gestanteId;
       target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
