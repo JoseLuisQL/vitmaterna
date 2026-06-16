@@ -36,19 +36,28 @@ import { openWhatsApp } from '../../../src/utils/whatsapp';
 
 const BRAND = obstetraColors.primary;
 
-// ─── TABS ────────────────────────────────────────────────────────────────────
-// Orden según el flujo clínico real de una atención prenatal:
-// Datos → Controles → Laboratorios → Tamizajes → Tratamiento → Vacunas → Visitas.
+// ─── TABS (4 secciones lógicas y jerárquicas) ────────────────────────────────
+// Se agrupan los contenidos en 4 grupos alineados a los objetivos de la tesis:
+//   Resumen     → datos personales, obstétricos, antecedentes y embarazo
+//   Seguimiento → controles prenatales + visitas domiciliarias (Objetivo 1)
+//   Tratamiento → medicinas/suplementos + vacunas (Objetivo 2)
+//   Clínico     → laboratorio (Hb) + signos de alarma
 const TABS = [
-  { id: 'datos', label: 'Datos', icon: User },
-  { id: 'controles', label: 'Controles', icon: Stethoscope },
-  { id: 'laboratorio', label: 'Lab.', icon: FlaskConical },
-  { id: 'tamizajes', label: 'Tamizajes', icon: ClipboardList },
-  { id: 'tratamiento', label: 'Medicinas', icon: Pill },
-  { id: 'alarmas', label: 'Alarmas', icon: AlertTriangle },
-  { id: 'vacunas', label: 'Vacunas', icon: Syringe },
-  { id: 'visitas', label: 'Visitas', icon: Home },
+  { id: 'resumen', label: 'Resumen', icon: User },
+  { id: 'seguimiento', label: 'Seguimiento', icon: Stethoscope },
+  { id: 'tratamiento', label: 'Tratamiento', icon: Pill },
+  { id: 'clinico', label: 'Clínico', icon: FlaskConical },
 ];
+
+/** Mapea deep-links antiguos (tab=laboratorio, alarmas, etc.) a los 4 grupos. */
+const TAB_ALIASES: Record<string, string> = {
+  datos: 'resumen',
+  controles: 'seguimiento',
+  visitas: 'seguimiento',
+  vacunas: 'tratamiento',
+  laboratorio: 'clinico',
+  alarmas: 'clinico',
+};
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const designTokens = {
@@ -129,22 +138,22 @@ function riskTextColor(riskLevel?: string): string {
 export default function PatientProfileScreen(): React.ReactElement {
   const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const router = useRouter();
-  // Alcance: la pestaña "Tamizajes" agrupa los módulos opcionales (ecografías,
-  // peso, violencia, salud mental, patologías, odontograma, consejería). Solo se
-  // muestra si el administrador activó al menos uno de esos módulos.
+  // Alcance: el acceso a "Tamizajes" (módulos opcionales) solo se ofrece si el
+  // administrador activó al menos uno de esos módulos.
   const flags = useFeatureFlags();
   const tamizajesEnabled =
     flags.ecografias || flags.pesoRegistros || flags.tamizajeViolencia ||
     flags.tamizajeSaludMental || flags.patologias || flags.odontograma ||
     flags.consejeriaNutricional;
 
-  // Pestañas visibles según el alcance configurado.
-  const visibleTabs = TABS.filter((t) => (t.id === 'tamizajes' ? tamizajesEnabled : true));
+  const visibleTabs = TABS;
 
-  // Permite abrir el perfil directamente en una pestaña (p. ej. desde el flujo
-  // "Atender cita" hacia Laboratorios o Tratamiento).
+  // Permite abrir la ficha directamente en una sección (deep-link). Acepta tanto
+  // los nuevos ids (resumen/seguimiento/tratamiento/clinico) como los antiguos
+  // (laboratorio, alarmas, controles…) que se traducen vía TAB_ALIASES.
   const VALID_TABS = visibleTabs.map((t) => t.id);
-  const [activeTab, setActiveTab] = useState(tab && VALID_TABS.includes(tab) ? tab : 'datos');
+  const resolvedInitial = tab ? (TAB_ALIASES[tab] ?? tab) : 'resumen';
+  const [activeTab, setActiveTab] = useState(VALID_TABS.includes(resolvedInitial) ? resolvedInitial : 'resumen');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
 
@@ -630,8 +639,8 @@ export default function PatientProfileScreen(): React.ReactElement {
           contentContainerStyle={styles.scrollArea} 
           showsVerticalScrollIndicator={false}
         >
-          {/* ── TAB: DATOS ── */}
-          {activeTab === 'datos' && (
+          {/* ── SECCIÓN: RESUMEN (datos + obstétricos + antecedentes + embarazo) ── */}
+          {activeTab === 'resumen' && (
             <View style={styles.dataTabContainer}>
               <Seccion titulo="Datos Personales" />
               <View style={[styles.insetGroup, designTokens.cardShadow]}>
@@ -700,34 +709,8 @@ export default function PatientProfileScreen(): React.ReactElement {
             </View>
           )}
 
-          {/* ── TAB: TAMIZAJES ── */}
-          {activeTab === 'tamizajes' && (
-            <View style={styles.section}>
-              <Text style={styles.tamizajesIntro}>
-                Registra tamizajes y evaluaciones clínicas de la gestante.
-              </Text>
-              <TouchableOpacity
-                style={[styles.tamizajesBtn, designTokens.cardShadow]}
-                onPress={() => router.push({
-                  pathname: '/(obstetra)/gestante/tamizajes',
-                  params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
-                } as any)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.tamizajesIcon}>
-                  <ClipboardList size={22} color={BRAND} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.tamizajesTitle}>SRQ-18, violencia, patologías y más</Text>
-                  <Text style={styles.tamizajesDesc}>Salud mental, violencia, patologías CIE-10, ecografía, consejería nutricional, peso y odontograma</Text>
-                </View>
-                <Plus size={20} color={commonColors.textTertiary} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* ── TAB: CONTROLES ── */}
-          {activeTab === 'controles' && (
+          {/* ── SECCIÓN: SEGUIMIENTO (controles prenatales + visitas) ── */}
+          {activeTab === 'seguimiento' && (
             <View style={styles.section}>
               {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
               <AlturaUterinaChart controls={controls} themeColor={BRAND} />
@@ -797,10 +780,21 @@ export default function PatientProfileScreen(): React.ReactElement {
                   themeColor={BRAND}
                 />
               )}
+
+              {/* Visitas domiciliarias (continuidad del cuidado, Objetivo 1) */}
+              <View style={{ marginTop: spacing.lg }}>
+                <Seccion titulo="Visitas domiciliarias" />
+                <HomeVisitsTab
+                  gestanteId={patient.id}
+                  domicilioLat={patient.domicilioLat}
+                  domicilioLng={patient.domicilioLng}
+                  referenciaDom={patient.referenciaDom}
+                />
+              </View>
             </View>
           )}
 
-          {/* ── TAB: TRATAMIENTO ── */}
+          {/* ── SECCIÓN: TRATAMIENTO (medicinas/suplementos + vacunas) ── */}
           {activeTab === 'tratamiento' && (
             <View style={styles.section}>
               <View style={[styles.card, designTokens.cardShadow]}>
@@ -864,12 +858,78 @@ export default function PatientProfileScreen(): React.ReactElement {
                   />
                 )}
               </View>
+
+              {/* Vacunas prenatales (indicador de adherencia, Objetivo 2) */}
+              <View style={[styles.card, designTokens.cardShadow, { marginTop: spacing.md }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Esquema de Vacunación</Text>
+                  <TouchableOpacity
+                    style={styles.primaryActionBtn}
+                    onPress={() => setIsVaxModalVisible(true)}
+                  >
+                    <Plus size={16} color={obstetraColors.onPrimary} />
+                    <Text style={styles.primaryActionText}>Registrar</Text>
+                  </TouchableOpacity>
+                </View>
+                {vacunas.length > 0 ? vacunas.map((v: any, i: number) => (
+                  <View key={i} style={[styles.vaxRow, i < vacunas.length - 1 && styles.vaxBorder]}>
+                    <View style={styles.vaxIconBox}>
+                      <Syringe size={20} color={v.aplicada ? semanticColors.success : commonColors.textTertiary} />
+                    </View>
+                    <View style={styles.vaxInfo}>
+                      <Text style={styles.vaxName}>{v.nombre}</Text>
+                      <Text style={styles.vaxWeek}>Recomendada sem. {v.semana}</Text>
+                    </View>
+                    <View style={[styles.vaxStatus, v.aplicada ? styles.vaxStatusOk : styles.vaxStatusPending]}>
+                      <Text style={[styles.vaxStatusText, v.aplicada ? styles.vaxStatusTextOk : styles.vaxStatusTextPending]}>
+                        {v.aplicada ? 'Aplicada' : 'Pendiente'}
+                      </Text>
+                    </View>
+                  </View>
+                )) : (
+                  <Text style={styles.emptyTextInfo}>No hay vacunas en el esquema.</Text>
+                )}
+              </View>
             </View>
           )}
 
-          {/* ── TAB: ALARMAS (signos de alarma de la gestante) ── */}
-          {activeTab === 'alarmas' && (
+          {/* ── SECCIÓN: CLÍNICO (laboratorio + signos de alarma) ── */}
+          {activeTab === 'clinico' && (
             <View style={{ gap: spacing.sm2 }}>
+              {/* Laboratorio (hemoglobina ↔ anemia/hierro) */}
+              <View style={[styles.card, designTokens.cardShadow]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Resultados Analíticos</Text>
+                  <TouchableOpacity
+                    style={styles.primaryActionBtn}
+                    onPress={() => setIsLabModalVisible(true)}
+                  >
+                    <Plus size={16} color={obstetraColors.onPrimary} />
+                    <Text style={styles.primaryActionText}>Registrar</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {lab.hemoglobina1 && lab.hemoglobina1 < 11 && (
+                  <View style={styles.alertBanner}>
+                    <AlertTriangle size={20} color={semanticColors.danger} />
+                    <View style={styles.alertBannerTextWrap}>
+                      <Text style={styles.alertBannerTitle}>Alerta de Anemia</Text>
+                      <Text style={styles.alertBannerDesc}>Hemoglobina baja ({lab.hemoglobina1} g/dL). Monitorear suplementación.</Text>
+                    </View>
+                  </View>
+                )}
+
+                <Fila label="Hemoglobina I" value={lab.hemoglobina1 ? `${lab.hemoglobina1} g/dL` : undefined} />
+                <Fila label="Hemoglobina II" value={lab.hemoglobina2 ? `${lab.hemoglobina2} g/dL` : 'Pendiente'} />
+                <Fila label="Hemoglobina III" value={lab.hemoglobina3 ? `${lab.hemoglobina3} g/dL` : 'Pendiente'} />
+                <Fila label="Glucemia" value={lab.glucemia} />
+                <Fila label="VDRL/RPR" value={lab.vdrl} />
+                <Fila label="VIH" value={lab.vih} />
+                <Fila label="Hepatitis B" value={lab.hepatitisB} />
+                <Fila label="Examen de orina" value={lab.examenOrina} />
+                <Fila label="Prueba PAP" value={lab.pap} isLast />
+              </View>
+
               <Seccion titulo="Signos de alarma reportados" />
               {dangerSigns.length === 0 ? (
                 <View style={[styles.card, designTokens.cardShadow]}>
@@ -922,86 +982,28 @@ export default function PatientProfileScreen(): React.ReactElement {
                   );
                 })
               )}
-            </View>
-          )}
 
-          {/* ── TAB: LABORATORIO ── */}
-          {activeTab === 'laboratorio' && (
-            <View style={[styles.card, designTokens.cardShadow]}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Resultados Analíticos</Text>
-                <TouchableOpacity 
-                  style={styles.primaryActionBtn}
-                  onPress={() => setIsLabModalVisible(true)}
+              {/* Acceso a tamizajes/registros opcionales: solo si están habilitados. */}
+              {tamizajesEnabled && (
+                <TouchableOpacity
+                  style={[styles.tamizajesBtn, designTokens.cardShadow, { marginTop: spacing.sm }]}
+                  onPress={() => router.push({
+                    pathname: '/(obstetra)/gestante/tamizajes',
+                    params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
+                  } as any)}
+                  activeOpacity={0.7}
                 >
-                  <Plus size={16} color={obstetraColors.onPrimary} />
-                  <Text style={styles.primaryActionText}>Registrar</Text>
+                  <View style={styles.tamizajesIcon}>
+                    <ClipboardList size={22} color={BRAND} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tamizajesTitle}>Tamizajes y registros adicionales</Text>
+                    <Text style={styles.tamizajesDesc}>Evaluaciones clínicas opcionales</Text>
+                  </View>
+                  <Plus size={20} color={commonColors.textTertiary} />
                 </TouchableOpacity>
-              </View>
-              
-              {lab.hemoglobina1 && lab.hemoglobina1 < 11 && (
-                <View style={styles.alertBanner}>
-                  <AlertTriangle size={20} color={semanticColors.danger} />
-                  <View style={styles.alertBannerTextWrap}>
-                    <Text style={styles.alertBannerTitle}>Alerta de Anemia</Text>
-                    <Text style={styles.alertBannerDesc}>Hemoglobina baja ({lab.hemoglobina1} g/dL). Monitorear suplementación.</Text>
-                  </View>
-                </View>
-              )}
-
-              <Fila label="Hemoglobina I" value={lab.hemoglobina1 ? `${lab.hemoglobina1} g/dL` : undefined} />
-              <Fila label="Hemoglobina II" value={lab.hemoglobina2 ? `${lab.hemoglobina2} g/dL` : 'Pendiente'} />
-              <Fila label="Hemoglobina III" value={lab.hemoglobina3 ? `${lab.hemoglobina3} g/dL` : 'Pendiente'} />
-              <Fila label="Glucemia" value={lab.glucemia} />
-              <Fila label="VDRL/RPR" value={lab.vdrl} />
-              <Fila label="VIH" value={lab.vih} />
-              <Fila label="Hepatitis B" value={lab.hepatitisB} />
-              <Fila label="Examen de orina" value={lab.examenOrina} />
-              <Fila label="Prueba PAP" value={lab.pap} isLast />
-            </View>
-          )}
-
-          {/* ── TAB: VACUNAS ── */}
-          {activeTab === 'vacunas' && (
-            <View style={[styles.card, designTokens.cardShadow]}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Esquema de Vacunación</Text>
-                <TouchableOpacity 
-                  style={styles.primaryActionBtn}
-                  onPress={() => setIsVaxModalVisible(true)}
-                >
-                  <Plus size={16} color={obstetraColors.onPrimary} />
-                  <Text style={styles.primaryActionText}>Registrar</Text>
-                </TouchableOpacity>
-              </View>
-              {vacunas.length > 0 ? vacunas.map((v: any, i: number) => (
-                <View key={i} style={[styles.vaxRow, i < vacunas.length - 1 && styles.vaxBorder]}>
-                  <View style={styles.vaxIconBox}>
-                    <Syringe size={20} color={v.aplicada ? semanticColors.success : commonColors.textTertiary} />
-                  </View>
-                  <View style={styles.vaxInfo}>
-                    <Text style={styles.vaxName}>{v.nombre}</Text>
-                    <Text style={styles.vaxWeek}>Recomendada sem. {v.semana}</Text>
-                  </View>
-                  <View style={[styles.vaxStatus, v.aplicada ? styles.vaxStatusOk : styles.vaxStatusPending]}>
-                    <Text style={[styles.vaxStatusText, v.aplicada ? styles.vaxStatusTextOk : styles.vaxStatusTextPending]}>
-                      {v.aplicada ? 'Aplicada' : 'Pendiente'}
-                    </Text>
-                  </View>
-                </View>
-              )) : (
-                <Text style={styles.emptyTextInfo}>No hay vacunas en el esquema.</Text>
               )}
             </View>
-          )}
-
-          {activeTab === 'visitas' && (
-            <HomeVisitsTab
-              gestanteId={patient.id}
-              domicilioLat={patient.domicilioLat}
-              domicilioLng={patient.domicilioLng}
-              referenciaDom={patient.referenciaDom}
-            />
           )}
         </ScrollView>
       </View>
