@@ -309,7 +309,12 @@ export class ClinicalService {
   }
 
   async createSupplementLog(treatmentId: string, data: any, authenticatedUserId?: string) {
-    const { fecha, gestanteId, ...logData } = data;
+    // `dedupeKey` lo envía el frontend (offline-first) para idempotencia de la
+    // cola; NO es una columna de SupplementLog (la unicidad real la garantiza
+    // @@unique([treatmentId, fecha])), por eso se descarta aquí para no pasarlo
+    // a Prisma. Se extraen también fecha/gestanteId que se resuelven aparte.
+    const { fecha, gestanteId, dedupeKey, ...logData } = data;
+    void dedupeKey;
     
     // Ensure treatment exists
     const treatment = await prisma.treatment.findUnique({ where: { id: treatmentId } });
