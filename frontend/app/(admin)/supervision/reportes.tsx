@@ -115,23 +115,25 @@ export default function AdminReportesScreen(): React.ReactElement {
       <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/mas'))} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Volver" accessibilityRole="button">
+            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Volver" accessibilityRole="button">
               <ArrowLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Reportes</Text>
-              <Text style={styles.subtitle}>Indicadores globales</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.title} numberOfLines={1}>Reportes</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>Indicadores globales</Text>
             </View>
-            <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
-                {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
-                <Text style={styles.expBtnText}>Excel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
-                {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
-                <Text style={styles.expBtnText}>PDF</Text>
-              </TouchableOpacity>
-            </View>
+          </View>
+
+          {/* Exportación en su propia fila (responsive, sin cortes). */}
+          <View style={styles.exportRow}>
+            <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+              {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
+              <Text style={styles.expBtnText}>Excel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+              {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
+              <Text style={styles.expBtnText}>PDF</Text>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -191,7 +193,8 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: commonColors.white },
   subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
-  expBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },

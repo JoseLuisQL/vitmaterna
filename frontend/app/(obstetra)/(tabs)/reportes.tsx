@@ -219,29 +219,32 @@ export default function ReportesScreen(): React.ReactElement {
             >
               <ArrowLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.pageTitle}>Reportes</Text>
-              <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.pageTitle} numberOfLines={1}>Reportes</Text>
+              <Text style={styles.pageSubtitle} numberOfLines={1}>Estadísticas y KPIs</Text>
             </View>
-            <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.exportBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
-                {exportingXlsx ? (
-                  <ActivityIndicator size="small" color={commonColors.white} />
-                ) : (
-                  <Sheet size={18} color={commonColors.white} />
-                )}
-                <Text style={styles.exportBtnText}>{exportingXlsx ? '…' : 'Excel'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
-                {exporting ? (
-                  <ActivityIndicator size="small" color={commonColors.white} />
-                ) : (
-                  <Download size={18} color={commonColors.white} />
-                )}
-                <Text style={styles.exportBtnText}>{exporting ? '…' : 'PDF'}</Text>
-              </TouchableOpacity>
-              <NotificationBell href="/(obstetra)/notificaciones" />
-            </View>
+            <NotificationBell href="/(obstetra)/notificaciones" />
+          </View>
+
+          {/* Acciones de exportación en su propia fila: evita que se corten en
+              pantallas estrechas y se reordena solo. */}
+          <View style={styles.exportRow}>
+            <TouchableOpacity style={styles.exportBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+              {exportingXlsx ? (
+                <ActivityIndicator size="small" color={commonColors.white} />
+              ) : (
+                <Sheet size={18} color={commonColors.white} />
+              )}
+              <Text style={styles.exportBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+              {exporting ? (
+                <ActivityIndicator size="small" color={commonColors.white} />
+              ) : (
+                <Download size={18} color={commonColors.white} />
+              )}
+              <Text style={styles.exportBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -328,9 +331,10 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   pageTitle: { ...typography.h1, color: commonColors.white },
   pageSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
-  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  exportBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },
   exportBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.white },
   content: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, marginTop: -24 },
   kpiCard: { padding: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, ...shadows.card },
