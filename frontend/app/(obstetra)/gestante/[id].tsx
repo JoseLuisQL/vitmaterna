@@ -8,8 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home, BookOpen, Search, Send, X
+  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home, BookOpen, Search, Send, X,
+  Phone, MessageCircle,
 } from 'lucide-react-native';
+import { Linking } from 'react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -28,6 +30,7 @@ import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 import { confirmAction } from '../../../src/utils/confirm';
+import { openWhatsApp } from '../../../src/utils/whatsapp';
 
 const BRAND = obstetraColors.primary;
 
@@ -181,6 +184,25 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [motivoSuspension, setMotivoSuspension] = useState('');
 
   const toast = useToast();
+
+  // Contacto rápido con la gestante (llamada / WhatsApp).
+  const handleCall = () => {
+    const phone = patient?.phone;
+    if (!phone) {
+      toast.warning('Sin teléfono', 'Esta gestante no tiene un teléfono registrado.');
+      return;
+    }
+    Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`);
+  };
+  const handleWhatsApp = async () => {
+    const phone = patient?.phone;
+    if (!phone) {
+      toast.warning('Sin teléfono', 'Esta gestante no tiene un teléfono registrado.');
+      return;
+    }
+    const ok = await openWhatsApp(phone, `Hola ${patient?.firstName || ''}, le escribe su obstetra de VITMATERNA.`);
+    if (!ok) toast.error('No se pudo abrir WhatsApp', 'Verifica el número de la gestante.');
+  };
 
   // Mutations
   const { mutate: createLabResult, isPending: isSavingLab } = useCreateLabResult();
@@ -484,7 +506,23 @@ export default function PatientProfileScreen(): React.ReactElement {
               <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Historia Clínica</Text>
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: spacing.xs2 }}>
+              <TouchableOpacity
+                style={styles.iconBtnGlass}
+                onPress={handleCall}
+                accessibilityLabel="Llamar a la gestante"
+                accessibilityRole="button"
+              >
+                <Phone size={20} color={commonColors.white} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconBtnGlass}
+                onPress={handleWhatsApp}
+                accessibilityLabel="Escribir por WhatsApp"
+                accessibilityRole="button"
+              >
+                <MessageCircle size={20} color={commonColors.white} />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconBtnGlass}
                 onPress={() => setRecommendVisible(true)}
@@ -569,6 +607,7 @@ export default function PatientProfileScreen(): React.ReactElement {
         </ScrollView>
 
         <ScrollView 
+          style={styles.scrollAreaWrapper}
           contentContainerStyle={styles.scrollArea} 
           showsVerticalScrollIndicator={false}
         >
@@ -1514,6 +1553,9 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: commonColors.white,
+  },
+  scrollAreaWrapper: {
+    flex: 1,
   },
   scrollArea: {
     padding: 16,
