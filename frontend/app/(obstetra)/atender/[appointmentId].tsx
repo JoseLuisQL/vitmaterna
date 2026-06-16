@@ -21,6 +21,7 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useAppointments, useUpdateAppointmentStatus } from '../../../src/services/api-queries';
+import { useFeatureFlags } from '../../../src/hooks/useFeatureFlags';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -55,6 +56,15 @@ export default function AtenderCitaScreen(): React.ReactElement {
 
   const { data: appointments } = useAppointments();
   const { mutate: updateStatus, isPending: isFinishing } = useUpdateAppointmentStatus();
+  const flags = useFeatureFlags();
+
+  // El paso "Tamizajes" agrupa los módulos opcionales; solo se muestra si el
+  // administrador activó al menos uno de ellos.
+  const tamizajesEnabled =
+    flags.ecografias || flags.pesoRegistros || flags.tamizajeViolencia ||
+    flags.tamizajeSaludMental || flags.patologias || flags.odontograma ||
+    flags.consejeriaNutricional;
+  const visibleSteps = STEPS.filter((s) => (s.key === 'tamizajes' ? tamizajesEnabled : true));
 
   // Resuelve la cita desde la caché para tener el contexto (paciente, motivo).
   const cita = useMemo(
@@ -102,14 +112,15 @@ export default function AtenderCitaScreen(): React.ReactElement {
     }
   };
 
-  const completedCount = Object.values(done).filter(Boolean).length;
+  // Cuenta solo los pasos visibles (excluye tamizajes si está deshabilitado).
+  const completedCount = visibleSteps.filter((s) => done[s.key]).length;
 
   const handleFinish = async () => {
     if (!appointmentId) return;
 
     // Si quedan registros sin completar, pedir confirmación explícita.
-    if (completedCount < STEPS.length) {
-      const faltan = STEPS.length - completedCount;
+    if (completedCount < visibleSteps.length) {
+      const faltan = visibleSteps.length - completedCount;
       const ok = await confirmAction({
         title: 'Finalizar con registros pendientes',
         message: `Aún ${faltan === 1 ? 'queda 1 registro' : `quedan ${faltan} registros`} sin completar. ¿Marcar la cita como asistida de todas formas?`,
@@ -151,10 +162,10 @@ export default function AtenderCitaScreen(): React.ReactElement {
             </View>
           </View>
           <View style={styles.progressPill}>
-            <Text style={styles.progressText}>{completedCount} de {STEPS.length} registros</Text>
+            <Text style={styles.progressText}>{completedCount} de {visibleSteps.length} registros</Text>
           </View>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${(completedCount / STEPS.length) * 100}%` }]} />
+            <View style={[styles.progressFill, { width: `${(completedCount / visibleSteps.length) * 100}%` }]} />
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -165,7 +176,7 @@ export default function AtenderCitaScreen(): React.ReactElement {
           sección; lo registrado queda ligado a esta cita.
         </Text>
 
-        {STEPS.map((step, idx) => {
+        {visibleSteps.map((step, idx) => {
           const Icon = step.icon;
           const isDone = done[step.key];
           return (

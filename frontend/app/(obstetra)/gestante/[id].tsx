@@ -548,15 +548,17 @@ export default function PatientProfileScreen(): React.ReactElement {
               >
                 <BookOpen size={22} color={commonColors.white} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconBtnGlass}
-                onPress={() => router.push({
-                  pathname: '/(obstetra)/gestante/tamizajes',
-                  params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
-                } as any)}
-              >
-                <ClipboardList size={22} color={commonColors.white} />
-              </TouchableOpacity>
+              {tamizajesEnabled && (
+                <TouchableOpacity
+                  style={styles.iconBtnGlass}
+                  onPress={() => router.push({
+                    pathname: '/(obstetra)/gestante/tamizajes',
+                    params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
+                  } as any)}
+                >
+                  <ClipboardList size={22} color={commonColors.white} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -730,7 +732,8 @@ export default function PatientProfileScreen(): React.ReactElement {
               {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
               <AlturaUterinaChart controls={controls} themeColor={BRAND} />
 
-              {hasWeightChart ? (
+              {/* La curva de peso solo se muestra si el módulo de peso está activo. */}
+              {flags.pesoRegistros && hasWeightChart && (
                 <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
                   <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
                   <LineChartSvg
@@ -741,13 +744,6 @@ export default function PatientProfileScreen(): React.ReactElement {
                     legend={[{ label: 'Peso (kg)', color: BRAND }]}
                     style={{ marginTop: spacing.sm }}
                   />
-                </View>
-              ) : (
-                <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
-                  <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
-                  <Text style={styles.emptyTextInfo}>
-                    Registra al menos 2 controles con peso para ver la curva.
-                  </Text>
                 </View>
               )}
 

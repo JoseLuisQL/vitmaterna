@@ -23,16 +23,29 @@ import { commonColors, obstetraColors, gestanteColors, semanticColors } from '..
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
+import { useFeatureFlags, type FeatureModule } from '../../../src/hooks/useFeatureFlags';
 
 const PINK = obstetraColors.primary;
 const hoy = () => new Date().toISOString().split('T')[0];
 
 type FormKey = 'patologia' | 'mental' | 'violencia' | 'nutricion' | 'peso' | 'ecografia' | 'odontograma';
 
+/** Cada registro de esta pantalla depende de su feature flag (alcance del sistema). */
+const FORM_FLAG: Record<FormKey, FeatureModule> = {
+  mental: 'tamizajeSaludMental',
+  violencia: 'tamizajeViolencia',
+  patologia: 'patologias',
+  ecografia: 'ecografias',
+  nutricion: 'consejeriaNutricional',
+  peso: 'pesoRegistros',
+  odontograma: 'odontograma',
+};
+
 export default function TamizajesScreen(): React.ReactElement {
   const router = useRouter();
   const { id, nombre } = useLocalSearchParams<{ id: string; nombre?: string }>();
   const gestanteId = id || '';
+  const flags = useFeatureFlags();
 
   const [openForm, setOpenForm] = useState<FormKey | null>(null);
 
@@ -219,7 +232,7 @@ export default function TamizajesScreen(): React.ReactElement {
     odontograma: 'Registrar Odontograma',
   };
 
-  const CARDS: { key: FormKey; label: string; desc: string; icon: any; color: string; bg: string }[] = [
+  const ALL_CARDS: { key: FormKey; label: string; desc: string; icon: any; color: string; bg: string }[] = [
     { key: 'mental', label: 'Tamizaje SRQ-18', desc: 'Salud mental', icon: Brain, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
     { key: 'violencia', label: 'Tamizaje de violencia', desc: 'Detección y derivación', icon: ShieldAlert, color: semanticColors.danger, bg: semanticColors.dangerLight },
     { key: 'patologia', label: 'Patología (CIE-10)', desc: 'Diagnóstico materno', icon: Stethoscope, color: semanticColors.info, bg: semanticColors.infoLight },
@@ -228,6 +241,9 @@ export default function TamizajesScreen(): React.ReactElement {
     { key: 'peso', label: 'Registro de peso', desc: 'Ganancia por semana', icon: Scale, color: semanticColors.warning, bg: semanticColors.warningLight },
     { key: 'odontograma', label: 'Odontograma', desc: 'Salud bucal', icon: Smile, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
   ];
+
+  // Solo se muestran las tarjetas cuyo módulo esté activo (alcance del sistema).
+  const CARDS = ALL_CARDS.filter((c) => flags[FORM_FLAG[c.key]]);
 
   return (
     <View style={styles.container}>
@@ -252,6 +268,13 @@ export default function TamizajesScreen(): React.ReactElement {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.subtitle}>Selecciona el registro clínico que deseas añadir.</Text>
+
+        {CARDS.length === 0 && (
+          <Text style={styles.subtitle}>
+            No hay registros clínicos habilitados en esta configuración. El detalle
+            clínico se mantiene en la ficha física MINSA.
+          </Text>
+        )}
 
         {CARDS.map(({ key, label, desc, icon: Icon, color, bg }) => (
           <TouchableOpacity key={key} style={styles.card} onPress={() => setOpenForm(key)} activeOpacity={0.7}>
