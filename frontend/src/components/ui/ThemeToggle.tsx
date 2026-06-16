@@ -16,7 +16,7 @@ const OPTIONS: { mode: ThemeMode; label: string; icon: LucideIcon }[] = [
   { mode: 'dark', label: 'Oscuro', icon: Moon },
 ];
 
-export function ThemeToggle({ accentColor = '#3A86FF' }: { accentColor?: string }): React.ReactElement {
+export function ThemeToggle({ accentColor = '#4A90D9' }: { accentColor?: string }): React.ReactElement {
   const { mode, setMode, colors } = useTheme();
   return (
     <View style={[styles.row, { backgroundColor: colors.surfaceAlt }]}>

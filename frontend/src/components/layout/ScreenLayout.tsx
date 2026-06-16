@@ -30,7 +30,7 @@ import { ArrowLeft, type LucideIcon, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../ui/EmptyState';
 import { DashboardSkeleton } from '../ui/SkeletonLoader';
-import { commonColors } from '../../theme/colors';
+import { commonColors, semanticColors } from '../../theme/colors';
 import { gradients, type GradientConfig } from '../../theme/gradients';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius, layout } from '../../theme/spacing';
@@ -170,7 +170,7 @@ export function ScreenLayout({
     body = (
       <View style={styles.centerState}>
         <View style={styles.errorIcon}>
-          <AlertTriangle size={44} color="#EF4444" />
+          <AlertTriangle size={44} color={semanticColors.danger} />
         </View>
         <Text style={styles.errorTitle}>{errorTitle}</Text>
         <Text style={styles.errorMessage}>{errorMessage}</Text>
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: semanticColors.dangerLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,

@@ -15,28 +15,33 @@
  *   <name>Light   → fondo ultra suave de tarjetas
  */
 
-/** Neutros compartidos (la base de toda la app) */
+/**
+ * Neutros compartidos (la base de toda la app).
+ * Rediseño sereno/minimalista: del ice-blue frío a un neutro cálido casi
+ * blanco que transmite paz y limpieza ("spa de salud"), con bordes casi
+ * invisibles para que la jerarquía la den las sombras suaves, no las líneas.
+ */
 export const commonColors = {
-  background: '#EEF2F8', // fondo principal (ice blue suave)
-  backgroundWarm: '#F5F0FF', // fondo para pantallas gestante (tono lila)
-  backgroundCool: '#EEF4FF', // fondo para pantallas obstetra (tono azul)
+  background: '#F7F8FA', // fondo principal (neutro cálido, casi blanco)
+  backgroundWarm: '#FAF8FC', // pantallas gestante (velo lila imperceptible)
+  backgroundCool: '#F6F9FC', // pantallas obstetra (velo azul imperceptible)
   surface: '#FFFFFF', // tarjetas y paneles flotantes
-  surfaceAlt: '#F0F4FC', // superficie secundaria / inputs / toggles
-  surfaceHover: '#E8EEFA', // hover/pressed en superficies
+  surfaceAlt: '#F1F3F7', // superficie secundaria / inputs / toggles
+  surfaceHover: '#ECEFF4', // hover/pressed en superficies
 
-  text: '#1E2A3A', // texto principal (azul muy oscuro)
-  textSecondary: '#5C6E8E', // texto secundario (azul grisáceo, WCAG AA sobre ice-blue)
-  textTertiary: '#9BAAC4', // placeholders y meta (azul claro)
+  text: '#232A33', // texto principal (gris azulado profundo, no negro puro)
+  textSecondary: '#5E6B7A', // texto secundario (AA sobre fondo claro)
+  textTertiary: '#9AA6B4', // placeholders y meta
 
-  border: '#E4EAF5', // borde suave (azulado)
-  borderLight: '#EEF2F8', // divisor casi invisible
-  borderStrong: '#C8D4E8', // borde con presencia
+  border: '#EAEDF2', // borde suave (casi invisible → minimalismo)
+  borderLight: '#F1F3F7', // divisor casi invisible
+  borderStrong: '#D4DAE2', // borde con presencia
 
   disabled: '#C5CDD9',
-  overlay: 'rgba(30, 42, 58, 0.40)', // dimmed detrás de modales
+  overlay: 'rgba(35, 42, 51, 0.38)', // dimmed detrás de modales
   transparent: 'transparent',
   white: '#FFFFFF',
-  black: '#1E2A3A',
+  black: '#232A33',
 } as const;
 
 /**
@@ -67,24 +72,30 @@ export const commonColorsDark = {
   black: '#0E1420',
 } as const;
 
-/** Acento del rol gestante (púrpura/violeta) */
+/**
+ * Acento del rol gestante — lavanda sereno (desaturado).
+ * Transmite cuidado y serenidad femenina sin la energía del púrpura vibrante.
+ */
 export const gestanteColors = {
-  primary: '#7C3AED', // púrpura profundo
-  primaryDark: '#6D28D9', // hover / estados activos (alias compat)
-  primaryLight: '#F3EEFF', // fondo ultra suave
-  primaryMid: '#EDE0FF', // chips y badges
+  primary: '#7468C4', // lavanda sereno (cumple WCAG AA 4.5:1 con texto blanco)
+  primaryDark: '#625699', // hover / estados activos (alias compat)
+  primaryLight: '#F3F1FB', // fondo ultra suave
+  primaryMid: '#E7E3F6', // chips y badges
   onPrimary: '#FFFFFF',
-  gradient: ['#9B59F5', '#7C3AED'] as const, // headers
+  gradient: ['#9389D6', '#7468C4'] as const, // headers (suaves)
 } as const;
 
-/** Acento del rol obstetra (azul brillante, referencia) */
+/**
+ * Acento del rol obstetra — azul confianza (sereno, no eléctrico).
+ * Calma y profesionalismo clínico.
+ */
 export const obstetraColors = {
-  primary: '#3A86FF', // azul brillante
-  primaryDark: '#2F5FE0', // hover / estados activos (alias compat)
-  primaryLight: '#EBF2FF', // fondo ultra suave
-  primaryMid: '#DAEAFF', // chips y badges
+  primary: '#4A90D9', // azul sereno y profesional
+  primaryDark: '#3A78BD', // hover / estados activos (alias compat)
+  primaryLight: '#EDF4FB', // fondo ultra suave
+  primaryMid: '#D8E8F6', // chips y badges
   onPrimary: '#FFFFFF',
-  gradient: ['#5B9FFF', '#3A86FF'] as const, // headers
+  gradient: ['#5FA3E0', '#4A90D9'] as const, // headers
 } as const;
 
 /** Acento del rol admin (slate azulado profesional, con más vida) */
@@ -104,20 +115,20 @@ export const accentColors = {
   tealLight: '#CFFAFE',
 } as const;
 
-/** Colores semánticos */
+/** Colores semánticos (suavizados; mantienen significado inequívoco) */
 export const semanticColors = {
-  success: '#16A34A',
-  successMid: '#BBFFD4',
-  successLight: '#F0FFF6',
-  warning: '#F59E0B', // amber (más cálido)
-  warningMid: '#FFE9B0',
-  warningLight: '#FFFBEB',
-  danger: '#EF4444', // rojo más moderno
-  dangerMid: '#FFCDD2',
-  dangerLight: '#FFF5F5',
-  info: '#3A86FF',
-  infoMid: '#DAEAFF',
-  infoLight: '#EBF2FF',
+  success: '#2EA66E', // verde salud, sereno
+  successMid: '#BBEFD2',
+  successLight: '#EEF9F2',
+  warning: '#E0A23B', // ámbar cálido
+  warningMid: '#FBE6BC',
+  warningLight: '#FCF6EA',
+  danger: '#E05656', // rojo claro e inequívoco — reservado a urgencias
+  dangerMid: '#F6C9C9',
+  dangerLight: '#FCEFEF',
+  info: '#4A90D9', // = azul obstetra (coherencia)
+  infoMid: '#D8E8F6',
+  infoLight: '#EDF4FB',
 } as const;
 
 /**
@@ -125,15 +136,15 @@ export const semanticColors = {
  * Nunca se usan solos: siempre acompañados de etiqueta de texto.
  */
 export const riskColors = {
-  riskGreen: '#10B981',
-  riskGreenMid: '#C9FFE5',
-  riskGreenLight: '#F0FFF8',
-  riskYellow: '#F59E0B',
-  riskYellowMid: '#FFE9B0',
-  riskYellowLight: '#FFFBEB',
-  riskRed: '#EF4444',
-  riskRedMid: '#FFCDD2',
-  riskRedLight: '#FFF5F5',
+  riskGreen: '#2EA66E',
+  riskGreenMid: '#BBEFD2',
+  riskGreenLight: '#EEF9F2',
+  riskYellow: '#E0A23B',
+  riskYellowMid: '#FBE6BC',
+  riskYellowLight: '#FCF6EA',
+  riskRed: '#E05656',
+  riskRedMid: '#F6C9C9',
+  riskRedLight: '#FCEFEF',
 } as const;
 
 /** Colores de odontograma / mapa dental */

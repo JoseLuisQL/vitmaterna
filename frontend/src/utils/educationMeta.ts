@@ -19,11 +19,11 @@ export interface CategoryMeta {
 
 export const CATEGORY_META: Record<string, CategoryMeta> = {
   nutricion: { key: 'nutricion', label: 'Nutrición', icon: Apple, color: '#30A46C', bg: '#E7F6EE' },
-  suplementos: { key: 'suplementos', label: 'Suplementos', icon: Pill, color: '#7C3AED', bg: '#F3EEFF' },
+  suplementos: { key: 'suplementos', label: 'Suplementos', icon: Pill, color: '#8B7FD4', bg: '#F3F1FB' },
   signos_alarma: { key: 'signos_alarma', label: 'Signos de alarma', icon: ShieldAlert, color: '#E5484D', bg: '#FDECEC' },
   parto: { key: 'parto', label: 'Parto', icon: HeartPulse, color: '#E5484D', bg: '#FDECEC' },
   lactancia: { key: 'lactancia', label: 'Lactancia', icon: Baby, color: '#F5A623', bg: '#FEF4E6' },
-  cuidado_bebe: { key: 'cuidado_bebe', label: 'Cuidado del bebé', icon: Sparkles, color: '#3A86FF', bg: '#EAF1FF' },
+  cuidado_bebe: { key: 'cuidado_bebe', label: 'Cuidado del bebé', icon: Sparkles, color: '#4A90D9', bg: '#EDF4FB' },
   salud_mental: { key: 'salud_mental', label: 'Salud mental', icon: Brain, color: '#0EA5B7', bg: '#E4F7F9' },
   general: { key: 'general', label: 'General', icon: BookOpen, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
 };

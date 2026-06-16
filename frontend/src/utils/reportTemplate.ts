@@ -41,11 +41,11 @@ export interface ClinicReportData {
   priority: ReportPriorityRow[];
 }
 
-const BRAND = '#3A86FF';
-const BRAND_DARK = '#1E40AF';
-const INK = '#1E2A3A';
-const MUTED = '#5C6E8E';
-const LINE = '#E4EAF5';
+const BRAND = '#4A90D9';
+const BRAND_DARK = '#3A78BD';
+const INK = '#232A33';
+const MUTED = '#5E6B7A';
+const LINE = '#EAEDF2';
 
 const esc = (s: unknown): string =>
   String(s ?? '')
@@ -147,7 +147,7 @@ export function buildClinicReportHtml(d: ClinicReportData): string {
   .minsa-label { font-size: 12px; font-weight: 600; }
   .minsa-pct { font-size: 12px; font-weight: 700; }
   .minsa-meta { color: ${MUTED}; font-weight: 500; font-size: 10px; }
-  .bar { position: relative; height: 9px; background: #EEF2F8; border-radius: 6px; overflow: visible; }
+  .bar { position: relative; height: 9px; background: #F1F3F7; border-radius: 6px; overflow: visible; }
   .bar-fill { height: 100%; border-radius: 6px; }
   .bar-meta { position: absolute; top: -3px; width: 2px; height: 15px; background: ${INK}; opacity: 0.5; }
   .risk-bar { display: flex; height: 22px; border-radius: 8px; overflow: hidden; }

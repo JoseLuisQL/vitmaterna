@@ -129,7 +129,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   if (isGradient) {
     return (
       <LinearGradient
-        colors={gradientColors ?? ['#5B9FFF', '#3A86FF']}
+        colors={gradientColors ?? ['#5FA3E0', '#4A90D9']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradientContainer, { paddingTop: insets.top + spacing.sm }, style]}

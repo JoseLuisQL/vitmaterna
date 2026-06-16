@@ -21,13 +21,13 @@ export const gradients = {
 
   /** Header de alarmas / emergencia */
   danger: {
-    colors: ['#FF6B6B', semanticColors.danger] as const,
+    colors: ['#E8807F', semanticColors.danger] as const,
     ...diagonal,
   } as GradientConfig,
 
-  /** Fade sutil ice-blue → blanco para fondos de header flat */
+  /** Fade sutil neutro cálido → blanco para fondos de header flat */
   iceFade: {
-    colors: ['#EEF2F8', '#FFFFFF'] as const,
+    colors: ['#F7F8FA', '#FFFFFF'] as const,
     start: { x: 0, y: 0 },
     end: { x: 0, y: 1 },
   } as GradientConfig,

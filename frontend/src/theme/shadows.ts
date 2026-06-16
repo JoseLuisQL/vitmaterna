@@ -18,7 +18,7 @@ interface ShadowPreset {
   elevation: number;
 }
 
-const SHADOW_BASE = '#1E2A3A';
+const SHADOW_BASE = '#232A33';
 
 const make = (
   color: string,
@@ -40,7 +40,7 @@ export const shadows = {
   /** Tarjeta flotante estilo referencia (default) */
   card: make(SHADOW_BASE, 2, 12, 0.06, 3),
   /** Botón FAB y elementos elevados (glow azul) */
-  float: make('#3A86FF', 4, 16, 0.2, 8),
+  float: make('#4A90D9', 4, 16, 0.2, 8),
   /** Modal / bottom sheet / toast */
   modal: make(SHADOW_BASE, 8, 24, 0.12, 12),
 } as const;
