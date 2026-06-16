@@ -18,14 +18,38 @@ import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
+/** Valida un número dentro de un rango fisiológico (campo de texto). */
+const numInRange = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .min(1, `${label} es obligatorio`)
+    .refine((v) => {
+      const n = Number(v.replace(',', '.'));
+      return !Number.isNaN(n) && n >= min && n <= max;
+    }, `${label} debe estar entre ${min} y ${max}`);
+
+const optNumInRange = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .optional()
+    .refine((v) => {
+      if (!v || !v.trim()) return true;
+      const n = Number(v.replace(',', '.'));
+      return !Number.isNaN(n) && n >= min && n <= max;
+    }, `${label} debe estar entre ${min} y ${max}`);
+
 const controlSchema = z.object({
-  week: z.string().min(1, 'La semana es obligatoria'),
-  weight: z.string().min(1, 'El peso es obligatorio'),
-  bloodPressure: z.string().min(1, 'La presión arterial es obligatoria'),
-  temperatura: z.string().optional(),
-  pulsoMaterno: z.string().optional(),
-  fetalHeartRate: z.string().min(1, 'La FCF es obligatoria'),
-  fundalHeight: z.string().min(1, 'La altura uterina es obligatoria'),
+  week: numInRange('La semana', 1, 42),
+  weight: numInRange('El peso', 30, 200),
+  // Presión arterial en formato sistólica/diastólica (ej. 120/80).
+  bloodPressure: z
+    .string()
+    .min(1, 'La presión arterial es obligatoria')
+    .regex(/^\d{2,3}\/\d{2,3}$/, 'Formato válido: 120/80'),
+  temperatura: optNumInRange('La temperatura', 34, 43),
+  pulsoMaterno: optNumInRange('El pulso', 30, 220),
+  fetalHeartRate: numInRange('La FCF', 60, 220),
+  fundalHeight: numInRange('La altura uterina', 5, 50),
   movimientoFetal: z.string().optional(),
   proteinuria: z.string().optional(),
   edema: z.string().optional(),
@@ -42,6 +66,7 @@ export default function NuevoControlScreen(): React.ReactElement {
 
   const { control, handleSubmit, formState: { errors } } = useForm<ControlFormData>({
     resolver: zodResolver(controlSchema),
+    mode: 'onChange',
     defaultValues: {
       week: '', weight: '', bloodPressure: '', temperatura: '', pulsoMaterno: '',
       fetalHeartRate: '', fundalHeight: '', movimientoFetal: '', proteinuria: '', edema: '', indications: '',

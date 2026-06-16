@@ -7,11 +7,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreditCard, Lock } from 'lucide-react-native';
 
@@ -23,6 +23,7 @@ import { obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { shadows } from '../../src/theme/shadows';
+import { notify } from '../../src/utils/confirm';
 
 const BRAND = obstetraColors.primary;
 
@@ -49,14 +50,15 @@ export default function LoginScreen(): React.ReactElement {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange',
     defaultValues: { dni: '', password: '' },
   });
 
   const onSubmit = useCallback(
     async (data: LoginFormData) => {
       try {
-        const validated = loginSchema.parse(data);
-        await login(validated.dni, validated.password);
+        await login(data.dni, data.password);
 
         const user = useAuthStore.getState().user;
         if (user) {
@@ -66,7 +68,7 @@ export default function LoginScreen(): React.ReactElement {
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Error al iniciar sesión';
-        Alert.alert('Error', message);
+        notify('Error', message);
       }
     },
     [login, router],

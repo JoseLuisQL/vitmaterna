@@ -25,6 +25,23 @@ const STEPS = [
   { id: 4, title: 'Embarazo actual' },
 ];
 
+/** Celular peruano opcional: si se llena, debe ser válido (9 dígitos, inicia en 9). */
+const optPhone = z
+  .string()
+  .optional()
+  .refine((v) => !v || !v.trim() || /^9\d{8}$/.test(v.trim()), 'Celular inválido (9 dígitos, empieza en 9)');
+
+/** Número opcional dentro de rango (campo de texto). */
+const optNum = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .optional()
+    .refine((v) => {
+      if (!v || !v.trim()) return true;
+      const n = Number(v.replace(',', '.'));
+      return !Number.isNaN(n) && n >= min && n <= max;
+    }, `${label} entre ${min} y ${max}`);
+
 const schema = z.object({
   // Step 1
   firstName: z.string().min(2, 'Obligatorio'),
@@ -34,22 +51,22 @@ const schema = z.object({
   fechaNacimiento: z.string().optional(),
   direccion: z.string().optional(),
   localidad: z.string().optional(),
-  phone: z.string().optional(),
+  phone: optPhone,
   codigoSis: z.string().optional(),
   ocupacion: z.string().optional(),
-  acompanantePhone: z.string().optional(),
+  acompanantePhone: optPhone,
   nivelEstudios: z.enum(['analfabeta', 'primaria', 'secundaria', 'superior', 'no_universitario', '']).optional(),
   estadoCivil: z.enum(['casada', 'conviviente', 'soltera', 'otro', '']).optional(),
   
   // Step 2
-  gestaciones: z.string().optional(),
-  partosVaginales: z.string().optional(),
-  cesareas: z.string().optional(),
-  abortos: z.string().optional(),
+  gestaciones: optNum('Gestaciones', 0, 25),
+  partosVaginales: optNum('Partos', 0, 25),
+  cesareas: optNum('Cesáreas', 0, 15),
+  abortos: optNum('Abortos', 0, 25),
   
   // Step 3
-  pesoHabitual: z.string().optional(),
-  talla: z.string().optional(),
+  pesoHabitual: optNum('Peso', 30, 200),
+  talla: optNum('Talla', 1.2, 2.2),
   grupoSanguineo: z.string().optional(),
   factorRh: z.string().optional(),
   

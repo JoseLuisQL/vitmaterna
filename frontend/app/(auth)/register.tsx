@@ -7,11 +7,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   User,
@@ -32,6 +32,7 @@ import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/co
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { shadows } from '../../src/theme/shadows';
+import { notify } from '../../src/utils/confirm';
 
 const registerSchema = z
   .object({
@@ -51,12 +52,13 @@ const registerSchema = z
     phone: z
       .string()
       .min(1, 'El teléfono es obligatorio')
-      .min(9, 'El teléfono debe tener al menos 9 dígitos')
-      .regex(/^\d+$/, 'El teléfono solo debe contener números'),
+      .regex(/^9\d{8}$/, 'Debe ser un celular válido de 9 dígitos (empieza en 9)'),
     password: z
       .string()
       .min(1, 'La contraseña es obligatoria')
-      .min(8, 'La contraseña debe tener al menos 8 caracteres'),
+      .min(8, 'La contraseña debe tener al menos 8 caracteres')
+      .regex(/[A-Za-z]/, 'Incluye al menos una letra')
+      .regex(/\d/, 'Incluye al menos un número'),
     confirmPassword: z.string().min(1, 'Confirma tu contraseña'),
     cop: z.string().optional(),
   })
@@ -80,24 +82,31 @@ export default function RegisterScreen(): React.ReactElement {
   const {
     control,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onChange',
     defaultValues: { dni: '', firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', cop: '' },
   });
 
   const onSubmit = useCallback(
     async (data: RegisterFormData) => {
+      // Validación de dominio condicional: el obstetra requiere COP.
+      if (selectedRole === 'obstetra' && (!data.cop || data.cop.trim().length < 4)) {
+        setError('cop', { type: 'manual', message: 'El número de colegiatura (COP) es obligatorio' });
+        return;
+      }
       if (!consentAccepted) {
-        Alert.alert('Consentimiento requerido', 'Debes aceptar los términos y condiciones para continuar.');
+        notify('Consentimiento requerido', 'Debes aceptar los términos y condiciones para continuar.');
         return;
       }
       try {
-        const validated = registerSchema.parse(data);
         const registerData: RegisterRequest = {
-          ...validated,
+          ...data,
           role: selectedRole,
           consentAccepted,
-          cop: selectedRole === 'obstetra' ? validated.cop : undefined,
+          cop: selectedRole === 'obstetra' ? data.cop : undefined,
         };
         await registerUser(registerData);
 
@@ -105,11 +114,11 @@ export default function RegisterScreen(): React.ReactElement {
 
         // Obstetra: queda pendiente de aprobación del administrador (no entra).
         if (!isAuthenticated || !user) {
-          Alert.alert(
+          notify(
             'Cuenta pendiente de aprobación',
             'Tu cuenta fue creada y está pendiente de aprobación por el administrador. Te avisaremos cuando puedas ingresar.',
-            [{ text: 'Entendido', onPress: () => router.replace('/(auth)/login') }],
           );
+          router.replace('/(auth)/login');
           return;
         }
 
@@ -117,15 +126,11 @@ export default function RegisterScreen(): React.ReactElement {
         else if (user.role === 'admin') router.replace('/(admin)/(tabs)' as any);
         else router.replace('/(obstetra)/(tabs)');
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          Alert.alert('Error de validación', error.issues[0]?.message || 'Revisa los campos');
-          return;
-        }
         const message = error instanceof Error ? error.message : 'Error al registrarse';
-        Alert.alert('Error', message);
+        notify('Error', message);
       }
     },
-    [consentAccepted, selectedRole, registerUser],
+    [consentAccepted, selectedRole, registerUser, setError, router],
   );
 
   return (
