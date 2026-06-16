@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database.js';
+import { calcularAdherencia } from '../../utils/adherence.js';
 
 export const getAdherenceStats = async (
   gestanteId?: string,
@@ -25,7 +26,24 @@ export const getAdherenceStats = async (
     where: { ...whereClause, tomado: true },
   });
 
-  const adherencePercentage = totalLogs > 0 ? (takenLogs / totalLogs) * 100 : 0;
+  // Fórmula ÚNICA: adherencia por tratamiento (días tomados ÷ días esperados),
+  // promediada si hay varios tratamientos del alcance solicitado.
+  const treatments = await prisma.treatment.findMany({
+    where: {
+      ...(resolvedGestanteId ? { gestanteId: resolvedGestanteId } : {}),
+      ...(treatmentId ? { id: treatmentId } : {}),
+    },
+    include: { supplementLogs: true },
+  });
+  const pcts = treatments.map((t) =>
+    calcularAdherencia({
+      fechaInicio: t.fechaInicio,
+      fechaFin: t.fechaFin,
+      duracionDias: t.duracionDias,
+      logs: t.supplementLogs,
+    }).porcentaje,
+  );
+  const adherencePercentage = pcts.length > 0 ? pcts.reduce((a, b) => a + b, 0) / pcts.length : 0;
 
   // Historial de los últimos 7 días (para la gráfica de "Mi Progreso").
   const history: { date: string; taken: number; total: number }[] = [];
@@ -134,13 +152,16 @@ export const getClinicReport = async () => {
   });
 
   const gestanteAdherences = allGestantes.map(g => {
-    let totalLogs = 0;
-    let takenLogs = 0;
-    g.treatments.forEach(t => {
-      totalLogs += t.supplementLogs.length;
-      takenLogs += t.supplementLogs.filter(l => l.tomado).length;
-    });
-    const pct = totalLogs > 0 ? Math.round((takenLogs / totalLogs) * 100) : 100;
+    // Fórmula ÚNICA: adherencia por tratamiento y se promedia por gestante.
+    const pcts = g.treatments.map(t =>
+      calcularAdherencia({
+        fechaInicio: t.fechaInicio,
+        fechaFin: t.fechaFin,
+        duracionDias: t.duracionDias,
+        logs: t.supplementLogs,
+      }).porcentaje,
+    );
+    const pct = pcts.length > 0 ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : 100;
     return {
       nombre: `${g.user.firstName} ${g.user.lastName}`,
       pct,

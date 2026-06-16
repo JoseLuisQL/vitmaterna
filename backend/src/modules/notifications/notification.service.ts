@@ -4,6 +4,7 @@ import { redis } from '../../config/redis.js';
 import { prisma } from '../../config/database.js';
 import { smsChannel, whatsappChannel, sendSmsAndWhatsApp } from './channels.js';
 import { calculateEG } from '../../utils/dateCalc.js';
+import { calcularAdherencia } from '../../utils/adherence.js';
 
 const expo = new Expo();
 
@@ -341,9 +342,13 @@ export async function scanLowAdherence() {
     const diasTranscurridos = Math.max(1, Math.floor((Date.now() - inicio.getTime()) / (24 * 60 * 60 * 1000)));
     if (diasTranscurridos < 7) continue; // necesita historial mínimo
 
-    const tomados = t.supplementLogs.filter((l) => l.tomado).length;
-    const denom = Math.min(diasTranscurridos, t.duracionDias || diasTranscurridos);
-    const adherencia = denom > 0 ? Math.round((tomados / denom) * 100) : 100;
+    // Fórmula ÚNICA de adherencia (utils/adherence.ts).
+    const { porcentaje: adherencia } = calcularAdherencia({
+      fechaInicio: t.fechaInicio,
+      fechaFin: t.fechaFin,
+      duracionDias: t.duracionDias,
+      logs: t.supplementLogs,
+    });
     if (adherencia >= 50) continue;
 
     // Evitar alertas repetidas el mismo día (busca una previa de hoy).

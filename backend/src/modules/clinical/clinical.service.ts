@@ -11,6 +11,7 @@ import {
   isViolencePositive,
   isSrq18Positive,
 } from '../../utils/screeningThresholds.js';
+import { calcularAdherencia } from '../../utils/adherence.js';
 
 export class ClinicalService {
   async createPrenatalControl(data: any, authenticatedUserId?: string) {
@@ -293,15 +294,21 @@ export class ClinicalService {
       const diasOmitidos = t.supplementLogs
         .filter((l) => !l.tomado)
         .map((l) => l.fecha.toISOString().split('T')[0]);
-      const totalDias = t.duracionDias || 30;
-      const adherencia = totalDias > 0 ? Math.round((diasTomados.length / totalDias) * 100) : 0;
+      // Fórmula ÚNICA de adherencia (utils/adherence.ts).
+      const { porcentaje: adherencia, diasEsperados } = calcularAdherencia({
+        fechaInicio: t.fechaInicio,
+        fechaFin: t.fechaFin,
+        duracionDias: t.duracionDias,
+        logs: t.supplementLogs,
+      });
       const takenToday = diasTomados.includes(todayStr);
 
       return {
         ...t,
         diasTomados,
         diasOmitidos,
-        totalDias,
+        // `totalDias` ahora es "días esperados de toma" según la fórmula única.
+        totalDias: diasEsperados,
         adherencia,
         taken: takenToday,
       };
