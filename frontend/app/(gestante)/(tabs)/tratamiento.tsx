@@ -150,17 +150,18 @@ function ResumenAdherencia(): React.ReactElement | null {
   return (
     <View style={progresoStyles.card}>
       <Text style={progresoStyles.cardTitle}>Mi Progreso</Text>
-      <View style={progresoStyles.ringWrap}>
-        <ProgressRing value={adherence} size={140} strokeWidth={13} color={BRAND} sublabel="adherencia" />
-      </View>
-      <View style={progresoStyles.summaryBox}>
-        <Text style={progresoStyles.summaryValue}>{data.takenSupplements ?? 0}</Text>
-        <Text style={progresoStyles.summaryLabel}>de {data.totalSupplements ?? 0} medicamentos</Text>
+      {/* Anillo + resumen en una fila: compacto y de lectura rápida. */}
+      <View style={progresoStyles.topRow}>
+        <ProgressRing value={adherence} size={96} strokeWidth={10} color={BRAND} sublabel="adherencia" />
+        <View style={progresoStyles.summaryBox}>
+          <Text style={progresoStyles.summaryValue}>{data.takenSupplements ?? 0}</Text>
+          <Text style={progresoStyles.summaryLabel}>de {data.totalSupplements ?? 0} dosis tomadas</Text>
+        </View>
       </View>
       {chartData.length > 0 && (
         <View style={progresoStyles.chartSection}>
-          <Text style={progresoStyles.chartTitle}>Últimos 7 días (%)</Text>
-          <ChartBar data={chartData} color={BRAND} maxValue={100} height={150} showValues yUnit="%" style={{ marginTop: spacing.sm }} />
+          <Text style={progresoStyles.chartTitle}>Últimos 7 días</Text>
+          <ChartBar data={chartData} color={BRAND} maxValue={100} height={120} showValues yUnit="%" style={{ marginTop: spacing.xs }} />
         </View>
       )}
     </View>
@@ -170,26 +171,26 @@ function ResumenAdherencia(): React.ReactElement | null {
 const progresoStyles = StyleSheet.create({
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
     marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: commonColors.border,
   },
-  cardTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md, textAlign: 'center' },
-  ringWrap: { alignItems: 'center' },
+  cardTitle: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, fontWeight: '700', color: commonColors.text, marginBottom: spacing.sm2 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   summaryBox: {
+    flex: 1,
     backgroundColor: gestanteColors.primaryLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.md,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm2,
+    paddingHorizontal: spacing.md,
   },
-  summaryValue: { ...typography.numeric, color: BRAND },
-  summaryLabel: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 4 },
-  chartSection: { marginTop: spacing.lg },
-  chartTitle: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, fontWeight: '700', color: commonColors.text, marginBottom: 4, textAlign: 'center' },
+  summaryValue: { ...typography.numeric, fontSize: 26, color: BRAND },
+  summaryLabel: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
+  chartSection: { marginTop: spacing.md },
+  chartTitle: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.textSecondary, marginBottom: 2 },
 });
 
 export default function TratamientoScreen(): React.ReactElement {
