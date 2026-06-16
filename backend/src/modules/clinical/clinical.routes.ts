@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validate.middleware.js';
 import { rbac } from '../../middleware/rbac.middleware.js';
+import { requireFeature } from '../../middleware/featureFlag.middleware.js';
 import * as schema from './clinical.schema.js';
 import * as controller from './clinical.controller.js';
 
@@ -100,14 +101,16 @@ clinicalRoutes.get(
   controller.getLabResults
 );
 
-// Ultrasounds
+// Ultrasounds (módulo opcional fuera del alcance de la tesis)
 clinicalRoutes.post(
   '/ultrasounds',
+  requireFeature('ecografias'),
   validate(schema.createUltrasoundSchema),
   controller.createUltrasound
 );
 clinicalRoutes.get(
   '/ultrasounds/:gestanteId',
+  requireFeature('ecografias'),
   validate(schema.getUltrasoundsSchema),
   controller.getUltrasounds
 );
@@ -124,74 +127,86 @@ clinicalRoutes.get(
   controller.getVaccinationRecords
 );
 
-// CIE-10 Pathologies
+// CIE-10 Pathologies — módulo opcional fuera de alcance
 clinicalRoutes.post(
   '/pathologies',
+  requireFeature('patologias'),
   validate(schema.createPathologySchema),
   controller.createPathology
 );
 clinicalRoutes.get(
   '/pathologies/:gestanteId',
+  requireFeature('patologias'),
   validate(schema.getPathologiesSchema),
   controller.getPathologies
 );
 
-// Mental Health Screenings (SRQ-18)
+// Mental Health Screenings (SRQ-18) — módulo opcional fuera de alcance
 clinicalRoutes.post(
   '/screenings/mental',
+  requireFeature('tamizajeSaludMental'),
   validate(schema.createMentalHealthScreeningSchema),
   controller.createMentalHealthScreening
 );
 clinicalRoutes.get(
   '/screenings/mental/:gestanteId',
+  requireFeature('tamizajeSaludMental'),
   validate(schema.getMentalHealthScreeningsSchema),
   controller.getMentalHealthScreenings
 );
 
-// Violence Screenings
+// Violence Screenings — módulo opcional fuera de alcance
 clinicalRoutes.post(
   '/screenings/violence',
+  requireFeature('tamizajeViolencia'),
   validate(schema.createViolenceScreeningSchema),
   controller.createViolenceScreening
 );
 clinicalRoutes.get(
   '/screenings/violence/:gestanteId',
+  requireFeature('tamizajeViolencia'),
   validate(schema.getViolenceScreeningsSchema),
   controller.getViolenceScreenings
 );
 
-// Dental Records
+// Dental Records — módulo opcional fuera de alcance
 clinicalRoutes.post(
   '/dental',
+  requireFeature('odontograma'),
   validate(schema.createDentalRecordSchema),
   controller.createDentalRecord
 );
 clinicalRoutes.get(
   '/dental/:gestanteId',
+  requireFeature('odontograma'),
   validate(schema.getDentalRecordsSchema),
   controller.getDentalRecords
 );
 
-// Nutritional Counseling
+// Nutritional Counseling — módulo opcional fuera de alcance
 clinicalRoutes.post(
   '/nutritional-counseling',
+  requireFeature('consejeriaNutricional'),
   validate(schema.createNutritionalCounselingSchema),
   controller.createNutritionalCounseling
 );
 clinicalRoutes.get(
   '/nutritional-counseling/:gestanteId',
+  requireFeature('consejeriaNutricional'),
   validate(schema.getNutritionalCounselingSchema),
   controller.getNutritionalCounseling
 );
 
-// Weight Records
+// Weight Records — módulo opcional fuera de alcance
 clinicalRoutes.post(
   '/weight-records',
+  requireFeature('pesoRegistros'),
   validate(schema.createWeightRecordSchema),
   controller.createWeightRecord
 );
 clinicalRoutes.get(
   '/weight-records/:gestanteId',
+  requireFeature('pesoRegistros'),
   validate(schema.getWeightRecordsSchema),
   controller.getWeightRecords
 );

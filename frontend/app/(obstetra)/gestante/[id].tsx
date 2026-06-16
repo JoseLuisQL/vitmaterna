@@ -29,6 +29,7 @@ import {
 } from '../../../src/services/api-queries';
 import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
+import { useFeatureFlags } from '../../../src/hooks/useFeatureFlags';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 import { confirmAction } from '../../../src/utils/confirm';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
@@ -128,9 +129,21 @@ function riskTextColor(riskLevel?: string): string {
 export default function PatientProfileScreen(): React.ReactElement {
   const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const router = useRouter();
+  // Alcance: la pestaña "Tamizajes" agrupa los módulos opcionales (ecografías,
+  // peso, violencia, salud mental, patologías, odontograma, consejería). Solo se
+  // muestra si el administrador activó al menos uno de esos módulos.
+  const flags = useFeatureFlags();
+  const tamizajesEnabled =
+    flags.ecografias || flags.pesoRegistros || flags.tamizajeViolencia ||
+    flags.tamizajeSaludMental || flags.patologias || flags.odontograma ||
+    flags.consejeriaNutricional;
+
+  // Pestañas visibles según el alcance configurado.
+  const visibleTabs = TABS.filter((t) => (t.id === 'tamizajes' ? tamizajesEnabled : true));
+
   // Permite abrir el perfil directamente en una pestaña (p. ej. desde el flujo
   // "Atender cita" hacia Laboratorios o Tratamiento).
-  const VALID_TABS = ['datos', 'controles', 'laboratorio', 'tamizajes', 'tratamiento', 'alarmas', 'vacunas', 'visitas'];
+  const VALID_TABS = visibleTabs.map((t) => t.id);
   const [activeTab, setActiveTab] = useState(tab && VALID_TABS.includes(tab) ? tab : 'datos');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
@@ -592,7 +605,7 @@ export default function PatientProfileScreen(): React.ReactElement {
           contentContainerStyle={styles.tabsScrollContent}
           style={styles.tabsWrapper}
         >
-          {TABS.map(({ id: tid, label, icon: Icon }) => {
+          {visibleTabs.map(({ id: tid, label, icon: Icon }) => {
             const isActive = activeTab === tid;
             return (
               <TouchableOpacity

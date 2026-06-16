@@ -32,18 +32,19 @@ export type FeatureModule =
 /**
  * Valores por defecto de cada bandera.
  *
- * IMPORTANTE: en la introducción del sistema de flags (Fase 2) todos están en
- * `true` para no cambiar el comportamiento actual. El apagado real de los
- * módulos fuera de alcance se hace en la Fase 3 ajustando estos defaults.
+ * Fase 3: los 7 módulos fuera del alcance de los objetivos de la tesis quedan
+ * DESACTIVADOS por defecto (ningún indicador Likert los mide). Siguen en la base
+ * de datos y el código; el administrador puede reactivarlos cuando quiera desde
+ * el panel (PUT /admin/feature-flags). Nada se borra.
  */
 export const DEFAULT_FEATURE_FLAGS: Record<FeatureModule, boolean> = {
-  ecografias: true,
-  pesoRegistros: true,
-  tamizajeViolencia: true,
-  tamizajeSaludMental: true,
-  patologias: true,
-  odontograma: true,
-  consejeriaNutricional: true,
+  ecografias: false,
+  pesoRegistros: false,
+  tamizajeViolencia: false,
+  tamizajeSaludMental: false,
+  patologias: false,
+  odontograma: false,
+  consejeriaNutricional: false,
 };
 
 /** Etiqueta legible de cada módulo (para el panel admin). */
