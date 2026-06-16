@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Activity, Calendar, Users, AlertTriangle, ChevronRight as Chevron } from 'lucide-react-native';
+import { ChevronRight, Activity, Calendar, Users, AlertTriangle, ChevronRight as Chevron, Menu } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
@@ -10,6 +10,7 @@ import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
+import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -26,6 +27,7 @@ function getInitial(user: { firstName?: string; lastName?: string } | null): str
 export default function ObstetraDashboard(): React.ReactElement {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const { open: openSidebar } = useSidebar();
   const displayName = user?.lastName ? `Dra. ${user.lastName}` : 'Obstetra';
 
   const { data: stats, isLoading: isStatsLoading, refetch: refetchStats, isRefetching: isRefetchingStats } = useObstetraDashboard();
@@ -58,6 +60,15 @@ export default function ObstetraDashboard(): React.ReactElement {
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerWrapper}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={openSidebar}
+              style={styles.menuBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir menú"
+            >
+              <Menu size={24} color={commonColors.white} />
+            </TouchableOpacity>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.greeting}>Bienvenida,</Text>
               <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
@@ -213,6 +224,7 @@ const styles = StyleSheet.create({
   },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
   greeting: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginBottom: 2 },
   name: { ...typography.display, color: commonColors.white },

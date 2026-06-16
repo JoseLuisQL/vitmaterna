@@ -11,10 +11,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Users, Baby, Calendar, AlertTriangle, BookOpen, ChevronRight,
-  UserCheck, BellRing, BarChart3,
+  UserCheck, BellRing, BarChart3, Menu,
 } from 'lucide-react-native';
 import { AutoGrid, PressableScale } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { useAdminDashboard } from '../../../src/services/admin-queries';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
@@ -53,6 +54,7 @@ function StatusRow({
 export default function AdminInicioScreen(): React.ReactElement {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const { open: openSidebar } = useSidebar();
   const { data, isLoading, refetch, isRefetching } = useAdminDashboard();
 
   const d = data;
@@ -68,6 +70,17 @@ export default function AdminInicioScreen(): React.ReactElement {
       refreshing={isRefetching}
       onRefresh={refetch}
       accentColor={BRAND}
+      actions={
+        <TouchableOpacity
+          onPress={openSidebar}
+          style={styles.menuBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir menú"
+        >
+          <Menu size={22} color={commonColors.white} />
+        </TouchableOpacity>
+      }
     >
       {/* Acción directa: obstetras pendientes de aprobación */}
       {pendientes > 0 && (
@@ -143,6 +156,7 @@ export default function AdminInicioScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
+  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   alertCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: semanticColors.warningLight, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: semanticColors.warning },
   alertIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center' },
   alertTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },

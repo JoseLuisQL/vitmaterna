@@ -19,6 +19,7 @@ import {
   Heart,
   BookOpen,
   MessageCircle,
+  Menu,
 } from 'lucide-react-native';
 import { AppCard } from '../../../src/components/ui/AppCard';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
@@ -37,12 +38,14 @@ import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 import { EmergencyAlert, type EmergencyCoords } from '../../../src/components/shared/EmergencyAlert';
+import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 
 const BRAND = gestanteColors.primary;
 
 export default function GestanteDashboard(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const { open: openSidebar } = useSidebar();
   const displayName = user?.firstName || 'Gestante';
 
   const { data, isLoading, refetch } = useGestanteDashboard();
@@ -144,6 +147,15 @@ export default function GestanteDashboard(): React.ReactElement {
           <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
           <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
             <View style={styles.headerRow}>
+              <TouchableOpacity
+                onPress={openSidebar}
+                style={styles.menuBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir menú"
+              >
+                <Menu size={24} color={commonColors.white} />
+              </TouchableOpacity>
               <View style={styles.headerGreeting}>
                 <Text style={styles.greeting}>Hola,</Text>
                 <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
@@ -328,6 +340,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
   },
+  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerGreeting: { flexShrink: 1, minWidth: 0 },
   greeting: {
     ...typography.h3,
