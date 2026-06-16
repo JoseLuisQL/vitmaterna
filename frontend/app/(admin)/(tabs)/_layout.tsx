@@ -35,11 +35,8 @@ export default function AdminTabsLayout(): React.ReactElement {
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
         }}
       />
-      {/* 'Más' ya no es un tab: su contenido vive en el sidebar (menú lateral),
-          igual que en gestante y obstetra. Se mantiene la ruta oculta por si
-          algún enlace antiguo apunta a ella. */}
-      <Tabs.Screen name="mas" options={{ title: 'Más', href: null }} />
-      {/* Funciones esporádicas: viven en el sidebar (ocultas de la barra) */}
+      {/* Funciones esporádicas: viven en el sidebar (ocultas de la barra).
+          El antiguo tab 'Más' se eliminó: su contenido ya está en el sidebar. */}
       <Tabs.Screen name="sedes" options={{ title: 'Sedes', href: null }} />
       <Tabs.Screen name="config" options={{ title: 'Config', href: null }} />
       <Tabs.Screen name="auditoria" options={{ title: 'Auditoría', href: null }} />
