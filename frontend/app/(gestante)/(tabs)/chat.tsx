@@ -56,12 +56,16 @@ export default function GestanteChatScreen() {
     },
   });
 
-  // Auto-scroll al final cuando llegan/envían mensajes (no al cargar antiguos).
-  useEffect(() => {
-    if (!isLoadingMore) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
-    }
-  }, [messages.length]);
+  // Control del auto-scroll al final. Usamos onContentSizeChange (se dispara
+  // cuando el contenido YA está medido) en vez de un setTimeout fijo, que
+  // fallaba al abrir el chat porque los items aún no tenían su altura final.
+  const didInitialScroll = useRef(false);
+  const handleContentSizeChange = () => {
+    if (isLoadingMore) return; // al cargar mensajes antiguos no saltar al final
+    // Carga inicial: salto instantáneo (sin animación) para abrir abajo directo.
+    flatListRef.current?.scrollToEnd({ animated: didInitialScroll.current });
+    didInitialScroll.current = true;
+  };
 
   const handleWhatsApp = async () => {
     if (!obstetra?.phone) {
@@ -219,6 +223,7 @@ export default function GestanteChatScreen() {
         keyExtractor={item => item.id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
+        onContentSizeChange={handleContentSizeChange}
         onStartReached={hasMore ? loadOlder : undefined}
         onStartReachedThreshold={0.2}
         ListHeaderComponent={

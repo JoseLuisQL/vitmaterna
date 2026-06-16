@@ -48,11 +48,18 @@ export default function ObstetraChatScreen() {
     otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId });
 
+  // Al cambiar de conversación, la próxima medición de contenido debe saltar
+  // al final de forma instantánea (abrir abajo directo, sin scroll manual).
+  const didInitialScroll = useRef(false);
   useEffect(() => {
-    if (!isLoadingMore) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
-    }
-  }, [messages.length]);
+    didInitialScroll.current = false;
+  }, [conversationId]);
+
+  const handleContentSizeChange = () => {
+    if (isLoadingMore) return;
+    flatListRef.current?.scrollToEnd({ animated: didInitialScroll.current });
+    didInitialScroll.current = true;
+  };
 
   // 1. Fetch active conversations for this obstetra
   const { data: conversations, isLoading: isLoadingConvs, refetch: refetchConvs } = useQuery({
@@ -346,6 +353,7 @@ export default function ObstetraChatScreen() {
         keyExtractor={item => item.id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
+        onContentSizeChange={handleContentSizeChange}
         onStartReached={hasMore ? loadOlder : undefined}
         onStartReachedThreshold={0.2}
         ListHeaderComponent={
