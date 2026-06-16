@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   kpiRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   kpiCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
   kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  kpiValue: { ...typography.h2, color: commonColors.text },
+  kpiValue: { ...typography.numericMd, color: commonColors.text },
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, marginTop: spacing.sm },

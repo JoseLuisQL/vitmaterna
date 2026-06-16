@@ -49,7 +49,6 @@ export default function ObstetraTabsLayout(): React.ReactElement {
           tabBarBadge: unread > 0 ? unread : undefined,
         }}
       />
-      <Tabs.Screen name="alertas" options={{ title: 'Alertas', href: null }} />
       <Tabs.Screen name="perfil" options={{ title: 'Perfil', href: null }} />
       <Tabs.Screen name="reportes" options={{ title: 'Reportes', href: null }} />
     </Tabs>

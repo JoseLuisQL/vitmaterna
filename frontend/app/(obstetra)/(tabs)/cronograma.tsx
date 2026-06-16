@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, StatusBar } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -351,9 +351,9 @@ export default function CronogramaScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerContainer: { marginBottom: 12 },
+  headerContainer: { marginBottom: spacing.sm2 },
   headerWrapper: {
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },

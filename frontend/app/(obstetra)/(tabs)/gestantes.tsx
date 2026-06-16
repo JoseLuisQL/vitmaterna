@@ -216,7 +216,7 @@ export default function GestantesScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: spacing.xl + spacing.sm,
+    paddingBottom: spacing.xl,
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },

@@ -7,7 +7,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast } from '../../../src/components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { layout } from '../../../src/theme/spacing';
+import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 
 const BRAND = obstetraColors.primary;
@@ -179,13 +179,13 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: {
-    paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xxl,
+    borderBottomRightRadius: borderRadius.xxl,
   },
   safeAreaHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
