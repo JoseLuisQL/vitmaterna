@@ -10,6 +10,11 @@ declare module 'expo-file-system/legacy' {
     contents: string,
     options?: { encoding?: EncodingType }
   ): Promise<void>;
+  export function copyAsync(options: { from: string; to: string }): Promise<void>;
+  export function deleteAsync(
+    fileUri: string,
+    options?: { idempotent?: boolean }
+  ): Promise<void>;
 }
 
 declare module 'expo-sharing' {

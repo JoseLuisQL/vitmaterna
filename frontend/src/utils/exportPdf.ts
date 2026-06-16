@@ -38,10 +38,31 @@ export async function exportPdf({
   try {
     const Print = require('expo-print');
     const Sharing = require('expo-sharing');
+    const FileSystem = require('expo-file-system/legacy');
+
     const { uri } = await Print.printToFileAsync({ html, base64: false });
 
+    // expo-print escribe el PDF con un nombre aleatorio en una carpeta temporal
+    // que expo-sharing a veces NO puede leer ("Not allowed to read file under
+    // given URL"). Se copia a documentDirectory con un nombre legible y se
+    // comparte desde ahí (ruta a la que sí tiene acceso el sistema).
+    let shareUri = uri;
+    try {
+      const dir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      if (dir) {
+        const dest = `${dir}${fileName}.pdf`;
+        // Si ya existe un archivo con ese nombre, se elimina antes de copiar.
+        await FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
+        await FileSystem.copyAsync({ from: uri, to: dest });
+        shareUri = dest;
+      }
+    } catch (copyErr) {
+      // Si falla la copia, se intenta compartir el original como respaldo.
+      console.warn('[exportPdf] No se pudo copiar el PDF, se usa el original:', copyErr);
+    }
+
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
+      await Sharing.shareAsync(shareUri, {
         UTI: 'com.adobe.pdf',
         mimeType: 'application/pdf',
         dialogTitle,
