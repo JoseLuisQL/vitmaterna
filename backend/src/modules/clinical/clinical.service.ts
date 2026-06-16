@@ -431,7 +431,7 @@ export class ClinicalService {
       await notifyUser(
         obstetraUserId,
         'signo_alarma',
-        esGrave ? '🚨 Signo de alarma GRAVE' : 'Signo de alarma reportado',
+        esGrave ? 'Signo de alarma GRAVE' : 'Signo de alarma reportado',
         `${nombre} reportó: ${data.tipo_signo}.${esGrave ? ' Requiere atención inmediata.' : ' Da seguimiento cuando puedas.'}`,
         { gestanteId, dangerSignId: dangerSign.id, severidad: data.severidad },
       );
@@ -471,18 +471,34 @@ export class ClinicalService {
         });
       }
 
-      await prisma.message.create({
+      const message = await prisma.message.create({
         data: {
           conversationId: conversation.id,
           senderId: gestante.userId,
-          contenido: `🚨 ALERTA AUTOMÁTICA: ${nombreGestante} reportó un signo de alarma GRAVE: "${tipoSigno}". Por favor, contáctala de inmediato.`,
+          contenido: [
+            'SIGNO DE ALARMA GRAVE - Reporte automático',
+            `Paciente: ${nombreGestante}`,
+            `Síntoma: ${tipoSigno}`,
+            'Acción: contáctala de inmediato.',
+          ].join('\n'),
           tipo: 'alerta_emergencia',
+        },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, role: true } },
         },
       });
       await prisma.conversation.update({
         where: { id: conversation.id },
         data: { ultimoMensaje: new Date() },
       });
+
+      // Emisión en tiempo real a la sala (el obstetra ve la alerta sin recargar).
+      try {
+        const { getIO } = await import('../../config/socketRegistry.js');
+        getIO()?.to(`conversation:${conversation.id}`).emit('receive_message', message);
+      } catch {
+        /* best-effort */
+      }
     } catch (err) {
       // No bloquear el reporte del signo si falla el mensaje de chat.
       console.error('[DANGER SIGN CHAT ALERT ERROR]', err);

@@ -10,6 +10,7 @@ import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { TypingDots } from '../../../src/components/shared/TypingDots';
+import { EmergencyMessageCard } from '../../../src/components/shared/EmergencyMessageCard';
 import { Send, Bot, ImagePlus, Check, CheckCheck } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
@@ -113,14 +114,11 @@ export default function GestanteChatScreen() {
 
     if (isAlert) {
       return (
-        <View style={styles.emergencyMessageBubble}>
-          <Text style={styles.emergencyMessageText}>
-            {item.text}
-          </Text>
-          <Text style={styles.emergencyTimeText}>
-            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </View>
+        <EmergencyMessageCard
+          text={item.text}
+          time={new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          mapsUrl={item.mediaUrl}
+        />
       );
     }
 

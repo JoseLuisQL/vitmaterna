@@ -34,13 +34,19 @@
       [
         "expo-notifications",
         {
-          "color": "#7C3AED"
+          "color": "#7468C4"
         }
       ],
       [
         "expo-image-picker",
         {
           "photosPermission": "VITMATERNA necesita acceso a tus fotos para que puedas enviar imágenes en el chat con tu obstetra."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "VITMATERNA usa tu ubicación para enviar tu posición exacta al obstetra cuando activas una alerta de emergencia."
         }
       ]
     ],

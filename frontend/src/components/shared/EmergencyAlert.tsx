@@ -22,6 +22,7 @@ import {
   Animated,
   ActivityIndicator,
   Linking,
+  Platform,
 } from 'react-native';
 import { Siren, MapPin, Phone, CheckCircle2, X, ShieldAlert } from 'lucide-react-native';
 import { commonColors, semanticColors } from '../../theme/colors';
@@ -78,9 +79,28 @@ export function EmergencyAlert({
     }
   }, [visible, scale, opacity]);
 
-  /** Obtiene la ubicación (web/nativo via navigator) con respaldo. */
-  const getCoords = useCallback((): Promise<EmergencyCoords> => {
-    return new Promise((resolve) => {
+  /**
+   * Obtiene la ubicación con la mejor fuente disponible:
+   *  - Nativo (iOS/Android): expo-location con alta precisión + permisos nativos.
+   *  - Web: navigator.geolocation.
+   *  - Si falla o se deniega: coordenadas de respaldo (centro de salud).
+   */
+  const getCoords = useCallback(async (): Promise<EmergencyCoords> => {
+    if (Platform.OS !== 'web') {
+      try {
+        const Location = await import('expo-location');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return fallbackCoords;
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      } catch {
+        return fallbackCoords;
+      }
+    }
+    // Web
+    return new Promise<EmergencyCoords>((resolve) => {
       if (typeof navigator !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),

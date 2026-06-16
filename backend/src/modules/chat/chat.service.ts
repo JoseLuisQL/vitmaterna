@@ -278,17 +278,41 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
   }
 
   const conversation = await getOrCreateConversation(userId, 'gestante');
-  const alertText = `🚨 ALERTA DE EMERGENCIA: La gestante ${gestante.user.firstName} ${gestante.user.lastName} ha presionado el botón de pánico. Ubicación: https://maps.google.com/?q=${latitude},${longitude}`;
-  
-  return prisma.$transaction(async (tx) => {
-    const message = await tx.message.create({
+  const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+
+  // Edad gestacional aproximada (si hay FUM) para dar contexto clínico.
+  let egTexto = '';
+  if (gestante.fum) {
+    const dias = Math.floor((Date.now() - new Date(gestante.fum).getTime()) / 86400000);
+    const sem = Math.floor(dias / 7);
+    if (sem > 0 && sem <= 42) egTexto = ` | ${sem} sem`;
+  }
+
+  const nombre = `${gestante.user.firstName} ${gestante.user.lastName}`.trim();
+  const telefono = gestante.user.phone || 'sin registro';
+
+  // Contenido estructurado (sin emojis): el frontend lo renderiza como tarjeta
+  // de emergencia profesional. Cada dato en su línea, claro y accionable.
+  const alertText = [
+    'EMERGENCIA - Botón de auxilio activado',
+    `Paciente: ${nombre}${egTexto}`,
+    `Riesgo: ${gestante.nivelRiesgo || 'no definido'}`,
+    `Teléfono: ${telefono}`,
+    `Ubicación: ${mapsUrl}`,
+  ].join('\n');
+
+  const message = await prisma.$transaction(async (tx) => {
+    const msg = await tx.message.create({
       data: {
         conversationId: conversation.id,
         senderId: userId,
         contenido: alertText,
         tipo: 'alerta_emergencia',
-        mediaUrl: `https://maps.google.com/?q=${latitude},${longitude}`,
-      }
+        mediaUrl: mapsUrl,
+      },
+      include: {
+        sender: { select: { id: true, firstName: true, lastName: true, role: true } },
+      },
     });
 
     await tx.conversation.update({
@@ -307,15 +331,27 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
         const { sendPushNotification } = await import('../notifications/notification.service.js');
         await sendPushNotification(
           [prefs.expoPushToken],
-          '🚨 EMERGENCIA GESTANTE',
-          `Paciente ${gestante.user.firstName} ha activado el botón de auxilio!`,
-          { gestanteId: gestante.id, conversationId: conversation.id }
+          'Emergencia: botón de auxilio',
+          `${nombre} solicita ayuda inmediata. Toca para ver su ubicación.`,
+          { gestanteId: gestante.id, conversationId: conversation.id, tipo: 'emergencia' }
         );
       }
     }
 
-    return message;
+    return msg;
   });
+
+  // Emitir en tiempo real a la sala de la conversación para que el obstetra
+  // (o la gestante) vea la alerta sin recargar.
+  try {
+    const { getIO } = await import('../../config/socketRegistry.js');
+    const io = getIO();
+    io?.to(`conversation:${conversation.id}`).emit('receive_message', message);
+  } catch {
+    /* el mensaje ya quedó persistido; la emisión es best-effort */
+  }
+
+  return message;
 };
 
 /**
