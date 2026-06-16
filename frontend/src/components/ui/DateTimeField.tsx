@@ -127,12 +127,14 @@ export function DateTimeField({
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           minimumDate={minimumDate}
           maximumDate={maximumDate}
-          onChange={(event: any, selected?: Date) => {
-            setShowPicker(Platform.OS === 'ios'); // iOS: el spinner queda; Android se cierra
-            if (event?.type === 'dismissed') { setShowPicker(false); return; }
+          // API moderna (datetimepicker v9): onValueChange + onDismiss en lugar
+          // del onChange deprecado.
+          onValueChange={(_event: any, selected: Date) => {
+            // En iOS el spinner permanece abierto; en Android se cierra al elegir.
             if (selected) onChange(fromDate(selected, mode));
             if (Platform.OS !== 'ios') setShowPicker(false);
           }}
+          onDismiss={() => setShowPicker(false)}
         />
       )}
       {error ? <Text style={styles.errorText}>{error}</Text> : helperText ? <Text style={styles.helperText}>{helperText}</Text> : null}
