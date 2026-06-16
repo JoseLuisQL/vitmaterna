@@ -38,18 +38,22 @@ const optNumInRange = (label: string, min: number, max: number) =>
       return !Number.isNaN(n) && n >= min && n <= max;
     }, `${label} debe estar entre ${min} y ${max}`);
 
+// Registro LIGERO de control (alineado a la tesis): lo único obligatorio es la
+// semana gestacional (necesaria para el cronograma y para contar el control como
+// realizado). El detalle clínico completo queda en la ficha física MINSA, por lo
+// que peso, presión, FCF y altura uterina son OPCIONALES (evita doble digitación).
 const controlSchema = z.object({
   week: numInRange('La semana', 1, 42),
-  weight: numInRange('El peso', 30, 200),
-  // Presión arterial en formato sistólica/diastólica (ej. 120/80).
+  weight: optNumInRange('El peso', 30, 200),
+  // Presión arterial en formato sistólica/diastólica (ej. 120/80). Opcional.
   bloodPressure: z
     .string()
-    .min(1, 'La presión arterial es obligatoria')
-    .regex(/^\d{2,3}\/\d{2,3}$/, 'Formato válido: 120/80'),
+    .optional()
+    .refine((v) => !v || !v.trim() || /^\d{2,3}\/\d{2,3}$/.test(v.trim()), 'Formato válido: 120/80'),
   temperatura: optNumInRange('La temperatura', 34, 43),
   pulsoMaterno: optNumInRange('El pulso', 30, 220),
-  fetalHeartRate: numInRange('La FCF', 60, 220),
-  fundalHeight: numInRange('La altura uterina', 5, 50),
+  fetalHeartRate: optNumInRange('La FCF', 60, 220),
+  fundalHeight: optNumInRange('La altura uterina', 5, 50),
   movimientoFetal: z.string().optional(),
   proteinuria: z.string().optional(),
   edema: z.string().optional(),
@@ -78,7 +82,7 @@ export default function NuevoControlScreen(): React.ReactElement {
     // Solo se envían los campos opcionales con valor. pulsoMaterno es numérico
     // en el backend; el resto se envían como texto (temperatura acepta ambos).
     const optionals: Record<string, string | number> = {};
-    (['temperatura', 'movimientoFetal', 'proteinuria', 'edema'] as const).forEach((k) => {
+    (['temperatura', 'movimientoFetal', 'proteinuria', 'edema', 'weight', 'bloodPressure', 'fetalHeartRate', 'fundalHeight'] as const).forEach((k) => {
       const v = (data[k] || '').trim();
       if (v) optionals[k] = v;
     });
@@ -91,10 +95,6 @@ export default function NuevoControlScreen(): React.ReactElement {
         patientId,
         ...(appointmentId ? { appointmentId } : {}),
         week: data.week,
-        weight: data.weight,
-        bloodPressure: data.bloodPressure,
-        fetalHeartRate: data.fetalHeartRate,
-        fundalHeight: data.fundalHeight,
         indications: data.indications,
         ...optionals,
         date: new Date().toISOString(),
@@ -131,15 +131,23 @@ export default function NuevoControlScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.noteCard}>
+          <Text style={styles.noteText}>
+            Registro rápido del control. Solo la semana gestacional es obligatoria
+            (para el cronograma y el conteo de controles). El detalle clínico
+            completo queda en la ficha física MINSA — aquí basta lo esencial.
+          </Text>
+        </View>
+
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
-            <Text style={styles.sectionTitle}>Signos Vitales y Medidas</Text>
+            <Text style={styles.sectionTitle}>Datos del control</Text>
           </View>
           <View style={styles.formGroup}>
             <AppInput control={control} name="week" label="Semana Gestacional" placeholder="Ej. 24" keyboardType="numeric" error={errors.week?.message} />
-            <AppInput control={control} name="weight" label="Peso (kg)" placeholder="Ej. 65.5" keyboardType="numeric" error={errors.weight?.message} />
-            <AppInput control={control} name="bloodPressure" label="Presión Arterial (mmHg)" placeholder="Ej. 120/80" error={errors.bloodPressure?.message} />
+            <AppInput control={control} name="weight" label="Peso (kg) — opcional" placeholder="Ej. 65.5" keyboardType="numeric" error={errors.weight?.message} />
+            <AppInput control={control} name="bloodPressure" label="Presión Arterial (mmHg) — opcional" placeholder="Ej. 120/80" error={errors.bloodPressure?.message} />
             <AppInput control={control} name="temperatura" label="Temperatura (°C) — opcional" placeholder="Ej. 36.5" keyboardType="numeric" error={errors.temperatura?.message} />
             <AppInput control={control} name="pulsoMaterno" label="Pulso materno (lpm) — opcional" placeholder="Ej. 78" keyboardType="numeric" error={errors.pulsoMaterno?.message} />
           </View>
@@ -148,23 +156,12 @@ export default function NuevoControlScreen(): React.ReactElement {
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionIconWrap}><Baby size={20} color={BRAND} /></View>
-            <Text style={styles.sectionTitle}>Datos Fetales</Text>
+            <Text style={styles.sectionTitle}>Datos Fetales — opcional</Text>
           </View>
           <View style={styles.formGroup}>
-            <AppInput control={control} name="fetalHeartRate" label="Frecuencia Cardíaca Fetal (lpm)" placeholder="Ej. 140" keyboardType="numeric" error={errors.fetalHeartRate?.message} />
-            <AppInput control={control} name="fundalHeight" label="Altura Uterina (cm)" placeholder="Ej. 22" keyboardType="numeric" error={errors.fundalHeight?.message} />
+            <AppInput control={control} name="fetalHeartRate" label="Frecuencia Cardíaca Fetal (lpm) — opcional" placeholder="Ej. 140" keyboardType="numeric" error={errors.fetalHeartRate?.message} />
+            <AppInput control={control} name="fundalHeight" label="Altura Uterina (cm) — opcional" placeholder="Ej. 22" keyboardType="numeric" error={errors.fundalHeight?.message} />
             <AppInput control={control} name="movimientoFetal" label="Movimiento fetal — opcional" placeholder="Ej. Presente / Ausente" error={errors.movimientoFetal?.message} />
-          </View>
-        </View>
-
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
-            <Text style={styles.sectionTitle}>Examen complementario</Text>
-          </View>
-          <View style={styles.formGroup}>
-            <AppInput control={control} name="proteinuria" label="Proteinuria — opcional" placeholder="Ej. Negativo / +" error={errors.proteinuria?.message} />
-            <AppInput control={control} name="edema" label="Edema — opcional" placeholder="Ej. Ausente / + / ++" error={errors.edema?.message} />
           </View>
         </View>
 
@@ -197,6 +194,8 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h3, color: commonColors.white },
   headerSubtitle: { ...typography.caption, color: 'rgba(255,255,255,0.85)' },
   scrollContent: { paddingHorizontal: spacing.md, paddingTop: spacing.md2, paddingBottom: 40 },
+  noteCard: { backgroundColor: obstetraColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md },
+  noteText: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18 },
   sectionCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md, ...shadows.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
   sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
