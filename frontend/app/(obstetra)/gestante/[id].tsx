@@ -130,7 +130,7 @@ export default function PatientProfileScreen(): React.ReactElement {
   const router = useRouter();
   // Permite abrir el perfil directamente en una pestaña (p. ej. desde el flujo
   // "Atender cita" hacia Laboratorios o Tratamiento).
-  const VALID_TABS = ['datos', 'controles', 'laboratorio', 'tamizajes', 'tratamiento', 'vacunas', 'visitas'];
+  const VALID_TABS = ['datos', 'controles', 'laboratorio', 'tamizajes', 'tratamiento', 'alarmas', 'vacunas', 'visitas'];
   const [activeTab, setActiveTab] = useState(tab && VALID_TABS.includes(tab) ? tab : 'datos');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
