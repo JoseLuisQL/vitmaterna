@@ -40,25 +40,27 @@ export async function exportPdf({
     const Sharing = require('expo-sharing');
     const FileSystem = require('expo-file-system/legacy');
 
-    const { uri } = await Print.printToFileAsync({ html, base64: false });
+    // Se pide el PDF en base64: expo-print escribe el archivo en una carpeta
+    // temporal cuyo URI, en Android (sobre todo en Expo Go), NO es legible por
+    // expo-sharing NI por copyAsync ("Location ... isn't readable" / "Not allowed
+    // to read file under given URL"). Al obtener el contenido en base64 podemos
+    // reescribirlo nosotros en documentDirectory (ruta accesible) y compartir esa.
+    const { uri, base64 } = await Print.printToFileAsync({ html, base64: true });
 
-    // expo-print escribe el PDF con un nombre aleatorio en una carpeta temporal
-    // que expo-sharing a veces NO puede leer ("Not allowed to read file under
-    // given URL"). Se copia a documentDirectory con un nombre legible y se
-    // comparte desde ahí (ruta a la que sí tiene acceso el sistema).
     let shareUri = uri;
     try {
       const dir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      if (dir) {
+      if (dir && base64) {
         const dest = `${dir}${fileName}.pdf`;
-        // Si ya existe un archivo con ese nombre, se elimina antes de copiar.
         await FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
-        await FileSystem.copyAsync({ from: uri, to: dest });
+        await FileSystem.writeAsStringAsync(dest, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
         shareUri = dest;
       }
-    } catch (copyErr) {
-      // Si falla la copia, se intenta compartir el original como respaldo.
-      console.warn('[exportPdf] No se pudo copiar el PDF, se usa el original:', copyErr);
+    } catch (writeErr) {
+      // Si falla la reescritura, se intenta compartir el original como respaldo.
+      console.warn('[exportPdf] No se pudo reescribir el PDF, se usa el original:', writeErr);
     }
 
     if (await Sharing.isAvailableAsync()) {

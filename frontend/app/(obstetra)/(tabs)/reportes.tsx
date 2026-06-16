@@ -33,19 +33,6 @@ interface ReportData {
   riskDistribution: { name: string; population: number; color: string; legendFontColor: string; legendFontSize: number }[];
 }
 
-function AdherenciaBar({ pct }: { pct: number }) {
-  const color = pct >= 80 ? riskColors.riskGreen : pct >= 50 ? riskColors.riskYellow : riskColors.riskRed;
-  return (
-    <View style={barStyles.track}>
-      <View style={[barStyles.fill, { width: `${Math.min(100, pct)}%` as any, backgroundColor: color }]} />
-    </View>
-  );
-}
-const barStyles = StyleSheet.create({
-  track: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 4 },
-});
-
 function RiesgoSemaforo({ nivel }: { nivel: string }) {
   const colorMap: Record<string, { bg: string; text: string }> = {
     verde: { bg: riskColors.riskGreenLight, text: riskColors.riskGreen },
@@ -158,13 +145,13 @@ export default function ReportesScreen(): React.ReactElement {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-            <Text style={styles.pageTitle}>Reportes</Text>
-            <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
+        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+          <SafeAreaView edges={['top']}>
+            <Text style={styles.title}>Reportes</Text>
+            <Text style={styles.subtitle}>Estadísticas y KPIs</Text>
           </SafeAreaView>
         </LinearGradient>
-        <View style={[styles.content, { marginTop: spacing.lg }]}>
+        <View style={{ padding: spacing.lg }}>
           <DashboardSkeleton count={2} />
         </View>
       </View>
@@ -174,10 +161,10 @@ export default function ReportesScreen(): React.ReactElement {
   if (isError || !data) {
     return (
       <View style={styles.container}>
-        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-            <Text style={styles.pageTitle}>Reportes</Text>
-            <Text style={styles.pageSubtitle}>Estadísticas y KPIs</Text>
+        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+          <SafeAreaView edges={['top']}>
+            <Text style={styles.title}>Reportes</Text>
+            <Text style={styles.subtitle}>Estadísticas y KPIs</Text>
           </SafeAreaView>
         </LinearGradient>
         <View style={styles.errorWrap}>
@@ -207,8 +194,8 @@ export default function ReportesScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
@@ -220,94 +207,79 @@ export default function ReportesScreen(): React.ReactElement {
               <ArrowLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.pageTitle} numberOfLines={1}>Reportes</Text>
-              <Text style={styles.pageSubtitle} numberOfLines={1}>Estadísticas y KPIs</Text>
+              <Text style={styles.title} numberOfLines={1}>Reportes</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>Estadísticas y KPIs</Text>
             </View>
             <NotificationBell href="/(obstetra)/notificaciones" />
           </View>
 
-          {/* Acciones de exportación en su propia fila: evita que se corten en
-              pantallas estrechas y se reordena solo. */}
+          {/* Exportación en su propia fila (responsive, sin cortes). */}
           <View style={styles.exportRow}>
-            <TouchableOpacity style={styles.exportBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
-              {exportingXlsx ? (
-                <ActivityIndicator size="small" color={commonColors.white} />
-              ) : (
-                <Sheet size={18} color={commonColors.white} />
-              )}
-              <Text style={styles.exportBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
+            <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+              {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
+              <Text style={styles.expBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.exportBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
-              {exporting ? (
-                <ActivityIndicator size="small" color={commonColors.white} />
-              ) : (
-                <Download size={18} color={commonColors.white} />
-              )}
-              <Text style={styles.exportBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
+            <TouchableOpacity style={styles.expBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+              {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
+              <Text style={styles.expBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
-        {/* KPIs principales: tarjetas compactas (ícono + valor en línea) */}
-        <AutoGrid minColumnWidth={140} maxColumns={2} gap={spacing.sm2} style={{ marginBottom: spacing.sm2 }}>
+        {/* KPIs principales */}
+        <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.xs }}>
           {[
             { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: obstetraColors.primaryLight },
             { icon: TrendingUp, label: 'Adherencia', value: `${data?.averageAdherence || 0}%`, color: semanticColors.success, bg: semanticColors.successLight },
             { icon: CheckCircle, label: '6+ controles', value: data?.con6Controles || 0, color: semanticColors.info, bg: semanticColors.infoLight },
             { icon: AlertTriangle, label: 'Alto riesgo', value: data?.enAltoRiesgo || 0, color: semanticColors.danger, bg: semanticColors.dangerLight },
           ].map(({ icon: Icon, label, value, color, bg }) => (
-            <View key={label} style={styles.kpiCard}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: bg }]}>
-                <Icon size={18} color={color} />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.kpiValue, { color }]} numberOfLines={1}>{value}</Text>
-                <Text style={styles.kpiLabel} numberOfLines={1}>{label}</Text>
-              </View>
+            <View key={label} style={styles.kpi}>
+              <View style={[styles.kpiIcon, { backgroundColor: bg }]}><Icon size={20} color={color} /></View>
+              <Text style={[styles.kpiValue, { color }]}>{value}</Text>
+              <Text style={styles.kpiLabel}>{label}</Text>
             </View>
           ))}
         </AutoGrid>
 
         {/* Indicadores MINSA */}
+        <Text style={styles.sectionTitle}>Indicadores MINSA / ENDES</Text>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Indicadores MINSA / ENDES</Text>
-          <Text style={styles.cardSubtitle}>Valor actual frente a la meta</Text>
-          {data?.kpisMinsa.map((kpi, idx) => (
-            <View key={kpi.label} style={[styles.kpiRow, idx === (data.kpisMinsa.length - 1) && { marginBottom: 0 }]}>
-              <View style={styles.kpiRowHeader}>
-                <Text style={styles.kpiRowLabel} numberOfLines={1}>{kpi.label}</Text>
-                <View style={styles.kpiRowValues}>
-                  <Text style={[styles.kpiRowPct, { color: kpi.pct >= kpi.meta ? semanticColors.success : semanticColors.danger }]}>{kpi.pct}%</Text>
-                  <Text style={styles.kpiRowMeta}>/ {kpi.meta}%</Text>
+          {data?.kpisMinsa.map((kpi, idx) => {
+            const ok = kpi.pct >= kpi.meta;
+            return (
+              <View key={kpi.label} style={[styles.minsaRow, idx === (data.kpisMinsa.length - 1) && { marginBottom: 0 }]}>
+                <View style={styles.minsaHead}>
+                  <Text style={styles.minsaLabel} numberOfLines={1}>{kpi.label}</Text>
+                  <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{kpi.pct}% <Text style={styles.minsaMeta}>/ {kpi.meta}%</Text></Text>
                 </View>
+                <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, kpi.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
               </View>
-              <AdherenciaBar pct={kpi.pct} />
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Gráfica distribución por riesgo */}
         {riskBars.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Distribución por Riesgo</Text>
-            <ChartBar data={riskBars} height={140} showValues style={{ marginTop: spacing.xs }} />
-          </View>
+          <>
+            <Text style={styles.sectionTitle}>Distribución por Riesgo</Text>
+            <View style={styles.card}><ChartBar data={riskBars} height={150} showValues /></View>
+          </>
         )}
 
         {/* Gráfica asistencia */}
         {attendanceData.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Asistencia a Citas (2026)</Text>
-            <ChartBar data={attendanceData} color={BRAND} height={150} showValues style={{ marginTop: spacing.xs }} />
-          </View>
+          <>
+            <Text style={styles.sectionTitle}>Asistencia a Citas (2026)</Text>
+            <View style={styles.card}><ChartBar data={attendanceData} color={BRAND} height={150} showValues /></View>
+          </>
         )}
 
         {/* Tabla de menor adherencia */}
+        <Text style={styles.sectionTitle}>Atención prioritaria</Text>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Atención prioritaria</Text>
-          <Text style={styles.cardSubtitle}>Gestantes con menor adherencia</Text>
           {(data?.gestantesMenorAdherencia?.length ?? 0) === 0 ? (
             <Text style={styles.emptyInline}>Sin pacientes prioritarias por ahora.</Text>
           ) : (
@@ -329,34 +301,33 @@ export default function ReportesScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerGradient: {
-    paddingBottom: spacing.xxl,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  safeAreaHeader: { paddingHorizontal: spacing.md, paddingTop: spacing.sm2 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  // Header con padding fijo (sin solape de margen negativo) — igual que admin.
+  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  title: { ...typography.h1, color: commonColors.white },
+  subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  pageTitle: { ...typography.h1, color: commonColors.white },
-  pageSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
-  exportBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 10 },
-  exportBtnText: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.white },
-  content: { paddingHorizontal: spacing.md, paddingBottom: layout.tabBarSpace, marginTop: -24 },
-  kpiCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.sm2, paddingHorizontal: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, ...shadows.card },
-  kpiIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  kpiValue: { ...typography.numericMd, fontSize: 20 },
-  kpiLabel: { ...typography.caption, color: commonColors.textSecondary },
-  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm2, ...shadows.card },
-  cardTitle: { ...typography.bodyMedium, fontFamily: typography.h3.fontFamily, fontWeight: '700', color: commonColors.text, marginBottom: 2 },
-  cardSubtitle: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.md },
-  kpiRow: { marginBottom: spacing.md },
-  kpiRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  kpiRowLabel: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text, flex: 1, marginRight: 12 },
-  kpiRowValues: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
-  kpiRowPct: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '800' },
-  kpiRowMeta: { ...typography.caption, color: commonColors.textTertiary },
+  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
+  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  // KPIs (mismo estilo que admin).
+  kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  kpiValue: { ...typography.h2 },
+  kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  // Títulos de sección como etiqueta pequeña sobre cada tarjeta (igual que admin).
+  sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.lg, marginLeft: 4 },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  // Filas MINSA (igual que admin).
+  minsaRow: { marginBottom: spacing.md },
+  minsaHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 },
+  minsaLabel: { ...typography.bodySmall, fontWeight: '600', color: commonColors.text, flex: 1, marginRight: 12 },
+  minsaPct: { ...typography.bodySmall, fontWeight: '700' },
+  minsaMeta: { ...typography.caption, color: commonColors.textTertiary, fontWeight: '500' },
+  bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 4 },
+  // Tabla de prioridad.
   adherenciaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.sm2 },
   adherenciaRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   adherenciaNombre: { flex: 1, ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
