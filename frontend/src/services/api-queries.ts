@@ -54,15 +54,20 @@ const mapPatient = (gestante: any) => {
 
 const mapPatientProfile = (g: any) => {
   if (!g) return null;
-  const age = g.user?.fechaNacimiento 
-    ? new Date().getFullYear() - new Date(g.user.fechaNacimiento).getFullYear()
-    : g.ageAtRegistration || 28;
+  // La fecha de nacimiento vive en el perfil de la gestante (no en user). Si no
+  // hay, se usa la edad registrada. Se evita el "28" fijo que confundía.
+  const fechaNac = g.fechaNacimiento || g.user?.fechaNacimiento;
+  const age = fechaNac
+    ? new Date().getFullYear() - new Date(fechaNac).getFullYear()
+    : (g.ageAtRegistration ?? null);
 
-  let currentWeek = '12';
-  let currentTrimester = 2;
-  if (g.fppFum) {
+  // Edad gestacional / trimestre: se calcula desde la FPP (por FUM o por eco).
+  let currentWeek: string | null = null;
+  let currentTrimester: number | null = null;
+  const fppRef = g.fppFum || g.fppEco;
+  if (fppRef) {
     const today = new Date();
-    const fpp = new Date(g.fppFum);
+    const fpp = new Date(fppRef);
     const diffTime = fpp.getTime() - today.getTime();
     const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
     const calculated = 40 - diffWeeks;
@@ -90,7 +95,7 @@ const mapPatientProfile = (g: any) => {
     currentWeek,
     currentTrimester,
     estimatedDueDate: g.fppFum || g.fppEco || null,
-    bloodType: (g.grupoSanguineo || '') + (g.factorRh || ''),
+    bloodType: ((g.grupoSanguineo || '') + (g.factorRh || '')) || null,
     imc,
     fum: g.fum ? new Date(g.fum).toLocaleDateString('es-PE') : null,
     // Valores crudos (ISO) para edición por el obstetra.
@@ -101,7 +106,10 @@ const mapPatientProfile = (g: any) => {
     pesoHabitual: g.pesoHabitual || null,
     talla: g.talla || null,
     // Datos personales
+    historiaClinica: g.historiaClinica || null,
+    fechaNacimiento: fechaNac ? new Date(fechaNac).toLocaleDateString('es-PE') : null,
     address: g.direccion || g.user?.address || null,
+    localidad: g.localidad || null,
     domicilioLat: g.domicilioLat != null ? Number(g.domicilioLat) : null,
     domicilioLng: g.domicilioLng != null ? Number(g.domicilioLng) : null,
     referenciaDom: g.referenciaDom || null,
@@ -109,9 +117,10 @@ const mapPatientProfile = (g: any) => {
     occupation: g.ocupacion || null,
     education: g.nivelEstudios || null,
     sisCode: g.codigoSis || null,
-    // Antecedentes obstétricos
+    phoneAcompanante: g.acompanantePhone || null,
+    // Antecedentes obstétricos (el backend usa partosVaginales).
     gestaciones: g.gestaciones ?? null,
-    partos: g.partos ?? null,
+    partos: g.partosVaginales ?? g.partos ?? null,
     cesareas: g.cesareas ?? null,
     abortos: g.abortos ?? null,
     // Antecedentes como texto

@@ -581,7 +581,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               <Text style={styles.patientName} numberOfLines={1}>
                 {patient.firstName} {patient.lastName}
               </Text>
-              <Text style={styles.patientSub}>DNI {patient.documentNumber} • {patient.age || 28} años</Text>
+              <Text style={styles.patientSub}>DNI {patient.documentNumber}{patient.age ? ` • ${patient.age} años` : ''}</Text>
             </View>
             <View style={styles.riskPill}>
               <View style={[styles.riskDot, { backgroundColor: riskTextColor(patient.riskLevel) }]} />
@@ -646,9 +646,13 @@ export default function PatientProfileScreen(): React.ReactElement {
               <View style={[styles.insetGroup, designTokens.cardShadow]}>
                 <Fila label="Nombre completo" value={`${patient.firstName} ${patient.lastName}`} />
                 <Fila label="DNI" value={patient.documentNumber} />
+                <Fila label="N° Historia Clínica" value={patient.historiaClinica} />
+                <Fila label="Fecha de nacimiento" value={patient.fechaNacimiento} />
                 <Fila label="Edad" value={patient.age ? `${patient.age} años` : undefined} />
                 <Fila label="Teléfono" value={patient.phone} />
+                <Fila label="Tel. acompañante" value={patient.phoneAcompanante} />
                 <Fila label="Dirección" value={patient.address} />
+                <Fila label="Localidad" value={patient.localidad} />
                 <Fila label="Estado civil" value={patient.maritalStatus} />
                 <Fila label="Ocupación" value={patient.occupation} />
                 <Fila label="Estudios" value={patient.education} />
