@@ -194,9 +194,17 @@ export default function GestanteDashboard(): React.ReactElement {
             </View>
           </AppCard>
 
-          {/* Next Appointment */}
-          <AppCard style={styles.sectionCard} onPress={() => router.push('/(gestante)/(tabs)/citas')}>
-            <View style={styles.cardHeader}>
+          {/* Next Appointment — sin onPress en la tarjeta para evitar botón
+              anidado (contiene el botón "Confirmar asistencia"). La navegación
+              a Citas se hace desde la fila de cabecera. */}
+          <AppCard style={styles.sectionCard}>
+            <TouchableOpacity
+              style={styles.cardHeader}
+              onPress={() => router.push('/(gestante)/(tabs)/citas')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Ver mis citas"
+            >
               <View style={[styles.cardIconCircle, { backgroundColor: gestanteColors.primaryLight }]}>
                 <Calendar size={22} color={BRAND} />
               </View>
@@ -205,7 +213,7 @@ export default function GestanteDashboard(): React.ReactElement {
                 <Text style={styles.cardSubtitle}>{nextAppointment?.type || 'Control Prenatal'}</Text>
               </View>
               <ChevronRight size={20} color={commonColors.textTertiary} />
-            </View>
+            </TouchableOpacity>
             
             <View style={styles.cardDetails}>
               {nextAppointment ? (
