@@ -283,6 +283,7 @@ export async function resetFailedAttempts(userId: string): Promise<void> {
       failedLoginAttempts: 0,
       lockedUntil: null,
       lastLoginAt: new Date(),
+      lastSeenAt: new Date(),
     },
   });
 }

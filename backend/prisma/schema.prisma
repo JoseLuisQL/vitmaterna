@@ -34,6 +34,7 @@ model User {
   failedLoginAttempts     Int       @default(0) @map("failed_login_attempts")
   lockedUntil             DateTime? @map("locked_until") @db.Timestamptz()
   lastLoginAt             DateTime? @map("last_login_at") @db.Timestamptz()
+  lastSeenAt              DateTime? @map("last_seen_at") @db.Timestamptz()
   biometricEnabled        Boolean   @default(false) @map("biometric_enabled")
   notificationPreferences Json      @default("{\"push\": true, \"sms\": true, \"whatsapp\": true}") @map("notification_preferences") @db.JsonB
   consentAccepted         Boolean   @default(false) @map("consent_accepted")

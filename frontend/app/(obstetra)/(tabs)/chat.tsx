@@ -15,6 +15,7 @@ import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Sea
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
+import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -40,10 +41,11 @@ export default function ObstetraChatScreen() {
   const { data: patients = [] } = usePatients();
 
   const conversationId = activeConv?.id || null;
+  const otherUserId = activeConv?.gestante?.user?.id;
   const {
     messages, isLoadingHistory, isLoadingMore, hasMore,
-    otherTyping, otherOnline, loadOlder, sendText, sendImage, notifyTyping,
-  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id });
+    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
+  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId });
 
   useEffect(() => {
     if (!isLoadingMore) {
@@ -322,12 +324,18 @@ export default function ObstetraChatScreen() {
             <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
             <View style={styles.statusRow}>
               {otherTyping ? (
-                <Text style={styles.activeHeaderSubtitle}>escribiendo…</Text>
-              ) : (
+                <Text style={[styles.activeHeaderSubtitle, { fontStyle: 'italic', color: commonColors.white }]}>escribiendo…</Text>
+              ) : otherOnline ? (
                 <>
-                  <View style={[styles.statusDot, { backgroundColor: otherOnline ? semanticColors.successMid : 'rgba(255,255,255,0.5)' }]} />
-                  <Text style={styles.activeHeaderSubtitle}>{otherOnline ? 'En línea' : isConnected ? 'Desconectada' : 'Conectando...'}</Text>
+                  <View style={[styles.statusDot, { backgroundColor: semanticColors.successMid }]} />
+                  <Text style={styles.activeHeaderSubtitle}>En línea</Text>
                 </>
+              ) : (
+                <Text style={styles.activeHeaderSubtitle} numberOfLines={1}>
+                  {otherLastSeen || activeConv?.gestante?.user?.lastSeenAt
+                    ? formatLastSeen(otherLastSeen || activeConv?.gestante?.user?.lastSeenAt)
+                    : isConnected ? 'Desconectada' : 'Conectando…'}
+                </Text>
               )}
             </View>
           </View>

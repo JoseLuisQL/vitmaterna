@@ -15,6 +15,7 @@ import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
 import { useAuthStore } from '../../../src/store/authStore';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
+import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -29,14 +30,14 @@ export default function GestanteChatScreen() {
   const { socket, isConnected, emit } = useSocket();
   const [inputText, setInputText] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [obstetra, setObstetra] = useState<{ firstName: string; lastName: string; phone?: string | null } | null>(null);
+  const [obstetra, setObstetra] = useState<{ userId?: string; firstName: string; lastName: string; phone?: string | null; lastSeenAt?: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   const {
     messages, isLoadingHistory, isLoadingMore, hasMore,
-    otherTyping, otherOnline, loadOlder, sendText, sendImage, notifyTyping,
-  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id });
+    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
+  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId: obstetra?.userId });
 
   const { isLoading: isResolvingConv } = useQuery({
     queryKey: ['chat-conversation'],
@@ -187,19 +188,18 @@ export default function GestanteChatScreen() {
               </Text>
               <View style={styles.statusRow}>
                 {otherTyping ? (
-                  <Text style={styles.headerSubtitle}>escribiendo…</Text>
-                ) : (
+                  <Text style={[styles.headerSubtitle, styles.typingText]}>escribiendo…</Text>
+                ) : otherOnline ? (
                   <>
-                    <View
-                      style={[
-                        styles.statusDot,
-                        { backgroundColor: otherOnline ? semanticColors.successMid : 'rgba(255,255,255,0.5)' },
-                      ]}
-                    />
-                    <Text style={styles.headerSubtitle}>
-                      {otherOnline ? 'En línea' : isConnected ? 'Desconectada' : 'Conectando...'}
-                    </Text>
+                    <View style={[styles.statusDot, { backgroundColor: semanticColors.successMid }]} />
+                    <Text style={styles.headerSubtitle}>En línea</Text>
                   </>
+                ) : (
+                  <Text style={styles.headerSubtitle} numberOfLines={1}>
+                    {otherLastSeen || obstetra?.lastSeenAt
+                      ? formatLastSeen(otherLastSeen || obstetra?.lastSeenAt)
+                      : isConnected ? 'Desconectada' : 'Conectando…'}
+                  </Text>
                 )}
               </View>
             </View>
@@ -295,6 +295,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
+  typingText: { fontStyle: 'italic', color: commonColors.white },
   waBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
   botBtn: {
     flexDirection: 'row',

@@ -150,7 +150,7 @@ export const getOrCreateConversation = async (
     // Adjuntar datos de contacto del obstetra (para chat directo y WhatsApp RF-9.05).
     const obstetraInfo = await prisma.obstetra.findUnique({
       where: { id: obstetraId },
-      include: { user: { select: { firstName: true, lastName: true, phone: true } } },
+      include: { user: { select: { id: true, firstName: true, lastName: true, phone: true, lastSeenAt: true } } },
     });
 
     return {
@@ -158,9 +158,11 @@ export const getOrCreateConversation = async (
       obstetra: obstetraInfo
         ? {
             id: obstetraInfo.id,
+            userId: obstetraInfo.user.id, // para presencia en tiempo real
             firstName: obstetraInfo.user.firstName,
             lastName: obstetraInfo.user.lastName,
             phone: obstetraInfo.user.phone,
+            lastSeenAt: obstetraInfo.user.lastSeenAt,
           }
         : null,
     };
@@ -218,9 +220,11 @@ export const listConversations = async (userId: string, userRole: string) => {
           include: {
             user: {
               select: {
+                id: true,
                 firstName: true,
                 lastName: true,
                 dni: true,
+                lastSeenAt: true,
               }
             }
           }

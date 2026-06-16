@@ -43,15 +43,18 @@ interface UseChatArgs {
   emit: (event: string, data: any) => void;
   conversationId: string | null;
   currentUserId?: string;
+  /** userId del otro participante, para presencia global (en línea / últ. vez). */
+  otherUserId?: string;
 }
 
-export function useChat({ socket, isConnected, emit, conversationId, currentUserId }: UseChatArgs) {
+export function useChat({ socket, isConnected, emit, conversationId, currentUserId, otherUserId }: UseChatArgs) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [otherOnline, setOtherOnline] = useState(false);
+  const [otherLastSeen, setOtherLastSeen] = useState<string | null>(null);
 
   const pageRef = useRef(1);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,6 +125,8 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     const joinAndRead = () => {
       emit('join_conversation', conversationId);
       emit('mark_read', { conversationId });
+      // Pedir el estado de presencia actual del otro participante.
+      if (otherUserId) emit('get_presence', { userId: otherUserId });
     };
     joinAndRead();
     socket.on('connect', joinAndRead);
@@ -152,8 +157,12 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
       if (data.userId !== currentUserId) setOtherTyping(data.isTyping);
     };
 
-    const onPresence = (data: { userId: string; online: boolean }) => {
-      if (data.userId !== currentUserId) setOtherOnline(data.online);
+    const onPresence = (data: { userId: string; online: boolean; lastSeenAt?: string | null }) => {
+      // Presencia GLOBAL: solo nos importa el otro participante de ESTA conversación.
+      if (otherUserId && data.userId !== otherUserId) return;
+      if (data.userId === currentUserId) return;
+      setOtherOnline(data.online);
+      if (data.lastSeenAt) setOtherLastSeen(data.lastSeenAt);
     };
 
     const onRead = (data: { conversationId: string; readerId: string }) => {
@@ -176,9 +185,8 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
       socket.off('messages_read', onRead);
       emit('leave_conversation', conversationId);
       setOtherTyping(false);
-      setOtherOnline(false);
     };
-  }, [socket, conversationId, currentUserId, emit]);
+  }, [socket, conversationId, currentUserId, otherUserId, emit]);
 
   // ── Enviar texto (optimista con clientId) ──
   const sendText = useCallback(
@@ -256,6 +264,7 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     hasMore,
     otherTyping,
     otherOnline,
+    otherLastSeen,
     loadOlder,
     sendText,
     sendImage,
