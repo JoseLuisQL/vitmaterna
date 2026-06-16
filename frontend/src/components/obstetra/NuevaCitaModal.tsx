@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   View, StyleSheet, Text, TouchableOpacity,
-  Alert, FlatList, TextInput, ScrollView, ActivityIndicator, Dimensions 
+  FlatList, TextInput, ScrollView, ActivityIndicator, Dimensions 
 } from 'react-native';
-import { User as UserIcon, Search, Check, FileText } from 'lucide-react-native';
-import { commonColors, obstetraColors } from '../../theme/colors';
+import { User as UserIcon, Search, Check, FileText, Calendar, Clock } from 'lucide-react-native';
+import { commonColors, obstetraColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { shadows } from '../../theme/shadows';
 import {
@@ -12,7 +12,7 @@ import {
   useCreateAppointment,
   useAppointmentAvailability,
 } from '../../services/api-queries';
-import { AppModal, AppButton } from '../ui';
+import { AppModal, AppButton, useToast } from '../ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -27,6 +27,7 @@ interface NuevaCitaModalProps {
 }
 
 export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React.ReactElement {
+  const toast = useToast();
   const { data: patients, isLoading: isLoadingPatients } = usePatients();
   const { mutateAsync: createAppointment, isPending } = useCreateAppointment();
 
@@ -91,11 +92,11 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
 
   const handleSave = async () => {
     if (!gestanteId) {
-      Alert.alert('Error', 'Debe seleccionar una paciente');
+      toast.warning('Falta la paciente', 'Selecciona a la gestante para la cita.');
       return;
     }
     if (!dateStr || !timeStr) {
-      Alert.alert('Error', 'Debe seleccionar una fecha y un horario disponible');
+      toast.warning('Falta fecha y hora', 'Selecciona una fecha y un horario disponible.');
       return;
     }
 
@@ -108,10 +109,11 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
         modalidad,
         observaciones: observaciones || null, // Guardar observaciones en bd
       });
+      toast.success('Cita programada', `${gestanteName} fue notificada de su cita.`);
       handleClose();
     } catch (e: any) {
       const msg = e?.response?.data?.error?.message || 'No se pudo crear la cita';
-      Alert.alert('Error', msg);
+      toast.error('No se pudo programar', msg);
     }
   };
 
@@ -238,7 +240,26 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
              />
           </View>
 
-          {/* Removed native pickers */}
+          {/* Resumen de la cita (confirmación rápida antes de programar) */}
+          {gestanteId && dateStr && timeStr && (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Resumen de la cita</Text>
+              <View style={styles.summaryRow}>
+                <UserIcon size={15} color={BRAND} />
+                <Text style={styles.summaryText} numberOfLines={1}>{gestanteName}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Calendar size={15} color={BRAND} />
+                <Text style={styles.summaryText}>
+                  {format(new Date(`${dateStr}T00:00:00`), "EEEE d 'de' MMMM", { locale: es })}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Clock size={15} color={BRAND} />
+                <Text style={styles.summaryText}>{timeStr} · {motivo}</Text>
+              </View>
+            </View>
+          )}
         </View>
       ) : (
         <View>
@@ -254,6 +275,9 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
             />
           </View>
           
+          {isLoadingPatients ? (
+            <ActivityIndicator color={BRAND} style={{ marginVertical: 24 }} />
+          ) : (
           <FlatList
             data={filteredPatients}
             keyExtractor={item => item.id}
@@ -278,6 +302,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
               <Text style={styles.emptyText}>No se encontraron pacientes</Text>
             }
           />
+          )}
         </View>
       )}
     </AppModal>
@@ -399,6 +424,19 @@ const styles = StyleSheet.create({
   },
   inputText: { ...typography.bodyMedium, color: commonColors.text },
   inputTextNative: { flex: 1, ...typography.bodyMedium, fontSize: 15, color: commonColors.text },
+
+  summaryCard: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: obstetraColors.primaryLight,
+    borderWidth: 1,
+    borderColor: BRAND,
+    gap: 8,
+  },
+  summaryTitle: { ...typography.overline, color: BRAND, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700', marginBottom: 2 },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  summaryText: { ...typography.bodySmall, color: commonColors.text, fontWeight: '600', flex: 1, textTransform: 'capitalize' },
 
   // Patients Step
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: 16, paddingHorizontal: 16, height: 48, marginBottom: 16 },

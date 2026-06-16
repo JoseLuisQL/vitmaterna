@@ -56,6 +56,21 @@ export default function CronogramaScreen(): React.ReactElement {
     }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [allAppointments, filterMode]);
 
+  // Conteos por filtro para mostrarlos en las pestañas.
+  const counts = React.useMemo(() => {
+    const list = allAppointments || [];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const activos = ['programada', 'confirmada', 'reprogramada', 'solicitud_reprogramacion'];
+    return {
+      todas: list.length,
+      hoy: list.filter((a: any) => new Date(a.date).toISOString().split('T')[0] === todayStr).length,
+      proximas: list.filter((a: any) => {
+        const ds = new Date(a.date).toISOString().split('T')[0];
+        return ds >= todayStr && activos.includes(a.status);
+      }).length,
+    };
+  }, [allAppointments]);
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -77,26 +92,27 @@ export default function CronogramaScreen(): React.ReactElement {
       </LinearGradient>
 
       <View style={styles.tabsWrapper}>
-        <TouchableOpacity
-          style={[styles.tabButton, filterMode === 'todas' && styles.tabButtonActive]}
-          onPress={() => setFilterMode('todas')}
-        >
-          <Text style={[styles.tabText, filterMode === 'todas' && styles.tabTextActive]}>Todas</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, filterMode === 'hoy' && styles.tabButtonActive]}
-          onPress={() => setFilterMode('hoy')}
-        >
-          <Text style={[styles.tabText, filterMode === 'hoy' && styles.tabTextActive]}>Hoy</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, filterMode === 'proximas' && styles.tabButtonActive]}
-          onPress={() => setFilterMode('proximas')}
-        >
-          <Text style={[styles.tabText, filterMode === 'proximas' && styles.tabTextActive]}>Próximas</Text>
-        </TouchableOpacity>
+        {([
+          { key: 'hoy', label: 'Hoy', count: counts.hoy },
+          { key: 'proximas', label: 'Próximas', count: counts.proximas },
+          { key: 'todas', label: 'Todas', count: counts.todas },
+        ] as const).map((t) => {
+          const active = filterMode === t.key;
+          return (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.tabButton, active && styles.tabButtonActive]}
+              onPress={() => setFilterMode(t.key)}
+              accessibilityRole="button"
+              accessibilityLabel={`${t.label}, ${t.count} citas`}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
+              <View style={[styles.tabCount, active && styles.tabCountActive]}>
+                <Text style={[styles.tabCountText, active && styles.tabCountTextActive]}>{t.count}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -127,6 +143,18 @@ export default function CronogramaScreen(): React.ReactElement {
 
     const handleStatusUpdate = (id: string, newStatus: 'asistida' | 'no_asistida') => {
       updateStatus({ id, status: newStatus });
+    };
+
+    // "No asistió" pide confirmación (es una acción que afecta la adherencia).
+    const handleNoAsistio = async () => {
+      const ok = await confirmAction({
+        title: 'Marcar como no asistió',
+        message: `¿Confirmas que ${item.patientName || 'la paciente'} no asistió a su cita?`,
+        confirmText: 'Sí, no asistió',
+        destructive: true,
+      });
+      if (!ok) return;
+      handleStatusUpdate(item.id, 'no_asistida');
     };
 
     // "Atender" abre el flujo encadenado de registro clínico de la cita.
@@ -193,26 +221,27 @@ export default function CronogramaScreen(): React.ReactElement {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.appointmentContent}
-          activeOpacity={item.gestanteId ? 0.6 : 1}
-          disabled={!item.gestanteId}
-          onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
-          accessibilityRole="button"
-          accessibilityLabel={`Abrir historia de ${item.patientName || 'la paciente'}`}
-          accessibilityHint="Abre la ficha clínica de la gestante"
-        >
-          <View style={styles.appointmentHeaderRow}>
-            <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
-            {!showActions && <AppBadge label={statusText} variant={variant} />}
-          </View>
-          <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
-          <View style={styles.infoRow}>
-            {esDomiciliaria ? <Home size={12} color={BRAND} /> : <MapPin size={12} color={commonColors.textTertiary} />}
-            <Text style={[styles.infoText, esDomiciliaria && { color: BRAND, fontWeight: '700' }]}>
-              {esDomiciliaria ? 'Visita domiciliaria' : (item.location || 'Consultorio 102')}
-            </Text>
-          </View>
+        <View style={styles.appointmentContent}>
+          <TouchableOpacity
+            activeOpacity={item.gestanteId ? 0.6 : 1}
+            disabled={!item.gestanteId}
+            onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
+            accessibilityRole="button"
+            accessibilityLabel={`Abrir historia de ${item.patientName || 'la paciente'}`}
+            accessibilityHint="Abre la ficha clínica de la gestante"
+          >
+            <View style={styles.appointmentHeaderRow}>
+              <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
+              {!showActions && <AppBadge label={statusText} variant={variant} />}
+            </View>
+            <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
+            <View style={styles.infoRow}>
+              {esDomiciliaria ? <Home size={12} color={BRAND} /> : <MapPin size={12} color={commonColors.textTertiary} />}
+              <Text style={[styles.infoText, esDomiciliaria && { color: BRAND, fontWeight: '700' }]}>
+                {esDomiciliaria ? 'Visita domiciliaria' : (item.location || 'Consultorio 102')}
+              </Text>
+            </View>
+          </TouchableOpacity>
 
           {isRescheduleRequest && (
             <View style={styles.rescheduleBox}>
@@ -262,13 +291,13 @@ export default function CronogramaScreen(): React.ReactElement {
 
               <TouchableOpacity
                 style={[styles.actionButton, styles.btnNoAsistio]}
-                onPress={() => handleStatusUpdate(item.id, 'no_asistida')}
+                onPress={handleNoAsistio}
               >
                 <Text style={styles.btnNoAsistioText}>No asistió</Text>
               </TouchableOpacity>
             </View>
           )}
-        </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -339,6 +368,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm2,
   },
   tabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingVertical: 8,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
@@ -356,6 +388,17 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: obstetraColors.onPrimary,
   },
+  tabCount: {
+    minWidth: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.surfaceAlt,
+    alignItems: 'center',
+  },
+  tabCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  tabCountText: { ...typography.overline, letterSpacing: 0, color: commonColors.textSecondary, fontWeight: '700' },
+  tabCountTextActive: { color: commonColors.white },
   listContent: { paddingBottom: layout.tabBarSpace },
   appointmentCard: {
     flexDirection: 'row',
