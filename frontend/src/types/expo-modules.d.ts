@@ -1,5 +1,6 @@
-declare module 'expo-file-system' {
+declare module 'expo-file-system/legacy' {
   export const documentDirectory: string | null;
+  export const cacheDirectory: string | null;
   export enum EncodingType {
     UTF8 = 'utf8',
     Base64 = 'base64',

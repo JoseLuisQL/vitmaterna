@@ -330,7 +330,7 @@ export default function ReportesScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerGradient: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxl,
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },

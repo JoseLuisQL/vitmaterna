@@ -50,17 +50,20 @@ export async function exportTextFile(
   }
 
   // Nativo: import diferido para no cargar módulos nativos en web.
+  // SDK 56: API clásica en 'expo-file-system/legacy'.
   try {
-    const FileSystem = require('expo-file-system');
+    const FileSystem = require('expo-file-system/legacy');
     const Sharing = require('expo-sharing');
-    const fileUri = `${FileSystem.documentDirectory}${filename}`;
+    const dir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+    const fileUri = `${dir}${filename}`;
     await FileSystem.writeAsStringAsync(fileUri, content, { encoding: FileSystem.EncodingType.UTF8 });
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri, { mimeType, dialogTitle: 'Exportar datos' });
       return true;
     }
     return false;
-  } catch {
+  } catch (err) {
+    console.error('[exportTextFile] Error al exportar archivo:', err);
     return false;
   }
 }

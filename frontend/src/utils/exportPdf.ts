@@ -38,11 +38,11 @@ export async function exportPdf({
   try {
     const Print = require('expo-print');
     const Sharing = require('expo-sharing');
-    const { uri } = await Print.printToFileAsync({ html });
+    const { uri } = await Print.printToFileAsync({ html, base64: false });
 
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(uri, {
-        UTI: '.pdf',
+        UTI: 'com.adobe.pdf',
         mimeType: 'application/pdf',
         dialogTitle,
       });
@@ -50,7 +50,8 @@ export async function exportPdf({
     }
     // Sin capacidad de compartir: el archivo quedó generado igualmente.
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[exportPdf] Error al generar/compartir PDF:', err);
     return false;
   }
 }

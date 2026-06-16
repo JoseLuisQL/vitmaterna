@@ -71,10 +71,14 @@ export async function exportExcel(fileName: string, sheets: ExcelSheet[]): Promi
     }
 
     // Nativo: escribir en base64 y compartir.
-    const FileSystem = require('expo-file-system');
+    // Expo SDK 56 movió la API clásica (documentDirectory/writeAsStringAsync) a
+    // 'expo-file-system/legacy'. Usarla evita que documentDirectory sea undefined
+    // (causa del fallo "no se puede generar" en Android).
+    const FileSystem = require('expo-file-system/legacy');
     const Sharing = require('expo-sharing');
     const b64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-    const fileUri = `${FileSystem.documentDirectory}${fullName}`;
+    const dir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+    const fileUri = `${dir}${fullName}`;
     await FileSystem.writeAsStringAsync(fileUri, b64, {
       encoding: FileSystem.EncodingType.Base64,
     });
@@ -83,7 +87,8 @@ export async function exportExcel(fileName: string, sheets: ExcelSheet[]): Promi
       return true;
     }
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[exportExcel] Error al exportar Excel:', err);
     return false;
   }
 }
