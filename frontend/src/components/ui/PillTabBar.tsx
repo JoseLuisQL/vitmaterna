@@ -74,10 +74,19 @@ export function PillTabBar({
   // Ruta activa según el índice del estado COMPLETO (incluye ocultas).
   const activeRouteKey = state.routes[state.index]?.key;
 
-  // Sólo las rutas visibles (href !== null). Conservamos el índice original.
+  // Sólo las rutas visibles. expo-router oculta con `href: null`; detectamos
+  // varias señales de "oculta" porque, según la versión, el flag se traduce a
+  // distintas opciones del descriptor.
   const visibleRoutes = state.routes.filter((route) => {
     const descriptor = descriptors[route.key];
-    return descriptor && descriptor.options.href !== null;
+    if (!descriptor) return false;
+    const o = descriptor.options as any;
+    if (o.href === null) return false;
+    if (o.tabBarButton === null) return false;
+    if (o.tabBarItemStyle && o.tabBarItemStyle.display === 'none') return false;
+    // Sin icono definido => no es un tab principal (las ocultas no declaran icono).
+    if (typeof o.tabBarIcon !== 'function') return false;
+    return true;
   });
 
   // Índice de la ruta activa DENTRO de las visibles (para el indicador pill).
