@@ -25,4 +25,10 @@ router.get(
   reportsController.getClinic
 );
 
+// Indicadores de la tesis (Objetivo 1 y 2) con filtro de periodo opcional.
+router.get(
+  '/indicadores',
+  reportsController.getThesisIndicators
+);
+
 export default router;

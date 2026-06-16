@@ -260,3 +260,125 @@ export const getClinicReport = async () => {
     visitasDomiciliariasMes,
   };
 };
+
+/**
+ * Indicadores de la TESIS (registro clínico) con filtro de periodo opcional.
+ *
+ * Calcula los indicadores OBJETIVOS que el sistema puede medir directamente
+ * (los subjetivos de la encuesta Likert se recogen aparte). Si se pasan
+ * startDate/endDate, las citas, controles y registros de toma se acotan a ese
+ * rango — así puedes comparar LÍNEA BASE vs INTERVENCIÓN.
+ *
+ * Objetivo 1 — Eficacia del seguimiento prenatal
+ * Objetivo 2 — Adherencia a los tratamientos prenatales
+ */
+export const getThesisIndicators = async (filters: { startDate?: string; endDate?: string } = {}) => {
+  const inicio = filters.startDate ? new Date(`${filters.startDate}T00:00:00.000Z`) : undefined;
+  const fin = filters.endDate ? new Date(`${filters.endDate}T23:59:59.999Z`) : undefined;
+  const rango = inicio || fin ? { ...(inicio ? { gte: inicio } : {}), ...(fin ? { lte: fin } : {}) } : undefined;
+
+  const periodo = {
+    desde: filters.startDate ?? null,
+    hasta: filters.endDate ?? null,
+  };
+
+  // ── OBJETIVO 1: Eficacia del seguimiento prenatal ──
+  const citasWhere: any = { deletedAt: null, ...(rango ? { fecha: rango } : {}) };
+
+  const [citasTotales, citasAsistidas, citasNoAsistidas, citasReprogramadas] = await Promise.all([
+    prisma.appointment.count({ where: citasWhere }),
+    prisma.appointment.count({ where: { ...citasWhere, estado: 'asistida' } }),
+    prisma.appointment.count({ where: { ...citasWhere, estado: 'no_asistida' } }),
+    prisma.appointment.count({ where: { ...citasWhere, estado: 'reprogramada' } }),
+  ]);
+
+  const tasaAsistencia = citasTotales > 0 ? Math.round((citasAsistidas / citasTotales) * 100) : 0;
+  const tasaInasistencia = citasTotales > 0 ? Math.round((citasNoAsistidas / citasTotales) * 100) : 0;
+
+  // Controles completados por gestante (en el periodo) → promedio y % con ≥6 / ≥8.
+  const controlWhere: any = rango ? { fecha: rango } : {};
+  const gestantesActivas = await prisma.gestante.findMany({
+    where: { estado: 'activa' },
+    select: { id: true, fum: true, createdAt: true },
+  });
+  const totalGest = gestantesActivas.length;
+
+  let sumaControles = 0;
+  let con6 = 0;
+  let con8 = 0;
+  let captacionTemprana = 0;
+  for (const g of gestantesActivas) {
+    const n = await prisma.prenatalControl.count({ where: { gestanteId: g.id, ...controlWhere } });
+    sumaControles += n;
+    if (n >= 6) con6++;
+    if (n >= 8) con8++;
+    // Captación temprana: 1er control en el 1er trimestre (≤13 sem desde FUM).
+    if (g.fum) {
+      const primer = await prisma.prenatalControl.findFirst({
+        where: { gestanteId: g.id },
+        orderBy: { fecha: 'asc' },
+        select: { egSemanas: true },
+      });
+      if (primer && primer.egSemanas <= 13) captacionTemprana++;
+    }
+  }
+  const promedioControles = totalGest > 0 ? Number((sumaControles / totalGest).toFixed(1)) : 0;
+  const pctCon6 = totalGest > 0 ? Math.round((con6 / totalGest) * 100) : 0;
+  const pctCon8 = totalGest > 0 ? Math.round((con8 / totalGest) * 100) : 0;
+  const pctCaptacionTemprana = totalGest > 0 ? Math.round((captacionTemprana / totalGest) * 100) : 0;
+
+  // ── OBJETIVO 2: Adherencia a los tratamientos ──
+  const treatments = await prisma.treatment.findMany({
+    include: { supplementLogs: rango ? { where: { fecha: rango } } : true },
+  });
+
+  const adherencias = treatments.map((t) =>
+    calcularAdherencia({
+      fechaInicio: t.fechaInicio,
+      fechaFin: t.fechaFin,
+      duracionDias: t.duracionDias,
+      logs: t.supplementLogs,
+      referencia: fin,
+    }),
+  );
+  const adherenciaPromedio =
+    adherencias.length > 0
+      ? Math.round(adherencias.reduce((a, b) => a + b.porcentaje, 0) / adherencias.length)
+      : 0;
+  const tratamientosBuenaAdh = adherencias.filter((a) => a.buenaAdherencia).length;
+  const pctBuenaAdherencia =
+    adherencias.length > 0 ? Math.round((tratamientosBuenaAdh / adherencias.length) * 100) : 0;
+  const completados = treatments.filter((t) => t.estado === 'completado').length;
+  const pctCompletados = treatments.length > 0 ? Math.round((completados / treatments.length) * 100) : 0;
+
+  // Vacunas aplicadas (indicador Likert "Aplicación de vacunas prenatales").
+  const vacunasTotal = await prisma.vaccinationRecord.count();
+  const vacunasAplicadas = await prisma.vaccinationRecord.count({ where: { estado: 'aplicada' } });
+  const pctVacunasAplicadas = vacunasTotal > 0 ? Math.round((vacunasAplicadas / vacunasTotal) * 100) : 0;
+
+  return {
+    periodo,
+    objetivo1_seguimiento: {
+      gestantesActivas: totalGest,
+      promedioControles,
+      pctCon6Controles: pctCon6,
+      pctCon8Controles: pctCon8,
+      pctCaptacionTemprana,
+      citasTotales,
+      citasAsistidas,
+      citasNoAsistidas,
+      citasReprogramadas,
+      tasaAsistencia,
+      tasaInasistencia,
+    },
+    objetivo2_adherencia: {
+      tratamientosEvaluados: treatments.length,
+      adherenciaPromedio,
+      pctBuenaAdherencia, // % de tratamientos con adherencia ≥80%
+      pctTratamientosCompletados: pctCompletados,
+      vacunasTotal,
+      vacunasAplicadas,
+      pctVacunasAplicadas,
+    },
+  };
+};

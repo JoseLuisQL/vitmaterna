@@ -49,3 +49,21 @@ export const getClinic = async (req: Request, res: Response, next: NextFunction)
     next(error);
   }
 };
+
+/**
+ * Indicadores de la tesis (Objetivo 1 y 2) con filtro de periodo opcional
+ * (?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD) para comparar línea base vs
+ * intervención.
+ */
+export const getThesisIndicators = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await reportsService.getThesisIndicators({
+      startDate: startDate as string | undefined,
+      endDate: endDate as string | undefined,
+    });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};

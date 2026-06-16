@@ -440,6 +440,51 @@ export const useLogTreatment = () => {
 };
 
 export const useObstetraDashboard = () => useQuery({ queryKey: ['obstetraDashboard'], queryFn: fetchObstetraDashboard });
+
+// ── Indicadores de la tesis (Objetivo 1 y 2, con filtro de periodo) ──
+
+export interface ThesisIndicators {
+  periodo: { desde: string | null; hasta: string | null };
+  objetivo1_seguimiento: {
+    gestantesActivas: number;
+    promedioControles: number;
+    pctCon6Controles: number;
+    pctCon8Controles: number;
+    pctCaptacionTemprana: number;
+    citasTotales: number;
+    citasAsistidas: number;
+    citasNoAsistidas: number;
+    citasReprogramadas: number;
+    tasaAsistencia: number;
+    tasaInasistencia: number;
+  };
+  objetivo2_adherencia: {
+    tratamientosEvaluados: number;
+    adherenciaPromedio: number;
+    pctBuenaAdherencia: number;
+    pctTratamientosCompletados: number;
+    vacunasTotal: number;
+    vacunasAplicadas: number;
+    pctVacunasAplicadas: number;
+  };
+}
+
+export const fetchThesisIndicators = async (
+  startDate?: string,
+  endDate?: string,
+): Promise<ThesisIndicators> => {
+  const res = await api.get('/reports/indicadores', {
+    params: { startDate: startDate || undefined, endDate: endDate || undefined },
+  });
+  return res.data?.data;
+};
+
+/** Indicadores de la tesis; pasa startDate/endDate para comparar línea base vs intervención. */
+export const useThesisIndicators = (startDate?: string, endDate?: string) =>
+  useQuery({
+    queryKey: ['thesisIndicators', startDate || '', endDate || ''],
+    queryFn: () => fetchThesisIndicators(startDate, endDate),
+  });
 export const usePatients = (search?: string) => useQuery({ queryKey: ['patients', search], queryFn: () => fetchPatients(search) });
 
 /** Página de pacientes con metadatos de paginación. */
