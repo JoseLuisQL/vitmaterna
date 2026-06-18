@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  StatusBar, Platform, TextInput, Alert
+  StatusBar, Platform, TextInput
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home, BookOpen, Search, Send, X,
-  Phone, MessageCircle, Sparkles,
+  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
+  Phone, MessageCircle, Sparkles, CalendarClock, Baby, HeartPulse, CalendarHeart,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast, DateTimeField } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField, Accordion } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -132,6 +132,20 @@ function riskTextColor(riskLevel?: string): string {
   if (riskLevel === 'Alto') return riskColors.riskRed;
   if (riskLevel === 'Medio') return riskColors.riskYellow;
   return riskColors.riskGreen;
+}
+
+/** Fondo suave del semáforo de riesgo (para el banner de estado). */
+function riskBgColor(riskLevel?: string): string {
+  if (riskLevel === 'Alto') return riskColors.riskRedLight;
+  if (riskLevel === 'Medio') return riskColors.riskYellowLight;
+  return riskColors.riskGreenLight;
+}
+
+/** Etiqueta legible del nivel de riesgo. */
+function riskLabel(riskLevel?: string): string {
+  if (riskLevel === 'Alto') return 'Riesgo alto';
+  if (riskLevel === 'Medio') return 'Riesgo moderado';
+  return 'Sin riesgo';
 }
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
@@ -370,7 +384,7 @@ export default function PatientProfileScreen(): React.ReactElement {
   };
 
   const handleSaveLab = () => {
-    if (!labTipo) return Alert.alert('Error', 'El tipo de examen es requerido.');
+    if (!labTipo) return toast.error('Falta el tipo', 'El tipo de examen es requerido.');
     if (!patient) return;
 
     createLabResult({
@@ -385,7 +399,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       observaciones: labObs || undefined
     }, {
       onSuccess: () => {
-        Alert.alert('Éxito', 'Resultado de laboratorio registrado.');
+        toast.success('Examen registrado', 'El resultado de laboratorio se guardó.');
         setIsLabModalVisible(false);
         setLabTipo('');
         setLabToma('1');
@@ -396,13 +410,13 @@ export default function PatientProfileScreen(): React.ReactElement {
         setLabObs('');
       },
       onError: () => {
-        Alert.alert('Error', 'No se pudo registrar el examen.');
+        toast.error('Error', 'No se pudo registrar el examen.');
       }
     });
   };
 
   const handleSaveVax = () => {
-    if (!vaxNombre) return Alert.alert('Error', 'El nombre de la vacuna es requerido.');
+    if (!vaxNombre) return toast.error('Falta el nombre', 'El nombre de la vacuna es requerido.');
     if (!patient) return;
 
     createVaccine({
@@ -414,7 +428,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       estado: vaxEstado,
     }, {
       onSuccess: () => {
-        Alert.alert('Éxito', 'Registro de vacuna guardado.');
+        toast.success('Vacuna registrada', 'El registro de vacunación se guardó.');
         setIsVaxModalVisible(false);
         setVaxNombre('');
         setVaxDosis('1');
@@ -422,13 +436,13 @@ export default function PatientProfileScreen(): React.ReactElement {
         setVaxEstado('aplicada');
       },
       onError: () => {
-        Alert.alert('Error', 'No se pudo registrar la vacuna.');
+        toast.error('Error', 'No se pudo registrar la vacuna.');
       }
     });
   };
 
   const handleSaveTreat = () => {
-    if (!treatNombre) return Alert.alert('Error', 'El nombre del medicamento es requerido.');
+    if (!treatNombre) return toast.error('Falta el medicamento', 'El nombre del medicamento es requerido.');
     if (!patient) return;
 
     createTreatment({
@@ -442,7 +456,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       viaAdministracion: 'oral',
     }, {
       onSuccess: () => {
-        Alert.alert('Éxito', 'Tratamiento asignado correctamente.');
+        toast.success('Tratamiento asignado', 'El esquema de tratamiento se guardó.');
         setIsTreatModalVisible(false);
         setTreatNombre('');
         setTreatDosis('1 tableta');
@@ -451,7 +465,7 @@ export default function PatientProfileScreen(): React.ReactElement {
         setTreatDuracion('30');
       },
       onError: () => {
-        Alert.alert('Error', 'No se pudo asignar el tratamiento.');
+        toast.error('Error', 'No se pudo asignar el tratamiento.');
       }
     });
   };
@@ -514,6 +528,12 @@ export default function PatientProfileScreen(): React.ReactElement {
 
   const imcVal = Number(patient.imc);
   const displayImc = !isNaN(imcVal) && imcVal > 0 && imcVal < 100 ? imcVal.toFixed(1) : '—';
+
+  // Datos para el banner de estado clínico (lo crítico de un vistazo).
+  const pendingDangerCount = dangerSigns.filter((s: any) => s.estado === 'pendiente').length;
+  const nextAppointment = (patient.appointments || [])
+    .filter((a: any) => ['programada', 'confirmada'].includes(a.estado) && new Date(a.fecha) >= new Date())
+    .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0];
 
   return (
     <View style={styles.container}>
@@ -639,9 +659,51 @@ export default function PatientProfileScreen(): React.ReactElement {
           contentContainerStyle={styles.scrollArea} 
           showsVerticalScrollIndicator={false}
         >
-          {/* ── SECCIÓN: RESUMEN (datos + obstétricos + antecedentes + embarazo) ── */}
+          {/* ── SECCIÓN: RESUMEN (estado + datos + obstétricos + antecedentes + embarazo) ── */}
           {activeTab === 'resumen' && (
             <View style={styles.dataTabContainer}>
+              {/* 1. BANNER DE ESTADO CLÍNICO — lo crítico siempre arriba y a la vista */}
+              <View style={[styles.statusBanner, { backgroundColor: riskBgColor(patient.riskLevel) }, designTokens.cardShadow]}>
+                <View style={styles.statusTopRow}>
+                  <View style={[styles.statusRiskChip, { backgroundColor: riskTextColor(patient.riskLevel) }]}>
+                    <View style={styles.statusRiskDot} />
+                    <Text style={styles.statusRiskText}>{riskLabel(patient.riskLevel)}</Text>
+                  </View>
+                  {pendingDangerCount > 0 && (
+                    <View style={styles.statusAlertChip}>
+                      <AlertTriangle size={12} color={semanticColors.danger} />
+                      <Text style={styles.statusAlertText}>
+                        {pendingDangerCount} signo{pendingDangerCount > 1 ? 's' : ''} de alarma
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.statusMetricsRow}>
+                  <View style={styles.statusMetric}>
+                    <Baby size={15} color={obstetraColors.primary} />
+                    <Text style={styles.statusMetricVal}>{patient.currentWeek ? `${patient.currentWeek} sem` : '—'}</Text>
+                    <Text style={styles.statusMetricLbl}>Edad gest.</Text>
+                  </View>
+                  <View style={styles.statusDivider} />
+                  <View style={styles.statusMetric}>
+                    <CalendarHeart size={15} color={obstetraColors.primary} />
+                    <Text style={styles.statusMetricVal}>
+                      {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '—'}
+                    </Text>
+                    <Text style={styles.statusMetricLbl}>FPP</Text>
+                  </View>
+                  <View style={styles.statusDivider} />
+                  <View style={styles.statusMetric}>
+                    <CalendarClock size={15} color={obstetraColors.primary} />
+                    <Text style={styles.statusMetricVal}>
+                      {nextAppointment ? new Date(nextAppointment.fecha).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '—'}
+                    </Text>
+                    <Text style={styles.statusMetricLbl}>Próx. cita</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* 2. RESUMEN CLÍNICO AUTOGENERADO (protagonista) */}
               {patient.resumenClinico?.texto ? (
                 <View style={[styles.resumenCard, designTokens.cardShadow]}>
                   <View style={styles.resumenHeader}>
@@ -662,40 +724,42 @@ export default function PatientProfileScreen(): React.ReactElement {
                 </View>
               ) : null}
 
-              <Seccion titulo="Datos Personales" />
-              <View style={[styles.insetGroup, designTokens.cardShadow]}>
-                <Fila label="Nombre completo" value={`${patient.firstName} ${patient.lastName}`} />
-                <Fila label="DNI" value={patient.documentNumber} />
-                <Fila label="N° Historia Clínica" value={patient.historiaClinica} />
-                <Fila label="Fecha de nacimiento" value={patient.fechaNacimiento} />
-                <Fila label="Edad" value={patient.age ? `${patient.age} años` : undefined} />
-                <Fila label="Teléfono" value={patient.phone} />
-                <Fila label="Tel. acompañante" value={patient.phoneAcompanante} />
-                <Fila label="Dirección" value={patient.address} />
-                <Fila label="Localidad" value={patient.localidad} />
-                <Fila label="Estado civil" value={patient.maritalStatus} />
-                <Fila label="Ocupación" value={patient.occupation} />
-                <Fila label="Estudios" value={patient.education} />
-                <Fila label="Código SIS" value={patient.sisCode} isLast />
-              </View>
+              {/* 3. DETALLE EN ACORDEONES — Embarazo abierto, el resto plegado */}
+              <Accordion title="Datos del embarazo" icon={CalendarHeart} accentColor={BRAND} defaultOpen
+                headerAction={(
+                  <TouchableOpacity style={styles.addChip} onPress={openEmbModal} hitSlop={6}>
+                    <Plus size={13} color={obstetraColors.onPrimary} />
+                    <Text style={styles.addChipText}>Editar</Text>
+                  </TouchableOpacity>
+                )}
+              >
+                <Fila label="FUM" value={patient.fum} />
+                <Fila label="FPP" value={patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE') : undefined} />
+                <Fila label="Semanas" value={patient.currentWeek ? `${patient.currentWeek} semanas` : undefined} />
+                <Fila label="Peso habitual" value={patient.pesoHabitual ? `${patient.pesoHabitual} kg` : undefined} />
+                <Fila label="Talla" value={patient.talla ? `${patient.talla} m` : undefined} />
+                <Fila label="Grupo sanguíneo" value={patient.bloodType} isLast />
+              </Accordion>
 
-              <Seccion titulo="Antecedentes Obstétricos" />
-              <View style={[styles.insetGroup, designTokens.cardShadow]}>
+              <Accordion title="Antecedentes obstétricos" icon={Baby} accentColor={BRAND}>
                 <Fila label="Gestaciones (G)" value={patient.gestaciones} />
                 <Fila label="Partos (P)" value={patient.partos} />
                 <Fila label="Cesáreas (C)" value={patient.cesareas} />
                 <Fila label="Abortos (A)" value={patient.abortos} isLast />
-              </View>
+              </Accordion>
 
-              {/* Antecedentes familiares/personales (RF-2.03) */}
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderText}>Antecedentes Familiares / Personales</Text>
-                <TouchableOpacity style={styles.addChip} onPress={() => setIsAntModalVisible(true)}>
-                  <Plus size={14} color={obstetraColors.onPrimary} />
-                  <Text style={styles.addChipText}>Añadir</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={[styles.insetGroup, designTokens.cardShadow]}>
+              <Accordion
+                title="Antecedentes familiares / personales"
+                icon={HeartPulse}
+                accentColor={BRAND}
+                count={(patient.antecedentes || []).length}
+                headerAction={(
+                  <TouchableOpacity style={styles.addChip} onPress={() => setIsAntModalVisible(true)} hitSlop={6}>
+                    <Plus size={13} color={obstetraColors.onPrimary} />
+                    <Text style={styles.addChipText}>Añadir</Text>
+                  </TouchableOpacity>
+                )}
+              >
                 {(patient.antecedentes || []).length > 0 ? (
                   patient.antecedentes.map((ant: any, idx: number) => (
                     <View key={ant.id} style={[styles.antRow, idx < patient.antecedentes.length - 1 && styles.antRowBorder]}>
@@ -713,23 +777,23 @@ export default function PatientProfileScreen(): React.ReactElement {
                 ) : (
                   <Text style={styles.antEmpty}>Sin antecedentes registrados.</Text>
                 )}
-              </View>
+              </Accordion>
 
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderText}>Datos del Embarazo</Text>
-                <TouchableOpacity style={styles.addChip} onPress={openEmbModal}>
-                  <Plus size={14} color={obstetraColors.onPrimary} />
-                  <Text style={styles.addChipText}>Editar</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={[styles.insetGroup, designTokens.cardShadow]}>
-                <Fila label="FUM" value={patient.fum} />
-                <Fila label="FPP" value={patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE') : undefined} />
-                <Fila label="Semanas" value={patient.currentWeek ? `${patient.currentWeek} semanas` : undefined} />
-                <Fila label="Peso habitual" value={patient.pesoHabitual ? `${patient.pesoHabitual} kg` : undefined} />
-                <Fila label="Talla" value={patient.talla ? `${patient.talla} cm` : undefined} />
-                <Fila label="Grupo sanguíneo" value={patient.bloodType} isLast />
-              </View>
+              <Accordion title="Datos personales" icon={User} accentColor={BRAND}>
+                <Fila label="Nombre completo" value={`${patient.firstName} ${patient.lastName}`} />
+                <Fila label="DNI" value={patient.documentNumber} />
+                <Fila label="N° Historia Clínica" value={patient.historiaClinica} />
+                <Fila label="Fecha de nacimiento" value={patient.fechaNacimiento} />
+                <Fila label="Edad" value={patient.age ? `${patient.age} años` : undefined} />
+                <Fila label="Teléfono" value={patient.phone} />
+                <Fila label="Tel. acompañante" value={patient.phoneAcompanante} />
+                <Fila label="Dirección" value={patient.address} />
+                <Fila label="Localidad" value={patient.localidad} />
+                <Fila label="Estado civil" value={patient.maritalStatus} />
+                <Fila label="Ocupación" value={patient.occupation} />
+                <Fila label="Estudios" value={patient.education} />
+                <Fila label="Código SIS" value={patient.sisCode} isLast />
+              </Accordion>
             </View>
           )}
 
@@ -1661,6 +1725,52 @@ const styles = StyleSheet.create({
   dataTabContainer: {
     marginTop: -4,
   },
+
+  // Banner de estado clínico (lo crítico siempre arriba)
+  statusBanner: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statusTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  statusRiskChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+  },
+  statusRiskDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: commonColors.white },
+  statusRiskText: { ...typography.buttonSm, color: commonColors.white },
+  statusAlertChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.surface,
+  },
+  statusAlertText: { ...typography.caption, fontWeight: '700', color: semanticColors.danger },
+  statusMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm2,
+  },
+  statusMetric: { flex: 1, alignItems: 'center', gap: 3 },
+  statusMetricVal: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary },
+  statusDivider: { width: 1, height: 34, backgroundColor: commonColors.borderLight },
+
   resumenCard: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,
@@ -1687,12 +1797,6 @@ const styles = StyleSheet.create({
   },
   resumenAlertaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   resumenAlertaText: { ...typography.caption, color: commonColors.textSecondary, flex: 1 },
-  insetGroup: {
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    ...shadows.card,
-  },
   section: {
     gap: 16,
   },
@@ -2045,21 +2149,6 @@ const styles = StyleSheet.create({
   },
 
   // Antecedentes + acciones de tratamiento
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  sectionHeaderText: {
-    ...typography.overline,
-    color: commonColors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    flex: 1,
-  },
   addChip: {
     flexDirection: 'row',
     alignItems: 'center',

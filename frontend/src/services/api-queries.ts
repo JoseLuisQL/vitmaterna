@@ -140,6 +140,14 @@ const mapPatientProfile = (g: any) => {
       condicion: a.condicion,
       detalle: a.detalle || null,
     })),
+    // Citas (para banner de estado: próxima cita programada/confirmada).
+    appointments: (g.appointments || []).map((a: any) => ({
+      id: a.id,
+      fecha: a.fecha,
+      estado: a.estado,
+      motivo: a.motivo,
+      numeroControl: a.numeroControl ?? null,
+    })),
     // Controles prenatales
     controls: (g.prenatalControls || []).map((c: any) => ({
       id: c.id,

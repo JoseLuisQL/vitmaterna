@@ -29,6 +29,7 @@ export { AppHeader } from './AppHeader';
 export { AppModal } from './AppModal';
 export { BottomSheet } from './BottomSheet';
 export { SectionHeader } from './SectionHeader';
+export { Accordion } from './Accordion';
 
 // Data display
 export { KpiCard } from './KpiCard';
