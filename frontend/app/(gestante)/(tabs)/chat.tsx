@@ -11,9 +11,10 @@ import { useToast } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { TypingDots } from '../../../src/components/shared/TypingDots';
 import { EmergencyMessageCard } from '../../../src/components/shared/EmergencyMessageCard';
-import { Send, Bot, ImagePlus, Check, CheckCheck } from 'lucide-react-native';
+import { Send, Bot, ImagePlus, Check, CheckCheck, ChevronRight } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
+import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
 import { useAuthStore } from '../../../src/store/authStore';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
@@ -123,6 +124,49 @@ export default function GestanteChatScreen() {
           time={new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           mapsUrl={item.mediaUrl}
         />
+      );
+    }
+
+    // Mensaje de contenido educativo recomendado: tarjeta clickeable que lleva
+    // directamente al recurso (deep-link robusto vía /educacion/:id).
+    if (item.tipo === 'educacion' && item.content) {
+      const cm = categoryMeta(item.content.categoria);
+      const tm = typeMeta(item.content.tipo);
+      const CIcon = cm.icon;
+      return (
+        <View style={[styles.messageBubble, styles.messageOther, styles.eduBubble]}>
+          {!!item.text && (
+            <Text style={[styles.messageText, styles.messageTextOther, { marginBottom: spacing.sm }]}>{item.text}</Text>
+          )}
+          <TouchableOpacity
+            style={styles.eduCard}
+            activeOpacity={0.8}
+            onPress={() => router.push(`/(gestante)/educacion/${item.content!.id}` as any)}
+            accessibilityRole="button"
+            accessibilityLabel={`Abrir contenido: ${item.content.titulo}`}
+          >
+            {item.content.thumbnailUrl ? (
+              <Image source={{ uri: resolveMediaUrl(item.content.thumbnailUrl) || undefined }} style={styles.eduThumb} resizeMode="cover" />
+            ) : (
+              <View style={[styles.eduIconBox, { backgroundColor: cm.bg }]}>
+                <CIcon size={22} color={cm.color} />
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.eduCategory, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
+              <Text style={styles.eduTitle} numberOfLines={2}>{item.content.titulo}</Text>
+              <Text style={styles.eduMeta} numberOfLines={1}>
+                {tm.label}{item.content.duracionMin ? ` · ${item.content.duracionMin} min` : ''} · Toca para leer
+              </Text>
+            </View>
+            <ChevronRight size={18} color={commonColors.textTertiary} />
+          </TouchableOpacity>
+          <View style={styles.metaRow}>
+            <Text style={[styles.timeText, styles.timeTextOther]}>
+              {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
+        </View>
       );
     }
 
@@ -317,6 +361,14 @@ const styles = StyleSheet.create({
   messageMe: { alignSelf: 'flex-end', backgroundColor: BRAND, borderBottomRightRadius: borderRadius.xs, ...shadows.card },
   messageOther: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: borderRadius.xs, ...shadows.card },
   messageImage: { width: 200, height: 200, borderRadius: borderRadius.lg, marginBottom: 6, backgroundColor: commonColors.surfaceAlt },
+  // Tarjeta de contenido educativo recomendado
+  eduBubble: { maxWidth: '86%', paddingHorizontal: spacing.sm2, paddingVertical: spacing.sm2 },
+  eduCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
+  eduThumb: { width: 46, height: 46, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceHover },
+  eduIconBox: { width: 46, height: 46, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
+  eduCategory: { ...typography.overline, fontSize: 10, marginBottom: 2 },
+  eduTitle: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, lineHeight: 18 },
+  eduMeta: { ...typography.caption, fontSize: 11, color: commonColors.textSecondary, marginTop: 2 },
   messageText: { ...typography.body, marginBottom: 4 },
   messageTextMe: { color: commonColors.white },
   messageTextOther: { color: commonColors.text },

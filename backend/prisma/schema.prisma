@@ -753,6 +753,9 @@ model EducationalContent {
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
 
+  // Mensajes de chat que recomiendan este contenido.
+  messages     Message[]
+
   @@index([categoria, activo], map: "idx_educational_content_category")
   @@map("educational_content")
 }
@@ -825,6 +828,7 @@ enum TipoMensaje {
   texto
   imagen
   alerta_emergencia
+  educacion
 }
 
 model Message {
@@ -834,13 +838,17 @@ model Message {
   contenido      String
   tipo           TipoMensaje @default(texto)
   mediaUrl       String?     @map("media_url")
+  // Referencia opcional a un contenido educativo (mensajes tipo `educacion`):
+  // permite que el chat muestre una tarjeta clickeable que lleva al contenido.
+  contentId      String?     @map("content_id") @db.Uuid
   leido          Boolean     @default(false)
   leidoAt        DateTime?   @map("leido_at") @db.Timestamptz()
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz()
 
   // Relations
-  conversation Conversation @relation(fields: [conversationId], references: [id])
-  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+  conversation Conversation        @relation(fields: [conversationId], references: [id])
+  sender       User                @relation("MessageSender", fields: [senderId], references: [id])
+  content      EducationalContent? @relation(fields: [contentId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt], map: "idx_messages_conversation")
   @@map("messages")

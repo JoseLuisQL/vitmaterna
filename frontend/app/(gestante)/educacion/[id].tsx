@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Heart, Clock, ExternalLink, PlayCircle, CheckCircle2 } from 'lucide-react-native';
 import { resolveMediaUrl } from '../../../src/services/api';
-import { useEducation, registerContentView } from '../../../src/services/api-queries';
+import { useEducation, useEducationContentById, registerContentView } from '../../../src/services/api-queries';
 import { useEducationProgress } from '../../../src/hooks/useEducationProgress';
 import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
 import { gestanteColors, commonColors } from '../../../src/theme/colors';
@@ -28,10 +28,14 @@ export default function EducacionDetalleScreen(): React.ReactElement {
   const { data } = useEducation();
   const { markRead, toggleFavorite, isFavorite } = useEducationProgress();
 
-  const item = useMemo(
+  // Primero intenta encontrarlo en el feed cacheado (rápido). Si no está (p. ej.
+  // un contenido recomendado de otro trimestre), lo carga por id desde el backend.
+  const cached = useMemo(
     () => (data?.contents || []).find((c) => c.id === id),
     [data, id],
   );
+  const { data: fetched, isLoading: isLoadingById } = useEducationContentById(id || '', !cached);
+  const item = cached || fetched || undefined;
 
   useEffect(() => {
     if (item?.id) {
@@ -48,7 +52,9 @@ export default function EducacionDetalleScreen(): React.ReactElement {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtnPlain} accessibilityLabel="Volver" accessibilityRole="button">
             <ArrowLeft size={24} color={commonColors.text} />
           </TouchableOpacity>
-          <Text style={styles.notFound}>Este contenido ya no está disponible.</Text>
+          <Text style={styles.notFound}>
+            {isLoadingById ? 'Cargando contenido…' : 'Este contenido ya no está disponible.'}
+          </Text>
         </SafeAreaView>
       </View>
     );

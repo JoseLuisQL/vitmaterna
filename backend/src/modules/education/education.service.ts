@@ -60,6 +60,15 @@ export async function getActiveContentCatalog() {
   });
 }
 
+/** Devuelve un contenido educativo por id, sin filtrar por trimestre. */
+export async function getContentById(contentId: string) {
+  const content = await prisma.educationalContent.findUnique({ where: { id: contentId } });
+  if (!content) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Contenido educativo no encontrado');
+  }
+  return content;
+}
+
 /** Incrementa el contador de vistas de un contenido (cuando una gestante lo abre). */
 export async function registerContentView(contentId: string) {
   const exists = await prisma.educationalContent.findUnique({ where: { id: contentId } });

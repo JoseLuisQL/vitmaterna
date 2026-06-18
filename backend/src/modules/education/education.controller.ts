@@ -18,6 +18,16 @@ export async function getCatalog(_req: Request, res: Response): Promise<void> {
   res.json(successResponse(data));
 }
 
+/**
+ * Devuelve un contenido educativo por id (sin filtrar por trimestre). Necesario
+ * para abrir un contenido recomendado vía chat aunque sea de otro trimestre.
+ */
+export async function getById(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const data = await educationService.getContentById(id as string);
+  res.json(successResponse(data));
+}
+
 /** Registra una vista del contenido (cuando la gestante abre el artículo). */
 export async function registerView(req: Request, res: Response): Promise<void> {
   const { id } = req.params;

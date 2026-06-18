@@ -13,6 +13,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import api from '../services/api';
 
+/** Contenido educativo referenciado por un mensaje tipo `educacion`. */
+export interface ChatMessageContent {
+  id: string;
+  titulo: string;
+  categoria?: string | null;
+  tipo?: string | null;
+  trimestre?: number | null;
+  thumbnailUrl?: string | null;
+  duracionMin?: number | null;
+}
+
 export interface ChatMessage {
   id: string;
   clientId?: string;
@@ -21,6 +32,10 @@ export interface ChatMessage {
   createdAt: string;
   tipo?: string;
   mediaUrl?: string | null;
+  /** Id del contenido educativo recomendado (mensajes tipo `educacion`). */
+  contentId?: string | null;
+  /** Datos del contenido educativo para la tarjeta clickeable. */
+  content?: ChatMessageContent | null;
   leido?: boolean;
   pending?: boolean;
 }
@@ -34,6 +49,8 @@ const mapServerMessage = (m: any): ChatMessage => ({
   createdAt: m.createdAt,
   tipo: m.tipo,
   mediaUrl: m.mediaUrl,
+  contentId: m.contentId ?? null,
+  content: m.content ?? null,
   leido: m.leido,
 });
 

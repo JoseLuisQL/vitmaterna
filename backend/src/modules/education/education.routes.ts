@@ -21,5 +21,7 @@ router.use(authenticate);
 router.get('/', educationController.getEducation);
 router.get('/catalog', educationController.getCatalog);
 router.post('/:id/view', educationController.registerView);
+// Debe ir al final para no capturar `/catalog` como un id.
+router.get('/:id', educationController.getById);
 
 export default router;

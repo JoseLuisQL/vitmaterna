@@ -9,7 +9,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
-  Phone, MessageCircle, Sparkles, CalendarClock, Baby, HeartPulse, CalendarHeart,
+  Phone, MessageCircle, Sparkles, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
@@ -256,6 +256,9 @@ export default function PatientProfileScreen(): React.ReactElement {
   // Recomendar contenido educativo a esta gestante
   const [recommendVisible, setRecommendVisible] = useState(false);
   const [recSearch, setRecSearch] = useState('');
+  // Contenido seleccionado para previsualizar antes de enviar + nota opcional.
+  const [recSelected, setRecSelected] = useState<any | null>(null);
+  const [recNota, setRecNota] = useState('');
   const { data: catalog = [], isLoading: catalogLoading } = useEducationCatalog();
   const { mutate: recommendContent, isPending: isRecommending } = useRecommendContent();
 
@@ -266,15 +269,21 @@ export default function PatientProfileScreen(): React.ReactElement {
     return catalog.filter((c) => `${c.titulo} ${c.contenido}`.toLowerCase().includes(q));
   }, [catalog, debouncedRecSearch]);
 
-  const handleRecommend = (contentId: string, titulo: string) => {
-    if (!patient || isRecommending) return;
+  const closeRecommend = () => {
+    setRecommendVisible(false);
+    setRecSearch('');
+    setRecSelected(null);
+    setRecNota('');
+  };
+
+  const handleRecommend = () => {
+    if (!patient || isRecommending || !recSelected) return;
     recommendContent(
-      { gestanteId: patient.id, contentId },
+      { gestanteId: patient.id, contentId: recSelected.id, nota: recNota.trim() || undefined },
       {
         onSuccess: () => {
-          toast.success('Contenido recomendado', `Se envió "${titulo}" a ${patient.firstName} por el chat.`);
-          setRecommendVisible(false);
-          setRecSearch('');
+          toast.success('Contenido recomendado', `Se envió "${recSelected.titulo}" a ${patient.firstName} por el chat.`);
+          closeRecommend();
         },
         onError: () => toast.error('No se pudo recomendar', 'Inténtalo nuevamente.'),
       },
@@ -1514,56 +1523,108 @@ export default function PatientProfileScreen(): React.ReactElement {
         </View>
       </AppModal>
 
-      {/* MODAL: RECOMENDAR CONTENIDO EDUCATIVO */}
+      {/* MODAL: RECOMENDAR CONTENIDO EDUCATIVO (lista → previsualización) */}
       <AppModal
         visible={recommendVisible}
-        onClose={() => setRecommendVisible(false)}
-        title="Recomendar contenido"
-        subtitle={`Envía un recurso educativo a ${patient.firstName} por el chat.`}
+        onClose={closeRecommend}
+        title={recSelected ? 'Previsualizar y enviar' : 'Recomendar contenido'}
+        subtitle={recSelected
+          ? 'Así verá la gestante tu recomendación en el chat.'
+          : `Elige un recurso educativo para ${patient.firstName}.`}
+        footer={recSelected ? (
+          <>
+            <AppButton title="Volver" variant="outline" onPress={() => { setRecSelected(null); setRecNota(''); }} style={{ flex: 1 }} />
+            <AppButton title="Enviar al chat" onPress={handleRecommend} style={{ flex: 1 }} themeColor={BRAND} loading={isRecommending} disabled={isRecommending} />
+          </>
+        ) : undefined}
       >
-        <View style={styles.recSearchBox}>
-          <Search size={18} color={commonColors.textTertiary} />
-          <TextInput
-            style={styles.recSearchInput}
-            value={recSearch}
-            onChangeText={setRecSearch}
-            placeholder="Buscar contenido…"
-            placeholderTextColor={commonColors.textTertiary}
-          />
-          {recSearch ? (
-            <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
-          ) : null}
-        </View>
-        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
-          {catalogLoading ? (
-            <Text style={styles.recEmpty}>Cargando contenido…</Text>
-          ) : recFiltered.length === 0 ? (
-            <Text style={styles.recEmpty}>No hay contenido disponible.</Text>
-          ) : (
-            recFiltered.map((c) => {
-              const cm = categoryMeta(c.categoria);
-              const CIcon = cm.icon;
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.recRow}
-                  onPress={() => handleRecommend(c.id, c.titulo)}
-                  disabled={isRecommending}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.recIcon, { backgroundColor: cm.bg }]}>
-                    <CIcon size={18} color={cm.color} />
+        {!recSelected ? (
+          <>
+            <View style={styles.recSearchBox}>
+              <Search size={18} color={commonColors.textTertiary} />
+              <TextInput
+                style={styles.recSearchInput}
+                value={recSearch}
+                onChangeText={setRecSearch}
+                placeholder="Buscar contenido…"
+                placeholderTextColor={commonColors.textTertiary}
+              />
+              {recSearch ? (
+                <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
+              ) : null}
+            </View>
+            <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+              {catalogLoading ? (
+                <Text style={styles.recEmpty}>Cargando contenido…</Text>
+              ) : recFiltered.length === 0 ? (
+                <Text style={styles.recEmpty}>No hay contenido disponible.</Text>
+              ) : (
+                recFiltered.map((c) => {
+                  const cm = categoryMeta(c.categoria);
+                  const CIcon = cm.icon;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={styles.recRow}
+                      onPress={() => { setRecSelected(c); }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.recIcon, { backgroundColor: cm.bg }]}>
+                        <CIcon size={18} color={cm.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.recTitle} numberOfLines={1}>{c.titulo}</Text>
+                        <Text style={styles.recMeta}>{cm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''}</Text>
+                      </View>
+                      <ChevronRight size={18} color={commonColors.textTertiary} />
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+          </>
+        ) : (
+          <View style={{ gap: spacing.md }}>
+            {/* Campo de nota opcional para personalizar la recomendación */}
+            <View>
+              <Text style={styles.inputLabel}>Nota para la gestante (opcional)</Text>
+              <TextInput
+                style={[styles.textInput, { height: 70 }]}
+                placeholder="Ej. Léelo antes de tu próxima cita."
+                placeholderTextColor={commonColors.textTertiary}
+                multiline
+                value={recNota}
+                onChangeText={setRecNota}
+              />
+            </View>
+
+            {/* Previsualización de la tarjeta tal como la verá la gestante */}
+            <Text style={styles.recPreviewLabel}>Vista previa en el chat</Text>
+            <View style={styles.recPreviewBubble}>
+              {!!recNota.trim() && (
+                <Text style={styles.recPreviewNote}>📘 Tu obstetra te recomienda: "{recSelected.titulo}"{'\n\n'}{recNota.trim()}</Text>
+              )}
+              {(() => {
+                const cm = categoryMeta(recSelected.categoria);
+                const tm = typeMeta(recSelected.tipo);
+                const CIcon = cm.icon;
+                return (
+                  <View style={styles.recPreviewCard}>
+                    <View style={[styles.recIcon, { backgroundColor: cm.bg, borderRadius: borderRadius.md }]}>
+                      <CIcon size={20} color={cm.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.recMeta, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
+                      <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
+                      <Text style={styles.recMeta}>{tm.label}{recSelected.duracionMin ? ` · ${recSelected.duracionMin} min` : ''} · Toca para leer</Text>
+                    </View>
+                    <ChevronRight size={18} color={commonColors.textTertiary} />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.recTitle} numberOfLines={1}>{c.titulo}</Text>
-                    <Text style={styles.recMeta}>{cm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''}</Text>
-                  </View>
-                  <Send size={18} color={BRAND} />
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </ScrollView>
+                );
+              })()}
+            </View>
+          </View>
+        )}
       </AppModal>
     </View>
   );
@@ -1578,6 +1639,10 @@ const styles = StyleSheet.create({
   recIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   recTitle: { ...typography.bodyMedium, color: commonColors.text, fontWeight: '600' },
   recMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  recPreviewLabel: { ...typography.overline, color: commonColors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  recPreviewBubble: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  recPreviewNote: { ...typography.bodySmall, color: commonColors.text, marginBottom: spacing.sm, lineHeight: 19 },
+  recPreviewCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
   container: {
     flex: 1,
     backgroundColor: commonColors.background,

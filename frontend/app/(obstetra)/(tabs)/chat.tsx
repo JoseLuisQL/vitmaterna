@@ -16,6 +16,7 @@ import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Sea
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
+import { categoryMeta } from '../../../src/utils/educationMeta';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
@@ -153,6 +154,38 @@ export default function ObstetraChatScreen() {
           time={new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           mapsUrl={item.mediaUrl}
         />
+      );
+    }
+
+    // Contenido educativo recomendado (lo que el obstetra envió a la gestante).
+    if (item.tipo === 'educacion' && item.content) {
+      const cm = categoryMeta(item.content.categoria);
+      const CIcon = cm.icon;
+      return (
+        <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther, styles.eduBubble]}>
+          {!!item.text && (
+            <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther, { marginBottom: spacing.sm }]}>{item.text}</Text>
+          )}
+          <View style={styles.eduCard}>
+            <View style={[styles.eduIconBox, { backgroundColor: cm.bg }]}>
+              <CIcon size={20} color={cm.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.eduCategory, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
+              <Text style={styles.eduTitle} numberOfLines={2}>{item.content.titulo}</Text>
+            </View>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
+              {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+            {isMe && (item.pending
+              ? <Check size={13} color={obstetraColors.primaryLight} />
+              : item.leido
+                ? <CheckCheck size={14} color="#9BE7FF" />
+                : <CheckCheck size={14} color={obstetraColors.primaryLight} />)}
+          </View>
+        </View>
       );
     }
 
@@ -524,6 +557,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     backgroundColor: commonColors.surfaceAlt,
   },
+  // Tarjeta de contenido educativo recomendado
+  eduBubble: { maxWidth: '86%', paddingHorizontal: spacing.sm2, paddingVertical: spacing.sm2 },
+  eduCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
+  eduIconBox: { width: 42, height: 42, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
+  eduCategory: { ...typography.overline, fontSize: 10, marginBottom: 2 },
+  eduTitle: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, lineHeight: 18 },
   messageText: {
     ...typography.bodySmall,
     fontSize: 15,

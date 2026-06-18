@@ -762,6 +762,21 @@ const STABLE_STALE_TIME = 10 * 60 * 1000;
 export const useEducation = () =>
   useQuery({ queryKey: ['education'], queryFn: fetchEducation, staleTime: STABLE_STALE_TIME });
 
+/**
+ * Obtiene un contenido educativo por id (sin filtrar por trimestre). Permite
+ * abrir un contenido recomendado vía chat aunque no esté en el feed "Para ti".
+ */
+export const useEducationContentById = (id: string, enabled = true) =>
+  useQuery({
+    queryKey: ['educationContent', id],
+    enabled: !!id && enabled,
+    staleTime: STABLE_STALE_TIME,
+    queryFn: async (): Promise<EducationContentItem | null> => {
+      const res = await api.get(`/education/${id}`);
+      return res.data?.data || null;
+    },
+  });
+
 /** Lista de contenido educativo para que el obstetra elija qué recomendar. */
 export const useEducationCatalog = () =>
   useQuery({

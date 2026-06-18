@@ -87,6 +87,11 @@ export const getConversationHistory = async (
           role: true,
         },
       },
+      // Contenido educativo referenciado (mensajes tipo `educacion`): permite
+      // que el chat muestre una tarjeta clickeable que lleva al recurso.
+      content: {
+        select: { id: true, titulo: true, categoria: true, tipo: true, trimestre: true, thumbnailUrl: true, duracionMin: true },
+      },
     },
   });
 
@@ -392,16 +397,26 @@ export const recommendContent = async (
     });
   }
 
-  const texto = `📘 Tu obstetra te recomienda leer: "${content.titulo}"${nota ? `\n\n${nota}` : ''}\n\nEntra a la sección Educación de la app para verlo.`;
+  // El cuerpo lleva la nota del obstetra (si la hay). El título/categoría van en
+  // la tarjeta clickeable del chat, así que el texto puede ser solo la nota.
+  const texto = nota?.trim()
+    ? `📘 Tu obstetra te recomienda: "${content.titulo}"\n\n${nota.trim()}`
+    : `📘 Tu obstetra te recomienda leer: "${content.titulo}"`;
 
   const message = await prisma.message.create({
     data: {
       conversationId: conversation.id,
       senderId: userId,
       contenido: texto,
-      tipo: 'texto',
+      tipo: 'educacion',
+      contentId: content.id,
     },
-    include: { sender: { select: { id: true, firstName: true, lastName: true, role: true } } },
+    include: {
+      sender: { select: { id: true, firstName: true, lastName: true, role: true } },
+      content: {
+        select: { id: true, titulo: true, categoria: true, tipo: true, trimestre: true, thumbnailUrl: true, duracionMin: true },
+      },
+    },
   });
   await prisma.conversation.update({
     where: { id: conversation.id },
