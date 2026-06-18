@@ -118,7 +118,7 @@ function CalculadoraEG() {
   const TRIMESTRE_LABEL = ['', 'Primer trimestre', 'Segundo trimestre', 'Tercer trimestre'];
 
   return (
-    <View style={styles.card}>
+    <View style={calcStyles.wrapper}>
       <DateTimeField
         label="Fecha de última menstruación (FUM)"
         mode="date"
@@ -190,6 +190,7 @@ function CalculadoraEG() {
 }
 
 const calcStyles = StyleSheet.create({
+  wrapper: { width: '100%' },
   results: { marginTop: spacing.lg, gap: spacing.md },
   heroBox: {
     backgroundColor: gestanteColors.primaryLight,

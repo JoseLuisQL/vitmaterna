@@ -93,9 +93,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: commonColors.overlay,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: spacing.lg,
   },
   card: {
+    width: '100%',
+    // En pantallas anchas (web/tablet) el modal no se estira a lo ancho.
+    maxWidth: 440,
+    alignSelf: 'center',
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
