@@ -12,6 +12,7 @@ import {
   isSrq18Positive,
 } from '../../utils/screeningThresholds.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
+import { calcularGamificacion } from '../../utils/gamification.js';
 
 export class ClinicalService {
   async createPrenatalControl(data: any, authenticatedUserId?: string) {
@@ -313,6 +314,24 @@ export class ClinicalService {
         taken: takenToday,
       };
     });
+  }
+
+  /**
+   * Tratamientos de la gestante + gamificación de adherencia (racha, logros).
+   * La racha es GLOBAL: combina los registros de todos los tratamientos activos
+   * para reflejar el hábito diario de cuidado (no por medicamento aislado).
+   */
+  async getTreatmentsWithGamification(gestanteId: string) {
+    const treatments = await this.getTreatments(gestanteId);
+
+    // Combina todos los logs (de todos los tratamientos) para la racha global.
+    const allLogs = await prisma.supplementLog.findMany({
+      where: { gestanteId },
+      select: { fecha: true, tomado: true },
+    });
+    const gamificacion = calcularGamificacion(allLogs);
+
+    return { treatments, gamificacion };
   }
 
   async createSupplementLog(treatmentId: string, data: any, authenticatedUserId?: string) {

@@ -14,7 +14,7 @@ import { ProgressRing } from '../../../src/components/ui/ProgressRing';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { useToast } from '../../../src/components/ui';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
-import { useTreatments, useLogTreatment } from '../../../src/services/api-queries';
+import { useTreatments, useLogTreatment, useAdherenceGamification } from '../../../src/services/api-queries';
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -193,6 +193,97 @@ const progresoStyles = StyleSheet.create({
   chartTitle: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.textSecondary, marginBottom: 2 },
 });
 
+/**
+ * Tarjeta de gamificación: racha de días consecutivos + logros desbloqueados.
+ * Refuerza el hábito de toma diaria (Objetivo 2: adherencia). Los datos los
+ * calcula el servidor (utils/gamification.ts); aquí solo se muestran.
+ */
+function RachaCard(): React.ReactElement | null {
+  const { data: gamificacion } = useAdherenceGamification();
+  if (!gamificacion || gamificacion.totalDiasTomados === 0) return null;
+
+  const { rachaActual, mejorRacha, logros, mensaje } = gamificacion;
+
+  return (
+    <View
+      style={rachaStyles.card}
+      accessible
+      accessibilityLabel={`Racha actual: ${rachaActual} días. ${mensaje}`}
+    >
+      <View style={rachaStyles.headerRow}>
+        <View style={rachaStyles.flameWrap}>
+          <Text style={rachaStyles.flame}>🔥</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={rachaStyles.streakNumber}>
+            {rachaActual} <Text style={rachaStyles.streakUnit}>día{rachaActual === 1 ? '' : 's'} seguidos</Text>
+          </Text>
+          <Text style={rachaStyles.streakBest}>Mejor racha: {mejorRacha} días</Text>
+        </View>
+      </View>
+
+      <Text style={rachaStyles.message}>{mensaje}</Text>
+
+      <View style={rachaStyles.badgesRow}>
+        {logros.map((l) => (
+          <View
+            key={l.id}
+            style={[rachaStyles.badge, !l.desbloqueado && rachaStyles.badgeLocked]}
+            accessible
+            accessibilityLabel={`${l.titulo}: ${l.descripcion}. ${l.desbloqueado ? 'Desbloqueado' : 'Bloqueado'}`}
+          >
+            <Text style={[rachaStyles.badgeIcon, !l.desbloqueado && rachaStyles.badgeIconLocked]}>{l.icono}</Text>
+            <Text style={[rachaStyles.badgeLabel, !l.desbloqueado && rachaStyles.badgeLabelLocked]} numberOfLines={1}>
+              {l.titulo}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const rachaStyles = StyleSheet.create({
+  card: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: gestanteColors.primaryLight,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  flameWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
+    backgroundColor: gestanteColors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flame: { fontSize: 28 },
+  streakNumber: { ...typography.numeric, fontSize: 28, color: BRAND },
+  streakUnit: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  streakBest: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
+  message: { ...typography.bodySm, color: commonColors.text, marginTop: spacing.sm2, marginBottom: spacing.sm },
+  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: gestanteColors.primaryLight,
+    borderRadius: borderRadius.full,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+  },
+  badgeLocked: { backgroundColor: commonColors.background, opacity: 0.55 },
+  badgeIcon: { fontSize: 14 },
+  badgeIconLocked: { opacity: 0.5 },
+  badgeLabel: { ...typography.caption, fontWeight: '700', color: BRAND },
+  badgeLabelLocked: { color: commonColors.textSecondary },
+});
+
 export default function TratamientoScreen(): React.ReactElement {
   const { data: treatments, isLoading, refetch, isRefetching } = useTreatments();
   const { mutate: logTreatment } = useLogTreatment();
@@ -270,6 +361,7 @@ export default function TratamientoScreen(): React.ReactElement {
         )}
       </View>
 
+      <RachaCard />
       <ResumenAdherencia />
     </>
   );

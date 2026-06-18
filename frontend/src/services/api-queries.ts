@@ -224,13 +224,37 @@ export const fetchAppointments = async () => {
   }
 };
 
-export const fetchTreatments = async () => {
+export interface AdherenceAchievement {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  icono: string;
+  desbloqueado: boolean;
+}
+
+export interface AdherenceGamification {
+  rachaActual: number;
+  mejorRacha: number;
+  totalDiasTomados: number;
+  logros: AdherenceAchievement[];
+  mensaje: string;
+}
+
+export interface TreatmentsResponse {
+  treatments: any[];
+  gamificacion: AdherenceGamification | null;
+}
+
+export const fetchTreatments = async (): Promise<TreatmentsResponse> => {
   try {
     const res = await api.get('/clinical/treatments');
-    return res.data?.data || [];
+    return {
+      treatments: res.data?.data || [],
+      gamificacion: res.data?.gamificacion ?? null,
+    };
   } catch (e) {
-    console.warn('Treatments fetch failed:', e);
-    return [];
+    if (__DEV__) console.warn('Treatments fetch failed:', e);
+    return { treatments: [], gamificacion: null };
   }
 };
 
@@ -402,7 +426,25 @@ export const fetchTodayAppointments = async () => {
 
 export const useGestanteDashboard = () => useQuery({ queryKey: ['gestanteDashboard'], queryFn: fetchGestanteDashboard });
 export const useAppointments = () => useQuery({ queryKey: ['appointments'], queryFn: fetchAppointments });
-export const useTreatments = () => useQuery({ queryKey: ['treatments'], queryFn: fetchTreatments });
+
+/**
+ * Tratamientos de la gestante. La query cachea `{ treatments, gamificacion }`;
+ * este hook expone solo el array para mantener la compatibilidad con la pantalla.
+ */
+export const useTreatments = () =>
+  useQuery({
+    queryKey: ['treatments'],
+    queryFn: fetchTreatments,
+    select: (d: TreatmentsResponse) => d.treatments,
+  });
+
+/** Racha y logros de adherencia (gamificación) — comparte la query de tratamientos. */
+export const useAdherenceGamification = () =>
+  useQuery({
+    queryKey: ['treatments'],
+    queryFn: fetchTreatments,
+    select: (d: TreatmentsResponse) => d.gamificacion,
+  });
 
 export const useLogTreatment = () => {
   const queryClient = useQueryClient();
@@ -413,14 +455,20 @@ export const useLogTreatment = () => {
     // dashboard, sin esperar al servidor.
     onMutate: async (treatmentId: string) => {
       await queryClient.cancelQueries({ queryKey: ['treatments'] });
-      const prevTreatments = queryClient.getQueryData<any[]>(['treatments']);
+      const prevTreatments = queryClient.getQueryData<TreatmentsResponse>(['treatments']);
       const prevDashboard = queryClient.getQueryData<any>(['gestanteDashboard']);
 
-      queryClient.setQueryData<any[]>(['treatments'], (old) =>
-        Array.isArray(old)
-          ? old.map((t) => ((t.id || t._id) === treatmentId ? applyTakenToday(t) : t))
-          : old,
-      );
+      // La caché ahora guarda { treatments, gamificacion }: se actualiza el array
+      // interno de tratamientos manteniendo la forma del objeto.
+      queryClient.setQueryData<TreatmentsResponse>(['treatments'], (old) => {
+        if (!old || !Array.isArray(old.treatments)) return old;
+        return {
+          ...old,
+          treatments: old.treatments.map((t) =>
+            (t.id || t._id) === treatmentId ? applyTakenToday(t) : t,
+          ),
+        };
+      });
 
       queryClient.setQueryData<any>(['gestanteDashboard'], (old: any) => {
         if (!old?.todayTreatments) return old;

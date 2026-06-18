@@ -84,8 +84,13 @@ export const getMyTreatments = async (req: Request, res: Response, next: NextFun
       return res.status(404).json({ success: false, error: { message: 'Gestante not found' } });
     }
 
-    const data = await clinicalService.getTreatments(gestante.id);
-    res.json(successResponse(data));
+    // Incluye la gamificación (racha/logros) además de los tratamientos.
+    // `data` se mantiene como el array de tratamientos (compatibilidad con el
+    // cliente actual) y la gamificación viaja en un campo aparte.
+    const { treatments, gamificacion } = await clinicalService.getTreatmentsWithGamification(
+      gestante.id,
+    );
+    res.json({ ...successResponse(treatments), gamificacion });
   } catch (error) {
     next(error);
   }
