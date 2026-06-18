@@ -863,6 +863,34 @@ export const useUnreadCount = () =>
     refetchInterval: 60 * 1000, // refresca el badge cada minuto
   });
 
+/** Total de mensajes de chat sin leer (badge del tab de Chat, estilo WhatsApp). */
+export const fetchUnreadChatCount = async (): Promise<number> => {
+  try {
+    const res = await api.get('/chat/unread-count');
+    return res.data?.data?.count ?? 0;
+  } catch {
+    return 0;
+  }
+};
+
+export const useUnreadChatCount = () =>
+  useQuery({
+    queryKey: ['chat', 'unread'],
+    queryFn: fetchUnreadChatCount,
+    refetchInterval: 60 * 1000,
+  });
+
+/** Lista de conversaciones del chat (con contador de no leídos por conversación). */
+export const useChatConversations = (enabled = true) =>
+  useQuery({
+    queryKey: ['chat-conversations'],
+    enabled,
+    queryFn: async () => {
+      const res = await api.get('/chat/conversations');
+      return res.data?.data || [];
+    },
+  });
+
 export const useMarkNotificationRead = () => {
   const queryClient = useQueryClient();
   return useMutation({

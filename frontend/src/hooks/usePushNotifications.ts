@@ -57,6 +57,12 @@ function routeForNotification(role: string | undefined, data: Record<string, any
     }
   }
 
+  // Mensaje de chat → abrir la pantalla de chat del rol correspondiente.
+  if (tipo === 'mensaje_chat') {
+    if (role === 'gestante') return '/(gestante)/(tabs)/chat';
+    if (role === 'obstetra') return '/(obstetra)/(tabs)/chat';
+  }
+
   // Por defecto, abrir la bandeja de notificaciones del rol.
   if (role === 'obstetra') return '/(obstetra)/notificaciones';
   if (role === 'gestante') return '/(gestante)/notificaciones';

@@ -70,6 +70,18 @@ export const getConversations = async (req: Request, res: Response, next: NextFu
   }
 };
 
+/** Total de mensajes de chat sin leer (para el badge del tab de Chat). */
+export const getUnreadChatCount = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+    const count = await chatService.getUnreadChatCount(userId, userRole);
+    res.json({ success: true, data: { count } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendEmergencyAlert = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;

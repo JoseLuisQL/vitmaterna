@@ -31,8 +31,35 @@ import { AccessTokenPayload } from '../types/index.js';
 // Registro global de presencia: userId -> nº de sockets conectados.
 const onlineCounts = new Map<string, number>();
 
+// Qué conversación está viendo activamente cada usuario (userId -> conversationId).
+// Si el destinatario está viendo la conversación, NO se le crea notificación
+// (igual que WhatsApp: si tienes el chat abierto, no suena ni aparece banner).
+const viewingConversation = new Map<string, string>();
+
 function isOnline(userId: string): boolean {
   return (onlineCounts.get(userId) ?? 0) > 0;
+}
+
+function isViewingConversation(userId: string, conversationId: string): boolean {
+  return viewingConversation.get(userId) === conversationId;
+}
+
+/** Devuelve el userId del otro participante de la conversación. */
+async function resolveRecipientUserId(conversationId: string, senderUserId: string): Promise<string | null> {
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: {
+      gestante: { select: { userId: true } },
+      obstetra: { select: { userId: true } },
+    },
+  });
+  if (!conversation) return null;
+  const gestanteUserId = conversation.gestante?.userId ?? null;
+  const obstetraUserId = conversation.obstetra?.userId ?? null;
+  if (senderUserId === gestanteUserId) return obstetraUserId;
+  if (senderUserId === obstetraUserId) return gestanteUserId;
+  // Si lo envía un admin u otro, notifica a la gestante por defecto.
+  return gestanteUserId;
 }
 
 export const setupChatSockets = (io: Server) => {
@@ -99,15 +126,19 @@ export const setupChatSockets = (io: Server) => {
       }
     });
 
-    // Unirse a la sala de una conversación.
+    // Unirse a la sala de una conversación (la está viendo activamente).
     socket.on('join_conversation', async (conversationId: string) => {
       if (!conversationId) return;
       socket.join(`conversation:${conversationId}`);
+      viewingConversation.set(userId, conversationId);
     });
 
     socket.on('leave_conversation', (conversationId: string) => {
       if (!conversationId) return;
       socket.leave(`conversation:${conversationId}`);
+      if (viewingConversation.get(userId) === conversationId) {
+        viewingConversation.delete(userId);
+      }
     });
 
     // Indicador "escribiendo..." (solo a la sala de la conversación).
@@ -134,6 +165,8 @@ export const setupChatSockets = (io: Server) => {
           conversationId,
           readerId: userId,
         });
+        // Refresca el contador de no leídos del propio lector (badge del tab).
+        io.to(`user:${userId}`).emit('chat:unread_changed', { conversationId });
       } catch (error) {
         console.error('Socket mark_read error:', error);
       }
@@ -176,6 +209,40 @@ export const setupChatSockets = (io: Server) => {
 
           // clientId permite al emisor reconciliar su mensaje optimista sin duplicar.
           io.to(`conversation:${conversationId}`).emit('receive_message', { ...message, clientId });
+
+          // ── Avisar al DESTINATARIO aunque no tenga el chat abierto ──
+          // Resuelve el userId del destinatario (la otra parte de la conversación).
+          const recipientId = await resolveRecipientUserId(conversationId, userId);
+          if (recipientId) {
+            // 1) Señal en tiempo real para refrescar contadores (badge del tab,
+            //    lista de conversaciones) en cualquier pantalla donde esté.
+            io.to(`user:${recipientId}`).emit('chat:new_message', {
+              conversationId,
+              senderId: userId,
+              senderName: `${message.sender?.firstName ?? ''} ${message.sender?.lastName ?? ''}`.trim(),
+              preview: type === 'imagen' ? '📷 Foto' : content.slice(0, 80),
+            });
+
+            // 2) Si el destinatario NO está viendo esta conversación, crear una
+            //    notificación (campana + push con sonido + deep-link al chat).
+            const viewing = isViewingConversation(recipientId, conversationId);
+            if (!viewing) {
+              const senderName = `${message.sender?.firstName ?? ''} ${message.sender?.lastName ?? ''}`.trim() || 'Nuevo mensaje';
+              const preview = type === 'imagen' ? '📷 Te envió una foto' : content.slice(0, 120);
+              try {
+                const { notifyUser } = await import('../modules/notifications/notification.service.js');
+                await notifyUser(
+                  recipientId,
+                  'mensaje_chat',
+                  `Nuevo mensaje de ${senderName}`,
+                  preview,
+                  { conversationId, senderId: userId },
+                );
+              } catch (e) {
+                console.error('No se pudo crear la notificación de chat:', e);
+              }
+            }
+          }
         } catch (error) {
           console.error('Socket send_message error:', error);
           socket.emit('error', { message: 'Failed to send message' });
@@ -184,6 +251,8 @@ export const setupChatSockets = (io: Server) => {
     );
 
     socket.on('disconnect', async () => {
+      // Deja de "ver" cualquier conversación al desconectar este socket.
+      viewingConversation.delete(userId);
       // ── Presencia global: descontar socket ──
       const count = (onlineCounts.get(userId) ?? 1) - 1;
       if (count <= 0) {

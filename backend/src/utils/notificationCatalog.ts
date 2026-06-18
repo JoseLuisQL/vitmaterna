@@ -7,7 +7,7 @@
  * lo usa para filtrar ("Solo urgentes") y ordenar. Fuente de verdad compartida.
  */
 
-export type NotifCategoria = 'clinica' | 'cita' | 'sistema';
+export type NotifCategoria = 'clinica' | 'cita' | 'chat' | 'sistema';
 export type NotifPrioridad = 'alta' | 'normal';
 
 interface NotifMeta {
@@ -33,6 +33,9 @@ const CATALOG: Record<string, NotifMeta> = {
   cita_domiciliaria: { categoria: 'cita', prioridad: 'normal' },
   visita_domiciliaria: { categoria: 'cita', prioridad: 'normal' },
   inasistencia: { categoria: 'cita', prioridad: 'alta' },
+
+  // Mensajes de chat
+  mensaje_chat: { categoria: 'chat', prioridad: 'normal' },
 
   // Sistema (dirigidas al admin)
   obstetra_pendiente: { categoria: 'sistema', prioridad: 'alta' },

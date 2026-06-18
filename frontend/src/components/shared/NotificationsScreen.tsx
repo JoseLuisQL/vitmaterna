@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CheckCircle2, Hourglass, Calendar, XCircle, AlertTriangle, AlertCircle,
   TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, Siren, type LucideIcon,
-  CheckCheck, Trash2, X,
+  CheckCheck, Trash2, X, MessageCircle,
 } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
@@ -71,6 +71,8 @@ function metaFor(tipo: string): { icon: LucideIcon; color: string; bg: string } 
       return { icon: TrendingDown, color: semanticColors.warning, bg: semanticColors.warningLight };
     case 'recordatorio_suplemento':
       return { icon: Pill, color: semanticColors.info, bg: semanticColors.infoLight };
+    case 'mensaje_chat':
+      return { icon: MessageCircle, color: semanticColors.info, bg: semanticColors.infoLight };
     case 'fpp_proxima':
       return { icon: Heart, color: gestanteColors.primary, bg: gestanteColors.primaryLight };
     case 'examenes_pendientes':
@@ -239,6 +241,9 @@ export function NotificationsScreen({
     } else if (n.tipo === 'examenes_pendientes' && role === 'obstetra') {
       const gid = (n.datos as { gestanteId?: string })?.gestanteId;
       target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
+    } else if (n.tipo === 'mensaje_chat') {
+      // Mensaje de chat → abrir la pantalla de chat del rol.
+      target = role === 'obstetra' ? '/(obstetra)/(tabs)/chat' : '/(gestante)/(tabs)/chat';
     } else if (n.tipo === 'recordatorio_suplemento' && role === 'gestante') {
       target = '/(gestante)/(tabs)/tratamiento';
     } else if (n.tipo === 'fpp_proxima' && role === 'gestante') {

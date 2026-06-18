@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +30,7 @@ export default function ObstetraChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { socket, isConnected, emit } = useSocket();
   const [activeConv, setActiveConv] = useState<any>(null);
   const [inputText, setInputText] = useState('');
@@ -230,25 +231,42 @@ export default function ObstetraChatScreen() {
     const lastMsgTime = item.messages?.[0]?.createdAt 
       ? new Date(item.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
       : '';
+    const unread = item.unreadCount || 0;
+    const hasUnread = unread > 0;
 
     return (
       <TouchableOpacity 
         style={styles.convItem} 
-        onPress={() => setActiveConv(item)}
+        onPress={() => openConversation(item)}
       >
         <View style={styles.convAvatar}>
           <User size={22} color={BRAND} />
+          {hasUnread && <View style={styles.convUnreadDotAvatar} />}
         </View>
         <View style={styles.convInfo}>
           <View style={styles.convHeaderRow}>
             <Text style={styles.convName} numberOfLines={1}>{patientName}</Text>
-            <Text style={styles.convTime}>{lastMsgTime}</Text>
+            <Text style={[styles.convTime, hasUnread && styles.convTimeUnread]}>{lastMsgTime}</Text>
           </View>
           <Text style={styles.convDni}>DNI: {dni}</Text>
-          <Text style={styles.convLastMsg} numberOfLines={1}>{lastMsg}</Text>
+          <View style={styles.convLastRow}>
+            <Text style={[styles.convLastMsg, hasUnread && styles.convLastMsgUnread]} numberOfLines={1}>{lastMsg}</Text>
+            {hasUnread && (
+              <View style={styles.convUnreadBadge}>
+                <Text style={styles.convUnreadBadgeText}>{unread > 99 ? '99+' : unread}</Text>
+              </View>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
+  };
+
+  // Abre una conversación y limpia su badge de no leídos (se marcará leído al
+  // entrar; refrescamos contadores para que el badge baje de inmediato).
+  const openConversation = (item: any) => {
+    setActiveConv(item);
+    queryClient.invalidateQueries({ queryKey: ['chat', 'unread'] });
   };
 
   if (!activeConv) {
@@ -468,6 +486,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
+  convUnreadDotAvatar: {
+    position: 'absolute', top: -1, right: -1,
+    width: 13, height: 13, borderRadius: 7,
+    backgroundColor: semanticColors.danger,
+    borderWidth: 2, borderColor: commonColors.surface,
+  },
   convInfo: {
     flex: 1,
   },
@@ -488,16 +512,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
     color: commonColors.textTertiary,
   },
+  convTimeUnread: { color: BRAND, fontWeight: '700' },
   convDni: {
     ...typography.overline,
     letterSpacing: 0.1,
     color: commonColors.textSecondary,
     marginBottom: 4,
   },
+  convLastRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   convLastMsg: {
     ...typography.bodySmall,
     color: commonColors.textSecondary,
+    flex: 1,
   },
+  convLastMsgUnread: { color: commonColors.text, fontWeight: '700' },
+  convUnreadBadge: {
+    minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 6,
+    backgroundColor: semanticColors.danger,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  convUnreadBadgeText: { ...typography.caption, fontSize: 11, fontWeight: '800', color: commonColors.white },
   activeChatHeader: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,

@@ -16,6 +16,7 @@ router.get(
 );
 
 router.get('/conversations', chatController.getConversations);
+router.get('/unread-count', chatController.getUnreadChatCount);
 router.get('/conversation', chatController.getConversation);
 
 router.post(

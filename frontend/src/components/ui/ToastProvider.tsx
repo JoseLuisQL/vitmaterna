@@ -13,6 +13,8 @@ export interface ToastOptions {
   message?: string;
   type?: ToastType;
   durationMs?: number;
+  /** Acción al tocar el toast (p. ej. abrir el chat de un mensaje nuevo). */
+  onPress?: () => void;
 }
 
 interface ToastContextValue {
@@ -76,7 +78,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }): Reac
       {children}
       {toast && toastStyle && Icon && (
         <Animated.View style={[styles.wrap, { opacity, transform: [{ translateY }] }]} pointerEvents="box-none">
-          <View style={[styles.toast, shadows.modal]} accessibilityRole="alert">
+          <Pressable
+            style={[styles.toast, shadows.modal]}
+            accessibilityRole={toast.onPress ? 'button' : 'alert'}
+            onPress={toast.onPress ? () => { const fn = toast.onPress; hideToast(); fn?.(); } : undefined}
+            disabled={!toast.onPress}
+          >
             <View style={[styles.iconWrap, { backgroundColor: toastStyle.bg }]}>
               <Icon size={20} color={toastStyle.color} />
             </View>
@@ -87,7 +94,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }): Reac
             <Pressable onPress={hideToast} hitSlop={12} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Cerrar notificación">
               <X size={18} color={commonColors.textSecondary} />
             </Pressable>
-          </View>
+          </Pressable>
         </Animated.View>
       )}
     </ToastContext.Provider>

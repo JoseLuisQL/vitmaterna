@@ -7,8 +7,11 @@ import { Tabs } from 'expo-router';
 import { Home, Calendar, Pill, MessageCircle } from 'lucide-react-native';
 import { gestanteColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
+import { useUnreadChatCount } from '../../../src/services/api-queries';
 
 export default function GestanteTabsLayout(): React.ReactElement {
+  // Mensajes de chat sin leer → badge estilo WhatsApp en el tab de Chat.
+  const { data: unreadChat = 0 } = useUnreadChatCount();
   return (
     <Tabs
       screenOptions={{ headerShown: false }}
@@ -40,6 +43,7 @@ export default function GestanteTabsLayout(): React.ReactElement {
         options={{
           title: 'Chat',
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
+          tabBarBadge: unreadChat > 0 ? (unreadChat > 99 ? '99+' : unreadChat) : undefined,
         }}
       />
       {/* Funciones secundarias: viven en el sidebar (ocultas de la barra) para

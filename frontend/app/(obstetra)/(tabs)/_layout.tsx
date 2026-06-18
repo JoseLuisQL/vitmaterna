@@ -7,13 +7,11 @@ import { Tabs } from 'expo-router';
 import { Home, Baby, Calendar, MessageCircle } from 'lucide-react-native';
 import { obstetraColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
-import { useUnreadCount } from '../../../src/services/api-queries';
+import { useUnreadChatCount } from '../../../src/services/api-queries';
 
 export default function ObstetraTabsLayout(): React.ReactElement {
-  // Badge en el Chat: avisos sin leer (incluye signos de alarma / emergencias,
-  // que ahora viven en el chat). El módulo "Alertas" se eliminó para evitar
-  // redundancia con Notificaciones y Chat.
-  const { data: unread = 0 } = useUnreadCount();
+  // Badge en el Chat: mensajes de chat sin leer de las gestantes (estilo WhatsApp).
+  const { data: unreadChat = 0 } = useUnreadChatCount();
 
   return (
     <Tabs
@@ -46,7 +44,7 @@ export default function ObstetraTabsLayout(): React.ReactElement {
         options={{
           title: 'Chat',
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
-          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadge: unreadChat > 0 ? (unreadChat > 99 ? '99+' : unreadChat) : undefined,
         }}
       />
       <Tabs.Screen name="perfil" options={{ title: 'Perfil', href: null }} />

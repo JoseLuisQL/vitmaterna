@@ -218,7 +218,7 @@ export const listConversations = async (userId: string, userRole: string) => {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Obstetra profile not found');
     }
 
-    return prisma.conversation.findMany({
+    const conversations = await prisma.conversation.findMany({
       where: { obstetraId: obstetra.id },
       include: {
         gestante: {
@@ -237,17 +237,25 @@ export const listConversations = async (userId: string, userRole: string) => {
         messages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
-        }
+        },
+        // Mensajes sin leer enviados por la OTRA parte (la gestante).
+        _count: {
+          select: {
+            messages: { where: { leido: false, senderId: { not: userId } } },
+          },
+        },
       },
       orderBy: { ultimoMensaje: 'desc' },
     });
+    // Normaliza el contador a `unreadCount` para el frontend.
+    return conversations.map((c) => ({ ...c, unreadCount: c._count?.messages ?? 0 }));
   } else if (userRole === 'gestante') {
     const gestante = await prisma.gestante.findUnique({ where: { userId } });
     if (!gestante) {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante profile not found');
     }
 
-    return prisma.conversation.findMany({
+    const conversations = await prisma.conversation.findMany({
       where: { gestanteId: gestante.id },
       include: {
         obstetra: {
@@ -263,13 +271,47 @@ export const listConversations = async (userId: string, userRole: string) => {
         messages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
-        }
+        },
+        _count: {
+          select: {
+            messages: { where: { leido: false, senderId: { not: userId } } },
+          },
+        },
       },
       orderBy: { ultimoMensaje: 'desc' },
     });
+    return conversations.map((c) => ({ ...c, unreadCount: c._count?.messages ?? 0 }));
   } else {
     return [];
   }
+};
+
+/**
+ * Total de mensajes de chat sin leer para un usuario (suma de todas sus
+ * conversaciones), excluyendo los que él mismo envió. Alimenta el badge del
+ * tab de Chat (estilo WhatsApp).
+ */
+export const getUnreadChatCount = async (userId: string, userRole: string): Promise<number> => {
+  let conversationWhere: any;
+  if (userRole === 'obstetra') {
+    const obstetra = await prisma.obstetra.findUnique({ where: { userId } });
+    if (!obstetra) return 0;
+    conversationWhere = { obstetraId: obstetra.id };
+  } else if (userRole === 'gestante') {
+    const gestante = await prisma.gestante.findUnique({ where: { userId } });
+    if (!gestante) return 0;
+    conversationWhere = { gestanteId: gestante.id };
+  } else {
+    return 0;
+  }
+
+  return prisma.message.count({
+    where: {
+      leido: false,
+      senderId: { not: userId },
+      conversation: conversationWhere,
+    },
+  });
 };
 
 export const sendEmergencyAlert = async (userId: string, latitude: number, longitude: number) => {

@@ -48,7 +48,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "VITMATERNA usa tu ubicación para enviar tu posición exacta al obstetra cuando activas una alerta de emergencia."
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true
