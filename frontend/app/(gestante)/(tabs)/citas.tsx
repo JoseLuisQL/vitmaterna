@@ -3,27 +3,24 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  SectionList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { AppModal, AppButton, useToast, ToggleTabs, ListSkeleton } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useFocusEffect } from 'expo-router';
 import {
   Calendar, CheckCircle2, Flag, XCircle, Hourglass, Clock, Info,
   ChevronRight, CalendarX, User, FileText, type LucideIcon,
 } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   format,
-  parseISO,
   addDays,
-  isValid,
-  differenceInCalendarDays,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -33,7 +30,9 @@ import {
   useGestanteAppointments,
 } from '../../../src/services/api-queries';
 import { useAppointmentRealtime } from '../../../src/hooks/useAppointmentRealtime';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  formatHora, formatFechaLarga, etiquetaRelativa, claveDia,
+} from '../../../src/utils/datetime';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -55,43 +54,15 @@ interface Appointment {
   motivoReprogramacion?: string | null;
 }
 
-/** Extrae HH:mm de un valor de hora ISO almacenado en UTC. */
+/** Hora 'HH:mm' (UTC consistente) — usa la utilidad única de datetime. */
 function horaTexto(horaIso?: string | null): string {
-  if (!horaIso) return '--:--';
-  try {
-    const d = parseISO(horaIso);
-    if (!isValid(d)) return '--:--';
-    return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-  } catch {
-    return '--:--';
-  }
+  return formatHora(horaIso);
 }
 
+/** Fecha larga en español — usa la utilidad única de datetime. */
 function fechaLarga(fechaIso?: string | null): string {
-  if (!fechaIso) return 'Fecha por definir';
-  try {
-    const d = parseISO(fechaIso);
-    if (!isValid(d)) return 'Fecha por definir';
-    return format(d, "EEEE d 'de' MMMM, yyyy", { locale: es });
-  } catch {
-    return 'Fecha por definir';
-  }
-}
-
-/** Texto humano de cuánto falta para una cita (hoy/mañana/en N días). */
-function cuentaRegresiva(fechaIso?: string | null): { texto: string; urgente: boolean } | null {
-  if (!fechaIso) return null;
-  try {
-    const d = parseISO(fechaIso);
-    if (!isValid(d)) return null;
-    const dias = differenceInCalendarDays(d, new Date());
-    if (dias < 0) return null;
-    if (dias === 0) return { texto: 'Es hoy', urgente: true };
-    if (dias === 1) return { texto: 'Es mañana', urgente: true };
-    return { texto: `En ${dias} días`, urgente: dias <= 3 };
-  } catch {
-    return null;
-  }
+  const f = formatFechaLarga(fechaIso);
+  return f === '--' ? 'Fecha por definir' : f.charAt(0).toUpperCase() + f.slice(1);
 }
 
 const STATUS_META: Record<
@@ -182,6 +153,24 @@ export default function AppointmentsScreen() {
 
   const displayed = activeTab === 'upcoming' ? upcoming : history;
 
+  // Agrupar por día (encabezados de sección) respetando el orden ya calculado.
+  const sections = useMemo(() => {
+    const groups: { key: string; title: string; subtitle: string; data: Appointment[] }[] = [];
+    const index: Record<string, number> = {};
+    for (const a of displayed) {
+      const k = claveDia(a.fecha);
+      if (index[k] === undefined) {
+        index[k] = groups.length;
+        groups.push({ key: k, title: etiquetaRelativa(a.fecha), subtitle: fechaLarga(a.fecha), data: [] });
+      }
+      groups[index[k]].data.push(a);
+    }
+    return groups;
+  }, [displayed]);
+
+  // El id de la cita "siguiente" (primera próxima) para destacarla.
+  const nextId = activeTab === 'upcoming' ? upcoming[0]?.id : null;
+
   // Progreso de controles prenatales (meta MINSA: 8 controles).
   const META_CONTROLES = 8;
   const completados = useMemo(
@@ -254,10 +243,9 @@ export default function AppointmentsScreen() {
     });
   }, []);
 
-  const renderCard = ({ item, index }: { item: Appointment; index: number }) => {
-    const isNext = activeTab === 'upcoming' && index === 0;
+  const renderCard = ({ item }: { item: Appointment }) => {
+    const isNext = activeTab === 'upcoming' && item.id === nextId;
     const meta = statusMeta(item.estado);
-    const countdown = isNext ? cuentaRegresiva(item.fecha) : null;
 
     return (
       <TouchableOpacity activeOpacity={0.7} onPress={() => openDetail(item)}>
@@ -269,34 +257,23 @@ export default function AppointmentsScreen() {
           )}
 
           <View style={styles.cardRow}>
-            <View style={styles.dateBox}>
-              <Text style={styles.dateMonth}>{format(parseISO(item.fecha), 'MMM', { locale: es }).toUpperCase()}</Text>
-              <Text style={styles.dateDay}>{format(parseISO(item.fecha), 'dd')}</Text>
+            <View style={styles.timeBox}>
+              <Text style={styles.timeBoxText}>{horaTexto(item.hora)}</Text>
             </View>
 
             <View style={styles.cardBody}>
               <Text style={styles.cardTitle} numberOfLines={1}>{item.motivo}</Text>
-              <View style={styles.metaRow}>
-                <Clock size={13} color={commonColors.textSecondary} />
-                <Text style={styles.metaText}>{horaTexto(item.hora)}</Text>
-                {item.obstetraNombre ? (
-                  <>
-                    <Text style={styles.metaDot}>·</Text>
-                    <Text style={styles.metaText} numberOfLines={1}>{item.obstetraNombre}</Text>
-                  </>
-                ) : null}
-              </View>
+              {item.obstetraNombre ? (
+                <View style={styles.metaRow}>
+                  <User size={13} color={commonColors.textSecondary} />
+                  <Text style={styles.metaText} numberOfLines={1}>{item.obstetraNombre}</Text>
+                </View>
+              ) : null}
               <View style={styles.badgeRow}>
                 <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
                   {React.createElement(meta.icon, { size: 12, color: meta.text })}
                   <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>
                 </View>
-                {countdown && (
-                  <View style={[styles.countdownBadge, countdown.urgente && styles.countdownBadgeUrgent]}>
-                    <Clock size={11} color={countdown.urgente ? semanticColors.danger : BRAND} />
-                    <Text style={[styles.countdownText, countdown.urgente && { color: semanticColors.danger }]}>{countdown.texto}</Text>
-                  </View>
-                )}
               </View>
             </View>
 
@@ -321,40 +298,37 @@ export default function AppointmentsScreen() {
     </View>
   );
 
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-          <SafeAreaView edges={['top']}>
-            <Text style={styles.headerTitle}>Mis Citas</Text>
-            <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
-          </SafeAreaView>
-        </LinearGradient>
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
-          <ListSkeleton count={4} />
-        </View>
-      </View>
-    );
-  }
-
   const selMeta = selected ? statusMeta(selected.estado) : null;
   const canAct = selected && selected.estado === 'programada';
   const canRescheduleFromConfirmed = selected && (selected.estado === 'programada' || selected.estado === 'confirmada');
 
-  return (
-    <View style={styles.container}>
-      <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerTopRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Mis Citas</Text>
-              <Text style={styles.headerSubtitle}>Control de tu embarazo, paso a paso</Text>
-            </View>
-            <NotificationBell href="/(gestante)/notificaciones" />
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+  const ProgressHeader = activeTab === 'upcoming' ? (
+    <View style={styles.progressCard}>
+      <View style={styles.progressHeaderRow}>
+        <Text style={styles.progressTitle}>Controles prenatales</Text>
+        <Text style={styles.progressCount}>{completados} de {META_CONTROLES}</Text>
+      </View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.min(100, (completados / META_CONTROLES) * 100)}%` }]} />
+      </View>
+      <Text style={styles.progressHint}>
+        {completados >= META_CONTROLES
+          ? '¡Completaste tus controles MINSA! Sigue las indicaciones de tu obstetra.'
+          : `Te faltan ${META_CONTROLES - completados} control${META_CONTROLES - completados > 1 ? 'es' : ''} para cumplir la meta MINSA.`}
+      </Text>
+    </View>
+  ) : null;
 
+  return (
+    <ScreenLayout
+      role="gestante"
+      title="Mis Citas"
+      subtitle="Control de tu embarazo"
+      accentColor={BRAND}
+      loading={loading && !refreshing}
+      scroll={false}
+      actions={<NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />}
+    >
       <View style={styles.tabContainer}>
         <ToggleTabs
           tabs={[
@@ -367,30 +341,20 @@ export default function AppointmentsScreen() {
         />
       </View>
 
-      <FlatList
-        data={displayed}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCard}
+      <SectionList
+        sections={sections as any}
+        keyExtractor={(item: any) => item.id}
+        renderItem={renderCard as any}
+        renderSectionHeader={({ section }: any) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText}>{section.title}</Text>
+            <Text style={styles.sectionHeaderSub}>{section.subtitle}</Text>
+          </View>
+        )}
+        stickySectionHeadersEnabled={false}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          activeTab === 'upcoming' ? (
-            <View style={styles.progressCard}>
-              <View style={styles.progressHeaderRow}>
-                <Text style={styles.progressTitle}>Controles prenatales</Text>
-                <Text style={styles.progressCount}>{completados} de {META_CONTROLES}</Text>
-              </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${Math.min(100, (completados / META_CONTROLES) * 100)}%` }]} />
-              </View>
-              <Text style={styles.progressHint}>
-                {completados >= META_CONTROLES
-                  ? '¡Completaste tus controles MINSA! Sigue las indicaciones de tu obstetra.'
-                  : `Te faltan ${META_CONTROLES - completados} control${META_CONTROLES - completados > 1 ? 'es' : ''} para cumplir la meta MINSA.`}
-              </Text>
-            </View>
-          ) : null
-        }
+        ListHeaderComponent={ProgressHeader}
         ListEmptyComponent={renderEmpty}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND]} tintColor={BRAND} />}
       />
@@ -560,7 +524,7 @@ export default function AppointmentsScreen() {
           onChangeText={setMotivo}
         />
       </AppModal>
-    </View>
+    </ScreenLayout>
   );
 }
 
@@ -590,8 +554,11 @@ const styles = StyleSheet.create({
   headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 2 },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
-  tabContainer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  listContainer: { padding: spacing.md, paddingBottom: layout.tabBarSpace },
+  tabContainer: { paddingBottom: spacing.sm },
+  listContainer: { paddingBottom: layout.tabBarSpace },
+  sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: spacing.sm, marginTop: spacing.xs },
+  sectionHeaderText: { ...typography.label, fontWeight: '700', color: commonColors.text },
+  sectionHeaderSub: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'capitalize' },
   progressCard: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,
@@ -627,21 +594,20 @@ const styles = StyleSheet.create({
   },
   nextBadgeText: { ...typography.overline, color: commonColors.white, textTransform: 'uppercase', letterSpacing: 0.4 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  dateBox: {
+  timeBox: {
     alignItems: 'center',
-    backgroundColor: commonColors.background,
+    justifyContent: 'center',
+    backgroundColor: gestanteColors.primaryLight,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm + 2,
-    minWidth: 56,
+    paddingHorizontal: spacing.sm,
+    minWidth: 76,
   },
-  dateMonth: { ...typography.overline, color: commonColors.textSecondary },
-  dateDay: { ...typography.h2, color: commonColors.text },
+  timeBoxText: { ...typography.label, fontWeight: '700', color: BRAND },
   cardBody: { flex: 1, gap: 5 },
   cardTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { ...typography.caption, color: commonColors.textSecondary },
-  metaDot: { ...typography.caption, color: commonColors.textTertiary, marginHorizontal: 2 },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -654,17 +620,6 @@ const styles = StyleSheet.create({
   },
   statusText: { ...typography.overline, letterSpacing: 0 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginTop: 2 },
-  countdownBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: borderRadius.md,
-    backgroundColor: gestanteColors.primaryLight,
-  },
-  countdownBadgeUrgent: { backgroundColor: semanticColors.dangerLight },
-  countdownText: { ...typography.overline, letterSpacing: 0, color: BRAND, fontWeight: '700' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: spacing.lg },
   emptyTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.md, marginBottom: spacing.sm },
   emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center' },
