@@ -55,6 +55,7 @@ export function AppInput<T extends FieldValues>({
   helperText,
   themeColor = commonColors.borderStrong,
   containerStyle,
+  onBlur: externalOnBlur,
   ...textInputProps
 }: AppInputProps<T>): React.ReactElement {
   const [showPassword, setShowPassword] = useState(false);
@@ -119,9 +120,10 @@ export function AppInput<T extends FieldValues>({
               value={typeof value === 'string' ? value : ''}
               onChangeText={onChange}
               onFocus={handleFocus}
-              onBlur={() => {
+              onBlur={(e) => {
                 onBlur();
                 handleBlur();
+                externalOnBlur?.(e);
               }}
               placeholder={placeholder}
               placeholderTextColor={commonColors.textTertiary}

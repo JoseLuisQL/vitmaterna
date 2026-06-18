@@ -415,9 +415,25 @@ export const useCreatePatient = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ['patientsInfinite'] });
       queryClient.invalidateQueries({ queryKey: ['obstetraDashboard'] });
     },
   });
+};
+
+/**
+ * Verifica la disponibilidad de un DNI antes de registrar (validación en vivo).
+ * Devuelve `true` si el DNI YA está en uso (existe una gestante), `false` si
+ * está libre. El endpoint responde 200 cuando existe y 404 cuando no.
+ */
+export const checkDniExists = async (dni: string): Promise<boolean> => {
+  try {
+    await api.get('/patients/buscar', { params: { dni } });
+    return true; // 200 → ya existe
+  } catch (e: any) {
+    if (e?.response?.status === 404) return false; // libre
+    throw e; // otros errores (red, auth) se propagan
+  }
 };
 
 export const createControl = async (data: any) => {
@@ -612,23 +628,44 @@ export const useThesisIndicators = (startDate?: string, endDate?: string) =>
   });
 export const usePatients = (search?: string) => useQuery({ queryKey: ['patients', search], queryFn: () => fetchPatients(search) });
 
+/** Nivel de riesgo en el formato que entiende el backend (semáforo). */
+export type NivelRiesgoFiltro = 'verde' | 'amarillo' | 'rojo';
+
 /** Página de pacientes con metadatos de paginación. */
 const PATIENTS_PAGE_SIZE = 15;
-export const fetchPatientsPage = async (search: string, page: number) => {
-  const res = await api.get('/patients', { params: { search: search || undefined, page, limit: PATIENTS_PAGE_SIZE } });
+export const fetchPatientsPage = async (
+  search: string,
+  page: number,
+  nivelRiesgo?: NivelRiesgoFiltro,
+) => {
+  const res = await api.get('/patients', {
+    params: {
+      search: search || undefined,
+      nivelRiesgo: nivelRiesgo || undefined,
+      page,
+      limit: PATIENTS_PAGE_SIZE,
+    },
+  });
   const items = (res.data?.data || []).map(mapPatient);
-  const meta = res.data?.meta || { page, totalPages: 1 };
-  return { items, page: meta.page ?? page, totalPages: meta.totalPages ?? 1 };
+  const meta = res.data?.meta || { page, totalPages: 1, total: items.length };
+  return {
+    items,
+    page: meta.page ?? page,
+    totalPages: meta.totalPages ?? 1,
+    total: meta.total ?? items.length,
+  };
 };
 
 /**
  * Lista de pacientes con scroll infinito (carga por páginas). El backend ya
  * ordena por fecha de registro descendente (la última registrada primero).
+ * El filtro de riesgo se aplica EN EL BACKEND para que el conteo y los
+ * resultados sean reales (no solo sobre las páginas ya cargadas).
  */
-export const usePatientsInfinite = (search?: string) =>
+export const usePatientsInfinite = (search?: string, nivelRiesgo?: NivelRiesgoFiltro) =>
   useInfiniteQuery({
-    queryKey: ['patientsInfinite', search || ''],
-    queryFn: ({ pageParam }) => fetchPatientsPage(search || '', pageParam as number),
+    queryKey: ['patientsInfinite', search || '', nivelRiesgo || ''],
+    queryFn: ({ pageParam }) => fetchPatientsPage(search || '', pageParam as number, nivelRiesgo),
     initialPageParam: 1,
     getNextPageParam: (last: { page: number; totalPages: number }) =>
       last.page < last.totalPages ? last.page + 1 : undefined,

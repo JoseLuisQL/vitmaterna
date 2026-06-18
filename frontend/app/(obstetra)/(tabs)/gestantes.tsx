@@ -17,6 +17,14 @@ import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 
 const BRAND = obstetraColors.primary;
 
+/** Mapea el filtro visual al nivel de riesgo que entiende el backend. */
+const RISK_FILTER_MAP: Record<'todas' | 'bajo' | 'medio' | 'alto', 'verde' | 'amarillo' | 'rojo' | undefined> = {
+  todas: undefined,
+  bajo: 'verde',
+  medio: 'amarillo',
+  alto: 'rojo',
+};
+
 export default function GestantesScreen(): React.ReactElement {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'todas' | 'bajo' | 'medio' | 'alto'>('todas');
@@ -27,24 +35,21 @@ export default function GestantesScreen(): React.ReactElement {
   const {
     data, isLoading, refetch, isRefetching,
     fetchNextPage, hasNextPage, isFetchingNextPage,
-  } = usePatientsInfinite(debouncedSearch);
+  } = usePatientsInfinite(debouncedSearch, RISK_FILTER_MAP[filterMode]);
 
   // Aplana todas las páginas cargadas (orden del backend: última registrada primero).
-  const allPatients = React.useMemo(
+  // El filtro de riesgo ya viene aplicado por el backend, así que NO se vuelve a
+  // filtrar en cliente (eso causaba conteos falsos sobre páginas no cargadas).
+  const processedPatients = React.useMemo(
     () => (data?.pages || []).flatMap((pg: any) => pg.items),
     [data],
   );
 
-  const processedPatients = React.useMemo(() => {
-    let p = allPatients;
-    switch (filterMode) {
-      case 'bajo': p = p.filter((x: any) => x.riskLevel === 'Bajo'); break;
-      case 'medio': p = p.filter((x: any) => x.riskLevel === 'Medio'); break;
-      case 'alto': p = p.filter((x: any) => x.riskLevel === 'Alto'); break;
-      default: break;
-    }
-    return p;
-  }, [allPatients, filterMode]);
+  // Total real de coincidencias (del backend), no solo lo cargado en memoria.
+  const totalCount = React.useMemo(
+    () => (data?.pages?.[0] as any)?.total ?? processedPatients.length,
+    [data, processedPatients.length],
+  );
 
   const renderHeader = () => (
     <View style={{ paddingBottom: 16 }}>
@@ -114,9 +119,9 @@ export default function GestantesScreen(): React.ReactElement {
         </View>
       </View>
 
-      {!isLoading && processedPatients.length > 0 && (
+      {!isLoading && totalCount > 0 && (
         <Text style={styles.resultsCount}>
-          {processedPatients.length} gestante(s) encontradas
+          {totalCount} gestante(s) encontradas
         </Text>
       )}
     </View>

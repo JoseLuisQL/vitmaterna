@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,16 +13,19 @@ import { commonColors, obstetraColors, semanticColors } from '../../../src/theme
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
-import { useCreatePatient, useUpdatePatient } from '../../../src/services/api-queries';
+import { useCreatePatient, useUpdatePatient, checkDniExists } from '../../../src/services/api-queries';
 import { notify } from '../../../src/utils/confirm';
 
 const BRAND = obstetraColors.primary;
 
+// Orden clínico: primero identificación, luego el EMBARAZO ACTUAL (la FUM es lo
+// que dispara FPP, edad gestacional y cronograma), después medidas/antecedentes
+// y por último los datos de contacto/sociales (secundarios).
 const STEPS = [
-  { id: 1, title: 'Datos Personales' },
-  { id: 2, title: 'Antecedentes' },
-  { id: 3, title: 'Medidas y Sangre' },
-  { id: 4, title: 'Embarazo actual' },
+  { id: 1, title: 'Identificación' },
+  { id: 2, title: 'Embarazo' },
+  { id: 3, title: 'Medidas' },
+  { id: 4, title: 'Contacto' },
 ];
 
 /** Celular peruano opcional: si se llena, debe ser válido (9 dígitos, inicia en 9). */
@@ -43,79 +46,110 @@ const optNum = (label: string, min: number, max: number) =>
     }, `${label} entre ${min} y ${max}`);
 
 const schema = z.object({
-  // Step 1
-  firstName: z.string().min(2, 'Obligatorio'),
-  lastName: z.string().min(2, 'Obligatorio'),
-  dni: z.string().length(8, 'Debe ser 8 dígitos').regex(/^\d+$/, 'Solo números'),
+  // Paso 1 — Identificación
+  firstName: z.string().min(2, 'Ingresa los nombres'),
+  lastName: z.string().min(2, 'Ingresa los apellidos'),
+  dni: z.string().length(8, 'Debe tener 8 dígitos').regex(/^\d+$/, 'Solo números'),
+  fechaNacimiento: z.string().min(1, 'La fecha de nacimiento es obligatoria'),
   historiaClinica: z.string().optional(),
-  fechaNacimiento: z.string().optional(),
-  direccion: z.string().optional(),
-  localidad: z.string().optional(),
-  phone: optPhone,
-  codigoSis: z.string().optional(),
-  ocupacion: z.string().optional(),
-  acompanantePhone: optPhone,
-  nivelEstudios: z.enum(['analfabeta', 'primaria', 'secundaria', 'superior', 'no_universitario', '']).optional(),
-  estadoCivil: z.enum(['casada', 'conviviente', 'soltera', 'otro', '']).optional(),
-  
-  // Step 2
-  gestaciones: optNum('Gestaciones', 0, 25),
-  partosVaginales: optNum('Partos', 0, 25),
-  cesareas: optNum('Cesáreas', 0, 15),
-  abortos: optNum('Abortos', 0, 25),
-  
-  // Step 3
+
+  // Paso 2 — Embarazo actual (FUM obligatoria)
+  fum: z.string().min(1, 'La FUM es obligatoria'),
+  fumDudosa: z.boolean().optional(),
+
+  // Paso 3 — Medidas y antecedentes
   pesoHabitual: optNum('Peso', 30, 200),
   talla: optNum('Talla', 1.2, 2.2),
   grupoSanguineo: z.string().optional(),
   factorRh: z.string().optional(),
-  
-  // Step 4
-  fum: z.string().optional(),
-  fumDudosa: z.boolean().optional(),
+  gestaciones: optNum('Gestaciones', 0, 25),
+  partosVaginales: optNum('Partos', 0, 25),
+  cesareas: optNum('Cesáreas', 0, 15),
+  abortos: optNum('Abortos', 0, 25),
+
+  // Paso 4 — Contacto y datos sociales
+  phone: optPhone,
+  acompanantePhone: optPhone,
+  direccion: z.string().optional(),
+  localidad: z.string().optional(),
+  codigoSis: z.string().optional(),
+  ocupacion: z.string().optional(),
+  nivelEstudios: z.enum(['analfabeta', 'primaria', 'secundaria', 'superior', 'no_universitario', '']).optional(),
+  estadoCivil: z.enum(['casada', 'conviviente', 'soltera', 'otro', '']).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
+// Campos a validar en cada paso (para no avanzar con datos inválidos/incompletos).
+const STEP_FIELDS: Record<number, (keyof FormData)[]> = {
+  1: ['firstName', 'lastName', 'dni', 'fechaNacimiento'],
+  2: ['fum'],
+  3: ['pesoHabitual', 'talla', 'gestaciones', 'partosVaginales', 'cesareas', 'abortos'],
+  4: ['phone', 'acompanantePhone'],
+};
+
+type DniStatus = 'idle' | 'checking' | 'available' | 'taken';
+
 export default function NuevaGestanteScreen(): React.ReactElement {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [dniStatus, setDniStatus] = useState<DniStatus>('idle');
   const { mutateAsync: createPatient, isPending: creating } = useCreatePatient();
   const { mutateAsync: updatePatient, isPending: updating } = useUpdatePatient();
 
   const isPending = creating || updating;
 
-  const { control, handleSubmit, trigger, watch, setValue, formState: { errors } } = useForm<FormData>({
+  const { control, handleSubmit, trigger, watch, setValue, setError, clearErrors, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { 
-      dni: '', firstName: '', lastName: '', 
-      nivelEstudios: '', estadoCivil: '', 
-      fumDudosa: false 
+    mode: 'onChange',
+    defaultValues: {
+      dni: '', firstName: '', lastName: '', fechaNacimiento: '', fum: '',
+      nivelEstudios: '', estadoCivil: '',
+      fumDudosa: false,
     },
   });
 
-  const nextStep = async () => {
-    // Validate current step
-    let fieldsToValidate: any[] = [];
-    if (currentStep === 1) {
-      fieldsToValidate = ['firstName', 'lastName', 'dni'];
+  // Verifica el DNI en vivo (al perder el foco) para avisar de inmediato si ya
+  // está registrado, en vez de esperar al final del formulario.
+  const dniValue = watch('dni');
+  const verifyDni = useCallback(async () => {
+    const dni = (dniValue || '').trim();
+    if (!/^\d{8}$/.test(dni)) {
+      setDniStatus('idle');
+      return;
     }
-    
-    const isStepValid = await trigger(fieldsToValidate);
-    if (isStepValid && currentStep < 4) {
-      setCurrentStep(curr => curr + 1);
+    setDniStatus('checking');
+    try {
+      const exists = await checkDniExists(dni);
+      if (exists) {
+        setDniStatus('taken');
+        setError('dni', { type: 'manual', message: 'Este DNI ya está registrado' });
+      } else {
+        setDniStatus('available');
+        clearErrors('dni');
+      }
+    } catch {
+      setDniStatus('idle'); // si falla la verificación, no bloqueamos el registro
+    }
+  }, [dniValue, setError, clearErrors]);
+
+  const nextStep = async () => {
+    const fields = STEP_FIELDS[currentStep] ?? [];
+    const isStepValid = await trigger(fields as any);
+    // En el paso 1, además, el DNI no debe estar tomado.
+    if (currentStep === 1 && dniStatus === 'taken') return;
+    if (isStepValid && currentStep < STEPS.length) {
+      setCurrentStep((c) => c + 1);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(curr => curr - 1);
-    }
+    if (currentStep > 1) setCurrentStep((c) => c - 1);
   };
 
   const onSubmit = async (data: FormData) => {
     try {
-      // 1. Create Patient (Auth Core)
+      // 1. Crear paciente (núcleo de autenticación: DNI + nombre + nacimiento).
       const res = await createPatient({
         dni: data.dni,
         firstName: data.firstName,
@@ -125,14 +159,14 @@ export default function NuevaGestanteScreen(): React.ReactElement {
       });
 
       const newGestanteId = res.data?.id;
-
       if (!newGestanteId) throw new Error('No se obtuvo el ID de la gestante');
 
-      // 2. Patch Patient (Extended clinical fields)
+      // 2. Completar los datos clínicos. La FUM dispara FPP + cronograma.
       await updatePatient({
         id: newGestanteId,
         data: {
           historiaClinica: data.historiaClinica || null,
+          fechaNacimiento: data.fechaNacimiento || null,
           direccion: data.direccion || null,
           localidad: data.localidad || null,
           codigoSis: data.codigoSis || null,
@@ -140,7 +174,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
           acompanantePhone: data.acompanantePhone || null,
           nivelEstudios: data.nivelEstudios || null,
           estadoCivil: data.estadoCivil || null,
-          
+
           gestaciones: data.gestaciones && data.gestaciones !== '' ? parseInt(data.gestaciones, 10) : 0,
           partosVaginales: data.partosVaginales && data.partosVaginales !== '' ? parseInt(data.partosVaginales, 10) : 0,
           cesareas: data.cesareas && data.cesareas !== '' ? parseInt(data.cesareas, 10) : 0,
@@ -153,35 +187,60 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 
           fum: data.fum || null,
           fumDudosa: data.fumDudosa || false,
-        }
+        },
       });
 
       notify(
-        '¡Registro Exitoso!',
-        'La paciente fue registrada con todos sus datos clínicos. Su usuario inicial es su propio DNI.',
+        '¡Registro exitoso!',
+        'La paciente fue registrada con todos sus datos clínicos. Su cronograma de controles se generó a partir de la FUM. Su usuario inicial es su propio DNI.',
       );
       router.back();
     } catch (err: any) {
-      notify('Error', err.response?.data?.error?.message || 'No se pudo guardar la paciente completa. Verifique los datos e intente de nuevo.');
+      // Si el backend devuelve conflicto de DNI, volvemos al paso 1 y lo marcamos.
+      const code = err?.response?.data?.error?.code;
+      const message = err?.response?.data?.error?.message;
+      if (code === 'CONFLICT') {
+        setCurrentStep(1);
+        setDniStatus('taken');
+        setError('dni', { type: 'manual', message: 'Este DNI ya está registrado' });
+        notify('DNI duplicado', 'Ya existe una usuaria con este DNI. Verifica el número.');
+        return;
+      }
+      notify('Error', message || 'No se pudo guardar la paciente. Verifica los datos e intenta de nuevo.');
     }
   };
 
+  const progressPct = (currentStep / STEPS.length) * 100;
+
   const renderStepper = () => (
     <View style={styles.stepperContainer}>
-      {STEPS.map((step, index) => {
-        const isActive = step.id === currentStep;
-        const isCompleted = step.id < currentStep;
-        
-        return (
-          <View key={step.id} style={styles.stepWrapper}>
-            <View style={[styles.stepCircle, isActive && styles.stepActive, isCompleted && styles.stepCompleted]}>
-              {isCompleted ? <Check size={16} color={semanticColors.success} /> : <Text style={[styles.stepNumber, isActive && styles.stepNumberActive]}>{step.id}</Text>}
+      <View style={styles.stepperTopRow}>
+        <Text style={styles.stepperCounter}>Paso {currentStep} de {STEPS.length}</Text>
+        <Text style={styles.stepperCurrent}>{STEPS.find((s) => s.id === currentStep)?.title}</Text>
+      </View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+      </View>
+      <View style={styles.stepDotsRow}>
+        {STEPS.map((step) => {
+          const isActive = step.id === currentStep;
+          const isCompleted = step.id < currentStep;
+          return (
+            <View key={step.id} style={styles.stepDotWrap}>
+              <View style={[styles.stepDot, isActive && styles.stepDotActive, isCompleted && styles.stepDotCompleted]}>
+                {isCompleted ? (
+                  <Check size={12} color={commonColors.white} strokeWidth={3} />
+                ) : (
+                  <Text style={[styles.stepDotNum, isActive && styles.stepDotNumActive]}>{step.id}</Text>
+                )}
+              </View>
+              <Text style={[styles.stepDotLabel, (isActive || isCompleted) && styles.stepDotLabelActive]} numberOfLines={1}>
+                {step.title}
+              </Text>
             </View>
-            <Text style={[styles.stepText, (isActive || isCompleted) && styles.stepTextActive]}>{step.title}</Text>
-            {index < STEPS.length - 1 && <View style={[styles.stepLine, isCompleted && styles.stepLineCompleted]} />}
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 
@@ -190,35 +249,66 @@ export default function NuevaGestanteScreen(): React.ReactElement {
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerContainer}>
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Volver">
               <ArrowLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>Registrar Nueva Gestante</Text>
+              <Text style={styles.headerTitle}>Registrar nueva gestante</Text>
             </View>
           </View>
-
           {renderStepper()}
         </SafeAreaView>
       </LinearGradient>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>{STEPS.find(s => s.id === currentStep)?.title}</Text>
-            
+            {/* ── PASO 1: Identificación ── */}
             {currentStep === 1 && (
               <View style={styles.formGrid}>
-                <AppInput name="firstName" control={control} label="NOMBRES *" placeholder="" />
-                <AppInput name="lastName" control={control} label="APELLIDOS *" placeholder="" />
-                <AppInput name="dni" control={control} label="DNI *" keyboardType="number-pad" maxLength={8} />
-                <AppInput name="historiaClinica" control={control} label="N° HISTORIA CLÍNICA" />
+                <Text style={styles.sectionTitle}>Identificación</Text>
+                <Text style={styles.sectionHint}>Los campos con * son obligatorios.</Text>
+                <AppInput name="firstName" control={control} label="Nombres *" placeholder="Ej. María Elena" error={errors.firstName?.message} themeColor={BRAND} />
+                <AppInput name="lastName" control={control} label="Apellidos *" placeholder="Ej. Quispe Ramos" error={errors.lastName?.message} themeColor={BRAND} />
+
+                <View>
+                  <AppInput
+                    name="dni"
+                    control={control}
+                    label="DNI *"
+                    keyboardType="number-pad"
+                    maxLength={8}
+                    placeholder="8 dígitos"
+                    error={errors.dni?.message}
+                    themeColor={BRAND}
+                    onBlur={verifyDni}
+                  />
+                  {dniStatus === 'checking' && (
+                    <View style={styles.dniStatusRow}>
+                      <ActivityIndicator size="small" color={commonColors.textTertiary} />
+                      <Text style={styles.dniStatusText}>Verificando DNI…</Text>
+                    </View>
+                  )}
+                  {dniStatus === 'available' && !errors.dni && (
+                    <View style={styles.dniStatusRow}>
+                      <CheckCircle2 size={14} color={semanticColors.success} />
+                      <Text style={[styles.dniStatusText, { color: semanticColors.success }]}>DNI disponible</Text>
+                    </View>
+                  )}
+                  {dniStatus === 'taken' && (
+                    <View style={styles.dniStatusRow}>
+                      <AlertCircle size={14} color={semanticColors.danger} />
+                      <Text style={[styles.dniStatusText, { color: semanticColors.danger }]}>Este DNI ya está registrado</Text>
+                    </View>
+                  )}
+                </View>
+
                 <Controller
                   control={control}
                   name="fechaNacimiento"
                   render={({ field: { value, onChange } }) => (
                     <DateTimeField
-                      label="Fecha de Nacimiento"
+                      label="Fecha de nacimiento *"
                       mode="date"
                       value={value || ''}
                       onChange={onChange}
@@ -228,97 +318,125 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                     />
                   )}
                 />
-                <AppInput name="direccion" control={control} label="DIRECCIÓN" />
-                <AppInput name="localidad" control={control} label="LOCALIDAD" />
-                <AppInput name="phone" control={control} label="TELÉFONO" keyboardType="phone-pad" maxLength={9} />
-                <AppInput name="acompanantePhone" control={control} label="TELÉFONO DEL ACOMPAÑANTE" keyboardType="phone-pad" maxLength={9} />
-                <AppInput name="codigoSis" control={control} label="CÓDIGO SIS" />
-                <AppInput name="ocupacion" control={control} label="OCUPACIÓN" />
+                {errors.fechaNacimiento && <Text style={styles.fieldError}>{errors.fechaNacimiento.message}</Text>}
+
+                <AppInput name="historiaClinica" control={control} label="N° de historia clínica" placeholder="Opcional" themeColor={BRAND} />
               </View>
             )}
 
+            {/* ── PASO 2: Embarazo actual ── */}
             {currentStep === 2 && (
               <View style={styles.formGrid}>
-                 <Text style={styles.subTitle}>Antecedentes Obstétricos</Text>
-                 <AppInput name="gestaciones" control={control} label="N° GESTACIONES (G)" keyboardType="number-pad" placeholder="0" />
-                 <AppInput name="partosVaginales" control={control} label="PARTOS VAGINALES (P)" keyboardType="number-pad" placeholder="0" />
-                 <AppInput name="cesareas" control={control} label="CESÁREAS (C)" keyboardType="number-pad" placeholder="0" />
-                 <AppInput name="abortos" control={control} label="ABORTOS (A)" keyboardType="number-pad" placeholder="0" />
+                <Text style={styles.sectionTitle}>Embarazo actual</Text>
+                <Text style={styles.sectionHint}>
+                  La FUM es obligatoria: con ella se calcula la fecha probable de parto, la edad
+                  gestacional y se genera automáticamente el cronograma de controles.
+                </Text>
+                <Controller
+                  control={control}
+                  name="fum"
+                  render={({ field: { value, onChange } }) => (
+                    <DateTimeField
+                      label="Fecha de última menstruación (FUM) *"
+                      mode="date"
+                      value={value || ''}
+                      onChange={onChange}
+                      themeColor={BRAND}
+                      maximumDate={new Date()}
+                      placeholder="Seleccionar fecha"
+                    />
+                  )}
+                />
+                {errors.fum && <Text style={styles.fieldError}>{errors.fum.message}</Text>}
+
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => setValue('fumDudosa', !watch('fumDudosa'))}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, watch('fumDudosa') && styles.checkboxActive]}>
+                    {watch('fumDudosa') && <Check size={14} color={obstetraColors.onPrimary} />}
+                  </View>
+                  <Text style={styles.checkboxText}>Hay duda sobre la FUM (se confirmará por ecografía)</Text>
+                </TouchableOpacity>
               </View>
             )}
 
+            {/* ── PASO 3: Medidas y antecedentes ── */}
             {currentStep === 3 && (
               <View style={styles.formGrid}>
-                 <Text style={styles.subTitle}>Medidas Antropométricas y Tipo de Sangre</Text>
-                 <AppInput name="pesoHabitual" control={control} label="PESO HABITUAL (KG)" keyboardType="decimal-pad" />
-                 <AppInput name="talla" control={control} label="TALLA (CM)" keyboardType="number-pad" />
-                 
-                 <View style={styles.row}>
-                    <View style={{ flex: 1, paddingRight: 8 }}>
-                       <AppInput name="grupoSanguineo" control={control} label="GRUPO SANGUÍNEO" placeholder="O, A, B, AB" />
-                    </View>
-                    <View style={{ flex: 1, paddingLeft: 8 }}>
-                       <AppInput name="factorRh" control={control} label="FACTOR RH" placeholder="+ o -" />
-                    </View>
-                 </View>
+                <Text style={styles.sectionTitle}>Medidas y antecedentes</Text>
+                <Text style={styles.subTitle}>Antropometría y tipo de sangre</Text>
+                <AppInput name="pesoHabitual" control={control} label="Peso habitual (kg)" keyboardType="decimal-pad" placeholder="Ej. 62" error={errors.pesoHabitual?.message} themeColor={BRAND} />
+                <AppInput name="talla" control={control} label="Talla (en metros, ej. 1.58)" keyboardType="decimal-pad" placeholder="Ej. 1.58" error={errors.talla?.message} themeColor={BRAND} />
+                <View style={styles.row}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <AppInput name="grupoSanguineo" control={control} label="Grupo sanguíneo" placeholder="O, A, B, AB" autoCapitalize="characters" themeColor={BRAND} />
+                  </View>
+                  <View style={{ flex: 1, paddingLeft: 8 }}>
+                    <AppInput name="factorRh" control={control} label="Factor RH" placeholder="+ o −" themeColor={BRAND} />
+                  </View>
+                </View>
+
+                <Text style={[styles.subTitle, { marginTop: 8 }]}>Antecedentes obstétricos</Text>
+                <View style={styles.row}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <AppInput name="gestaciones" control={control} label="Gestaciones (G)" keyboardType="number-pad" placeholder="0" error={errors.gestaciones?.message} themeColor={BRAND} />
+                  </View>
+                  <View style={{ flex: 1, paddingLeft: 8 }}>
+                    <AppInput name="partosVaginales" control={control} label="Partos (P)" keyboardType="number-pad" placeholder="0" error={errors.partosVaginales?.message} themeColor={BRAND} />
+                  </View>
+                </View>
+                <View style={styles.row}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <AppInput name="cesareas" control={control} label="Cesáreas (C)" keyboardType="number-pad" placeholder="0" error={errors.cesareas?.message} themeColor={BRAND} />
+                  </View>
+                  <View style={{ flex: 1, paddingLeft: 8 }}>
+                    <AppInput name="abortos" control={control} label="Abortos (A)" keyboardType="number-pad" placeholder="0" error={errors.abortos?.message} themeColor={BRAND} />
+                  </View>
+                </View>
               </View>
             )}
 
+            {/* ── PASO 4: Contacto y datos sociales ── */}
             {currentStep === 4 && (
               <View style={styles.formGrid}>
-                 <Text style={styles.subTitle}>Embarazo Actual</Text>
-                 <Controller
-                   control={control}
-                   name="fum"
-                   render={({ field: { value, onChange } }) => (
-                     <DateTimeField
-                       label="Fecha de Última Menstruación (FUM) *"
-                       mode="date"
-                       value={value || ''}
-                       onChange={onChange}
-                       themeColor={BRAND}
-                       maximumDate={new Date()}
-                       placeholder="Seleccionar fecha"
-                     />
-                   )}
-                 />
-                 
-                 <TouchableOpacity 
-                   style={styles.checkboxRow}
-                   onPress={() => setValue('fumDudosa', !watch('fumDudosa'))}
-                   activeOpacity={0.7}
-                 >
-                   <View style={[styles.checkbox, watch('fumDudosa') && styles.checkboxActive]}>
-                     {watch('fumDudosa') && <Check size={14} color={obstetraColors.onPrimary} />}
-                   </View>
-                   <Text style={styles.checkboxText}>Hay duda sobre la FUM (se confirmará por ecografía)</Text>
-                 </TouchableOpacity>
+                <Text style={styles.sectionTitle}>Contacto y datos sociales</Text>
+                <Text style={styles.subTitle}>Todos opcionales, pero recomendados para el seguimiento</Text>
+                <AppInput name="phone" control={control} label="Teléfono" keyboardType="phone-pad" maxLength={9} placeholder="9 dígitos" error={errors.phone?.message} themeColor={BRAND} />
+                <AppInput name="acompanantePhone" control={control} label="Teléfono del acompañante" keyboardType="phone-pad" maxLength={9} placeholder="9 dígitos" error={errors.acompanantePhone?.message} themeColor={BRAND} />
+                <AppInput name="direccion" control={control} label="Dirección" placeholder="Ej. Jr. Libertad 789" themeColor={BRAND} />
+                <AppInput name="localidad" control={control} label="Localidad" themeColor={BRAND} />
+                <AppInput name="codigoSis" control={control} label="Código SIS" themeColor={BRAND} />
+                <AppInput name="ocupacion" control={control} label="Ocupación" themeColor={BRAND} />
               </View>
             )}
 
+            {/* ── Acciones ── */}
             <View style={styles.footerActions}>
               {currentStep > 1 && (
                 <TouchableOpacity style={styles.btnSecondary} onPress={prevStep}>
-                  <Text style={styles.btnSecondaryText}>{'<'} Anterior</Text>
+                  <ChevronLeft size={18} color={commonColors.textSecondary} />
+                  <Text style={styles.btnSecondaryText}>Anterior</Text>
                 </TouchableOpacity>
               )}
-              
-              {currentStep < 4 ? (
+
+              {currentStep < STEPS.length ? (
                 <TouchableOpacity style={styles.btnPrimary} onPress={nextStep}>
-                  <Text style={styles.btnPrimaryText}>Siguiente {'>'}</Text>
+                  <Text style={styles.btnPrimaryText}>Siguiente</Text>
+                  <ChevronRight size={18} color={obstetraColors.onPrimary} />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity 
-                  style={[styles.btnSuccess, isPending && { opacity: 0.7 }]} 
+                <TouchableOpacity
+                  style={[styles.btnSuccess, isPending && { opacity: 0.7 }]}
                   onPress={handleSubmit(onSubmit)}
                   disabled={isPending}
                 >
                   <Check size={18} color={obstetraColors.onPrimary} style={{ marginRight: 8 }} />
-                  <Text style={styles.btnSuccessText}>{isPending ? 'Guardando...' : 'Registrar gestante'}</Text>
+                  <Text style={styles.btnSuccessText}>{isPending ? 'Guardando…' : 'Registrar gestante'}</Text>
                 </TouchableOpacity>
               )}
             </View>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -338,108 +456,62 @@ const styles = StyleSheet.create({
   headerTitleContainer: { flex: 1 },
   headerTitle: { ...typography.h2, color: commonColors.white },
 
-  stepperContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 32,
-    marginTop: spacing.xl,
-  },
-  stepWrapper: {
-    alignItems: 'center',
-    width: 60,
-    position: 'relative',
-  },
-  stepCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  // Stepper rediseñado: contador + barra de progreso lineal + puntos legibles.
+  stepperContainer: { paddingHorizontal: spacing.lg, marginTop: spacing.lg },
+  stepperTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  stepperCounter: { ...typography.label, color: 'rgba(255,255,255,0.9)', fontWeight: '700' },
+  stepperCurrent: { ...typography.label, color: commonColors.white, fontWeight: '700' },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)', overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: commonColors.white },
+  stepDotsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
+  stepDotWrap: { alignItems: 'center', flex: 1 },
+  stepDot: {
+    width: 26, height: 26, borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    zIndex: 2,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
-  stepActive: {
-    backgroundColor: commonColors.white,
-  },
-  stepCompleted: {
-    backgroundColor: semanticColors.successMid,
-  },
-  stepNumber: {
-    ...typography.label,
-    color: commonColors.white,
-    fontWeight: '700',
-  },
-  stepNumberActive: {
-    color: BRAND,
-  },
-  stepText: {
-    ...typography.overline,
-    fontSize: 11,
-    letterSpacing: 0.1,
-    color: 'rgba(255,255,255,0.7)',
-    textAlign: 'center',
-  },
-  stepTextActive: {
-    color: commonColors.white,
-    fontWeight: '600',
-  },
-  stepLine: {
-    position: 'absolute',
-    top: 15,
-    left: 45,
-    width: 100,
-    height: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    zIndex: 1,
-  },
-  stepLineCompleted: {
-    backgroundColor: semanticColors.successMid,
-  },
+  stepDotActive: { backgroundColor: commonColors.white },
+  stepDotCompleted: { backgroundColor: semanticColors.successMid },
+  stepDotNum: { ...typography.caption, color: commonColors.white, fontWeight: '700' },
+  stepDotNumActive: { color: BRAND },
+  stepDotLabel: { ...typography.caption, fontSize: 11, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
+  stepDotLabelActive: { color: commonColors.white, fontWeight: '600' },
 
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 40 },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
-  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.lg },
-  subTitle: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, color: commonColors.textSecondary, fontWeight: '600', marginBottom: 16 },
-  
-  formGrid: { gap: 16 },
+  sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.xs },
+  sectionHint: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: spacing.sm, lineHeight: 19 },
+  subTitle: { ...typography.label, color: commonColors.textSecondary, fontWeight: '600', marginBottom: 4 },
+
+  formGrid: { gap: 14 },
   row: { flexDirection: 'row' },
-  
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 1, borderColor: commonColors.borderStrong, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+
+  dniStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -spacing.sm, marginBottom: spacing.xs },
+  dniStatusText: { ...typography.caption, color: commonColors.textTertiary },
+  fieldError: { ...typography.caption, color: semanticColors.danger, marginTop: -spacing.sm },
+
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: commonColors.borderStrong, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   checkboxActive: { backgroundColor: BRAND, borderColor: BRAND },
-  checkboxText: { ...typography.bodySmall, color: commonColors.textSecondary },
-  
-  footerActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
+  checkboxText: { ...typography.bodySmall, color: commonColors.textSecondary, flex: 1 },
+
+  footerActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, gap: 12 },
   btnSecondary: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingVertical: 14, paddingHorizontal: 18,
+    borderRadius: borderRadius.full,
+    borderWidth: 1, borderColor: commonColors.border,
     backgroundColor: commonColors.surface,
-    alignSelf: 'flex-start',
   },
-  btnSecondaryText: { color: commonColors.textSecondary, ...typography.label, fontWeight: '600' },
+  btnSecondaryText: { color: commonColors.textSecondary, ...typography.button, fontSize: 15 },
   btnPrimary: {
-    flex: 1,
-    marginLeft: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: BRAND,
-    alignItems: 'center',
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+    paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: BRAND,
   },
   btnPrimaryText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
   btnSuccess: {
-    flex: 1,
-    marginLeft: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: BRAND,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: BRAND,
   },
   btnSuccessText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
 });
-
