@@ -15,15 +15,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CheckCircle2, Hourglass, Calendar, XCircle, AlertTriangle, AlertCircle,
   TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, Siren, type LucideIcon,
+  CheckCheck, Trash2, X,
 } from 'lucide-react-native';
-import { CheckCheck } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
   useNotifications,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
+  useDeleteNotification,
+  useClearNotifications,
   type AppNotification,
 } from '../../services/api-queries';
+import { confirmAction } from '../../utils/confirm';
+import { useToast } from '../ui';
 import { BellOff } from 'lucide-react-native';
 import { EmptyState } from '../ui/EmptyState';
 import { ListSkeleton } from '../ui/SkeletonLoader';
@@ -67,7 +71,11 @@ function metaFor(tipo: string): { icon: LucideIcon; color: string; bg: string } 
     case 'fpp_proxima':
       return { icon: Heart, color: gestanteColors.primary, bg: gestanteColors.primaryLight };
     case 'examenes_pendientes':
+    case 'resultado_laboratorio':
       return { icon: FlaskConical, color: semanticColors.info, bg: semanticColors.infoLight };
+    case 'cita_domiciliaria':
+    case 'visita_domiciliaria':
+      return { icon: Calendar, color: gestanteColors.primary, bg: gestanteColors.primaryLight };
     default:
       return { icon: Bell, color: commonColors.textSecondary, bg: commonColors.surfaceAlt };
   }
@@ -116,11 +124,40 @@ export function NotificationsScreen({
   gradient = gestanteColors.gradient,
 }: Props): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const role = useAuthStore((s) => s.user?.role);
   const { data: items = [], isLoading, refetch, isRefetching } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
+  const deleteOne = useDeleteNotification();
+  const clearAll = useClearNotifications();
   const [filtro, setFiltro] = useState<Filtro>('todas');
+
+  const handleDelete = (n: AppNotification) => {
+    deleteOne.mutate(n.id);
+  };
+
+  const handleClear = async () => {
+    if (items.length === 0) return;
+    const leidas = items.filter((n) => n.leidaAt).length;
+    const ok = await confirmAction({
+      title: 'Limpiar notificaciones',
+      message:
+        leidas > 0 && leidas < items.length
+          ? `¿Borrar las ${leidas} notificaciones leídas? Las no leídas se conservan.`
+          : '¿Borrar todas las notificaciones? Esta acción no se puede deshacer.',
+      confirmText: 'Borrar',
+      destructive: true,
+    });
+    if (!ok) return;
+    // Si hay leídas y no leídas, limpia solo leídas; si todas están leídas o
+    // todas sin leer, borra todas.
+    const soloLeidas = leidas > 0 && leidas < items.length;
+    clearAll.mutate(soloLeidas, {
+      onSuccess: () => toast.success('Bandeja limpia', soloLeidas ? 'Se borraron las leídas.' : 'Se borraron todas.'),
+      onError: () => toast.error('No se pudo limpiar', 'Inténtalo nuevamente.'),
+    });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -205,6 +242,15 @@ export function NotificationsScreen({
             <Text style={styles.message} numberOfLines={3}>{item.mensaje}</Text>
             <Text style={styles.time}>{tiempoRelativo(item.createdAt)}</Text>
           </View>
+          <TouchableOpacity
+            onPress={() => handleDelete(item)}
+            hitSlop={10}
+            style={styles.deleteBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar notificación"
+          >
+            <X size={16} color={commonColors.textTertiary} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -226,17 +272,34 @@ export function NotificationsScreen({
                 </Text>
               </View>
             </View>
-            {unreadCount > 0 && (
-              <TouchableOpacity
-                onPress={() => markAll.mutate()}
-                disabled={markAll.isPending}
-                style={styles.markAllBtn}
-                hitSlop={6}
-              >
-                <CheckCheck size={16} color={commonColors.white} />
-                <Text style={styles.markAll}>Leer todo</Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.headerActions}>
+              {unreadCount > 0 && (
+                <TouchableOpacity
+                  onPress={() => markAll.mutate()}
+                  disabled={markAll.isPending}
+                  style={styles.headerActionBtn}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel="Marcar todo como leído"
+                >
+                  <CheckCheck size={16} color={commonColors.white} />
+                  <Text style={styles.headerActionText}>Leer todo</Text>
+                </TouchableOpacity>
+              )}
+              {items.length > 0 && (
+                <TouchableOpacity
+                  onPress={handleClear}
+                  disabled={clearAll.isPending}
+                  style={styles.headerActionBtn}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel="Limpiar notificaciones"
+                >
+                  <Trash2 size={16} color={commonColors.white} />
+                  <Text style={styles.headerActionText}>Limpiar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Filtro Todas / No leídas */}
@@ -317,7 +380,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.h2, color: commonColors.white },
   headerSubtitle: { ...typography.caption, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
-  markAllBtn: {
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -326,7 +390,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm2,
     paddingVertical: 7,
   },
-  markAll: { ...typography.label, color: commonColors.white, fontWeight: '700' },
+  headerActionText: { ...typography.label, color: commonColors.white, fontWeight: '700' },
   filterRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   filterChip: {
     paddingHorizontal: spacing.md,
@@ -357,6 +421,7 @@ const styles = StyleSheet.create({
   cardRead: { opacity: 0.78 },
   cardUrgent: { backgroundColor: semanticColors.dangerLight },
   iconCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  deleteBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
   body: { flex: 1, gap: 3 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 },

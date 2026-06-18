@@ -112,4 +112,37 @@ router.patch('/read-all', notificationController.markAllAsRead);
  */
 router.patch('/:id/read', notificationController.markAsRead);
 
+/**
+ * @swagger
+ * /v1/notifications:
+ *   delete:
+ *     summary: Limpia notificaciones del usuario (todas o solo leídas con ?soloLeidas=true)
+ *     tags: [Notifications]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: soloLeidas
+ *         schema: { type: boolean }
+ *     responses:
+ *       200: { description: Notificaciones eliminadas }
+ */
+router.delete('/', notificationController.clearNotifications);
+
+/**
+ * @swagger
+ * /v1/notifications/{id}:
+ *   delete:
+ *     summary: Elimina una notificación del usuario
+ *     tags: [Notifications]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Notificación eliminada }
+ */
+router.delete('/:id', notificationController.deleteNotification);
+
 export default router;

@@ -857,6 +857,67 @@ export const useMarkAllNotificationsRead = () => {
   });
 };
 
+/** Elimina UNA notificación (optimista: la quita de la lista y ajusta el badge). */
+export const useDeleteNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/notifications/${id}`);
+      return res.data;
+    },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const prev = queryClient.getQueryData<AppNotification[]>(['notifications']);
+      const removed = prev?.find((n) => n.id === id);
+      queryClient.setQueryData<AppNotification[]>(['notifications'], (old) =>
+        Array.isArray(old) ? old.filter((n) => n.id !== id) : old,
+      );
+      // Si la eliminada estaba sin leer, baja el badge.
+      if (removed && !removed.leidaAt) {
+        queryClient.setQueryData<number>(['notifications', 'unread'], (c) =>
+          typeof c === 'number' && c > 0 ? c - 1 : c,
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['notifications'], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+/**
+ * Limpia la bandeja: borra todas o solo las leídas (`soloLeidas`).
+ */
+export const useClearNotifications = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (soloLeidas: boolean = false) => {
+      const res = await api.delete('/notifications', { params: { soloLeidas } });
+      return res.data;
+    },
+    onMutate: async (soloLeidas: boolean = false) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const prev = queryClient.getQueryData<AppNotification[]>(['notifications']);
+      queryClient.setQueryData<AppNotification[]>(['notifications'], (old) => {
+        if (!Array.isArray(old)) return old;
+        return soloLeidas ? old.filter((n) => !n.leidaAt) : [];
+      });
+      if (!soloLeidas) queryClient.setQueryData<number>(['notifications', 'unread'], 0);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['notifications'], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
 export const useCreateLabResult = () => {
   const queryClient = useQueryClient();
   return useMutation({

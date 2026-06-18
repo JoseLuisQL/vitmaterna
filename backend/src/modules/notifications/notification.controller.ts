@@ -15,7 +15,9 @@ const TokenSchema = z.object({
 export async function listNotifications(req: Request, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const soloNoLeidas = req.query.soloNoLeidas === 'true';
-  const limit = Math.min(Number(req.query.limit) || 50, 100);
+  // Límite por defecto amplio (200) para que la lista no quede por debajo del
+  // conteo de no leídas; tope duro 500. La limpieza/retención evita el descontrol.
+  const limit = Math.min(Number(req.query.limit) || 200, 500);
 
   const where: { userId: string; leidaAt?: null } = { userId };
   if (soloNoLeidas) where.leidaAt = null;
@@ -71,6 +73,38 @@ export async function markAllAsRead(req: Request, res: Response): Promise<void> 
     data: { leidaAt: new Date(), estado: 'leida' },
   });
   res.json(successResponse({ message: 'Todas las notificaciones marcadas como leídas' }));
+}
+
+/** Elimina UNA notificación del usuario (verifica propiedad). */
+export async function deleteNotification(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const id = req.params.id as string;
+
+  const notif = await prisma.notification.findUnique({ where: { id } });
+  if (!notif || notif.userId !== userId) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Notificación no encontrada');
+  }
+
+  await prisma.notification.delete({ where: { id } });
+  res.json(successResponse({ message: 'Notificación eliminada', id }));
+}
+
+/**
+ * Limpia notificaciones del usuario. Con `?soloLeidas=true` borra solo las
+ * leídas (limpieza segura); sin el flag, borra todas las del usuario.
+ */
+export async function clearNotifications(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const soloLeidas = req.query.soloLeidas === 'true';
+
+  const where: { userId: string; leidaAt?: { not: null } } = { userId };
+  if (soloLeidas) where.leidaAt = { not: null };
+
+  const result = await prisma.notification.deleteMany({ where });
+  res.json(successResponse({
+    message: soloLeidas ? 'Notificaciones leídas eliminadas' : 'Notificaciones eliminadas',
+    deleted: result.count,
+  }));
 }
 
 /** Elimina el Expo push token del usuario (al cerrar sesión en un dispositivo). */
