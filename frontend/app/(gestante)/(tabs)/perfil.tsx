@@ -18,6 +18,7 @@ import { gestanteColors, commonColors, semanticColors } from '../../../src/theme
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { usePendingSync } from '../../../src/hooks/usePendingSync';
+import { confirmAction } from '../../../src/utils/confirm';
 
 const BRAND = gestanteColors.primary;
 
@@ -65,6 +66,13 @@ export default function PerfilScreen(): React.ReactElement {
   const [infoModal, setInfoModal] = useState<{ title: string; description?: string; rows?: { label: string; value: string }[] } | null>(null);
 
   const handleLogout = async () => {
+    const ok = await confirmAction({
+      title: 'Cerrar sesión',
+      message: '¿Seguro que deseas salir de tu cuenta?',
+      confirmText: 'Cerrar sesión',
+      destructive: true,
+    });
+    if (!ok) return;
     await logout();
     router.replace('/(auth)/login');
   };

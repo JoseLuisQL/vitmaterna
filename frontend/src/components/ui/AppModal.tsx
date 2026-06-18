@@ -16,6 +16,9 @@ interface AppModalProps {
   footer?: React.ReactNode;
   /** Permite cerrar tocando el fondo (por defecto sí). */
   dismissable?: boolean;
+  /** Muestra el botón X de cierre en el encabezado (por defecto sí). Los modales
+   *  que ya tienen sus propias acciones (confirmaciones) pueden ocultarlo. */
+  showCloseButton?: boolean;
   /** Habilita scroll en el cuerpo (por defecto sí). */
   scroll?: boolean;
 }
@@ -33,6 +36,7 @@ export function AppModal({
   children,
   footer,
   dismissable = true,
+  showCloseButton = true,
   scroll = true,
 }: AppModalProps): React.ReactElement {
   const scale = useRef(new Animated.Value(0.96)).current;
@@ -61,13 +65,13 @@ export function AppModal({
           accessibilityLabel="Cerrar modal tocando el fondo"
         />
         <Animated.View style={[styles.card, shadows.modal, { transform: [{ scale }] }]}>
-          {(title || dismissable) && (
+          {(title || (dismissable && showCloseButton)) && (
             <View style={styles.header}>
               <View style={styles.headerText}>
                 {title ? <Text style={styles.title}>{title}</Text> : null}
                 {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
               </View>
-              {dismissable && (
+              {dismissable && showCloseButton && (
                 <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Cerrar">
                   <X size={20} color={commonColors.textSecondary} />
                 </Pressable>

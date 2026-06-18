@@ -50,7 +50,7 @@ export function ConfirmDialog({
   const t = TONE[tone];
   const Icon = t.icon;
   return (
-    <AppModal visible={visible} onClose={onCancel} dismissable scroll={false}>
+    <AppModal visible={visible} onClose={onCancel} dismissable showCloseButton={false} scroll={false}>
       <View style={styles.center}>
         <View style={[styles.iconWrap, { backgroundColor: t.bg }]}>
           <Icon size={28} color={t.color} />
@@ -98,7 +98,7 @@ export function ValidationModal({
   closeText = 'Entendido',
 }: ValidationModalProps): React.ReactElement {
   return (
-    <AppModal visible={visible} onClose={onClose} dismissable scroll={false}>
+    <AppModal visible={visible} onClose={onClose} dismissable showCloseButton={false} scroll={false}>
       <View style={styles.center}>
         <View style={[styles.iconWrap, { backgroundColor: semanticColors.dangerLight }]}>
           <AlertTriangle size={28} color={semanticColors.danger} />
@@ -126,7 +126,7 @@ export function ValidationModal({
 }
 
 const styles = StyleSheet.create({
-  center: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
+  center: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, marginBottom: spacing.lg },
   iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
   title: { ...typography.h3, color: commonColors.text, textAlign: 'center' },
   message: { ...typography.body, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22 },
