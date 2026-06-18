@@ -304,6 +304,16 @@ export class AppointmentService {
       };
     }
 
+    // Cota de cordura GLOBAL: nunca mostrar citas con fecha absurda (> hoy + 2
+    // años), salvo en el historial (que mira al pasado). Protege todas las vistas
+    // de datos sucios sin depender del scope.
+    if (filters.scope !== 'historial') {
+      const fechaActual = typeof where.fecha === 'object' && where.fecha !== null ? where.fecha : {};
+      if (fechaActual.lte === undefined && fechaActual.lt === undefined) {
+        where.fecha = { ...fechaActual, lte: cotaSuperior };
+      }
+    }
+
     // Búsqueda por nombre o DNI de la gestante.
     if (filters.search && filters.search.trim()) {
       const q = filters.search.trim();

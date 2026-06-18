@@ -1,175 +1,124 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, StatusBar } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, Plus, Home } from 'lucide-react-native';
+/**
+ * VITMATERNA — Obstetra: Cronograma (agenda de citas)
+ *
+ * Rediseño (Fase 4): filtros resueltos en el backend (scope + búsqueda), orden
+ * por prioridad clínica (confirmadas/urgentes primero, luego fecha más cercana),
+ * agrupación por día con encabezados, fecha y hora en formato profesional, y
+ * tiempo real. Layout limpio con ScreenLayout, sin sobrecarga visual.
+ */
+import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, TextInput, SectionList } from 'react-native';
+import { Clock, MapPin, Plus, Home, Search, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useToast } from '../../../src/components/ui';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
-import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
-  useAppointments,
+  useAppointmentsFiltered,
   useUpdateAppointmentStatus,
   useResolveReschedule,
   useConvertToHomeVisit,
 } from '../../../src/services/api-queries';
+import { useAppointmentRealtime } from '../../../src/hooks/useAppointmentRealtime';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
-import { useAppointmentRealtime } from '../../../src/hooks/useAppointmentRealtime';
+import {
+  formatHora, formatFechaHora, etiquetaRelativa, claveDia, formatFechaLarga,
+} from '../../../src/utils/datetime';
 
 const BRAND = obstetraColors.primary;
 
+type Scope = 'hoy' | 'proximas' | 'historial' | 'todas';
+
+const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'danger'> = {
+  programada: 'warning',
+  confirmada: 'success',
+  asistida: 'success',
+  solicitud_reprogramacion: 'warning',
+  reprogramada: 'warning',
+  no_asistida: 'danger',
+  cancelada: 'danger',
+};
+const STATUS_LABEL: Record<string, string> = {
+  programada: 'Programada',
+  confirmada: 'Confirmada',
+  asistida: 'Asistida',
+  solicitud_reprogramacion: 'Solicita reprogramar',
+  reprogramada: 'Reprogramada',
+  no_asistida: 'No asistió',
+  cancelada: 'Cancelada',
+};
+
 export default function CronogramaScreen(): React.ReactElement {
   const router = useRouter();
-  const [filterMode, setFilterMode] = useState<'todas' | 'hoy' | 'proximas'>('hoy');
+  const toast = useToast();
+  const [scope, setScope] = useState<Scope>('hoy');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebouncedValue(searchInput, 350);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const toast = useToast();
   useAppointmentRealtime();
-  const { data: allAppointments, isLoading, refetch, isRefetching } = useAppointments();
+  const { data: appointments = [], isLoading, refetch, isRefetching } =
+    useAppointmentsFiltered({ scope, search });
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
   const { mutate: resolveReschedule, isPending: isResolving } = useResolveReschedule();
   const { mutate: convertToHome } = useConvertToHomeVisit();
 
-  // Filter Logic natively matching backend returned data
-  const processedAppointments = React.useMemo(() => {
-    if (!allAppointments) return [];
-    const todayStr = new Date().toISOString().split('T')[0];
+  // Conteos por segmento (consultas ligeras en paralelo).
+  const counts = useAppointmentScopeCounts();
 
-    return allAppointments.filter((app: any) => {
-      const appDateStr = new Date(app.date).toISOString().split('T')[0];
-
-      switch (filterMode) {
-        case 'hoy':
-          return appDateStr === todayStr;
-        case 'proximas':
-          return appDateStr >= todayStr && (app.status === 'programada' || app.status === 'confirmada' || app.status === 'reprogramada' || app.status === 'solicitud_reprogramacion');
-        case 'todas':
-        default:
-          return true;
+  // Agrupar por día para los encabezados de sección. El backend ya ordena por
+  // prioridad; aquí solo agrupamos respetando ese orden de llegada.
+  const sections = useMemo(() => {
+    const groups: { title: string; key: string; data: any[] }[] = [];
+    const index: Record<string, number> = {};
+    for (const a of appointments as any[]) {
+      const k = claveDia(a.fecha);
+      if (index[k] === undefined) {
+        index[k] = groups.length;
+        groups.push({ key: k, title: etiquetaRelativa(a.fecha), data: [] });
       }
-    }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [allAppointments, filterMode]);
-
-  // Conteos por filtro para mostrarlos en las pestañas.
-  const counts = React.useMemo(() => {
-    const list = allAppointments || [];
-    const todayStr = new Date().toISOString().split('T')[0];
-    const activos = ['programada', 'confirmada', 'reprogramada', 'solicitud_reprogramacion'];
-    return {
-      todas: list.length,
-      hoy: list.filter((a: any) => new Date(a.date).toISOString().split('T')[0] === todayStr).length,
-      proximas: list.filter((a: any) => {
-        const ds = new Date(a.date).toISOString().split('T')[0];
-        return ds >= todayStr && activos.includes(a.status);
-      }).length,
-    };
-  }, [allAppointments]);
-
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient
-        colors={obstetraColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
-      >
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerTopRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Cronograma</Text>
-              <Text style={styles.headerSubtitle}>Gestión de citas y pacientes</Text>
-            </View>
-            <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <View style={styles.tabsWrapper}>
-        {([
-          { key: 'hoy', label: 'Hoy', count: counts.hoy },
-          { key: 'proximas', label: 'Próximas', count: counts.proximas },
-          { key: 'todas', label: 'Todas', count: counts.todas },
-        ] as const).map((t) => {
-          const active = filterMode === t.key;
-          return (
-            <TouchableOpacity
-              key={t.key}
-              style={[styles.tabButton, active && styles.tabButtonActive]}
-              onPress={() => setFilterMode(t.key)}
-              accessibilityRole="button"
-              accessibilityLabel={`${t.label}, ${t.count} citas`}
-            >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
-              <View style={[styles.tabCount, active && styles.tabCountActive]}>
-                <Text style={[styles.tabCountText, active && styles.tabCountTextActive]}>{t.count}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+      groups[index[k]].data.push(a);
+    }
+    return groups;
+  }, [appointments]);
 
   const renderItem = ({ item }: { item: any }) => {
-    // Map status from API to variant
-    const statusMap: Record<string, 'default' | 'success' | 'warning' | 'danger'> = {
-      'programada': 'warning',
-      'confirmada': 'success',
-      'asistida': 'success',
-      'solicitud_reprogramacion': 'warning',
-      'reprogramada': 'warning',
-      'no_asistida': 'danger',
-      'cancelada': 'danger'
-    };
-    const variant = statusMap[item.status] || 'default';
+    const estado = item.estado || 'programada';
+    const variant = STATUS_VARIANT[estado] || 'default';
+    const statusText = STATUS_LABEL[estado] || estado;
+    const esDomiciliaria = item.modalidad === 'domiciliaria';
+    const isRescheduleRequest = estado === 'solicitud_reprogramacion';
+    const showActions = estado === 'programada' || estado === 'confirmada';
+    const patientName = item.gestante?.user
+      ? `${item.gestante.user.firstName} ${item.gestante.user.lastName}`
+      : 'Paciente';
+    const gestanteId = item.gestanteId;
 
-    const labelMap: Record<string, string> = {
-      'programada': 'Programada',
-      'confirmada': 'Confirmada',
-      'asistida': 'Asistida',
-      'solicitud_reprogramacion': 'Solicita reprogramar',
-      'reprogramada': 'Reprogramada',
-      'no_asistida': 'No Asistió',
-      'cancelada': 'Cancelada'
-    };
-    const statusText = labelMap[item.status] || 'Desconocido';
-
-    const handleStatusUpdate = (id: string, newStatus: 'asistida' | 'no_asistida') => {
-      updateStatus({ id, status: newStatus });
-    };
-
-    // "No asistió" pide confirmación (es una acción que afecta la adherencia).
     const handleNoAsistio = async () => {
       const ok = await confirmAction({
         title: 'Marcar como no asistió',
-        message: `¿Confirmas que ${item.patientName || 'la paciente'} no asistió a su cita?`,
+        message: `¿Confirmas que ${patientName} no asistió a su cita?`,
         confirmText: 'Sí, no asistió',
         destructive: true,
       });
       if (!ok) return;
-      handleStatusUpdate(item.id, 'no_asistida');
+      updateStatus({ id: item.id, status: 'no_asistida' });
     };
 
-    // "Atender" abre el flujo encadenado de registro clínico de la cita.
     const handleAtender = () => {
       router.push({
         pathname: '/(obstetra)/atender/[appointmentId]',
-        params: { appointmentId: item.id, gestanteId: item.gestanteId || '', patientName: item.patientName || '' },
+        params: { appointmentId: item.id, gestanteId: gestanteId || '', patientName },
       } as any);
     };
-
-    const isRescheduleRequest = item.status === 'solicitud_reprogramacion';
-    const showActions = item.status === 'programada' || item.status === 'confirmada';
-    const esDomiciliaria = item.modalidad === 'domiciliaria';
 
     const handleConvertir = async () => {
       const ok = await confirmAction({
@@ -187,17 +136,6 @@ export default function CronogramaScreen(): React.ReactElement {
       );
     };
 
-    const fmtHora = (iso?: string | null) => {
-      if (!iso) return '--:--';
-      const d = new Date(iso);
-      return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-    };
-    const fmtFecha = (iso?: string | null) => {
-      if (!iso) return '--';
-      const d = new Date(iso);
-      return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-    };
-
     const handleResolve = (aprobar: boolean) => {
       resolveReschedule(
         { id: item.id, aprobar },
@@ -213,60 +151,47 @@ export default function CronogramaScreen(): React.ReactElement {
     };
 
     return (
-      <View style={[styles.appointmentCard, isRescheduleRequest && styles.appointmentCardAlert]}>
-        <View style={styles.timeLine}>
-          <Text style={styles.timeText}>
-            {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-          </Text>
-          <Text style={styles.timeAmPm}>
-            {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
-          </Text>
+      <View style={[styles.card, isRescheduleRequest && styles.cardAlert]}>
+        {/* Columna de hora */}
+        <View style={styles.timeCol}>
+          <Text style={styles.timeText}>{formatHora(item.hora)}</Text>
         </View>
 
-        <View style={styles.appointmentContent}>
+        <View style={styles.cardBody}>
           <TouchableOpacity
-            activeOpacity={item.gestanteId ? 0.6 : 1}
-            disabled={!item.gestanteId}
-            onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
+            activeOpacity={gestanteId ? 0.6 : 1}
+            disabled={!gestanteId}
+            onPress={() => gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: gestanteId } } as any)}
             accessibilityRole="button"
-            accessibilityLabel={`Abrir historia de ${item.patientName || 'la paciente'}`}
-            accessibilityHint="Abre la ficha clínica de la gestante"
+            accessibilityLabel={`Abrir historia de ${patientName}`}
           >
-            <View style={styles.appointmentHeaderRow}>
-              <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
-              {!showActions && <AppBadge label={statusText} variant={variant} />}
+            <View style={styles.cardTopRow}>
+              <Text style={styles.patientName} numberOfLines={1}>{patientName}</Text>
+              <AppBadge label={statusText} variant={variant} />
             </View>
-            <Text style={styles.appointmentType}>{item.type || 'Control Prenatal'}</Text>
-            <View style={styles.infoRow}>
+            <Text style={styles.apptType} numberOfLines={1}>{item.motivo || 'Control prenatal'}</Text>
+            <View style={styles.metaRow}>
               {esDomiciliaria ? <Home size={12} color={BRAND} /> : <MapPin size={12} color={commonColors.textTertiary} />}
-              <Text style={[styles.infoText, esDomiciliaria && { color: BRAND, fontWeight: '700' }]}>
-                {esDomiciliaria ? 'Visita domiciliaria' : (item.location || 'Consultorio 102')}
+              <Text style={[styles.metaText, esDomiciliaria && { color: BRAND, fontWeight: '700' }]} numberOfLines={1}>
+                {esDomiciliaria ? 'Visita domiciliaria' : 'Consultorio'}
               </Text>
             </View>
           </TouchableOpacity>
 
           {isRescheduleRequest && (
             <View style={styles.rescheduleBox}>
-              <Text style={styles.rescheduleTitle}>
-                Propone: {fmtFecha(item.fechaReprogramada)} · {fmtHora(item.horaReprogramada)}
+              <Text style={styles.rescheduleTitle} numberOfLines={2}>
+                Propone: {formatFechaHora(item.fechaReprogramada, item.horaReprogramada)}
               </Text>
               {item.motivoReprogramacion ? (
-                <Text style={styles.rescheduleMotivo}>Motivo: {item.motivoReprogramacion}</Text>
+                <Text style={styles.rescheduleMotivo} numberOfLines={2}>Motivo: {item.motivoReprogramacion}</Text>
               ) : null}
-              <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.btnAsistio]}
-                  disabled={isResolving}
-                  onPress={() => handleResolve(true)}
-                >
-                  <Text style={styles.btnAsistioText}>Aprobar</Text>
+              <View style={styles.actionsRow}>
+                <TouchableOpacity style={[styles.actionBtn, styles.btnPrimary]} disabled={isResolving} onPress={() => handleResolve(true)}>
+                  <Text style={styles.btnPrimaryText}>Aprobar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.btnNoAsistio]}
-                  disabled={isResolving}
-                  onPress={() => handleResolve(false)}
-                >
-                  <Text style={styles.btnNoAsistioText}>Rechazar</Text>
+                <TouchableOpacity style={[styles.actionBtn, styles.btnGhost]} disabled={isResolving} onPress={() => handleResolve(false)}>
+                  <Text style={styles.btnGhostText}>Rechazar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -280,22 +205,12 @@ export default function CronogramaScreen(): React.ReactElement {
           )}
 
           {showActions && (
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.btnAsistio]}
-                onPress={handleAtender}
-                accessibilityRole="button"
-                accessibilityLabel={`Atender a ${item.patientName || 'la paciente'}`}
-                accessibilityHint="Abre el registro clínico de la cita: control, laboratorios, tamizajes y tratamiento"
-              >
-                <Text style={styles.btnAsistioText}>Atender</Text>
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={[styles.actionBtn, styles.btnPrimary]} onPress={handleAtender}>
+                <Text style={styles.btnPrimaryText}>Atender</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.btnNoAsistio]}
-                onPress={handleNoAsistio}
-              >
-                <Text style={styles.btnNoAsistioText}>No asistió</Text>
+              <TouchableOpacity style={[styles.actionBtn, styles.btnGhost]} onPress={handleNoAsistio}>
+                <Text style={styles.btnGhostText}>No asistió</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -304,191 +219,169 @@ export default function CronogramaScreen(): React.ReactElement {
     );
   };
 
-  const renderEmpty = () => (
-    <View style={{ marginTop: spacing.lg, paddingHorizontal: spacing.lg }}>
-      {isLoading ? (
-        <ListSkeleton count={5} />
-      ) : (
-        <EmptyState
-          icon={CalendarIcon as any}
-          title="Sin citas programadas"
-          description="No tienes citas agendadas para este día."
-          themeColor={BRAND}
-        />
-      )}
-    </View>
-  );
+  const SEGMENTS: { key: Scope; label: string }[] = [
+    { key: 'hoy', label: 'Hoy' },
+    { key: 'proximas', label: 'Próximas' },
+    { key: 'historial', label: 'Historial' },
+    { key: 'todas', label: 'Todas' },
+  ];
 
   return (
-    <View style={styles.container}>
-      {/* Header fuera del FlashList: evita problemas de nodos de texto/whitespace
-          en web cuando el ListHeaderComponent contiene StatusBar/elementos que
-          renderizan null. */}
-      {renderHeader()}
-      <FlashList
-        data={processedAppointments}
-        keyExtractor={(item) => item.id || item._id}
-        renderItem={renderItem}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
-      />
+    <ScreenLayout
+      role="obstetra"
+      title="Cronograma"
+      subtitle="Agenda de citas"
+      accentColor={BRAND}
+      scroll={false}
+      actions={<NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />}
+    >
+      {/* Buscador */}
+      <View style={styles.searchBar}>
+        <Search size={18} color={commonColors.textSecondary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar paciente por nombre o DNI"
+          placeholderTextColor={commonColors.textTertiary}
+          value={searchInput}
+          onChangeText={setSearchInput}
+          returnKeyType="search"
+        />
+        {searchInput.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchInput('')} hitSlop={8} accessibilityLabel="Limpiar búsqueda">
+            <X size={16} color={commonColors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
 
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.8}
-        onPress={() => setModalVisible(true)}
-      >
-        <Plus size={28} color={obstetraColors.onPrimary} />
+      {/* Segmentos de filtro */}
+      <View style={styles.segments}>
+        {SEGMENTS.map((s) => {
+          const active = scope === s.key;
+          const count = counts[s.key];
+          return (
+            <TouchableOpacity
+              key={s.key}
+              style={[styles.segment, active && styles.segmentActive]}
+              onPress={() => setScope(s.key)}
+              accessibilityRole="button"
+              accessibilityLabel={`${s.label}${count != null ? `, ${count} citas` : ''}`}
+            >
+              <Text style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1}>
+                {s.label}{count != null ? ` (${count})` : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {isLoading ? (
+        <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View>
+      ) : (
+        <SectionList
+          sections={sections as any}
+          keyExtractor={(item: any) => item.id}
+          renderItem={renderItem}
+          renderSectionHeader={({ section }: any) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderText}>{section.title}</Text>
+              <Text style={styles.sectionHeaderSub}>{formatFechaLarga(section.data[0]?.fecha)}</Text>
+            </View>
+          )}
+          stickySectionHeadersEnabled
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <EmptyState
+              icon={Clock as any}
+              title="Sin citas"
+              description={search ? 'No hay resultados para tu búsqueda.' : 'No hay citas para este filtro.'}
+              themeColor={BRAND}
+            />
+          }
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
+        />
+      )}
+
+      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => setModalVisible(true)} accessibilityLabel="Nueva cita">
+        <Plus size={26} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
 
-      <NuevaCitaModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-      />
-    </View>
+      <NuevaCitaModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+    </ScreenLayout>
   );
 }
 
+/** Conteos por segmento (consultas ligeras, solo para badges). */
+function useAppointmentScopeCounts(): Record<Scope, number | null> {
+  const hoy = useAppointmentsFiltered({ scope: 'hoy' });
+  const proximas = useAppointmentsFiltered({ scope: 'proximas' });
+  const historial = useAppointmentsFiltered({ scope: 'historial' });
+  const todas = useAppointmentsFiltered({ scope: 'todas' });
+  return {
+    hoy: hoy.data?.length ?? null,
+    proximas: proximas.data?.length ?? null,
+    historial: historial.data?.length ?? null,
+    todas: todas.data?.length ?? null,
+  };
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  headerContainer: { marginBottom: spacing.sm2 },
-  headerWrapper: {
-    paddingBottom: spacing.xl,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, marginBottom: spacing.md,
   },
-  safeAreaHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
-  tabsWrapper: {
+  searchInput: { flex: 1, ...typography.body, color: commonColors.text, padding: 0 },
+
+  segments: { flexDirection: 'row', gap: spacing.xs2, marginBottom: spacing.sm },
+  segment: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, alignItems: 'center' },
+  segmentActive: { backgroundColor: BRAND },
+  segmentText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
+  segmentTextActive: { color: commonColors.white },
+
+  listContent: { paddingBottom: layout.tabBarSpace + 80, paddingTop: spacing.xs },
+
+  sectionHeader: { backgroundColor: commonColors.background, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  sectionHeaderText: { ...typography.label, fontWeight: '700', color: commonColors.text },
+  sectionHeaderSub: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'capitalize' },
+
+  card: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    marginTop: -spacing.lg,
-    gap: spacing.sm2,
-  },
-  tabButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
     backgroundColor: commonColors.surface,
-    ...shadows.card,
-  },
-  tabButtonActive: {
-    backgroundColor: BRAND,
-  },
-  tabText: {
-    ...typography.label,
-    fontWeight: '600',
-    color: commonColors.textSecondary,
-  },
-  tabTextActive: {
-    color: obstetraColors.onPrimary,
-  },
-  tabCount: {
-    minWidth: 20,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: borderRadius.full,
-    backgroundColor: commonColors.surfaceAlt,
-    alignItems: 'center',
-  },
-  tabCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  tabCountText: { ...typography.overline, letterSpacing: 0, color: commonColors.textSecondary, fontWeight: '700' },
-  tabCountTextActive: { color: commonColors.white },
-  listContent: { paddingBottom: layout.tabBarSpace },
-  appointmentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: commonColors.surface,
-    borderRadius: 24,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 12,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: commonColors.border,
   },
-  timeLine: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingRight: 16,
-    borderRightWidth: 1,
-    borderRightColor: commonColors.borderLight,
-    minWidth: 70,
-  },
-  timeText: { ...typography.h3, color: BRAND },
-  timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
-  appointmentCardAlert: { borderColor: semanticColors.warning, borderWidth: 1.5 },
-  rescheduleBox: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: semanticColors.warningLight,
-  },
-  convertBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 10, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: BRAND, backgroundColor: obstetraColors.primaryLight },
-  convertBtnText: { ...typography.caption, color: BRAND, fontWeight: '700' },
-  rescheduleTitle: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '700', color: semanticColors.warning },
+  cardAlert: { borderColor: semanticColors.warning, backgroundColor: semanticColors.warningLight },
+  timeCol: { minWidth: 76, paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, justifyContent: 'center' },
+  timeText: { ...typography.label, fontWeight: '700', color: commonColors.text },
+  cardBody: { flex: 1, paddingLeft: spacing.md, minWidth: 0 },
+  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2 },
+  patientName: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, flex: 1 },
+  apptType: { ...typography.bodySm, color: commonColors.textSecondary },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  metaText: { ...typography.caption, color: commonColors.textTertiary },
+
+  rescheduleBox: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm, marginTop: spacing.sm, borderWidth: 1, borderColor: semanticColors.warning },
+  rescheduleTitle: { ...typography.caption, fontWeight: '700', color: commonColors.text },
   rescheduleMotivo: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
-  appointmentHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1, marginRight: 8 },
-  appointmentType: { ...typography.bodySmall, color: commonColors.textSecondary },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 4 },
-  infoText: { ...typography.caption, color: commonColors.textTertiary },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  actionButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  btnAsistio: {
-    backgroundColor: semanticColors.successLight,
-    borderWidth: 1,
-    borderColor: semanticColors.success,
-  },
-  btnAsistioText: {
-    color: semanticColors.success,
-    ...typography.caption,
-    fontFamily: typography.label.fontFamily,
-    fontWeight: '700',
-  },
-  btnNoAsistio: {
-    backgroundColor: semanticColors.dangerLight,
-    borderWidth: 1,
-    borderColor: semanticColors.danger,
-  },
-  btnNoAsistioText: {
-    color: semanticColors.danger,
-    ...typography.caption,
-    fontFamily: typography.label.fontFamily,
-    fontWeight: '700',
-  },
+
+  convertBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm, alignSelf: 'flex-start' },
+  convertBtnText: { ...typography.caption, fontWeight: '600', color: BRAND },
+
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  actionBtn: { flex: 1, paddingVertical: spacing.sm + 2, borderRadius: borderRadius.full, alignItems: 'center' },
+  btnPrimary: { backgroundColor: BRAND },
+  btnPrimaryText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
+  btnGhost: { backgroundColor: commonColors.surfaceAlt },
+  btnGhostText: { ...typography.caption, fontWeight: '700', color: commonColors.textSecondary },
+
   fab: {
-    position: 'absolute',
-    bottom: 32,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: BRAND,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...coloredGlow(BRAND),
-    zIndex: 999,
+    position: 'absolute', right: spacing.lg, bottom: layout.tabBarSpace + spacing.sm,
+    width: 56, height: 56, borderRadius: 28, backgroundColor: BRAND,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
 });

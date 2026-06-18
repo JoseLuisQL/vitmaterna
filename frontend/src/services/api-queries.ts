@@ -461,6 +461,41 @@ export const useGestanteAppointments = () =>
   useQuery({ queryKey: ['appointments', 'raw'], queryFn: fetchAppointmentsRaw });
 
 /**
+ * Citas filtradas en el servidor (scope/estado/búsqueda/rango). Devuelve los
+ * datos crudos del backend, ya ordenados por prioridad. Comparte el namespace
+ * ['appointments'] para que el tiempo real las invalide.
+ */
+export interface AppointmentFilters {
+  scope?: 'hoy' | 'proximas' | 'historial' | 'todas';
+  estado?: string;
+  modalidad?: 'establecimiento' | 'domiciliaria';
+  search?: string;
+  desde?: string;
+  hasta?: string;
+}
+export const fetchAppointmentsFiltered = async (filters: AppointmentFilters) => {
+  try {
+    const params: Record<string, string> = {};
+    if (filters.scope) params.scope = filters.scope;
+    if (filters.estado) params.estado = filters.estado;
+    if (filters.modalidad) params.modalidad = filters.modalidad;
+    if (filters.search && filters.search.trim()) params.search = filters.search.trim();
+    if (filters.desde) params.desde = filters.desde;
+    if (filters.hasta) params.hasta = filters.hasta;
+    const res = await api.get('/appointments', { params });
+    return res.data?.data || [];
+  } catch (e) {
+    if (__DEV__) console.warn('Appointments (filtered) fetch failed:', e);
+    return [];
+  }
+};
+export const useAppointmentsFiltered = (filters: AppointmentFilters) =>
+  useQuery({
+    queryKey: ['appointments', 'filtered', filters],
+    queryFn: () => fetchAppointmentsFiltered(filters),
+  });
+
+/**
  * Tratamientos de la gestante. La query cachea `{ treatments, gamificacion }`;
  * este hook expone solo el array para mantener la compatibilidad con la pantalla.
  */

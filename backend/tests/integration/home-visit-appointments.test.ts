@@ -38,7 +38,7 @@ describe('Citas domiciliarias y ubicación GPS (Fase 1)', () => {
     const res = await request(app)
       .post(`${PREFIX}/appointments`)
       .set('Authorization', `Bearer ${obstetraToken}`)
-      .send({ gestanteId, fecha: '2037-10-01', hora: '09:00', modalidad: 'domiciliaria', motivo: 'Visita domiciliaria' });
+      .send({ gestanteId, fecha: '2027-01-15', hora: '09:00', modalidad: 'domiciliaria', motivo: 'Visita domiciliaria' });
     expect(res.status).toBe(201);
     expect(res.body.data.modalidad).toBe('domiciliaria');
     created.push(res.body.data.id);
@@ -48,7 +48,7 @@ describe('Citas domiciliarias y ubicación GPS (Fase 1)', () => {
     const res = await request(app)
       .post(`${PREFIX}/appointments`)
       .set('Authorization', `Bearer ${obstetraToken}`)
-      .send({ gestanteId, fecha: '2037-10-01', hora: '09:00', modalidad: 'domiciliaria' });
+      .send({ gestanteId, fecha: '2027-01-15', hora: '09:00', modalidad: 'domiciliaria' });
     expect(res.status).toBe(201);
     created.push(res.body.data.id);
   });
@@ -65,7 +65,7 @@ describe('Citas domiciliarias y ubicación GPS (Fase 1)', () => {
     const create = await request(app)
       .post(`${PREFIX}/appointments`)
       .set('Authorization', `Bearer ${obstetraToken}`)
-      .send({ gestanteId, fecha: '2037-11-05', hora: '10:00', motivo: 'Control prenatal' });
+      .send({ gestanteId, fecha: '2027-02-05', hora: '10:00', motivo: 'Control prenatal' });
     const id = create.body.data.id;
     created.push(id);
     expect(create.body.data.modalidad).toBe('establecimiento');
@@ -82,7 +82,7 @@ describe('Citas domiciliarias y ubicación GPS (Fase 1)', () => {
     const create = await request(app)
       .post(`${PREFIX}/appointments`)
       .set('Authorization', `Bearer ${obstetraToken}`)
-      .send({ gestanteId, fecha: '2037-12-06', hora: '11:00' });
+      .send({ gestanteId, fecha: '2027-03-06', hora: '11:00' });
     const id = create.body.data.id;
     created.push(id);
 
