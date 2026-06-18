@@ -1,12 +1,20 @@
+/**
+ * VITMATERNA — Obstetra: Inicio (panel de trabajo)
+ *
+ * Rediseño minimalista y ordenado, alineado con el dashboard del administrador:
+ *   - Header estandarizado (ScreenLayout), sin solapamientos ni avatar recargado.
+ *   - 3 KPIs accionables, sobrios (icono neutro, sin fondos de color).
+ *   - Distribución de riesgo compacta y discreta (acento solo donde aporta).
+ *   - Citas de hoy en lista clara.
+ * Evita la sobrecarga visual y de color; los textos se ajustan sin cortarse.
+ */
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Activity, Calendar, Users, AlertTriangle, ChevronRight as Chevron, Menu } from 'lucide-react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { ChevronRight, Activity, Calendar, Users, AlertTriangle, Menu } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
-import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
@@ -14,36 +22,34 @@ import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
-import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
-/** Inicial del nombre mostrado, robusta (antes usaba charAt(4), frágil). */
-function getInitial(user: { firstName?: string; lastName?: string } | null): string {
-  const src = user?.lastName || user?.firstName || 'O';
-  return src.trim().charAt(0).toUpperCase() || 'O';
+/** KPI sobrio: icono neutro + cifra + etiqueta. Acento opcional solo en la cifra. */
+function Kpi({
+  icon: Icon, value, label, onPress, alert,
+}: { icon: any; value: number; label: string; onPress: () => void; alert?: boolean }) {
+  return (
+    <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${value} ${label}`}>
+      <Icon size={20} color={alert && value > 0 ? semanticColors.danger : commonColors.textSecondary} />
+      <Text style={[styles.kpiValue, alert && value > 0 && { color: semanticColors.danger }]} numberOfLines={1}>{value}</Text>
+      <Text style={styles.kpiLabel} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  );
 }
 
 export default function ObstetraDashboard(): React.ReactElement {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { open: openSidebar } = useSidebar();
-  const displayName = user?.lastName ? `Dra. ${user.lastName}` : 'Obstetra';
+  // Nombre real, sin prefijos asumidos (no se asume "Dra.").
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || 'Obstetra';
+  const fecha = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const { data: stats, isLoading: isStatsLoading, refetch: refetchStats, isRefetching: isRefetchingStats } = useObstetraDashboard();
   const { data: appointments, isLoading: isApptsLoading, refetch: refetchAppts, isRefetching: isRefetchingAppts } = useTodayAppointments();
 
   useRefetchOnFocus([refetchStats, refetchAppts]);
-
-  if (isStatsLoading || isApptsLoading) {
-    return (
-      <View style={styles.container}>
-        <SafeAreaView edges={['top']} style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-          <DashboardSkeleton count={3} />
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   const onRefresh = () => {
     refetchStats();
@@ -55,111 +61,64 @@ export default function ObstetraDashboard(): React.ReactElement {
   const totalRisk = (riskDistribution.low || 0) + (riskDistribution.medium || 0) + (riskDistribution.high || 0);
 
   const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerWrapper}>
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={openSidebar}
-              style={styles.menuBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir menú"
-            >
-              <Menu size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.greeting}>Bienvenida,</Text>
-              <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-              <Text style={styles.todayDate}>
-                {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
-              </Text>
-            </View>
-            <View style={styles.headerActions}>
-              <NotificationBell href="/(obstetra)/notificaciones" />
-              <TouchableOpacity
-                style={styles.avatarWrap}
-                onPress={() => router.push('/(obstetra)/(tabs)/perfil')}
-                accessibilityRole="button"
-                accessibilityLabel="Mi perfil"
-              >
-                <Text style={styles.avatarText}>{getInitial(user)}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+    <View>
+      {/* Saludo discreto */}
+      <Text style={styles.greeting} numberOfLines={1}>Hola, {displayName}</Text>
+      <Text style={styles.todayDate} numberOfLines={1}>{fecha}</Text>
 
-      <View style={styles.topCardsWrapper}>
-        {/* Resumen del día: 3 KPIs accionables */}
-        <View style={styles.kpiRow}>
-          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/(tabs)/cronograma')}>
-            <View style={[styles.kpiIcon, { backgroundColor: obstetraColors.primaryLight }]}>
-              <Calendar size={20} color={BRAND} />
-            </View>
-            <Text style={styles.kpiValue}>{appointmentsToday}</Text>
-            <Text style={styles.kpiLabel}>Citas hoy</Text>
-          </TouchableOpacity>
+      {/* 3 KPIs accionables, sobrios */}
+      <View style={styles.kpiRow}>
+        <Kpi icon={Calendar} value={appointmentsToday} label="Citas hoy" onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} />
+        <Kpi icon={Users} value={totalPatients} label="Pacientes" onPress={() => router.push('/(obstetra)/(tabs)/gestantes')} />
+        <Kpi icon={AlertTriangle} value={alerts} label="Alertas" alert onPress={() => router.push('/(obstetra)/notificaciones')} />
+      </View>
 
-          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/(tabs)/gestantes')}>
-            <View style={[styles.kpiIcon, { backgroundColor: semanticColors.successLight }]}>
-              <Users size={20} color={semanticColors.success} />
-            </View>
-            <Text style={styles.kpiValue}>{totalPatients}</Text>
-            <Text style={styles.kpiLabel}>Pacientes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.kpiCard} activeOpacity={0.85} onPress={() => router.push('/(obstetra)/notificaciones')}>
-            <View style={[styles.kpiIcon, { backgroundColor: semanticColors.dangerLight }]}>
-              <AlertTriangle size={20} color={semanticColors.danger} />
-            </View>
-            <Text style={[styles.kpiValue, alerts > 0 && { color: semanticColors.danger }]}>{alerts}</Text>
-            <Text style={styles.kpiLabel}>Alertas</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Distribución de riesgo: compacta, con enlace a reportes */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
-          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/reportes')} style={styles.linkRow} accessibilityRole="button">
-            <Text style={styles.sectionLink}>Ver reportes</Text>
-            <Chevron size={14} color={BRAND} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.riskCard}>
-          <View style={styles.riskRow}>
-            <View style={styles.riskItem}>
+      {/* Distribución de riesgo: discreta, una sola tarjeta */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
+        <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/reportes')} accessibilityRole="button">
+          <Text style={styles.sectionLink}>Ver reportes</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.riskCard}>
+        <View style={styles.riskRow}>
+          <View style={styles.riskItem}>
+            <Text style={styles.riskCount}>{riskDistribution.low || 0}</Text>
+            <View style={styles.riskLabelRow}>
               <View style={[styles.riskDot, { backgroundColor: riskColors.riskGreen }]} />
-              <Text style={styles.riskCount}>{riskDistribution.low || 0}</Text>
               <Text style={styles.riskLabel}>Bajo</Text>
             </View>
-            <View style={styles.riskItem}>
+          </View>
+          <View style={styles.riskItem}>
+            <Text style={styles.riskCount}>{riskDistribution.medium || 0}</Text>
+            <View style={styles.riskLabelRow}>
               <View style={[styles.riskDot, { backgroundColor: riskColors.riskYellow }]} />
-              <Text style={styles.riskCount}>{riskDistribution.medium || 0}</Text>
               <Text style={styles.riskLabel}>Medio</Text>
             </View>
-            <View style={styles.riskItem}>
+          </View>
+          <View style={styles.riskItem}>
+            <Text style={styles.riskCount}>{riskDistribution.high || 0}</Text>
+            <View style={styles.riskLabelRow}>
               <View style={[styles.riskDot, { backgroundColor: riskColors.riskRed }]} />
-              <Text style={styles.riskCount}>{riskDistribution.high || 0}</Text>
               <Text style={styles.riskLabel}>Alto</Text>
             </View>
           </View>
-          {totalRisk > 0 && (
-            <View style={styles.riskBarContainer}>
-              <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 0.001), backgroundColor: riskColors.riskGreen }]} />
-              <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 0.001), backgroundColor: riskColors.riskYellow }]} />
-              <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 0.001), backgroundColor: riskColors.riskRed }]} />
-            </View>
-          )}
         </View>
+        {totalRisk > 0 && (
+          <View style={styles.riskBarContainer}>
+            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 0.001), backgroundColor: riskColors.riskGreen }]} />
+            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 0.001), backgroundColor: riskColors.riskYellow }]} />
+            <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 0.001), backgroundColor: riskColors.riskRed }]} />
+          </View>
+        )}
+      </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Citas de hoy</Text>
-          <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} accessibilityRole="button">
-            <Text style={styles.sectionLink}>Ver todas</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Citas de hoy */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Citas de hoy</Text>
+        <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} accessibilityRole="button">
+          <Text style={styles.sectionLink}>Ver todas</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -167,14 +126,35 @@ export default function ObstetraDashboard(): React.ReactElement {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconWrap}>
-        <Activity size={32} color={commonColors.textTertiary} />
+        <Activity size={28} color={commonColors.textTertiary} />
       </View>
       <Text style={styles.emptyText}>No tienes citas programadas para hoy.</Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <ScreenLayout
+      role="obstetra"
+      title="Inicio"
+      subtitle="Panel de trabajo"
+      loading={isStatsLoading || isApptsLoading}
+      accentColor={BRAND}
+      scroll={false}
+      actions={
+        <>
+          <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />
+          <TouchableOpacity
+            onPress={openSidebar}
+            style={styles.menuBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir menú"
+          >
+            <Menu size={22} color={commonColors.white} />
+          </TouchableOpacity>
+        </>
+      }
+    >
       <FlatList
         data={appointments}
         keyExtractor={(item) => item.id || item._id}
@@ -191,7 +171,7 @@ export default function ObstetraDashboard(): React.ReactElement {
             onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
           >
             <View style={styles.timeLine}>
-              <Text style={styles.timeText}>
+              <Text style={styles.timeText} numberOfLines={1}>
                 {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
               </Text>
               <Text style={styles.timeAmPm}>
@@ -209,48 +189,43 @@ export default function ObstetraDashboard(): React.ReactElement {
           </TouchableOpacity>
         )}
       />
-    </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  flatListContent: { paddingBottom: layout.tabBarSpace },
-  headerContainer: { marginBottom: spacing.sm2 },
-  headerWrapper: {
-    paddingBottom: spacing.xl,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  flatListContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
-  greeting: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginBottom: 2 },
-  name: { ...typography.display, color: commonColors.white },
-  avatarWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { ...typography.h2, color: commonColors.white },
-  topCardsWrapper: { paddingHorizontal: spacing.lg, marginTop: -spacing.lg },
-  todayDate: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', textTransform: 'capitalize', marginTop: 2 },
 
+  greeting: { ...typography.h3, color: commonColors.text },
+  todayDate: { ...typography.bodySm, color: commonColors.textSecondary, textTransform: 'capitalize', marginTop: 2, marginBottom: spacing.lg },
+
+  // KPIs sobrios
   kpiRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  kpiCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
-  kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  kpiValue: { ...typography.numericMd, color: commonColors.text },
-  kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  kpiCard: {
+    flex: 1,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    gap: spacing.sm,
+  },
+  kpiValue: { ...typography.h1, color: commonColors.text },
+  kpiLabel: { ...typography.caption, color: commonColors.textSecondary },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, marginTop: spacing.sm },
-  sectionTitle: { ...typography.h3, color: commonColors.text },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  sectionLink: { ...typography.label, color: BRAND, fontWeight: '600' },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm },
+  sectionTitle: { ...typography.label, fontWeight: '700', color: commonColors.text },
+  sectionLink: { ...typography.caption, color: BRAND, fontWeight: '600' },
 
-  riskCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, ...shadows.card },
-  riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  riskItem: { alignItems: 'center', flex: 1 },
-  riskDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
-  riskCount: { ...typography.h2, color: commonColors.text, marginBottom: 2 },
-  riskLabel: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  riskBarContainer: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
+  riskCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: commonColors.border },
+  riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },
+  riskItem: { alignItems: 'center', flex: 1, gap: 6 },
+  riskCount: { ...typography.h2, color: commonColors.text },
+  riskLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  riskDot: { width: 8, height: 8, borderRadius: 4 },
+  riskLabel: { ...typography.caption, color: commonColors.textSecondary },
+  riskBarContainer: { flexDirection: 'row', height: 6, borderRadius: borderRadius.full, overflow: 'hidden' },
   riskBarSegment: { height: '100%' },
 
   appointmentCard: {
@@ -259,18 +234,18 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
     padding: spacing.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm2,
-    ...shadows.card,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: commonColors.border,
   },
-  timeLine: { alignItems: 'center', justifyContent: 'center', paddingRight: 16, borderRightWidth: 1, borderRightColor: commonColors.borderLight, minWidth: 70 },
-  timeText: { ...typography.h3, color: BRAND },
+  timeLine: { alignItems: 'center', justifyContent: 'center', paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, minWidth: 64 },
+  timeText: { ...typography.h3, color: commonColors.text },
   timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
-  appointmentContent: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
+  appointmentContent: { flex: 1, paddingLeft: spacing.md, justifyContent: 'center', minWidth: 0 },
   appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: spacing.sm },
-  patientName: { ...typography.bodyMedium, color: commonColors.text, flex: 1 },
+  patientName: { ...typography.bodyMedium, fontWeight: '600', color: commonColors.text, flex: 1 },
   appointmentType: { ...typography.bodySmall, color: commonColors.textSecondary },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   emptyText: { ...typography.bodyMedium, color: commonColors.textSecondary },
 });
