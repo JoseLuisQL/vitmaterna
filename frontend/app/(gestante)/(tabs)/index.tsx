@@ -75,11 +75,15 @@ export default function GestanteDashboard(): React.ReactElement {
   const profile = data?.profile;
 
   // Cálculo memoizado de semanas de gestación (evita recálculo por render).
+  // Cuenta días COMPLETOS desde la FUM hasta hoy (sin Math.abs, para que una FUM
+  // futura no produzca semanas erróneas) y lo acota a 0–42.
   const weeks = React.useMemo(() => {
     if (!profile?.fum) return 0;
     const fum = new Date(profile.fum);
-    const diffDays = Math.ceil(Math.abs(Date.now() - fum.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.min(42, Math.max(0, Math.floor(diffDays / 7)));
+    if (isNaN(fum.getTime())) return 0;
+    const diffDays = Math.floor((Date.now() - fum.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return 0;
+    return Math.min(42, Math.floor(diffDays / 7));
   }, [profile?.fum]);
 
   const gestationalWeekText = weeks > 0 ? `Semana ${weeks}` : 'Semana --';

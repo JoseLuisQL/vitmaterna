@@ -35,30 +35,87 @@ import { categoryMeta, typeMeta, readingTime, CATEGORY_META } from '../../../src
 const BRAND = gestanteColors.primary;
 
 // ─────────────────────────── Calculadora EG ───────────────────────────
+
+/** Parsea 'YYYY-MM-DD' a una fecha LOCAL a medianoche (evita el desfase UTC). */
+function parseLocalDate(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/** Medianoche local de hoy, para contar días completos sin sesgo horario. */
+function todayLocal(): Date {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+interface EgResultado {
+  semanas: number;
+  dias: number;
+  totalDias: number;
+  trimestre: number;
+  fpp: string;
+  restantes: number;
+  progreso: number; // 0..1 sobre 40 semanas
+}
+
 function CalculadoraEG() {
   const [fum, setFum] = useState('');
-  const [resultado, setResultado] = useState<{ semanas: number; dias: number; trimestre: number; fpp: string; restantes: number } | null>(null);
+  const [resultado, setResultado] = useState<EgResultado | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function calcular() {
-    if (!fum || !/^\d{4}-\d{2}-\d{2}$/.test(fum)) return;
-    const fumDate = new Date(fum);
-    if (isNaN(fumDate.getTime())) return;
-    const hoy = new Date();
+  // Cálculo reactivo: se recalcula al cambiar la FUM (sin necesidad de botón),
+  // pero igual se ofrece el botón para reforzar la acción.
+  const calcular = React.useCallback((valor: string) => {
+    setResultado(null);
+    if (!valor) {
+      setError(null);
+      return;
+    }
+    const fumDate = parseLocalDate(valor);
+    if (!fumDate) {
+      setError('Selecciona una fecha válida.');
+      return;
+    }
+    const hoy = todayLocal();
     const totalDias = Math.floor((hoy.getTime() - fumDate.getTime()) / 86400000);
-    if (totalDias < 0 || totalDias > 294) return;
+
+    if (totalDias < 0) {
+      setError('La fecha no puede ser futura. Revisa tu última menstruación.');
+      return;
+    }
+    if (totalDias > 300) {
+      setError('Han pasado más de 42 semanas. Verifica la fecha o consulta a tu obstetra.');
+      return;
+    }
+
+    setError(null);
     const semanas = Math.floor(totalDias / 7);
     const dias = totalDias % 7;
+    // FPP por regla de Naegele (FUM + 7 días − 3 meses + 1 año).
     const fppDate = new Date(fumDate);
     fppDate.setDate(fppDate.getDate() + 7);
     fppDate.setMonth(fppDate.getMonth() - 3);
     fppDate.setFullYear(fppDate.getFullYear() + 1);
+
     setResultado({
-      semanas, dias,
+      semanas,
+      dias,
+      totalDias,
       trimestre: semanas <= 13 ? 1 : semanas <= 27 ? 2 : 3,
       fpp: fppDate.toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }),
       restantes: Math.max(0, Math.round((fppDate.getTime() - hoy.getTime()) / 86400000)),
+      progreso: Math.min(1, totalDias / 280),
     });
-  }
+  }, []);
+
+  const handleChange = (v: string) => {
+    setFum(v);
+    calcular(v);
+  };
+
+  const TRIMESTRE_LABEL = ['', 'Primer trimestre', 'Segundo trimestre', 'Tercer trimestre'];
 
   return (
     <View style={styles.card}>
@@ -66,29 +123,66 @@ function CalculadoraEG() {
         label="Fecha de última menstruación (FUM)"
         mode="date"
         value={fum}
-        onChange={setFum}
+        onChange={handleChange}
         themeColor={BRAND}
         maximumDate={new Date()}
         placeholder="Seleccionar fecha"
+        error={error ?? undefined}
+        helperText={!error && !resultado ? 'Elige el primer día de tu última regla.' : undefined}
       />
-      <AppButton title="Calcular edad gestacional" onPress={calcular} themeColor={BRAND} style={{ marginTop: spacing.md }} />
+      <AppButton
+        title="Calcular edad gestacional"
+        onPress={() => calcular(fum)}
+        themeColor={BRAND}
+        disabled={!fum}
+        style={{ marginTop: spacing.md }}
+      />
+
       {resultado && (
         <View style={calcStyles.results}>
-          <View style={calcStyles.resultGrid}>
-            <View style={calcStyles.resultItem}>
-              <Text style={calcStyles.resultValue}>{resultado.semanas}</Text>
-              <Text style={calcStyles.resultLabel}>sem + {resultado.dias} días</Text>
+          {/* Encabezado destacado: semanas + barra de progreso del embarazo */}
+          <View style={calcStyles.heroBox}>
+            <Text style={calcStyles.heroEyebrow}>{TRIMESTRE_LABEL[resultado.trimestre]}</Text>
+            <View style={calcStyles.heroNumberRow}>
+              <Text style={calcStyles.heroNumber}>{resultado.semanas}</Text>
+              <Text style={calcStyles.heroUnit}>
+                semana{resultado.semanas === 1 ? '' : 's'}
+                {resultado.dias > 0 ? ` + ${resultado.dias} día${resultado.dias === 1 ? '' : 's'}` : ''}
+              </Text>
             </View>
-            <View style={calcStyles.resultItem}>
-              <Text style={calcStyles.resultValue}>{resultado.trimestre}°</Text>
-              <Text style={calcStyles.resultLabel}>trimestre</Text>
+            <View
+              style={calcStyles.progressTrack}
+              accessibilityLabel={`Progreso del embarazo: ${Math.round(resultado.progreso * 100)} por ciento`}
+            >
+              <View style={[calcStyles.progressFill, { width: `${Math.round(resultado.progreso * 100)}%` }]} />
+            </View>
+            <View style={calcStyles.progressLabels}>
+              <Text style={calcStyles.progressLabelText}>Sem 0</Text>
+              <Text style={calcStyles.progressLabelText}>Sem 40</Text>
             </View>
           </View>
+
+          {/* Chips de datos clave */}
+          <View style={calcStyles.chipRow}>
+            <View style={calcStyles.chip}>
+              <Text style={calcStyles.chipValue}>{resultado.trimestre}°</Text>
+              <Text style={calcStyles.chipLabel}>trimestre</Text>
+            </View>
+            <View style={calcStyles.chip}>
+              <Text style={calcStyles.chipValue}>{resultado.restantes}</Text>
+              <Text style={calcStyles.chipLabel}>días para el parto</Text>
+            </View>
+          </View>
+
+          {/* FPP destacada */}
           <View style={calcStyles.fppBox}>
-            <Text style={calcStyles.fppLabel}>Fecha Probable de Parto</Text>
+            <Text style={calcStyles.fppLabel}>Fecha probable de parto</Text>
             <Text style={calcStyles.fppDate}>{resultado.fpp}</Text>
-            <Text style={calcStyles.fppDays}>{resultado.restantes} días restantes</Text>
           </View>
+
+          <Text style={calcStyles.disclaimer}>
+            Cálculo estimado según tu FUM. Tu obstetra confirma la fecha con la ecografía.
+          </Text>
         </View>
       )}
     </View>
@@ -97,14 +191,51 @@ function CalculadoraEG() {
 
 const calcStyles = StyleSheet.create({
   results: { marginTop: spacing.lg, gap: spacing.md },
-  resultGrid: { flexDirection: 'row', gap: spacing.md },
-  resultItem: { flex: 1, backgroundColor: commonColors.background, borderRadius: borderRadius.lg, padding: spacing.lg, alignItems: 'center' },
-  resultValue: { ...typography.display, color: BRAND },
-  resultLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 4 },
-  fppBox: { backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.lg, alignItems: 'center' },
+  heroBox: {
+    backgroundColor: gestanteColors.primaryLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+  },
+  heroEyebrow: {
+    ...typography.overline,
+    color: BRAND,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  heroNumberRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: 2 },
+  heroNumber: { ...typography.display, color: BRAND, lineHeight: 52 },
+  heroUnit: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  progressTrack: {
+    height: 8,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.surface,
+    overflow: 'hidden',
+    marginTop: spacing.md,
+  },
+  progressFill: { height: '100%', borderRadius: borderRadius.full, backgroundColor: BRAND },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  progressLabelText: { ...typography.caption, color: commonColors.textSecondary },
+  chipRow: { flexDirection: 'row', gap: spacing.md },
+  chip: {
+    flex: 1,
+    backgroundColor: commonColors.background,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  chipValue: { ...typography.h1, color: commonColors.text },
+  chipLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2, textAlign: 'center' },
+  fppBox: {
+    backgroundColor: commonColors.surface,
+    borderWidth: 1,
+    borderColor: gestanteColors.primaryLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
   fppLabel: { ...typography.overline, color: BRAND, textTransform: 'uppercase', letterSpacing: 0.5 },
-  fppDate: { ...typography.h2, color: commonColors.text, marginTop: spacing.sm },
-  fppDays: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 4 },
+  fppDate: { ...typography.h2, color: commonColors.text, marginTop: spacing.sm, textAlign: 'center' },
+  disclaimer: { ...typography.caption, color: commonColors.textSecondary, textAlign: 'center', fontStyle: 'italic' },
 });
 
 // ─────────────────────────── Tarjeta de contenido ───────────────────────────
