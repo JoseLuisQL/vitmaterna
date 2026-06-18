@@ -13,7 +13,6 @@ import {
   Phone,
   ChevronRight,
   BookOpen,
-  MessageCircle,
   Menu,
 } from 'lucide-react-native';
 import { AppCard } from '../../../src/components/ui/AppCard';
@@ -269,14 +268,6 @@ export default function GestanteDashboard(): React.ReactElement {
               </View>
               <Text style={styles.quickActionTitle} numberOfLines={1}>Emergencia</Text>
               <Text style={styles.quickActionSubtitle} numberOfLines={1}>Pedir auxilio</Text>
-            </AppCard>
-
-            <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/chat')}>
-              <View style={styles.quickActionIcon}>
-                <MessageCircle size={24} color={commonColors.textSecondary} />
-              </View>
-              <Text style={styles.quickActionTitle} numberOfLines={1}>Chat</Text>
-              <Text style={styles.quickActionSubtitle} numberOfLines={1}>Consulta</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/educacion')}>

@@ -109,21 +109,25 @@ export function calcularRachas(
   return { rachaActual, mejorRacha, totalDiasTomados };
 }
 
-/** Hitos de racha (días consecutivos) que desbloquean logros. */
+/**
+ * Hitos de racha (días consecutivos) que desbloquean logros.
+ * `icono` es un IDENTIFICADOR de icono (no un emoji): el frontend lo mapea a un
+ * icono profesional (Lucide). Mantiene la UI consistente y sin emojis.
+ */
 const STREAK_MILESTONES: { dias: number; id: string; titulo: string; descripcion: string; icono: string }[] = [
-  { dias: 3, id: 'racha_3', titulo: 'Primeros pasos', descripcion: '3 días seguidos cuidándote', icono: '🌱' },
-  { dias: 7, id: 'racha_7', titulo: 'Una semana fuerte', descripcion: '7 días seguidos sin fallar', icono: '🔥' },
-  { dias: 14, id: 'racha_14', titulo: 'Constancia', descripcion: '2 semanas de adherencia', icono: '💪' },
-  { dias: 30, id: 'racha_30', titulo: 'Un mes ejemplar', descripcion: '30 días seguidos cuidando a tu bebé', icono: '🏆' },
+  { dias: 3, id: 'racha_3', titulo: 'Primeros pasos', descripcion: '3 días seguidos', icono: 'sprout' },
+  { dias: 7, id: 'racha_7', titulo: 'Una semana firme', descripcion: '7 días seguidos', icono: 'flame' },
+  { dias: 14, id: 'racha_14', titulo: 'Constancia', descripcion: '14 días seguidos', icono: 'shield' },
+  { dias: 30, id: 'racha_30', titulo: 'Mes ejemplar', descripcion: '30 días seguidos', icono: 'trophy' },
 ];
 
-/** Mensaje motivacional según la racha actual. */
+/** Mensaje motivacional según la racha actual (sin emojis, tono profesional). */
 function mensajeMotivacional(rachaActual: number): string {
-  if (rachaActual === 0) return 'Hoy es un buen día para retomar tu suplemento. ¡Tú puedes!';
-  if (rachaActual < 3) return `¡Vas ${rachaActual} día(s) seguido(s)! Sigue así por ti y tu bebé.`;
-  if (rachaActual < 7) return `¡${rachaActual} días seguidos! 🔥 Estás creando un gran hábito.`;
-  if (rachaActual < 30) return `¡Increíble! ${rachaActual} días de constancia. 💪`;
-  return `¡${rachaActual} días seguidos! Eres un ejemplo de cuidado. 🏆`;
+  if (rachaActual === 0) return 'Hoy es un buen día para retomar tu suplemento.';
+  if (rachaActual < 3) return `Llevas ${rachaActual} día(s) seguido(s). Sigue así por ti y tu bebé.`;
+  if (rachaActual < 7) return `${rachaActual} días seguidos. Estás creando un buen hábito.`;
+  if (rachaActual < 30) return `Excelente: ${rachaActual} días de constancia.`;
+  return `${rachaActual} días seguidos. Eres un ejemplo de cuidado.`;
 }
 
 /**
