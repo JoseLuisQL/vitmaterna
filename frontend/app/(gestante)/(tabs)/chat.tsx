@@ -267,6 +267,7 @@ export default function GestanteChatScreen() {
         keyExtractor={item => item.id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
         onContentSizeChange={handleContentSizeChange}
         onStartReached={hasMore ? loadOlder : undefined}
         onStartReachedThreshold={0.2}

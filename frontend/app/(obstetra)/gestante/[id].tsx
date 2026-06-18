@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  StatusBar, Platform, TextInput
+  StatusBar, Platform, TextInput, Image
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { resolveMediaUrl } from '../../../src/services/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  ChevronLeft, User, Stethoscope, Pill, FlaskConical,
+  ChevronLeft, ChevronDown, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
   Phone, MessageCircle, Sparkles, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
 } from 'lucide-react-native';
@@ -252,6 +253,9 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { mutate: updatePatient, isPending: isSavingEmb } = useUpdatePatient();
   const { data: dangerSigns = [] } = usePatientDangerSigns(id || '');
   const { mutate: updateDangerSign, isPending: isUpdatingDanger } = useUpdateDangerSign();
+
+  // Resumen clínico: el relato detallado está colapsado por defecto.
+  const [resumenExpanded, setResumenExpanded] = useState(false);
 
   // Recomendar contenido educativo a esta gestante
   const [recommendVisible, setRecommendVisible] = useState(false);
@@ -712,24 +716,64 @@ export default function PatientProfileScreen(): React.ReactElement {
                 </View>
               </View>
 
-              {/* 2. RESUMEN CLÍNICO AUTOGENERADO (protagonista) */}
-              {patient.resumenClinico?.texto ? (
+              {/* 2. RESUMEN CLÍNICO INTELIGENTE — alertas accionables + destacados + relato */}
+              {patient.resumenClinico ? (
                 <View style={[styles.resumenCard, designTokens.cardShadow]}>
                   <View style={styles.resumenHeader}>
-                    <Sparkles size={16} color={obstetraColors.primary} />
+                    <View style={styles.resumenIconWrap}>
+                      <Sparkles size={15} color={obstetraColors.primary} />
+                    </View>
                     <Text style={styles.resumenTitle}>Resumen clínico</Text>
                   </View>
-                  <Text style={styles.resumenTexto}>{patient.resumenClinico.texto}</Text>
+
+                  {/* a) Alertas accionables primero (lo que requiere atención) */}
                   {patient.resumenClinico.alertas?.length > 0 && (
                     <View style={styles.resumenAlertas}>
                       {patient.resumenClinico.alertas.map((a: string, i: number) => (
                         <View key={i} style={styles.resumenAlertaRow}>
-                          <AlertTriangle size={13} color={riskColors.riskRed} />
+                          <AlertTriangle size={14} color={riskColors.riskRed} />
                           <Text style={styles.resumenAlertaText}>{a}</Text>
                         </View>
                       ))}
                     </View>
                   )}
+
+                  {/* b) Destacados clínicos en una rejilla legible */}
+                  {patient.resumenClinico.destacados && (
+                    <View style={styles.resumenDestacados}>
+                      {patient.resumenClinico.destacados.anemia ? (
+                        <View style={styles.resumenChip}>
+                          <Text style={styles.resumenChipLabel}>Anemia</Text>
+                          <Text style={[styles.resumenChipValue, { color: patient.resumenClinico.destacados.anemia === 'normal' ? semanticColors.success : riskColors.riskYellow }]}>
+                            {patient.resumenClinico.destacados.anemia === 'normal' ? 'Sin anemia' : patient.resumenClinico.destacados.anemia}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {patient.resumenClinico.destacados.adherencia != null ? (
+                        <View style={styles.resumenChip}>
+                          <Text style={styles.resumenChipLabel}>Adherencia</Text>
+                          <Text style={[styles.resumenChipValue, { color: patient.resumenClinico.destacados.adherencia >= 80 ? semanticColors.success : patient.resumenClinico.destacados.adherencia >= 50 ? riskColors.riskYellow : riskColors.riskRed }]}>
+                            {patient.resumenClinico.destacados.adherencia}%
+                          </Text>
+                        </View>
+                      ) : null}
+                      <View style={styles.resumenChip}>
+                        <Text style={styles.resumenChipLabel}>Controles</Text>
+                        <Text style={styles.resumenChipValue}>{(patient.controls || []).length}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* c) Relato detallado (secundario, expandible) */}
+                  {patient.resumenClinico.texto ? (
+                    <>
+                      <TouchableOpacity style={styles.resumenToggle} onPress={() => setResumenExpanded((v) => !v)} activeOpacity={0.7}>
+                        <Text style={styles.resumenToggleText}>{resumenExpanded ? 'Ocultar detalle' : 'Ver detalle completo'}</Text>
+                        <ChevronDown size={15} color={obstetraColors.primary} style={resumenExpanded ? { transform: [{ rotate: '180deg' }] } : undefined} />
+                      </TouchableOpacity>
+                      {resumenExpanded && <Text style={styles.resumenTexto}>{patient.resumenClinico.texto}</Text>}
+                    </>
+                  ) : null}
                 </View>
               ) : null}
 
@@ -737,7 +781,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               <Accordion title="Datos del embarazo" icon={CalendarHeart} accentColor={BRAND} defaultOpen
                 headerAction={(
                   <TouchableOpacity style={styles.addChip} onPress={openEmbModal} hitSlop={6}>
-                    <Plus size={13} color={obstetraColors.onPrimary} />
+                    <Plus size={13} color={BRAND} />
                     <Text style={styles.addChipText}>Editar</Text>
                   </TouchableOpacity>
                 )}
@@ -764,7 +808,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                 count={(patient.antecedentes || []).length}
                 headerAction={(
                   <TouchableOpacity style={styles.addChip} onPress={() => setIsAntModalVisible(true)} hitSlop={6}>
-                    <Plus size={13} color={obstetraColors.onPrimary} />
+                    <Plus size={13} color={BRAND} />
                     <Text style={styles.addChipText}>Añadir</Text>
                   </TouchableOpacity>
                 )}
@@ -1371,22 +1415,24 @@ export default function PatientProfileScreen(): React.ReactElement {
                 style={styles.recSearchInput}
                 value={recSearch}
                 onChangeText={setRecSearch}
-                placeholder="Buscar contenido…"
+                placeholder="Buscar por título o categoría…"
                 placeholderTextColor={commonColors.textTertiary}
               />
               {recSearch ? (
                 <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
               ) : null}
             </View>
-            <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
               {catalogLoading ? (
                 <Text style={styles.recEmpty}>Cargando contenido…</Text>
               ) : recFiltered.length === 0 ? (
-                <Text style={styles.recEmpty}>No hay contenido disponible.</Text>
+                <Text style={styles.recEmpty}>No se encontró contenido con esa búsqueda.</Text>
               ) : (
                 recFiltered.map((c) => {
                   const cm = categoryMeta(c.categoria);
+                  const tm = typeMeta(c.tipo);
                   const CIcon = cm.icon;
+                  const thumb = resolveMediaUrl(c.thumbnailUrl);
                   return (
                     <TouchableOpacity
                       key={c.id}
@@ -1394,12 +1440,17 @@ export default function PatientProfileScreen(): React.ReactElement {
                       onPress={() => { setRecSelected(c); }}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.recIcon, { backgroundColor: cm.bg }]}>
-                        <CIcon size={18} color={cm.color} />
-                      </View>
+                      {thumb ? (
+                        <Image source={{ uri: thumb }} style={styles.recThumb} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.recIcon, { backgroundColor: cm.bg }]}>
+                          <CIcon size={20} color={cm.color} />
+                        </View>
+                      )}
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.recTitle} numberOfLines={1}>{c.titulo}</Text>
-                        <Text style={styles.recMeta}>{cm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''}</Text>
+                        <Text style={[styles.recRowCat, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
+                        <Text style={styles.recTitle} numberOfLines={2}>{c.titulo}</Text>
+                        <Text style={styles.recMeta}>{tm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''}{c.duracionMin ? ` · ${c.duracionMin} min` : ''}</Text>
                       </View>
                       <ChevronRight size={18} color={commonColors.textTertiary} />
                     </TouchableOpacity>
@@ -1409,7 +1460,31 @@ export default function PatientProfileScreen(): React.ReactElement {
             </ScrollView>
           </>
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <ScrollView style={{ maxHeight: 440 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+            {/* Resumen del contenido elegido */}
+            {(() => {
+              const cm = categoryMeta(recSelected.categoria);
+              const tm = typeMeta(recSelected.tipo);
+              const CIcon = cm.icon;
+              const thumb = resolveMediaUrl(recSelected.thumbnailUrl);
+              return (
+                <View style={styles.recChosen}>
+                  {thumb ? (
+                    <Image source={{ uri: thumb }} style={styles.recChosenThumb} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.recChosenIcon, { backgroundColor: cm.bg }]}>
+                      <CIcon size={24} color={cm.color} />
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.recRowCat, { color: cm.color }]}>{cm.label}</Text>
+                    <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
+                    <Text style={styles.recMeta}>{tm.label}{recSelected.duracionMin ? ` · ${recSelected.duracionMin} min` : ''}</Text>
+                  </View>
+                </View>
+              );
+            })()}
+
             {/* Campo de nota opcional para personalizar la recomendación */}
             <PlainInput
               label="Nota para la gestante (opcional)"
@@ -1421,31 +1496,33 @@ export default function PatientProfileScreen(): React.ReactElement {
             />
 
             {/* Previsualización de la tarjeta tal como la verá la gestante */}
-            <Text style={styles.recPreviewLabel}>Vista previa en el chat</Text>
-            <View style={styles.recPreviewBubble}>
-              {!!recNota.trim() && (
-                <Text style={styles.recPreviewNote}>📘 Tu obstetra te recomienda: "{recSelected.titulo}"{'\n\n'}{recNota.trim()}</Text>
-              )}
-              {(() => {
-                const cm = categoryMeta(recSelected.categoria);
-                const tm = typeMeta(recSelected.tipo);
-                const CIcon = cm.icon;
-                return (
-                  <View style={styles.recPreviewCard}>
-                    <View style={[styles.recIcon, { backgroundColor: cm.bg, borderRadius: borderRadius.md }]}>
-                      <CIcon size={20} color={cm.color} />
+            <View>
+              <Text style={styles.recPreviewLabel}>Vista previa en el chat de la gestante</Text>
+              <View style={styles.recPreviewBubble}>
+                <Text style={styles.recPreviewNote}>
+                  📘 Tu obstetra te recomienda{recNota.trim() ? ': ' : ' leer: '}"{recSelected.titulo}"{recNota.trim() ? `\n\n${recNota.trim()}` : ''}
+                </Text>
+                {(() => {
+                  const cm = categoryMeta(recSelected.categoria);
+                  const tm = typeMeta(recSelected.tipo);
+                  const CIcon = cm.icon;
+                  return (
+                    <View style={styles.recPreviewCard}>
+                      <View style={[styles.recIcon, { backgroundColor: cm.bg, borderRadius: borderRadius.md }]}>
+                        <CIcon size={20} color={cm.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.recMeta, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
+                        <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
+                        <Text style={styles.recMeta}>{tm.label}{recSelected.duracionMin ? ` · ${recSelected.duracionMin} min` : ''} · Toca para leer</Text>
+                      </View>
+                      <ChevronRight size={18} color={commonColors.textTertiary} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.recMeta, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
-                      <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
-                      <Text style={styles.recMeta}>{tm.label}{recSelected.duracionMin ? ` · ${recSelected.duracionMin} min` : ''} · Toca para leer</Text>
-                    </View>
-                    <ChevronRight size={18} color={commonColors.textTertiary} />
-                  </View>
-                );
-              })()}
+                  );
+                })()}
+              </View>
             </View>
-          </View>
+          </ScrollView>
         )}
       </AppModal>
     </View>
@@ -1457,11 +1534,16 @@ const styles = StyleSheet.create({
   recSearchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44, marginBottom: spacing.md },
   recSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
   recEmpty: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl },
-  recRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm2, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  recIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  recRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.sm2, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  recIcon: { width: 44, height: 44, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  recThumb: { width: 44, height: 44, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, flexShrink: 0 },
+  recRowCat: { ...typography.overline, fontSize: 10, marginBottom: 2 },
   recTitle: { ...typography.bodyMedium, color: commonColors.text, fontWeight: '600' },
   recMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  recPreviewLabel: { ...typography.overline, color: commonColors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  recChosen: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2 },
+  recChosenThumb: { width: 56, height: 56, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceHover, flexShrink: 0 },
+  recChosenIcon: { width: 56, height: 56, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  recPreviewLabel: { ...typography.overline, color: commonColors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   recPreviewBubble: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
   recPreviewNote: { ...typography.bodySmall, color: commonColors.text, marginBottom: spacing.sm, lineHeight: 19 },
   recPreviewCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
@@ -1663,27 +1745,45 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: obstetraColors.primary,
   },
-  resumenHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs2 },
+  resumenHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  resumenIconWrap: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: obstetraColors.primaryLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
   resumenTitle: {
-    ...typography.label,
+    ...typography.bodyMedium,
     fontWeight: '700',
-    color: obstetraColors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    color: commonColors.text,
   },
-  resumenTexto: { ...typography.bodySm, color: commonColors.text, lineHeight: 20 },
+  resumenTexto: { ...typography.bodySm, color: commonColors.textSecondary, lineHeight: 21, marginTop: spacing.sm },
   resumenAlertas: {
-    marginTop: spacing.sm,
-    gap: 4,
-    borderTopWidth: 1,
-    borderTopColor: commonColors.border,
-    paddingTop: spacing.sm,
+    gap: 8,
+    marginBottom: spacing.sm,
   },
-  resumenAlertaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  resumenAlertaText: { ...typography.caption, color: commonColors.textSecondary, flex: 1 },
+  resumenAlertaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: riskColors.riskRedLight,
+    borderRadius: borderRadius.md,
+    paddingVertical: 9,
+    paddingHorizontal: spacing.sm2,
+  },
+  resumenAlertaText: { ...typography.bodySm, color: commonColors.text, flex: 1, lineHeight: 19 },
+  resumenDestacados: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  resumenChip: {
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm2,
+    minWidth: 92,
+  },
+  resumenChipLabel: { ...typography.overline, fontSize: 10, color: commonColors.textTertiary, marginBottom: 2 },
+  resumenChipValue: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  resumenToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, alignSelf: 'flex-start' },
+  resumenToggleText: { ...typography.caption, fontWeight: '700', color: obstetraColors.primary },
   section: {
     gap: 16,
   },
@@ -2025,13 +2125,13 @@ const styles = StyleSheet.create({
   addChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: BRAND,
+    gap: 3,
+    backgroundColor: obstetraColors.primaryLight,
     borderRadius: borderRadius.full,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  addChipText: { ...typography.micro, color: obstetraColors.onPrimary, textTransform: 'uppercase' },
+  addChipText: { ...typography.caption, fontWeight: '700', color: BRAND },
   antRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   antRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   antCondicion: { ...typography.bodyMedium, color: commonColors.text },
