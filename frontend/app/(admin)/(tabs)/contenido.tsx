@@ -20,7 +20,8 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { AppModal } from '../../../src/components/ui/AppModal';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { useToast } from '../../../src/components/ui';
+import { useToast, RichText } from '../../../src/components/ui';
+import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,18 +59,32 @@ const CATEGORIA_LABEL: Record<string, string> = {
   general: 'General',
 };
 
+/** Valida un entero opcional dentro de un rango (campo de texto). */
+const optIntInRange = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .optional()
+    .refine((v) => {
+      if (!v || !v.trim()) return true;
+      const n = Number(v);
+      return Number.isInteger(n) && n >= min && n <= max;
+    }, `${label} entre ${min} y ${max}`);
+
 const schema = z.object({
-  titulo: z.string().min(1, 'El título es requerido'),
+  titulo: z.string().min(1, 'El título es requerido').max(200, 'Máximo 200 caracteres'),
   contenido: z.string().min(1, 'El contenido es requerido'),
   tipo: z.enum(EDUCATION_TIPOS),
   categoria: z.enum(EDUCATION_CATEGORIAS),
-  trimestre: z.string().optional(),
-  semanaInicio: z.string().optional(),
-  semanaFin: z.string().optional(),
-  mediaUrl: z.string().optional(),
+  trimestre: optIntInRange('Trimestre', 1, 3),
+  semanaInicio: optIntInRange('Semana inicio', 1, 42),
+  semanaFin: optIntInRange('Semana fin', 1, 42),
+  mediaUrl: z
+    .string()
+    .optional()
+    .refine((v) => !v || !v.trim() || /^https?:\/\//.test(v.trim()) || v.startsWith('/uploads/'), 'Debe ser una URL válida (http/https)'),
   thumbnailUrl: z.string().optional(),
-  duracionMin: z.string().optional(),
-  orden: z.string().optional(),
+  duracionMin: optIntInRange('Duración', 1, 600),
+  orden: optIntInRange('Orden', 0, 9999),
   activo: z.boolean().optional(),
 });
 
@@ -90,6 +105,8 @@ export default function ContenidoScreen(): React.ReactElement {
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  // Previsualización de cómo verá la gestante el contenido (modal aparte).
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -390,7 +407,21 @@ export default function ContenidoScreen(): React.ReactElement {
         ) : null}
 
         <AppInput name="titulo" control={control} label="Título" placeholder="Ej. Cuidados en el primer trimestre" error={errors.titulo?.message} themeColor={BRAND} />
-        <AppInput name="contenido" control={control} label="Contenido" placeholder="Texto del artículo o descripción" error={errors.contenido?.message} themeColor={BRAND} multiline numberOfLines={4} containerStyle={{ minHeight: 110 }} />
+        <AppInput name="contenido" control={control} label="Contenido" placeholder={'Escribe el artículo. Puedes usar formato:\n## Título de sección\n- viñeta\n**negrita**\n> cita destacada'} error={errors.contenido?.message} themeColor={BRAND} multiline numberOfLines={8} containerStyle={{ minHeight: 180 }} />
+        <View style={styles.formatHintRow}>
+          <Text style={styles.formatHint}>
+            Formato: <Text style={styles.formatCode}>## Sección</Text> · <Text style={styles.formatCode}>### Subtítulo</Text> · <Text style={styles.formatCode}>- viñeta</Text> · <Text style={styles.formatCode}>1. lista</Text> · <Text style={styles.formatCode}>**negrita**</Text> · <Text style={styles.formatCode}>&gt; cita</Text>
+          </Text>
+          <TouchableOpacity
+            style={styles.previewBtn}
+            onPress={() => setPreviewVisible(true)}
+            disabled={!watch('contenido')?.trim()}
+            activeOpacity={0.7}
+          >
+            <Eye size={15} color={!watch('contenido')?.trim() ? commonColors.textTertiary : BRAND} />
+            <Text style={[styles.previewBtnText, !watch('contenido')?.trim() && { color: commonColors.textTertiary }]}>Vista previa</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.label}>Tipo</Text>
         <Controller name="tipo" control={control} render={({ field: { onChange, value } }) => (
@@ -453,6 +484,38 @@ export default function ContenidoScreen(): React.ReactElement {
           </View>
         )} />
       </AppModal>
+
+      {/* MODAL: VISTA PREVIA (cómo lo verá la gestante) */}
+      <AppModal
+        visible={previewVisible}
+        onClose={() => setPreviewVisible(false)}
+        title="Vista previa"
+        subtitle="Así verá la gestante este contenido."
+      >
+        {(() => {
+          const cm = categoryMeta(watch('categoria'));
+          const tm = typeMeta(watch('tipo'));
+          const CIcon = cm.icon;
+          return (
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false}>
+              {thumbUrl ? (
+                <Image source={{ uri: resolveMediaUrl(thumbUrl) || undefined }} style={styles.previewCover} resizeMode="cover" />
+              ) : null}
+              <View style={[styles.previewCatRow, { backgroundColor: cm.bg }]}>
+                <CIcon size={16} color={cm.color} />
+                <Text style={[styles.previewCat, { color: cm.color }]}>{cm.label}</Text>
+              </View>
+              <Text style={styles.previewTitle}>{watch('titulo') || 'Sin título'}</Text>
+              <Text style={styles.previewMeta}>
+                {tm.label} · {readingTime(watch('contenido') || '', watch('duracionMin') ? Number(watch('duracionMin')) : null)}
+                {watch('trimestre') ? ` · ${watch('trimestre')}° trimestre` : ''}
+              </Text>
+              <View style={{ height: 1, backgroundColor: commonColors.borderLight, marginVertical: spacing.md }} />
+              <RichText content={watch('contenido') || ''} accentColor={cm.color} />
+            </ScrollView>
+          );
+        })()}
+      </AppModal>
     </View>
   );
 }
@@ -466,6 +529,18 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
+  // Editor: ayuda de formato + botón de previsualización
+  formatHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.md },
+  formatHint: { ...typography.caption, color: commonColors.textTertiary, flex: 1, lineHeight: 16 },
+  formatCode: { ...typography.caption, color: commonColors.textSecondary, fontWeight: '700' },
+  previewBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: spacing.sm2, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: obstetraColors.primaryLight },
+  previewBtnText: { ...typography.caption, fontWeight: '700', color: BRAND },
+  // Vista previa
+  previewCover: { width: '100%', height: 150, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, marginBottom: spacing.md },
+  previewCatRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.sm2, paddingVertical: 5, borderRadius: borderRadius.full, marginBottom: spacing.sm },
+  previewCat: { ...typography.overline, fontWeight: '700' },
+  previewTitle: { ...typography.h2, color: commonColors.text, marginBottom: spacing.xs },
+  previewMeta: { ...typography.caption, color: commonColors.textSecondary },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.lg,

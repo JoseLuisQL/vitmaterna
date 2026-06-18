@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Heart, Clock, ExternalLink, PlayCircle, CheckCircle2 } from 'lucide-react-native';
+import { RichText } from '../../../src/components/ui';
 import { resolveMediaUrl } from '../../../src/services/api';
 import { useEducation, useEducationContentById, registerContentView } from '../../../src/services/api-queries';
 import { useEducationProgress } from '../../../src/hooks/useEducationProgress';
@@ -133,7 +134,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
           </TouchableOpacity>
         ) : null}
 
-        <Text style={styles.body}>{item.contenido}</Text>
+        <RichText content={item.contenido} accentColor={cat.color} />
 
         <View style={styles.readBadge}>
           <CheckCircle2 size={16} color={cat.color} />
@@ -167,7 +168,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.border, ...shadows.card,
   },
   mediaText: { ...typography.bodyMedium, fontWeight: '700', color: BRAND },
-  body: { ...typography.body, color: commonColors.text, lineHeight: 26 },
   readBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xl, alignSelf: 'center' },
   readBadgeText: { ...typography.caption, fontWeight: '700' },
   notFound: { ...typography.body, color: commonColors.textSecondary, textAlign: 'center', marginTop: spacing.xl },

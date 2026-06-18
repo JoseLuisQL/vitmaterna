@@ -30,6 +30,7 @@ export { AppModal } from './AppModal';
 export { BottomSheet } from './BottomSheet';
 export { SectionHeader } from './SectionHeader';
 export { Accordion } from './Accordion';
+export { RichText } from './RichText';
 
 // Data display
 export { KpiCard } from './KpiCard';
