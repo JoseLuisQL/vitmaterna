@@ -8,6 +8,7 @@ import { calcularAdherencia } from '../../utils/adherence.js';
 import { examenesPendientes } from '../../utils/examenesObligatorios.js';
 import { emitNotificationEvent } from '../../utils/notificationEvents.js';
 import { getInvalidTokens, type PushTicketLike } from '../../utils/pushTickets.js';
+import { fechaCorteRetencion } from '../../utils/notificationRetention.js';
 
 const expo = new Expo();
 
@@ -581,6 +582,20 @@ export async function scanPendingExams() {
   }
 }
 
+/**
+ * Retención: borra automáticamente las notificaciones LEÍDAS más antiguas que el
+ * umbral (30 días) para mantener la bandeja sana. No toca las no leídas.
+ */
+export async function scanNotificationRetention() {
+  const corte = fechaCorteRetencion();
+  const result = await prisma.notification.deleteMany({
+    where: { leidaAt: { not: null, lt: corte } },
+  });
+  if (result.count > 0) {
+    console.log(`[RETENTION] ${result.count} notificación(es) leída(s) antigua(s) eliminada(s).`);
+  }
+}
+
 export function startReminderCron() {
   const runAll = async () => {
     await scanAndSendReminders();
@@ -589,6 +604,7 @@ export function startReminderCron() {
     await scanLowAdherence();
     await scanUpcomingFPP();
     await scanPendingExams();
+    await scanNotificationRetention();
   };
   runAll().catch((err) => console.error('[REMINDER CRON ERROR]', err));
 

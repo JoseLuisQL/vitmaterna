@@ -791,7 +791,8 @@ model Notification {
   createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz()
 
   // Relations
-  user User @relation(fields: [userId], references: [id])
+  // Cascade: al eliminar un usuario, se borran sus notificaciones (no quedan huérfanas).
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_notifications_user")
   // Soporta los batch dedup de los escáneres del cron (filtran por tipo + fecha).

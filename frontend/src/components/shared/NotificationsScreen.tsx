@@ -102,8 +102,38 @@ function tiempoRelativo(iso: string): string {
   return new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
 }
 
-/** Agrupa por antigüedad: Hoy / Esta semana / Anteriores. */
-function agrupar(items: AppNotification[]): { title: string; data: AppNotification[] }[] {
+/** Tipos "repetibles" que se colapsan cuando hay varios del mismo en una sección. */
+const COLLAPSIBLE_TYPES = new Set(['recordatorio_suplemento', 'fpp_proxima', 'examenes_pendientes']);
+
+/** Notificación mostrada; puede representar un grupo colapsado (groupCount > 1). */
+type DisplayNotification = AppNotification & { groupCount?: number };
+
+/**
+ * Colapsa, dentro de una lista, los recordatorios repetidos del mismo tipo en una
+ * sola entrada con contador (la más reciente representa el grupo). Reduce el ruido
+ * de los recordatorios diarios sin perder los avisos accionables.
+ */
+function colapsar(items: AppNotification[]): DisplayNotification[] {
+  const out: DisplayNotification[] = [];
+  const groupIndex: Record<string, number> = {};
+  for (const n of items) {
+    if (COLLAPSIBLE_TYPES.has(n.tipo)) {
+      const key = n.tipo;
+      if (groupIndex[key] !== undefined) {
+        out[groupIndex[key]].groupCount = (out[groupIndex[key]].groupCount ?? 1) + 1;
+        continue;
+      }
+      groupIndex[key] = out.length;
+      out.push({ ...n, groupCount: 1 });
+    } else {
+      out.push(n);
+    }
+  }
+  return out;
+}
+
+/** Agrupa por antigüedad: Hoy / Esta semana / Anteriores (con colapso interno). */
+function agrupar(items: AppNotification[]): { title: string; data: DisplayNotification[] }[] {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const weekAgo = startOfToday - 6 * 24 * 60 * 60 * 1000;
@@ -120,9 +150,9 @@ function agrupar(items: AppNotification[]): { title: string; data: AppNotificati
   }
 
   return [
-    { title: 'Hoy', data: hoy },
-    { title: 'Esta semana', data: semana },
-    { title: 'Anteriores', data: antes },
+    { title: 'Hoy', data: colapsar(hoy) },
+    { title: 'Esta semana', data: colapsar(semana) },
+    { title: 'Anteriores', data: colapsar(antes) },
   ].filter((s) => s.data.length > 0);
 }
 
@@ -229,9 +259,10 @@ export function NotificationsScreen({
     }
   };
 
-  const renderItem = ({ item }: { item: AppNotification }) => {
+  const renderItem = ({ item }: { item: DisplayNotification }) => {
     const meta = metaFor(item.tipo);
     const unread = !item.leidaAt;
+    const grouped = (item.groupCount ?? 1) > 1;
     const urgent = URGENT_TYPES.has(item.tipo);
     // Urgente: borde rojo siempre (leída o no). No urgente sin leer: borde del rol.
     const borderColor = urgent ? semanticColors.danger : unread ? themeColor : undefined;
@@ -253,10 +284,17 @@ export function NotificationsScreen({
               <Text style={[styles.title, !unread && styles.titleRead]} numberOfLines={1}>
                 {item.titulo || 'Notificación'}
               </Text>
+              {grouped && (
+                <View style={[styles.countBadge, { backgroundColor: meta.bg }]}>
+                  <Text style={[styles.countBadgeText, { color: meta.color }]}>{item.groupCount}</Text>
+                </View>
+              )}
               {unread && <View style={[styles.dot, { backgroundColor: themeColor }]} />}
             </View>
             <Text style={styles.message} numberOfLines={3}>{item.mensaje}</Text>
-            <Text style={styles.time}>{tiempoRelativo(item.createdAt)}</Text>
+            <Text style={styles.time}>
+              {grouped ? `${item.groupCount} avisos · ` : ''}{tiempoRelativo(item.createdAt)}
+            </Text>
           </View>
           <TouchableOpacity
             onPress={() => handleDelete(item)}
@@ -447,6 +485,8 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 },
   titleRead: { fontWeight: '500', color: commonColors.textSecondary },
+  countBadge: { minWidth: 20, height: 18, borderRadius: 9, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center', marginLeft: spacing.sm },
+  countBadgeText: { ...typography.overline, fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   dot: { width: 8, height: 8, borderRadius: 4, marginLeft: spacing.sm },
   message: { ...typography.bodySm, color: commonColors.textSecondary },
   time: { ...typography.caption, color: commonColors.textTertiary, marginTop: 2 },
