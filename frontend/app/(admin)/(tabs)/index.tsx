@@ -16,6 +16,7 @@ import {
 import { AutoGrid, PressableScale } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
+import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAdminDashboard } from '../../../src/services/admin-queries';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
@@ -71,15 +72,18 @@ export default function AdminInicioScreen(): React.ReactElement {
       onRefresh={refetch}
       accentColor={BRAND}
       actions={
-        <TouchableOpacity
-          onPress={openSidebar}
-          style={styles.menuBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel="Abrir menú"
-        >
-          <Menu size={22} color={commonColors.white} />
-        </TouchableOpacity>
+        <>
+          <NotificationBell href="/(admin)/avisos" color={commonColors.white} />
+          <TouchableOpacity
+            onPress={openSidebar}
+            style={styles.menuBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir menú"
+          >
+            <Menu size={22} color={commonColors.white} />
+          </TouchableOpacity>
+        </>
       }
     >
       {/* Acción directa: obstetras pendientes de aprobación */}

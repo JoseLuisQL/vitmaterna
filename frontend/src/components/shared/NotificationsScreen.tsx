@@ -44,8 +44,11 @@ interface Props {
   gradient?: readonly [string, string, ...string[]];
 }
 
-/** Tipos que representan una urgencia clínica (realce especial). */
-const URGENT_TYPES = new Set(['emergencia', 'signo_alarma', 'inasistencia']);
+/** Tipos que representan una urgencia (realce especial). */
+const URGENT_TYPES = new Set([
+  'emergencia', 'signo_alarma', 'inasistencia',
+  'obstetra_pendiente', 'alarma_sin_atender', 'canal_caido', 'solicitud_reprogramacion',
+]);
 
 /** Icono y color por tipo de notificación. */
 function metaFor(tipo: string): { icon: LucideIcon; color: string; bg: string } {
@@ -76,6 +79,12 @@ function metaFor(tipo: string): { icon: LucideIcon; color: string; bg: string } 
     case 'cita_domiciliaria':
     case 'visita_domiciliaria':
       return { icon: Calendar, color: gestanteColors.primary, bg: gestanteColors.primaryLight };
+    case 'obstetra_pendiente':
+      return { icon: AlertCircle, color: semanticColors.warning, bg: semanticColors.warningLight };
+    case 'alarma_sin_atender':
+      return { icon: Siren, color: semanticColors.danger, bg: semanticColors.dangerLight };
+    case 'canal_caido':
+      return { icon: AlertTriangle, color: semanticColors.warning, bg: semanticColors.warningLight };
     default:
       return { icon: Bell, color: commonColors.textSecondary, bg: commonColors.surfaceAlt };
   }
@@ -117,7 +126,7 @@ function agrupar(items: AppNotification[]): { title: string; data: AppNotificati
   ].filter((s) => s.data.length > 0);
 }
 
-type Filtro = 'todas' | 'no_leidas';
+type Filtro = 'todas' | 'no_leidas' | 'urgentes';
 
 export function NotificationsScreen({
   themeColor = gestanteColors.primary,
@@ -167,11 +176,13 @@ export function NotificationsScreen({
   );
 
   const unreadCount = useMemo(() => items.filter((n) => !n.leidaAt).length, [items]);
+  const urgentCount = useMemo(() => items.filter((n) => n.prioridad === 'alta').length, [items]);
 
-  const visibles = useMemo(
-    () => (filtro === 'no_leidas' ? items.filter((n) => !n.leidaAt) : items),
-    [items, filtro],
-  );
+  const visibles = useMemo(() => {
+    if (filtro === 'no_leidas') return items.filter((n) => !n.leidaAt);
+    if (filtro === 'urgentes') return items.filter((n) => n.prioridad === 'alta');
+    return items;
+  }, [items, filtro]);
   const sections = useMemo(() => agrupar(visibles), [visibles]);
 
   const handlePress = (n: AppNotification) => {
@@ -202,6 +213,11 @@ export function NotificationsScreen({
       target = '/(gestante)/(tabs)/tratamiento';
     } else if (n.tipo === 'fpp_proxima' && role === 'gestante') {
       target = '/(gestante)/(tabs)/tratamiento';
+    } else if (n.tipo === 'obstetra_pendiente' && role === 'admin') {
+      target = '/(admin)/(tabs)/usuarios';
+    } else if (n.tipo === 'alarma_sin_atender' && role === 'admin') {
+      const gid = (n.datos as { gestanteId?: string })?.gestanteId;
+      target = gid ? `/(admin)/supervision/gestantes` : '/(admin)/supervision/gestantes';
     }
 
     if (target) {
@@ -302,11 +318,16 @@ export function NotificationsScreen({
             </View>
           </View>
 
-          {/* Filtro Todas / No leídas */}
+          {/* Filtros: Todas / No leídas / Urgentes */}
           <View style={styles.filterRow}>
-            {(['todas', 'no_leidas'] as Filtro[]).map((f) => {
+            {(['todas', 'no_leidas', 'urgentes'] as Filtro[]).map((f) => {
               const active = filtro === f;
-              const label = f === 'todas' ? 'Todas' : `No leídas${unreadCount > 0 ? ` (${unreadCount})` : ''}`;
+              const label =
+                f === 'todas'
+                  ? 'Todas'
+                  : f === 'no_leidas'
+                    ? `No leídas${unreadCount > 0 ? ` (${unreadCount})` : ''}`
+                    : `Urgentes${urgentCount > 0 ? ` (${urgentCount})` : ''}`;
               return (
                 <TouchableOpacity
                   key={f}

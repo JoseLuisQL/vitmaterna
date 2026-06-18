@@ -333,6 +333,26 @@ export async function notifyUser(
   }
 }
 
+/**
+ * Notifica a TODOS los administradores activos (eventos de sistema: obstetra por
+ * aprobar, alarma grave, canal caído). Deduplica por tipo+entidad para no
+ * inundar al admin con el mismo aviso.
+ */
+export async function notifyAdmins(
+  tipo: string,
+  titulo: string,
+  mensaje: string,
+  datos?: Record<string, unknown>,
+): Promise<void> {
+  const admins = await prisma.user.findMany({
+    where: { role: 'admin', isActive: true, deletedAt: null },
+    select: { id: true },
+  });
+  for (const admin of admins) {
+    await notifyUser(admin.id, tipo, titulo, mensaje, datos);
+  }
+}
+
 /** Devuelve el userId del obstetra asociado a una gestante (último control o cita). */
 export async function findObstetraUserIdForGestante(gestanteId: string): Promise<string | null> {
   const lastControl = await prisma.prenatalControl.findFirst({

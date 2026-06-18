@@ -4,7 +4,7 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import * as authService from './auth.service.js';
 import type { LoginInput, RegisterInput, RefreshInput, UpdateProfileInput } from './auth.schema.js';
 import { prisma } from '../../config/database.js';
-import { sendSmsMock, sendWhatsApp } from '../notifications/notification.service.js';
+import { sendSmsMock, sendWhatsApp, notifyAdmins } from '../notifications/notification.service.js';
 
 /**
  * POST /v1/auth/register
@@ -18,6 +18,17 @@ export async function register(req: Request, res: Response): Promise<void> {
   // Los obstetras requieren aprobación del administrador antes de poder ingresar.
   // No se inicia sesión automáticamente: se queda pendiente de aprobación.
   if (!user.isVerified) {
+    // Avisa a los administradores que hay una cuenta por aprobar (best-effort).
+    try {
+      await notifyAdmins(
+        'obstetra_pendiente',
+        'Profesional por aprobar',
+        `${user.firstName} ${user.lastName} se registró como obstetra y espera tu aprobación.`,
+        { userId: user.id },
+      );
+    } catch {
+      /* no bloquear el registro si falla la notificación */
+    }
     res.status(201).json(
       successResponse({
         user: sanitized,

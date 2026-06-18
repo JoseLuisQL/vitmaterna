@@ -3,6 +3,7 @@ import { successResponse } from '../../utils/responseHelper.js';
 import { prisma } from '../../config/database.js';
 import { z } from 'zod';
 import { AppError, ErrorCodes } from '../../types/index.js';
+import { notifMeta } from '../../utils/notificationCatalog.js';
 
 const TokenSchema = z.object({
   expoPushToken: z.string().min(1, 'Expo push token is required')
@@ -37,7 +38,13 @@ export async function listNotifications(req: Request, res: Response): Promise<vo
     },
   });
 
-  res.json(successResponse(items));
+  // Adjunta categoría y prioridad (derivadas del tipo) para filtros en la UI.
+  const enriched = items.map((n) => {
+    const meta = notifMeta(n.tipo);
+    return { ...n, categoria: meta.categoria, prioridad: meta.prioridad };
+  });
+
+  res.json(successResponse(enriched));
 }
 
 /** Devuelve el número de notificaciones no leídas (para el badge de la campana). */

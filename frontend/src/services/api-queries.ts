@@ -775,6 +775,8 @@ export interface AppNotification {
   datos?: Record<string, any> | null;
   leidaAt: string | null;
   createdAt: string;
+  categoria?: 'clinica' | 'cita' | 'sistema';
+  prioridad?: 'alta' | 'normal';
 }
 
 export const fetchNotifications = async (soloNoLeidas = false): Promise<AppNotification[]> => {

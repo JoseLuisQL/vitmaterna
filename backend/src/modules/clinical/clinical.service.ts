@@ -4,6 +4,7 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import {
   sendPushNotification,
   notifyUser,
+  notifyAdmins,
   findObstetraUserIdForGestante,
 } from '../notifications/notification.service.js';
 import {
@@ -469,6 +470,21 @@ export class ClinicalService {
       // en la conversación gestante↔obstetra para que quede en el chat clínico.
       if (esGrave) {
         await this.postSystemChatAlert(gestanteId, obstetraUserId, nombre, data.tipo_signo);
+      }
+    }
+
+    // Supervisión: en casos graves, también se avisa a los administradores
+    // (centro de eventos de sistema) — best-effort.
+    if (esGrave) {
+      try {
+        await notifyAdmins(
+          'alarma_sin_atender',
+          'Signo de alarma GRAVE',
+          `${nombre} reportó "${data.tipo_signo}". Verifica que sea atendida.`,
+          { gestanteId, dangerSignId: dangerSign.id },
+        );
+      } catch {
+        /* best-effort */
       }
     }
 
