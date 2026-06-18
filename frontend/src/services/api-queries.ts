@@ -444,6 +444,23 @@ export const useGestanteDashboard = () => useQuery({ queryKey: ['gestanteDashboa
 export const useAppointments = () => useQuery({ queryKey: ['appointments'], queryFn: fetchAppointments });
 
 /**
+ * Citas en crudo (sin mapear) para la pantalla de la gestante. Comparte la
+ * query key ['appointments'] para que el tiempo real y las invalidaciones
+ * apliquen también aquí; usa `select` para devolver el array crudo del backend.
+ */
+export const fetchAppointmentsRaw = async () => {
+  try {
+    const res = await api.get('/appointments');
+    return res.data?.data || [];
+  } catch (e) {
+    if (__DEV__) console.warn('Appointments (raw) fetch failed:', e);
+    return [];
+  }
+};
+export const useGestanteAppointments = () =>
+  useQuery({ queryKey: ['appointments', 'raw'], queryFn: fetchAppointmentsRaw });
+
+/**
  * Tratamientos de la gestante. La query cachea `{ treatments, gamificacion }`;
  * este hook expone solo el array para mantener la compatibilidad con la pantalla.
  */

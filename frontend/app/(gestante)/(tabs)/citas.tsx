@@ -26,12 +26,13 @@ import {
   differenceInCalendarDays,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import api from '../../../src/services/api';
 import {
   useConfirmAppointment,
   useRequestReschedule,
   useAppointmentAvailability,
+  useGestanteAppointments,
 } from '../../../src/services/api-queries';
+import { useAppointmentRealtime } from '../../../src/hooks/useAppointmentRealtime';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -112,10 +113,11 @@ function statusMeta(estado: string) {
 
 export default function AppointmentsScreen() {
   const toast = useToast();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
+
+  // Datos vía React Query + actualización en tiempo real (Fase 2).
+  useAppointmentRealtime();
+  const { data: rawAppointments = [], isLoading: loading, refetch, isRefetching: refreshing } = useGestanteAppointments();
 
   // Modales
   const [detailVisible, setDetailVisible] = useState(false);
@@ -131,11 +133,10 @@ export default function AppointmentsScreen() {
   const rescheduleMutation = useRequestReschedule();
   const { data: slots = [], isLoading: slotsLoading } = useAppointmentAvailability(pickedDate);
 
-  const fetchAppointments = async () => {
-    try {
-      const response = await api.get('/appointments');
-      const list = response.data?.data || [];
-      const mapped: Appointment[] = list.map((a: any) => ({
+  // Normaliza la respuesta cruda del backend a la forma de la pantalla.
+  const appointments: Appointment[] = useMemo(
+    () =>
+      (rawAppointments as any[]).map((a) => ({
         id: a.id,
         fecha: a.fecha,
         hora: a.hora,
@@ -149,27 +150,20 @@ export default function AppointmentsScreen() {
         fechaReprogramada: a.fechaReprogramada,
         horaReprogramada: a.horaReprogramada,
         motivoReprogramacion: a.motivoReprogramacion,
-      }));
-      setAppointments(mapped);
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      toast.error('No se pudieron cargar tus citas', 'Verifica tu conexión e inténtalo de nuevo.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+      })),
+    [rawAppointments],
+  );
 
+  // Refresca al enfocar la pantalla.
   useFocusEffect(
     useCallback(() => {
-      fetchAppointments();
+      refetch();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchAppointments();
+    refetch();
   };
 
   const sorted = useMemo(
@@ -206,7 +200,7 @@ export default function AppointmentsScreen() {
       onSuccess: () => {
         toast.success('Cita confirmada', 'Tu obstetra fue notificada de que aceptaste la cita.');
         setDetailVisible(false);
-        fetchAppointments();
+        refetch();
       },
       onError: () => toast.error('No se pudo confirmar', 'Inténtalo nuevamente.'),
     });
@@ -236,7 +230,7 @@ export default function AppointmentsScreen() {
         onSuccess: () => {
           toast.success('Solicitud enviada', 'Tu obstetra debe aprobar la reprogramación. Te avisaremos.');
           setRescheduleVisible(false);
-          fetchAppointments();
+          refetch();
         },
         onError: (e: any) => {
           const msg = e?.response?.data?.error?.message || 'Inténtalo nuevamente.';

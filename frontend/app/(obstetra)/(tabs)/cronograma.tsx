@@ -22,6 +22,7 @@ import {
 } from '../../../src/services/api-queries';
 import { NuevaCitaModal } from '../../../src/components/obstetra/NuevaCitaModal';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
+import { useAppointmentRealtime } from '../../../src/hooks/useAppointmentRealtime';
 
 const BRAND = obstetraColors.primary;
 
@@ -31,6 +32,7 @@ export default function CronogramaScreen(): React.ReactElement {
   const [modalVisible, setModalVisible] = useState(false);
 
   const toast = useToast();
+  useAppointmentRealtime();
   const { data: allAppointments, isLoading, refetch, isRefetching } = useAppointments();
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
   const { mutate: resolveReschedule, isPending: isResolving } = useResolveReschedule();

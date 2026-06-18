@@ -12,6 +12,7 @@ import {
   findObstetraUserIdForGestante,
 } from '../notifications/notification.service.js';
 import { ordenarPorPrioridad } from '../../utils/appointmentPriority.js';
+import { emitAppointmentEvent } from '../../utils/appointmentEvents.js';
 
 /** Formatea una fecha `Date` (UTC) a `dd/mm/aaaa` para mensajes. */
 function fmtFecha(value: Date): string {
@@ -194,7 +195,7 @@ export class AppointmentService {
       await this.assertSlotAvailable(fechaObj, horaObj, obstetraIdToSave);
     }
 
-    return prisma.appointment.create({
+    const created = await prisma.appointment.create({
       data: {
         gestanteId: data.gestanteId,
         obstetraId: obstetraIdToSave,
@@ -208,6 +209,8 @@ export class AppointmentService {
         modalidad: esDomiciliaria ? 'domiciliaria' : 'establecimiento',
       },
     });
+    await emitAppointmentEvent('appointment:created', created);
+    return created;
   }
 
   async findAll(
@@ -426,7 +429,7 @@ export class AppointmentService {
       id,
     );
 
-    return prisma.appointment.update({
+    const rescheduled = await prisma.appointment.update({
       where: { id },
       data: {
         estado: EstadoCita.reprogramada,
@@ -435,6 +438,8 @@ export class AppointmentService {
         motivoReprogramacion: data.motivoReprogramacion,
       },
     });
+    await emitAppointmentEvent('appointment:updated', rescheduled);
+    return rescheduled;
   }
 
   async updateStatus(id: string, estado: EstadoCita, userContext?: RequestUser) {
@@ -469,10 +474,12 @@ export class AppointmentService {
       );
     }
 
-    return prisma.appointment.update({
+    const statusUpdated = await prisma.appointment.update({
       where: { id },
       data: { estado },
     });
+    await emitAppointmentEvent('appointment:status_changed', statusUpdated);
+    return statusUpdated;
   }
 
   /**
@@ -521,6 +528,7 @@ export class AppointmentService {
       );
     }
 
+    await emitAppointmentEvent('appointment:updated', updated);
     return updated;
   }
 
@@ -568,6 +576,7 @@ export class AppointmentService {
       );
     }
 
+    await emitAppointmentEvent('appointment:status_changed', updated);
     return updated;
   }
 
@@ -643,6 +652,7 @@ export class AppointmentService {
       );
     }
 
+    await emitAppointmentEvent('appointment:status_changed', updated);
     return updated;
   }
 
@@ -710,6 +720,7 @@ export class AppointmentService {
         );
       }
 
+      await emitAppointmentEvent('appointment:status_changed', updated);
       return updated;
     }
 
@@ -736,6 +747,7 @@ export class AppointmentService {
       );
     }
 
+    await emitAppointmentEvent('appointment:status_changed', updated);
     return updated;
   }
 }
