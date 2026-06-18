@@ -68,6 +68,12 @@ export const getAppointmentsSchema = {
     sort: z.enum(['asc', 'desc']).optional(),
     // Límite de resultados.
     limit: z.coerce.number().int().positive().max(1000).optional(),
+    // Filtros profesionales (Fase 1):
+    scope: z.enum(['hoy', 'proximas', 'historial', 'todas']).optional(),
+    desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    search: z.string().max(100).optional(),
+    orderBy: z.enum(['prioridad', 'fecha']).optional(),
   }).passthrough(),
 };
 

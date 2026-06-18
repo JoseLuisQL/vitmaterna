@@ -11,6 +11,7 @@ import {
   notifyUser,
   findObstetraUserIdForGestante,
 } from '../notifications/notification.service.js';
+import { ordenarPorPrioridad } from '../../utils/appointmentPriority.js';
 
 /** Formatea una fecha `Date` (UTC) a `dd/mm/aaaa` para mensajes. */
 function fmtFecha(value: Date): string {
@@ -220,6 +221,12 @@ export class AppointmentService {
       today?: boolean | string;
       sort?: 'asc' | 'desc';
       limit?: number;
+      // Nuevos filtros profesionales (Fase 1):
+      scope?: 'hoy' | 'proximas' | 'historial' | 'todas';
+      desde?: string; // YYYY-MM-DD
+      hasta?: string; // YYYY-MM-DD
+      search?: string; // nombre o DNI de la gestante
+      orderBy?: 'prioridad' | 'fecha';
     },
     userContext?: RequestUser,
   ) {
@@ -247,22 +254,67 @@ export class AppointmentService {
     if ((filters as any).modalidad) where.modalidad = (filters as any).modalidad;
 
     const isTrue = (v: unknown) => v === true || v === 'true';
+    const hoy = new Date();
+    const hoyMidnight = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()));
+    // Cota de cordura: ignora fechas absurdas (> hoy + 2 años) por datos sucios.
+    const cotaSuperior = new Date(hoyMidnight.getTime());
+    cotaSuperior.setUTCFullYear(cotaSuperior.getUTCFullYear() + 2);
 
-    // "Próxima cita": solo las PENDIENTES (no asistidas/canceladas) con fecha ≥ hoy.
-    // Esto evita que el dashboard muestre una cita ya asistida o pasada.
-    if (isTrue(filters.future)) {
-      const hoy = new Date();
-      const hoyMidnight = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()));
-      where.fecha = { gte: hoyMidnight };
-      where.estado = { in: ['programada', 'confirmada', 'reprogramada'] };
+    const ESTADOS_PENDIENTES = ['programada', 'confirmada', 'reprogramada', 'solicitud_reprogramacion'];
+    const ESTADOS_HISTORIAL = ['asistida', 'no_asistida', 'cancelada'];
+
+    // Filtro por "scope" (segmentos rápidos). Tiene prioridad sobre future/today.
+    switch (filters.scope) {
+      case 'hoy': {
+        const fin = new Date(hoyMidnight.getTime() + 24 * 60 * 60 * 1000);
+        where.fecha = { gte: hoyMidnight, lt: fin };
+        break;
+      }
+      case 'proximas':
+        where.fecha = { gte: hoyMidnight, lte: cotaSuperior };
+        where.estado = { in: ESTADOS_PENDIENTES };
+        break;
+      case 'historial':
+        where.estado = { in: ESTADOS_HISTORIAL };
+        break;
+      case 'todas':
+      default:
+        break;
     }
 
-    // "Hoy": solo las citas del día actual.
-    if (isTrue(filters.today)) {
-      const hoy = new Date();
-      const inicio = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()));
-      const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
-      where.fecha = { gte: inicio, lt: fin };
+    // Compatibilidad con los flags previos (future/today) si no se usó scope.
+    if (!filters.scope && isTrue(filters.future)) {
+      where.fecha = { gte: hoyMidnight, lte: cotaSuperior };
+      where.estado = { in: ['programada', 'confirmada', 'reprogramada'] };
+    }
+    if (!filters.scope && isTrue(filters.today)) {
+      const fin = new Date(hoyMidnight.getTime() + 24 * 60 * 60 * 1000);
+      where.fecha = { gte: hoyMidnight, lt: fin };
+    }
+
+    // Rango de fechas explícito (desde/hasta) — se combina con lo anterior.
+    if (filters.desde || filters.hasta) {
+      where.fecha = {
+        ...(typeof where.fecha === 'object' && where.fecha !== null ? where.fecha : {}),
+        ...(filters.desde ? { gte: new Date(`${filters.desde}T00:00:00.000Z`) } : {}),
+        ...(filters.hasta ? { lte: new Date(`${filters.hasta}T23:59:59.999Z`) } : {}),
+      };
+    }
+
+    // Búsqueda por nombre o DNI de la gestante.
+    if (filters.search && filters.search.trim()) {
+      const q = filters.search.trim();
+      where.gestante = {
+        is: {
+          user: {
+            OR: [
+              { firstName: { contains: q, mode: 'insensitive' } },
+              { lastName: { contains: q, mode: 'insensitive' } },
+              { dni: { contains: q, mode: 'insensitive' } },
+            ],
+          },
+        },
+      };
     }
 
     const dir = filters.sort === 'desc' ? 'desc' : 'asc';
@@ -270,7 +322,7 @@ export class AppointmentService {
     // `limit` puede llegar como string desde la query: se normaliza a entero.
     const take = filters.limit != null ? Number(filters.limit) : undefined;
 
-    return prisma.appointment.findMany({
+    const rows = await prisma.appointment.findMany({
       where,
       include: {
         gestante: {
@@ -285,8 +337,19 @@ export class AppointmentService {
         },
       },
       orderBy: [{ fecha: dir }, { hora: dir }],
-      ...(take && Number.isFinite(take) && take > 0 ? { take } : {}),
     });
+
+    // Orden por PRIORIDAD (default): primero confirmadas/urgentes, luego por fecha
+    // más cercana. Se aplica en memoria sobre el conjunto ya filtrado (acotado por
+    // rol/scope). Si se pide orderBy='fecha', se respeta el orden del query.
+    const ordered =
+      filters.orderBy === 'fecha' ? rows : ordenarPorPrioridad(rows as any) as typeof rows;
+
+    // `limit` se aplica después del orden para devolver los más prioritarios.
+    if (take && Number.isFinite(take) && take > 0) {
+      return ordered.slice(0, take);
+    }
+    return ordered;
   }
 
   /**
