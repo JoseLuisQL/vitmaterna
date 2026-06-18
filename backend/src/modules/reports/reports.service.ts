@@ -139,13 +139,21 @@ export const getClinicReport = async () => {
   const con6Controles = gestantesWithControls.filter(g => g._count.prenatalControls >= 6).length;
   const con8Controles = gestantesWithControls.filter(g => g._count.prenatalControls >= 8).length;
 
+  // PERF: solo se traen las columnas necesarias para los KPIs (no las ~54 de la
+  // gestante), y de los tratamientos solo lo que consume calcularAdherencia.
   const allGestantes = await prisma.gestante.findMany({
     where: { estado: 'activa' },
-    include: {
+    select: {
+      nivelRiesgo: true,
+      createdAt: true,
+      fum: true,
       user: { select: { firstName: true, lastName: true } },
       treatments: {
-        include: {
-          supplementLogs: true,
+        select: {
+          fechaInicio: true,
+          fechaFin: true,
+          duracionDias: true,
+          supplementLogs: { select: { fecha: true, tomado: true } },
         },
       },
     },
@@ -215,35 +223,36 @@ export const getClinicReport = async () => {
     { name: 'Alto riesgo', population: redCount, color: '#EF4444', legendFontColor: '#64748B', legendFontSize: 13 },
   ];
 
-  // Attendance stats for the last 6 months
-  const attendanceStats = [];
+  // Attendance stats for the last 6 months.
+  // PERF: una sola consulta agrupada en lugar de 12 counts separados.
   const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
   const now = new Date();
+  const rangeStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
+  const apptsLast6 = await prisma.appointment.findMany({
+    where: {
+      fecha: { gte: rangeStart },
+      estado: { in: ['asistida', 'no_asistida'] },
+    },
+    select: { fecha: true, estado: true },
+  });
+
+  // Acumula por clave "año-mes".
+  const bucket = new Map<string, { attended: number; missed: number }>();
+  for (const a of apptsLast6) {
+    const d = new Date(a.fecha);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const b = bucket.get(key) ?? { attended: 0, missed: 0 };
+    if (a.estado === 'asistida') b.attended++;
+    else b.missed++;
+    bucket.set(key, b);
+  }
+
+  const attendanceStats = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-
-    const attended = await prisma.appointment.count({
-      where: {
-        fecha: { gte: monthStart, lte: monthEnd },
-        estado: 'asistida',
-      },
-    });
-
-    const missed = await prisma.appointment.count({
-      where: {
-        fecha: { gte: monthStart, lte: monthEnd },
-        estado: 'no_asistida',
-      },
-    });
-
-    attendanceStats.push({
-      month: monthNames[d.getMonth()],
-      attended,
-      missed,
-    });
+    const b = bucket.get(`${d.getFullYear()}-${d.getMonth()}`) ?? { attended: 0, missed: 0 };
+    attendanceStats.push({ month: monthNames[d.getMonth()], attended: b.attended, missed: b.missed });
   }
 
   return {

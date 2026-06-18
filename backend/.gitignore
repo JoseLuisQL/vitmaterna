@@ -25,7 +25,10 @@ logs/
 coverage/
 
 # Prisma
-prisma/migrations/
+# NOTA: las migraciones SÍ deben versionarse para reproducir la BD en cualquier
+# entorno (no se ignoran). Solo se ignora la BD local de desarrollo si existe.
+prisma/*.db
+prisma/*.db-journal
 
 # Uploaded files (chat images, etc.)
 uploads/

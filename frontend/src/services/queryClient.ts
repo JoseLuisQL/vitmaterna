@@ -22,9 +22,11 @@ export const queryClient = new QueryClient({
     queries: {
       retry: 2,
       networkMode: 'offlineFirst',
-      // Datos "frescos" por poco tiempo para favorecer la actualización al
-      // reenfocar; offline sirve la caché aunque esté "stale".
-      staleTime: 15 * 1000,
+      // Datos "frescos" durante 60 s: reduce refetches innecesarios (y consumo de
+      // datos móviles, crítico en zona rural) sin sacrificar frescura percibida.
+      // Las queries de datos estables (educación, catálogos) suben su propio
+      // staleTime; offline sirve la caché aunque esté "stale".
+      staleTime: 60 * 1000,
       gcTime: PERSIST_MAX_AGE,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,

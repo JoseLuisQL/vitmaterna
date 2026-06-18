@@ -314,6 +314,9 @@ model Appointment {
   @@index([gestanteId, fecha], map: "idx_appointments_gestante")
   @@index([obstetraId, fecha], map: "idx_appointments_obstetra")
   @@index([estado], map: "idx_appointments_estado")
+  // Soporta los escáneres del cron (recordatorios e inasistencias) que filtran
+  // por estado + fecha.
+  @@index([estado, fecha], map: "idx_appointments_estado_fecha")
   @@map("appointments")
 }
 
@@ -392,6 +395,9 @@ model Treatment {
   supplementLogs SupplementLog[]
 
   @@index([gestanteId], map: "idx_treatments_gestante")
+  // Soporta los escáneres del cron (suplementos y baja adherencia) que filtran
+  // por estado.
+  @@index([estado], map: "idx_treatments_estado")
   @@map("treatments")
 }
 
@@ -788,6 +794,8 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_notifications_user")
+  // Soporta los batch dedup de los escáneres del cron (filtran por tipo + fecha).
+  @@index([tipo, createdAt(sort: Desc)], map: "idx_notifications_tipo_created")
   @@map("notifications")
 }
 

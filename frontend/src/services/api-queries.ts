@@ -594,13 +594,18 @@ export const fetchEducation = async (): Promise<EducationResponse> => {
   };
 };
 
+// El contenido educativo cambia muy poco: se mantiene "fresco" 10 min para
+// evitar refetches y ahorrar datos móviles.
+const STABLE_STALE_TIME = 10 * 60 * 1000;
+
 export const useEducation = () =>
-  useQuery({ queryKey: ['education'], queryFn: fetchEducation });
+  useQuery({ queryKey: ['education'], queryFn: fetchEducation, staleTime: STABLE_STALE_TIME });
 
 /** Lista de contenido educativo para que el obstetra elija qué recomendar. */
 export const useEducationCatalog = () =>
   useQuery({
     queryKey: ['educationCatalog'],
+    staleTime: STABLE_STALE_TIME,
     queryFn: async (): Promise<EducationContentItem[]> => {
       const res = await api.get('/education/catalog');
       return res.data?.data || [];

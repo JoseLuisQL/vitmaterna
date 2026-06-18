@@ -219,6 +219,19 @@ export async function scanSupplementReminders() {
     },
   });
 
+  // Batch dedup (evita un findFirst por tratamiento → O(N) queries): se cargan
+  // de una sola vez los recordatorios de suplemento ya enviados hoy y se arma un
+  // Set de treatmentId para consultar en memoria.
+  const recordadosHoy = await prisma.notification.findMany({
+    where: { tipo: 'recordatorio_suplemento', createdAt: { gte: hoyMidnight } },
+    select: { datos: true },
+  });
+  const recordadosTratamientos = new Set(
+    recordadosHoy
+      .map((n) => (n.datos as Record<string, unknown> | null)?.treatmentId)
+      .filter((id): id is string => typeof id === 'string'),
+  );
+
   for (const t of tratamientos) {
     const user = t.gestante?.user;
     if (!user || !t.horaToma) continue;
@@ -233,16 +246,8 @@ export async function scanSupplementReminders() {
     const yaTomadoHoy = t.supplementLogs.some((l) => l.tomado);
     if (yaTomadoHoy) continue;
 
-    // ¿ya se le recordó hoy?
-    const yaRecordado = await prisma.notification.findFirst({
-      where: {
-        userId: user.id,
-        tipo: 'recordatorio_suplemento',
-        datos: { path: ['treatmentId'], equals: t.id },
-        createdAt: { gte: hoyMidnight },
-      },
-    });
-    if (yaRecordado) continue;
+    // ¿ya se le recordó hoy? (consulta en memoria)
+    if (recordadosTratamientos.has(t.id)) continue;
 
     const horaTxt = `${String(ht.getUTCHours()).padStart(2, '0')}:${String(ht.getUTCMinutes()).padStart(2, '0')}`;
     const mensaje = `Hola ${user.firstName}, no olvides tomar tu ${t.nombre} (${t.dosis}) de las ${horaTxt}. Registra tu consumo en la app.`;
@@ -336,6 +341,18 @@ export async function scanLowAdherence() {
   });
 
   const hoy = new Date().toISOString().split('T')[0];
+  const hoyMidnight = new Date(`${hoy}T00:00:00.000Z`);
+
+  // Batch dedup: alertas de baja adherencia ya emitidas hoy → Set de treatmentId.
+  const alertadosHoy = await prisma.notification.findMany({
+    where: { tipo: 'baja_adherencia', createdAt: { gte: hoyMidnight } },
+    select: { datos: true },
+  });
+  const alertadosTratamientos = new Set(
+    alertadosHoy
+      .map((n) => (n.datos as Record<string, unknown> | null)?.treatmentId)
+      .filter((id): id is string => typeof id === 'string'),
+  );
 
   for (const t of tratamientos) {
     const inicio = new Date(t.fechaInicio);
@@ -351,15 +368,8 @@ export async function scanLowAdherence() {
     });
     if (adherencia >= 50) continue;
 
-    // Evitar alertas repetidas el mismo día (busca una previa de hoy).
-    const yaAlertado = await prisma.notification.findFirst({
-      where: {
-        tipo: 'baja_adherencia',
-        datos: { path: ['treatmentId'], equals: t.id },
-        createdAt: { gte: new Date(`${hoy}T00:00:00.000Z`) },
-      },
-    });
-    if (yaAlertado) continue;
+    // Evitar alertas repetidas el mismo día (consulta en memoria).
+    if (alertadosTratamientos.has(t.id)) continue;
 
     const obstetraUserId = await findObstetraUserIdForGestante(t.gestanteId);
     if (obstetraUserId) {
@@ -391,6 +401,20 @@ export async function scanUpcomingFPP() {
     include: { user: true },
   });
 
+  // Batch dedup: avisos de FPP ya enviados → Set de claves `userId:hito`.
+  const avisosFpp = await prisma.notification.findMany({
+    where: { tipo: 'fpp_proxima' },
+    select: { userId: true, datos: true },
+  });
+  const avisadosFpp = new Set(
+    avisosFpp
+      .map((n) => {
+        const h = (n.datos as Record<string, unknown> | null)?.hito;
+        return typeof h === 'number' ? `${n.userId}:${h}` : null;
+      })
+      .filter((k): k is string => k !== null),
+  );
+
   for (const g of gestantes) {
     const fpp = g.fppEco || g.fppFum;
     if (!fpp || !g.user) continue;
@@ -401,14 +425,7 @@ export async function scanUpcomingFPP() {
     const hito = hitos.find((h) => diasRestantes <= h && diasRestantes > (hitos[hitos.indexOf(h) + 1] ?? -1));
     if (hito === undefined) continue;
 
-    const yaAvisado = await prisma.notification.findFirst({
-      where: {
-        userId: g.user.id,
-        tipo: 'fpp_proxima',
-        datos: { path: ['hito'], equals: hito },
-      },
-    });
-    if (yaAvisado) continue;
+    if (avisadosFpp.has(`${g.user.id}:${hito}`)) continue;
 
     const mensaje = `Hola ${g.user.firstName}, tu fecha probable de parto se acerca (faltan ~${diasRestantes} días). Prepara tu plan de parto y tus cosas para el bebé.`;
     if (g.user.phone) {
@@ -450,6 +467,17 @@ export async function scanPendingExams() {
 
   const hoy = now.toISOString().split('T')[0];
 
+  // Batch dedup: alertas de exámenes pendientes ya emitidas hoy → Set de gestanteId.
+  const examenesAlertadosHoy = await prisma.notification.findMany({
+    where: { tipo: 'examenes_pendientes', createdAt: { gte: new Date(`${hoy}T00:00:00.000Z`) } },
+    select: { datos: true },
+  });
+  const gestantesAlertadas = new Set(
+    examenesAlertadosHoy
+      .map((n) => (n.datos as Record<string, unknown> | null)?.gestanteId)
+      .filter((id): id is string => typeof id === 'string'),
+  );
+
   for (const g of gestantes) {
     if (!g.user) continue;
 
@@ -471,15 +499,8 @@ export async function scanPendingExams() {
     );
     if (faltantes.length === 0) continue;
 
-    // Una alerta por gestante por día.
-    const yaAlertado = await prisma.notification.findFirst({
-      where: {
-        tipo: 'examenes_pendientes',
-        datos: { path: ['gestanteId'], equals: g.id },
-        createdAt: { gte: new Date(`${hoy}T00:00:00.000Z`) },
-      },
-    });
-    if (yaAlertado) continue;
+    // Una alerta por gestante por día (consulta en memoria).
+    if (gestantesAlertadas.has(g.id)) continue;
 
     const nombres = faltantes.map((f) => f.nombre).join(', ');
     const obstetraUserId = await findObstetraUserIdForGestante(g.id);
