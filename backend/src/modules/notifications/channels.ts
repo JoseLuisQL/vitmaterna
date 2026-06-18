@@ -131,9 +131,22 @@ export const whatsappChannel: NotificationChannel = {
   },
 };
 
-/** Envía un mensaje por SMS y WhatsApp al número indicado. */
-export async function sendSmsAndWhatsApp(phone: string, message: string): Promise<void> {
-  await Promise.all([smsChannel.send(phone, message), whatsappChannel.send(phone, message)]);
+/**
+ * Envía un mensaje por SMS y WhatsApp al número indicado, respetando las
+ * preferencias de canal del usuario (si se proporcionan). Por defecto (sin
+ * `prefs`) envía por ambos canales para mantener compatibilidad.
+ */
+export async function sendSmsAndWhatsApp(
+  phone: string,
+  message: string,
+  prefs?: { sms?: boolean; whatsapp?: boolean } | null,
+): Promise<void> {
+  const smsEnabled = prefs?.sms !== false;
+  const whatsappEnabled = prefs?.whatsapp !== false;
+  const tasks: Promise<unknown>[] = [];
+  if (smsEnabled) tasks.push(smsChannel.send(phone, message));
+  if (whatsappEnabled) tasks.push(whatsappChannel.send(phone, message));
+  await Promise.all(tasks);
 }
 
 /** Estado de configuración de cada canal (para mostrar en el panel admin). */

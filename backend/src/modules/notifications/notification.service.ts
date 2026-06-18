@@ -6,6 +6,7 @@ import { smsChannel, whatsappChannel, sendSmsAndWhatsApp } from './channels.js';
 import { calculateEG } from '../../utils/dateCalc.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
 import { examenesPendientes } from '../../utils/examenesObligatorios.js';
+import { emitNotificationEvent } from '../../utils/notificationEvents.js';
 
 const expo = new Expo();
 
@@ -103,7 +104,8 @@ export async function scanAndSendReminders() {
       if (user.phone) {
         await sendSmsAndWhatsApp(
           user.phone,
-          `Hola ${user.firstName}, recuerda que tienes tu control prenatal programado para el día ${apptDate.toLocaleDateString()} a las 9:00 AM.`
+          `Hola ${user.firstName}, recuerda que tienes tu control prenatal programado para el día ${apptDate.toLocaleDateString()} a las 9:00 AM.`,
+          user.notificationPreferences as any,
         );
       }
 
@@ -117,7 +119,7 @@ export async function scanAndSendReminders() {
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;
-      if (prefs?.expoPushToken) {
+      if (prefs?.push !== false && prefs?.expoPushToken) {
         await sendPushNotification(
           [prefs.expoPushToken],
           'Próxima Cita Prenatal',
@@ -138,7 +140,8 @@ export async function scanAndSendReminders() {
       if (user.phone) {
         await sendSmsAndWhatsApp(
           user.phone,
-          `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`
+          `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`,
+          user.notificationPreferences as any,
         );
       }
 
@@ -152,7 +155,7 @@ export async function scanAndSendReminders() {
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;
-      if (prefs?.expoPushToken) {
+      if (prefs?.push !== false && prefs?.expoPushToken) {
         await sendPushNotification(
           [prefs.expoPushToken],
           'Cita Prenatal Mañana',
@@ -177,14 +180,15 @@ export async function scanAndSendReminders() {
 
       if (diffHours <= 2 && diffHours > 0) {
         const horaTxt = `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`;
+        const prefs = user.notificationPreferences as Record<string, any>;
         if (user.phone) {
           await sendSmsAndWhatsApp(
             user.phone,
-            `Hola ${user.firstName}, tu control prenatal es hoy a las ${horaTxt}. Acude con tiempo. ¡Te esperamos!`
+            `Hola ${user.firstName}, tu control prenatal es hoy a las ${horaTxt}. Acude con tiempo. ¡Te esperamos!`,
+            prefs,
           );
         }
-        const prefs = user.notificationPreferences as Record<string, any>;
-        if (prefs?.expoPushToken) {
+        if (prefs?.push !== false && prefs?.expoPushToken) {
           await sendPushNotification(
             [prefs.expoPushToken],
             'Tu cita es en 2 horas',
@@ -253,7 +257,7 @@ export async function scanSupplementReminders() {
     const horaTxt = `${String(ht.getUTCHours()).padStart(2, '0')}:${String(ht.getUTCMinutes()).padStart(2, '0')}`;
     const mensaje = `Hola ${user.firstName}, no olvides tomar tu ${t.nombre} (${t.dosis}) de las ${horaTxt}. Registra tu consumo en la app.`;
     if (user.phone) {
-      await sendSmsAndWhatsApp(user.phone, mensaje);
+      await sendSmsAndWhatsApp(user.phone, mensaje, user.notificationPreferences as any);
     }
     await notifyUser(user.id, 'recordatorio_suplemento', 'Recordatorio de medicamento', mensaje, {
       treatmentId: t.id,
@@ -261,7 +265,11 @@ export async function scanSupplementReminders() {
   }
 }
 
-/** Crea una notificación persistente para un usuario y le envía push si tiene token. */
+/**
+ * Crea una notificación in-app persistente para un usuario, la emite en tiempo
+ * real por Socket.IO y le envía push (si tiene token y el canal push está
+ * habilitado en sus preferencias).
+ */
 export async function notifyUser(
   userId: string,
   tipo: string,
@@ -269,12 +277,18 @@ export async function notifyUser(
   mensaje: string,
   datos?: Record<string, unknown>,
 ) {
-  await prisma.notification.create({
+  const notif = await prisma.notification.create({
     data: { userId, tipo, canal: 'push', titulo, mensaje, datos: (datos ?? {}) as object, estado: 'enviada', enviadaAt: new Date() },
   });
+
+  // Tiempo real: avisa al dispositivo del usuario para refrescar bandeja y badge.
+  await emitNotificationEvent(userId, notif.id);
+
   const user = await prisma.user.findUnique({ where: { id: userId } });
   const prefs = user?.notificationPreferences as Record<string, any> | null;
-  if (prefs?.expoPushToken) {
+  // Respeta la preferencia de canal push (por defecto activado si no está definido).
+  const pushEnabled = prefs?.push !== false;
+  if (pushEnabled && prefs?.expoPushToken) {
     // Se incluye `tipo` en los datos del push para el deep-link en el cliente.
     await sendPushNotification([prefs.expoPushToken], titulo, mensaje, { tipo, ...(datos ?? {}) });
   }
@@ -430,7 +444,7 @@ export async function scanUpcomingFPP() {
 
     const mensaje = `Hola ${g.user.firstName}, tu fecha probable de parto se acerca (faltan ~${diasRestantes} días). Prepara tu plan de parto y tus cosas para el bebé.`;
     if (g.user.phone) {
-      await sendSmsAndWhatsApp(g.user.phone, mensaje);
+      await sendSmsAndWhatsApp(g.user.phone, mensaje, g.user.notificationPreferences as any);
     }
     if (g.acompanantePhone) {
       await sendSmsAndWhatsApp(
