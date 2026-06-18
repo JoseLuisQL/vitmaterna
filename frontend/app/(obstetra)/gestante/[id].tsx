@@ -16,7 +16,7 @@ import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast, DateTimeField, Accordion } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -1017,8 +1017,16 @@ export default function PatientProfileScreen(): React.ReactElement {
                 )}
 
                 <Fila label="Hemoglobina I" value={lab.hemoglobina1 ? `${lab.hemoglobina1} g/dL` : undefined} />
-                <Fila label="Hemoglobina II" value={lab.hemoglobina2 ? `${lab.hemoglobina2} g/dL` : 'Pendiente'} />
-                <Fila label="Hemoglobina III" value={lab.hemoglobina3 ? `${lab.hemoglobina3} g/dL` : 'Pendiente'} />
+                {/* Hb II/III solo muestran "Pendiente" cuando ya corresponde por EG
+                    (≥ sem. 25 para la II, ≥ sem. 33 para la III) para no meter ruido. */}
+                <Fila
+                  label="Hemoglobina II"
+                  value={lab.hemoglobina2 ? `${lab.hemoglobina2} g/dL` : (Number(patient.currentWeek) >= 25 ? 'Pendiente' : undefined)}
+                />
+                <Fila
+                  label="Hemoglobina III"
+                  value={lab.hemoglobina3 ? `${lab.hemoglobina3} g/dL` : (Number(patient.currentWeek) >= 33 ? 'Pendiente' : undefined)}
+                />
                 <Fila label="Glucemia" value={lab.glucemia} />
                 <Fila label="VDRL/RPR" value={lab.vdrl} />
                 <Fila label="VIH" value={lab.vih} />
@@ -1117,10 +1125,10 @@ export default function PatientProfileScreen(): React.ReactElement {
           </>
         }
       >
-        <View style={{ gap: 14 }}>
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Tipo de Examen</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+        <View style={{ gap: 10 }}>
+          <View>
+            <Text style={styles.inputLabel}>Tipo de examen</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 8 }}>
               {['Hemoglobina', 'Glucemia', 'VIH', 'VDRL', 'Orina'].map((t) => (
                 <TouchableOpacity
                   key={t}
@@ -1135,83 +1143,20 @@ export default function PatientProfileScreen(): React.ReactElement {
                 </TouchableOpacity>
               ))}
             </View>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Hemoglobina, Glucemia, VIH..."
-              placeholderTextColor={commonColors.textTertiary}
+            <PlainInput
+              placeholder="O escribe otro tipo de examen…"
               value={labTipo}
               onChangeText={setLabTipo}
+              themeColor={BRAND}
             />
           </View>
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Número de Toma</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 1, 2, 3"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="numeric"
-              value={labToma}
-              onChangeText={setLabToma}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Valor Numérico (Opcional)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 11.5"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="numeric"
-              value={labValorNum}
-              onChangeText={setLabValorNum}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Valor Texto (Opcional)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Normal, Reactivo..."
-              placeholderTextColor={commonColors.textTertiary}
-              value={labValorText}
-              onChangeText={setLabValorText}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Unidad (Opcional)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. g/dL, mg/dL"
-              placeholderTextColor={commonColors.textTertiary}
-              value={labUnidad}
-              onChangeText={setLabUnidad}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Resultado (Opcional)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Normal, Anemia Leve..."
-              placeholderTextColor={commonColors.textTertiary}
-              value={labResultado}
-              onChangeText={setLabResultado}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Observaciones</Text>
-            <TextInput
-              style={[styles.textInput, { height: 80 }]}
-              placeholder="Notas adicionales..."
-              placeholderTextColor={commonColors.textTertiary}
-              multiline
-              value={labObs}
-              onChangeText={setLabObs}
-            />
-          </View>
+          <PlainInput label="Número de toma" placeholder="Ej. 1, 2, 3" keyboardType="numeric" value={labToma} onChangeText={setLabToma} themeColor={BRAND} />
+          <PlainInput label="Valor numérico (opcional)" placeholder="Ej. 11.5" keyboardType="numeric" value={labValorNum} onChangeText={setLabValorNum} themeColor={BRAND} />
+          <PlainInput label="Valor texto (opcional)" placeholder="Ej. Normal, Reactivo…" value={labValorText} onChangeText={setLabValorText} themeColor={BRAND} />
+          <PlainInput label="Unidad (opcional)" placeholder="Ej. g/dL, mg/dL" value={labUnidad} onChangeText={setLabUnidad} themeColor={BRAND} />
+          <PlainInput label="Resultado (opcional)" placeholder="Ej. Normal, Anemia leve…" value={labResultado} onChangeText={setLabResultado} themeColor={BRAND} />
+          <PlainInput label="Observaciones" placeholder="Notas adicionales…" multiline value={labObs} onChangeText={setLabObs} themeColor={BRAND} />
         </View>
       </AppModal>
 
@@ -1219,7 +1164,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       <AppModal
         visible={isVaxModalVisible}
         onClose={() => setIsVaxModalVisible(false)}
-        title="Registrar Vacunación"
+        title="Registrar vacunación"
         footer={
           <>
             <AppButton title="Cancelar" variant="outline" onPress={() => setIsVaxModalVisible(false)} style={{ flex: 1 }} />
@@ -1227,57 +1172,22 @@ export default function PatientProfileScreen(): React.ReactElement {
           </>
         }
       >
-        <View style={{ gap: 14 }}>
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Nombre de la Vacuna</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Influenza, Tétanos..."
-              placeholderTextColor={commonColors.textTertiary}
-              value={vaxNombre}
-              onChangeText={setVaxNombre}
-            />
-          </View>
+        <View style={{ gap: 10 }}>
+          <PlainInput label="Nombre de la vacuna" placeholder="Ej. Influenza, Tétanos…" value={vaxNombre} onChangeText={setVaxNombre} themeColor={BRAND} />
+          <PlainInput label="Número de dosis" placeholder="Ej. 1, 2" keyboardType="numeric" value={vaxDosis} onChangeText={setVaxDosis} themeColor={BRAND} />
+          <PlainInput label="Semana de embarazo de aplicación" placeholder="Ej. 20" keyboardType="numeric" value={vaxSemana} onChangeText={setVaxSemana} themeColor={BRAND} />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Número de Dosis</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 1, 2"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="numeric"
-              value={vaxDosis}
-              onChangeText={setVaxDosis}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Semanas de Embarazo Aplicación</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 20"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="numeric"
-              value={vaxSemana}
-              onChangeText={setVaxSemana}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
+          <View>
             <Text style={styles.inputLabel}>Estado</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
               {['aplicada', 'pendiente'].map((est) => (
                 <TouchableOpacity
                   key={est}
-                  style={[
-                    styles.textInput,
-                    { flex: 1, alignItems: 'center' },
-                    vaxEstado === est && { borderColor: BRAND, backgroundColor: obstetraColors.primaryLight }
-                  ]}
+                  style={[styles.segment, { flex: 1 }, vaxEstado === est && styles.segmentActive]}
                   onPress={() => setVaxEstado(est)}
                 >
-                  <Text style={[vaxEstado === est && { color: BRAND, fontWeight: 'bold' }]}>
-                    {est.toUpperCase()}
+                  <Text style={[styles.segmentText, vaxEstado === est && styles.segmentTextActive]}>
+                    {est === 'aplicada' ? 'Aplicada' : 'Pendiente'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -1290,7 +1200,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       <AppModal
         visible={isTreatModalVisible}
         onClose={() => setIsTreatModalVisible(false)}
-        title="Asignar Tratamiento"
+        title="Asignar tratamiento"
         footer={
           <>
             <AppButton title="Cancelar" variant="outline" onPress={() => setIsTreatModalVisible(false)} style={{ flex: 1 }} />
@@ -1298,62 +1208,12 @@ export default function PatientProfileScreen(): React.ReactElement {
           </>
         }
       >
-        <View style={{ gap: 14 }}>
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Medicamento</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Sulfato Ferroso + Ácido Fólico"
-              placeholderTextColor={commonColors.textTertiary}
-              value={treatNombre}
-              onChangeText={setTreatNombre}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Dosis</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 1 tableta, 60mg"
-              placeholderTextColor={commonColors.textTertiary}
-              value={treatDosis}
-              onChangeText={setTreatDosis}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Frecuencia</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Diario, Cada 8 horas"
-              placeholderTextColor={commonColors.textTertiary}
-              value={treatFrecuencia}
-              onChangeText={setTreatFrecuencia}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Horario de Recordatorio</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 08:00"
-              placeholderTextColor={commonColors.textTertiary}
-              value={treatHora}
-              onChangeText={setTreatHora}
-            />
-          </View>
-
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Duración (Días)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. 30"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="numeric"
-              value={treatDuracion}
-              onChangeText={setTreatDuracion}
-            />
-          </View>
+        <View style={{ gap: 10 }}>
+          <PlainInput label="Medicamento" placeholder="Ej. Sulfato ferroso + ácido fólico" value={treatNombre} onChangeText={setTreatNombre} themeColor={BRAND} />
+          <PlainInput label="Dosis" placeholder="Ej. 1 tableta, 60 mg" value={treatDosis} onChangeText={setTreatDosis} themeColor={BRAND} />
+          <PlainInput label="Frecuencia" placeholder="Ej. Diario, cada 8 horas" value={treatFrecuencia} onChangeText={setTreatFrecuencia} themeColor={BRAND} />
+          <PlainInput label="Horario de recordatorio" placeholder="Ej. 08:00" value={treatHora} onChangeText={setTreatHora} themeColor={BRAND} />
+          <PlainInput label="Duración (días)" placeholder="Ej. 30" keyboardType="numeric" value={treatDuracion} onChangeText={setTreatDuracion} themeColor={BRAND} />
         </View>
       </AppModal>
 
@@ -1389,23 +1249,19 @@ export default function PatientProfileScreen(): React.ReactElement {
             placeholder="Seleccionar fecha"
           />
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Peso habitual (kg)</Text>
-              <TextInput style={styles.textInput} placeholder="ej. 55" placeholderTextColor={commonColors.textTertiary} value={embPesoHabitual} onChangeText={setEmbPesoHabitual} keyboardType="numeric" />
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Peso habitual (kg)" placeholder="Ej. 55" value={embPesoHabitual} onChangeText={setEmbPesoHabitual} keyboardType="numeric" themeColor={BRAND} />
             </View>
-            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Talla (cm)</Text>
-              <TextInput style={styles.textInput} placeholder="ej. 160" placeholderTextColor={commonColors.textTertiary} value={embTalla} onChangeText={setEmbTalla} keyboardType="numeric" />
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Talla (m)" placeholder="Ej. 1.60" value={embTalla} onChangeText={setEmbTalla} keyboardType="numeric" themeColor={BRAND} />
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Grupo sanguíneo</Text>
-              <TextInput style={styles.textInput} placeholder="ej. O" placeholderTextColor={commonColors.textTertiary} value={embGrupo} onChangeText={setEmbGrupo} autoCapitalize="characters" />
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Grupo sanguíneo" placeholder="Ej. O" value={embGrupo} onChangeText={setEmbGrupo} autoCapitalize="characters" themeColor={BRAND} />
             </View>
-            <View style={[styles.inputFieldGroup, { flex: 1 }]}>
-              <Text style={styles.inputLabel}>Factor RH</Text>
-              <TextInput style={styles.textInput} placeholder="ej. +" placeholderTextColor={commonColors.textTertiary} value={embFactor} onChangeText={setEmbFactor} />
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Factor RH" placeholder="Ej. +" value={embFactor} onChangeText={setEmbFactor} themeColor={BRAND} />
             </View>
           </View>
         </View>
@@ -1441,27 +1297,8 @@ export default function PatientProfileScreen(): React.ReactElement {
               ))}
             </View>
           </View>
-          <View>
-            <Text style={styles.inputLabel}>Condición</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej. Diabetes, Hipertensión, Preeclampsia..."
-              placeholderTextColor={commonColors.textTertiary}
-              value={antCondicion}
-              onChangeText={setAntCondicion}
-            />
-          </View>
-          <View>
-            <Text style={styles.inputLabel}>Detalle (opcional)</Text>
-            <TextInput
-              style={[styles.textInput, { height: 70 }]}
-              placeholder="Notas adicionales..."
-              placeholderTextColor={commonColors.textTertiary}
-              multiline
-              value={antDetalle}
-              onChangeText={setAntDetalle}
-            />
-          </View>
+          <PlainInput label="Condición" placeholder="Ej. Diabetes, hipertensión, preeclampsia…" value={antCondicion} onChangeText={setAntCondicion} themeColor={BRAND} />
+          <PlainInput label="Detalle (opcional)" placeholder="Notas adicionales…" multiline value={antDetalle} onChangeText={setAntDetalle} themeColor={BRAND} />
         </View>
       </AppModal>
 
@@ -1478,19 +1315,10 @@ export default function PatientProfileScreen(): React.ReactElement {
           </>
         }
       >
-        <View style={{ gap: 14 }}>
-          <View>
-            <Text style={styles.inputLabel}>Dosis</Text>
-            <TextInput style={styles.textInput} value={editDosis} onChangeText={setEditDosis} placeholderTextColor={commonColors.textTertiary} />
-          </View>
-          <View>
-            <Text style={styles.inputLabel}>Frecuencia</Text>
-            <TextInput style={styles.textInput} value={editFrecuencia} onChangeText={setEditFrecuencia} placeholderTextColor={commonColors.textTertiary} />
-          </View>
-          <View>
-            <Text style={styles.inputLabel}>Indicaciones (opcional)</Text>
-            <TextInput style={[styles.textInput, { height: 70 }]} multiline value={editIndicaciones} onChangeText={setEditIndicaciones} placeholderTextColor={commonColors.textTertiary} />
-          </View>
+        <View style={{ gap: 10 }}>
+          <PlainInput label="Dosis" value={editDosis} onChangeText={setEditDosis} themeColor={BRAND} />
+          <PlainInput label="Frecuencia" value={editFrecuencia} onChangeText={setEditFrecuencia} themeColor={BRAND} />
+          <PlainInput label="Indicaciones (opcional)" multiline value={editIndicaciones} onChangeText={setEditIndicaciones} themeColor={BRAND} />
         </View>
       </AppModal>
 
@@ -1507,19 +1335,16 @@ export default function PatientProfileScreen(): React.ReactElement {
           </>
         }
       >
-        <View style={{ gap: 14 }}>
+        <View style={{ gap: 10 }}>
           <Text style={styles.suspendHint}>Esta acción detiene el tratamiento. Se requiere una justificación clínica.</Text>
-          <View>
-            <Text style={styles.inputLabel}>Motivo de suspensión</Text>
-            <TextInput
-              style={[styles.textInput, { height: 90 }]}
-              placeholder="Ej. Reacción adversa, cambio de esquema..."
-              placeholderTextColor={commonColors.textTertiary}
-              multiline
-              value={motivoSuspension}
-              onChangeText={setMotivoSuspension}
-            />
-          </View>
+          <PlainInput
+            label="Motivo de suspensión"
+            placeholder="Ej. Reacción adversa, cambio de esquema…"
+            multiline
+            value={motivoSuspension}
+            onChangeText={setMotivoSuspension}
+            themeColor={BRAND}
+          />
         </View>
       </AppModal>
 
@@ -1586,17 +1411,14 @@ export default function PatientProfileScreen(): React.ReactElement {
         ) : (
           <View style={{ gap: spacing.md }}>
             {/* Campo de nota opcional para personalizar la recomendación */}
-            <View>
-              <Text style={styles.inputLabel}>Nota para la gestante (opcional)</Text>
-              <TextInput
-                style={[styles.textInput, { height: 70 }]}
-                placeholder="Ej. Léelo antes de tu próxima cita."
-                placeholderTextColor={commonColors.textTertiary}
-                multiline
-                value={recNota}
-                onChangeText={setRecNota}
-              />
-            </View>
+            <PlainInput
+              label="Nota para la gestante (opcional)"
+              placeholder="Ej. Léelo antes de tu próxima cita."
+              multiline
+              value={recNota}
+              onChangeText={setRecNota}
+              themeColor={BRAND}
+            />
 
             {/* Previsualización de la tarjeta tal como la verá la gestante */}
             <Text style={styles.recPreviewLabel}>Vista previa en el chat</Text>
@@ -2158,25 +1980,11 @@ const styles = StyleSheet.create({
     color: commonColors.text,
     marginBottom: 8,
   },
-  inputFieldGroup: {
-    gap: 6,
-    marginBottom: 12,
-  },
   inputLabel: {
-    ...typography.caption,
-    fontFamily: typography.label.fontFamily,
-    fontWeight: '600',
-    color: commonColors.textSecondary,
-  },
-  textInput: {
-    backgroundColor: commonColors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm2,
-    ...typography.body,
+    ...typography.label,
+    fontWeight: '500',
     color: commonColors.text,
+    marginBottom: spacing.xs,
   },
   modalActions: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ export { AppText } from './AppText';
 export { PressableScale } from './PressableScale';
 export { ThemeToggle } from './ThemeToggle';
 export { AppInput } from './AppInput';
+export { PlainInput } from './PlainInput';
 export { AppBadge } from './AppBadge';
 
 // Feedback
