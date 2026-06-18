@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, StatusBa
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Heart, Clock, ExternalLink, PlayCircle, CheckCircle2 } from 'lucide-react-native';
 import { RichText } from '../../../src/components/ui';
 import { resolveMediaUrl } from '../../../src/services/api';
@@ -25,6 +26,7 @@ const BRAND = gestanteColors.primary;
 
 export default function EducacionDetalleScreen(): React.ReactElement {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useEducation();
   const { markRead, toggleFavorite, isFavorite } = useEducationProgress();
@@ -41,10 +43,13 @@ export default function EducacionDetalleScreen(): React.ReactElement {
   useEffect(() => {
     if (item?.id) {
       markRead(item.id);
-      // Registra la vista en el backend (para estadísticas del admin), una vez.
-      registerContentView(item.id);
+      // Registra la vista en el backend (estadísticas + marca la recomendación
+      // como leída si la envió la obstetra), luego refresca el feed de educación.
+      registerContentView(item.id).finally(() => {
+        queryClient.invalidateQueries({ queryKey: ['education'] });
+      });
     }
-  }, [item?.id, markRead]);
+  }, [item?.id, markRead, queryClient]);
 
   if (!item) {
     return (

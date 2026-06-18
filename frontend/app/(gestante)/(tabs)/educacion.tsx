@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   AlertTriangle, Calculator, Phone, ArrowLeft, Search, Heart, Clock,
-  ChevronRight, CheckCircle2, X, BookOpen,
+  ChevronRight, CheckCircle2, X, BookOpen, Sparkles,
 } from 'lucide-react-native';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -263,11 +263,22 @@ function ContentCard({ item, leido, fav, onPress, onToggleFav }: {
       )}
       <View style={{ flex: 1 }}>
         <View style={styles.cardTopRow}>
-          <Text style={[styles.cardCategory, { color: cat.color }]} numberOfLines={1}>{cat.label}</Text>
+          {item.recomendado ? (
+            <View style={styles.recoTag}>
+              <Sparkles size={11} color={BRAND} />
+              <Text style={styles.recoTagText}>Recomendado por tu obstetra</Text>
+            </View>
+          ) : (
+            <Text style={[styles.cardCategory, { color: cat.color }]} numberOfLines={1}>{cat.label}</Text>
+          )}
           {leido && <CheckCircle2 size={14} color={semanticColors.success} />}
         </View>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.titulo}</Text>
-        <Text style={styles.cardExcerpt} numberOfLines={2}>{item.contenido}</Text>
+        {item.recomendado && item.recomendadoNota ? (
+          <Text style={styles.recoNota} numberOfLines={2}>“{item.recomendadoNota}”</Text>
+        ) : (
+          <Text style={styles.cardExcerpt} numberOfLines={2}>{item.contenido}</Text>
+        )}
         <View style={styles.cardMetaRow}>
           <View style={styles.cardMetaItem}>
             <TypeIcon size={12} color={commonColors.textTertiary} />
@@ -286,11 +297,10 @@ function ContentCard({ item, leido, fav, onPress, onToggleFav }: {
   );
 }
 
-type Seccion = 'parati' | 'biblioteca' | 'favoritos';
+type Seccion = 'recomendados' | 'parati' | 'biblioteca' | 'favoritos';
 
 export default function EducacionScreen(): React.ReactElement {
   const router = useRouter();
-  const [seccion, setSeccion] = useState<Seccion>('parati');
   const [query, setQuery] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [toolsVisible, setToolsVisible] = useState(false);
@@ -300,6 +310,19 @@ export default function EducacionScreen(): React.ReactElement {
 
   const allContents = eduData?.contents || [];
   const currentTrimester = eduData?.currentTrimester || 1;
+
+  // Nº de contenidos recomendados por la obstetra.
+  const recCount = useMemo(() => allContents.filter((c) => c.recomendado).length, [allContents]);
+
+  // Sección inicial: si hay contenido recomendado, mostrarlo primero.
+  const [seccion, setSeccion] = useState<Seccion>('parati');
+  const initializedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!initializedRef.current && allContents.length > 0) {
+      initializedRef.current = true;
+      if (recCount > 0) setSeccion('recomendados');
+    }
+  }, [allContents.length, recCount]);
 
   // Categorías presentes en el contenido (para no mostrar chips vacíos).
   const availableCategories = useMemo(() => {
@@ -311,6 +334,7 @@ export default function EducacionScreen(): React.ReactElement {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return allContents.filter((c) => {
+      if (seccion === 'recomendados' && !c.recomendado) return false;
       if (seccion === 'parati' && c.trimestre != null && c.trimestre !== currentTrimester) return false;
       if (seccion === 'favoritos' && !isFavorite(c.id)) return false;
       if (categoria && (c.categoria || 'general') !== categoria) return false;
@@ -348,6 +372,7 @@ export default function EducacionScreen(): React.ReactElement {
       {/* Pestañas */}
       <ToggleTabs
         tabs={[
+          ...(recCount > 0 ? [{ key: 'recomendados', label: 'Recomendados', badge: recCount }] : []),
           { key: 'parati', label: 'Para ti' },
           { key: 'biblioteca', label: 'Biblioteca' },
           { key: 'favoritos', label: 'Favoritos', badge: favCount || undefined },
@@ -385,6 +410,9 @@ export default function EducacionScreen(): React.ReactElement {
 
       {seccion === 'parati' && (
         <Text style={styles.sectionHint}>Recomendado para tu {currentTrimester}° trimestre</Text>
+      )}
+      {seccion === 'recomendados' && (
+        <Text style={styles.sectionHint}>Contenido que tu obstetra te recomendó estudiar</Text>
       )}
     </View>
   );
@@ -513,6 +541,9 @@ const styles = StyleSheet.create({
   cardCategory: { ...typography.overline, textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
   cardTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, marginTop: 2 },
   cardExcerpt: { ...typography.caption, color: commonColors.textSecondary, marginTop: 3, lineHeight: 18 },
+  recoTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: gestanteColors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full, flexShrink: 1 },
+  recoTagText: { ...typography.overline, fontSize: 9.5, fontWeight: '700', color: BRAND },
+  recoNota: { ...typography.caption, color: BRAND, fontStyle: 'italic', marginTop: 3, lineHeight: 18 },
   cardMetaRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   cardMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardMetaText: { ...typography.overline, letterSpacing: 0, color: commonColors.textTertiary },

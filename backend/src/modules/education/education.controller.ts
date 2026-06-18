@@ -32,5 +32,9 @@ export async function getById(req: Request, res: Response): Promise<void> {
 export async function registerView(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   const data = await educationService.registerContentView(id as string);
+  // Si era una recomendación de su obstetra, la marca como leída.
+  if (req.user?.role === 'gestante') {
+    await educationService.markRecommendationRead(req.user.userId, id as string);
+  }
   res.json(successResponse(data));
 }

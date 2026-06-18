@@ -36,7 +36,8 @@ export async function getEducationalContentForGestante(userId: string) {
     if (currentTrimester > 3) currentTrimester = 3;
   }
 
-  const contents = await prisma.educationalContent.findMany({
+  // 1) Contenido por trimestre (feed general "Para ti" / "Biblioteca").
+  const trimesterContents = await prisma.educationalContent.findMany({
     where: {
       activo: true,
       OR: [
@@ -49,7 +50,43 @@ export async function getEducationalContentForGestante(userId: string) {
     }
   });
 
-  return { currentTrimester, contents };
+  // 2) Contenido RECOMENDADO/asignado por la obstetra a ESTA gestante.
+  //    Aparece siempre (sin importar el trimestre) para que pueda estudiarlo
+  //    en cualquier momento. Se marca con `recomendado: true` + la nota.
+  const recommendations = await prisma.recommendedContent.findMany({
+    where: { gestanteId: gestante.id, content: { activo: true } },
+    orderBy: { createdAt: 'desc' },
+    include: { content: true },
+  });
+
+  const recommendedMeta = recommendations.map((r) => ({
+    ...r.content,
+    recomendado: true,
+    recomendadoNota: r.nota,
+    recomendadoEn: r.createdAt,
+    recomendadoLeido: r.leido,
+  }));
+  const recommendedIds = new Set(recommendedMeta.map((c) => c.id));
+
+  // Une ambas listas evitando duplicados: los recomendados primero, luego el
+  // resto del feed por trimestre que no esté ya recomendado.
+  const restantes = trimesterContents
+    .filter((c) => !recommendedIds.has(c.id))
+    .map((c) => ({ ...c, recomendado: false }));
+
+  const contents = [...recommendedMeta, ...restantes];
+
+  return { currentTrimester, contents, recommendedCount: recommendedMeta.length };
+}
+
+/** Marca como leída una recomendación de contenido (cuando la gestante la abre). */
+export async function markRecommendationRead(userId: string, contentId: string) {
+  const gestante = await prisma.gestante.findUnique({ where: { userId } });
+  if (!gestante) return;
+  await prisma.recommendedContent.updateMany({
+    where: { gestanteId: gestante.id, contentId, leido: false },
+    data: { leido: true, leidoAt: new Date() },
+  });
 }
 
 /** Devuelve todo el contenido activo, ordenado, para recomendación por el obstetra. */

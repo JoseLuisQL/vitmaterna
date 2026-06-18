@@ -210,6 +210,7 @@ model Gestante {
   dentalRecords           DentalRecord[]
   conversations           Conversation[]
   homeVisits              HomeVisit[]
+  recommendedContents     RecommendedContent[]
 
   @@index([userId], map: "idx_gestantes_user")
   @@map("gestantes")
@@ -755,9 +756,35 @@ model EducationalContent {
 
   // Mensajes de chat que recomiendan este contenido.
   messages     Message[]
+  // Asignaciones de este contenido a gestantes (recomendaciones del obstetra).
+  recommendedTo RecommendedContent[]
 
   @@index([categoria, activo], map: "idx_educational_content_category")
   @@map("educational_content")
+}
+
+/**
+ * Contenido educativo ASIGNADO/recomendado a una gestante por su obstetra.
+ * Persiste la recomendación para que aparezca SIEMPRE en su módulo de educación
+ * (sección "Recomendados para ti"), independientemente del trimestre, y pueda
+ * estudiarlo en cualquier momento. Único por (gestante, contenido).
+ */
+model RecommendedContent {
+  id          String   @id @default(uuid()) @db.Uuid
+  gestanteId  String   @map("gestante_id") @db.Uuid
+  contentId   String   @map("content_id") @db.Uuid
+  obstetraId  String?  @map("obstetra_id") @db.Uuid
+  nota        String?
+  leido       Boolean  @default(false)
+  leidoAt     DateTime? @map("leido_at") @db.Timestamptz()
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  gestante Gestante           @relation(fields: [gestanteId], references: [id], onDelete: Cascade)
+  content  EducationalContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([gestanteId, contentId], map: "uq_recommended_gestante_content")
+  @@index([gestanteId, createdAt(sort: Desc)], map: "idx_recommended_gestante")
+  @@map("recommended_content")
 }
 
 // ============================================

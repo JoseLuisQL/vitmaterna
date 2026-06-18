@@ -286,7 +286,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       { gestanteId: patient.id, contentId: recSelected.id, nota: recNota.trim() || undefined },
       {
         onSuccess: () => {
-          toast.success('Contenido recomendado', `Se envió "${recSelected.titulo}" a ${patient.firstName} por el chat.`);
+          toast.success('Contenido asignado', `"${recSelected.titulo}" se agregó a la sección Educación de ${patient.firstName} y se le avisó por el chat.`);
           closeRecommend();
         },
         onError: () => toast.error('No se pudo recomendar', 'Inténtalo nuevamente.'),

@@ -465,11 +465,39 @@ export const recommendContent = async (
     data: { ultimoMensaje: new Date() },
   });
 
+  // ── ASIGNAR el contenido al módulo de educación de la gestante ──
+  // Persiste la recomendación para que aparezca SIEMPRE en su sección
+  // "Recomendados para ti" y pueda estudiarlo en cualquier momento (no solo
+  // como un mensaje fugaz en el chat). Idempotente: si ya estaba recomendado,
+  // actualiza la nota y lo vuelve a marcar como no leído (re-recomendación).
+  await prisma.recommendedContent.upsert({
+    where: { gestanteId_contentId: { gestanteId: gestante.id, contentId: content.id } },
+    create: {
+      gestanteId: gestante.id,
+      contentId: content.id,
+      obstetraId: obstetra.id,
+      nota: nota?.trim() || null,
+      leido: false,
+    },
+    update: {
+      obstetraId: obstetra.id,
+      nota: nota?.trim() || null,
+      leido: false,
+      createdAt: new Date(),
+    },
+  });
+
   // Emite en tiempo real si la conversación está abierta.
   try {
     const { getIO } = await import('../../config/socketRegistry.js');
     const io = getIO();
-    if (io) io.to(`conversation:${conversation.id}`).emit('receive_message', message);
+    if (io) {
+      io.to(`conversation:${conversation.id}`).emit('receive_message', message);
+      // Avisa a la gestante para que su módulo de educación se refresque al instante.
+      if (gestante.userId) {
+        io.to(`user:${gestante.userId}`).emit('education:new_recommendation', { contentId: content.id });
+      }
+    }
   } catch {
     /* socket opcional */
   }

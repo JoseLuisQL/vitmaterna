@@ -80,14 +80,21 @@ export function useNotificationRealtime(): void {
 
     const onUnreadChanged = () => refreshChat();
 
+    // La obstetra recomendó contenido → refresca el módulo de educación.
+    const onNewRecommendation = () => {
+      queryClient.invalidateQueries({ queryKey: ['education'] });
+    };
+
     socket.on('notification:new', onNotification);
     socket.on('chat:new_message', onChatMessage);
     socket.on('chat:unread_changed', onUnreadChanged);
+    socket.on('education:new_recommendation', onNewRecommendation);
 
     return () => {
       socket.off('notification:new', onNotification);
       socket.off('chat:new_message', onChatMessage);
       socket.off('chat:unread_changed', onUnreadChanged);
+      socket.off('education:new_recommendation', onNewRecommendation);
       socket.disconnect();
     };
   }, [token, queryClient]);

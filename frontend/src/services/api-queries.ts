@@ -739,11 +739,17 @@ export interface EducationContentItem {
   mediaUrl?: string | null;
   thumbnailUrl?: string | null;
   duracionMin?: number | null;
+  /** Contenido recomendado por la obstetra a esta gestante. */
+  recomendado?: boolean;
+  recomendadoNota?: string | null;
+  recomendadoEn?: string | null;
+  recomendadoLeido?: boolean;
 }
 
 export interface EducationResponse {
   currentTrimester: number;
   contents: EducationContentItem[];
+  recommendedCount: number;
 }
 
 export const fetchEducation = async (): Promise<EducationResponse> => {
@@ -752,6 +758,7 @@ export const fetchEducation = async (): Promise<EducationResponse> => {
   return {
     currentTrimester: data.currentTrimester || 1,
     contents: Array.isArray(data.contents) ? data.contents : [],
+    recommendedCount: data.recommendedCount || 0,
   };
 };
 
