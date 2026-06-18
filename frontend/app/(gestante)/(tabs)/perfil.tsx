@@ -13,7 +13,6 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { ThemeToggle } from '../../../src/components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -232,11 +231,6 @@ export default function PerfilScreen(): React.ReactElement {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
-
-        <Text style={styles.sectionTitle}>Apariencia</Text>
-        <View style={[styles.menuCard, { padding: spacing.sm2 }]}>
-          <ThemeToggle accentColor={BRAND} />
-        </View>
 
         <Text style={styles.sectionTitle}>Cuenta</Text>
         <View style={styles.menuCard}>
