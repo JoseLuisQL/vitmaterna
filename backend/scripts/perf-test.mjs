@@ -10,8 +10,15 @@
  *   node scripts/perf-test.mjs
  *   API_URL=http://localhost:3000/v1 CONNECTIONS=100 DURATION=10 node scripts/perf-test.mjs
  *
+ * IMPORTANTE: para medir la latencia REAL de los endpoints (y no la velocidad de
+ * rechazo del rate limiter), el backend debe arrancarse con la bandera
+ * DISABLE_RATE_LIMIT=true. De lo contrario, bajo alta concurrencia casi todas
+ * las respuestas serán 429 y las métricas no reflejarán el rendimiento real.
+ *   DISABLE_RATE_LIMIT=true npm run dev   # en otra terminal
+ *   npm run perf
+ *
  * Requiere backend corriendo y BD sembrada. Sale con código 1 si algún
- * escenario supial el umbral de latencia (p99 > 3000 ms) o produce errores.
+ * escenario supera el umbral de latencia (p99 > 3000 ms) o produce errores.
  */
 import autocannon from 'autocannon';
 
@@ -107,11 +114,15 @@ async function main() {
 
   const resumen = [];
   let fallo = false;
+  let avisoRateLimit = false;
 
   for (const esc of escenarios) {
     const result = await run(esc.opts);
     const m = fmt(result);
     resumen.push({ escenario: esc.nombre, ...m });
+    // Un volumen alto de respuestas no-2xx bajo carga casi siempre significa que
+    // el rate limiter está activo (429). Avisamos para que se use DISABLE_RATE_LIMIT.
+    if (m.no2xx > 0) avisoRateLimit = true;
     const ok = m.latencia_p99_ms <= P99_THRESHOLD_MS && m.no2xx === 0 && m.errores === 0;
     if (!ok) fallo = true;
     console.log(`\n▶ ${esc.nombre}`);
@@ -121,6 +132,13 @@ async function main() {
 
   console.log(`\n=== Resumen (umbral p99 ≤ ${P99_THRESHOLD_MS} ms, RNF-2.01) ===`);
   console.table(resumen);
+
+  if (avisoRateLimit) {
+    console.log(
+      '\n⚠  Se detectaron respuestas no-2xx (probable rate limiting 429).\n' +
+        '   Reinicia el backend con DISABLE_RATE_LIMIT=true para medir la latencia real.',
+    );
+  }
 
   if (fallo) {
     console.log('\nAlgún escenario superó el umbral o produjo errores.');

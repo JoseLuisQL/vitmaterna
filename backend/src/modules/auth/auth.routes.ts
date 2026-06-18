@@ -222,8 +222,8 @@ router.post(
  *     responses:
  *       200:
  *         description: Password reset successfully
- *       501:
- *         description: Not yet implemented
+ *       400:
+ *         description: Invalid or expired reset token
  */
 router.post(
   '/reset-password',

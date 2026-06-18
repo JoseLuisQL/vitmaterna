@@ -3,6 +3,14 @@ import { env } from '../config/env.js';
 import type { Request } from 'express';
 
 /**
+ * Permite saltar el rate limiting de forma controlada. Solo se desactiva cuando
+ * se ejecutan pruebas (NODE_ENV=test) o explícitamente para pruebas de carga
+ * (DISABLE_RATE_LIMIT=true). En producción NUNCA debe activarse esta bandera.
+ */
+const skipRateLimit = (): boolean =>
+  process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true';
+
+/**
  * Global rate limiter: limits total requests from any source.
  */
 export const globalRateLimiter = rateLimit({
@@ -10,6 +18,7 @@ export const globalRateLimiter = rateLimit({
   max: env.RATE_LIMIT_GLOBAL_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
   message: {
     success: false,
     error: {
@@ -28,6 +37,7 @@ export const userRateLimiter = rateLimit({
   max: env.RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit,
   keyGenerator: (req: Request): string => {
     return req.user?.userId || req.ip || 'unknown';
   },
@@ -49,9 +59,9 @@ export const authRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  // En el entorno de pruebas se desactiva para no provocar 429 falsos en suites
-  // que ejecutan muchos logins seguidos.
-  skip: () => process.env.NODE_ENV === 'test',
+  // En el entorno de pruebas (y en pruebas de carga) se desactiva para no
+  // provocar 429 falsos en suites que ejecutan muchos logins seguidos.
+  skip: skipRateLimit,
   keyGenerator: (req: Request): string => {
     return req.ip || 'unknown';
   },

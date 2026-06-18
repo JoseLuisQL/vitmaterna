@@ -110,19 +110,45 @@ async function main() {
     }
   }
 
-  // Sub-recursos clínicos de una gestante
+  // Sub-recursos clínicos de una gestante.
+  // Algunos módulos están detrás de feature flags (desactivados por defecto):
+  // si el flag está OFF, el endpoint responde 404 y eso es CORRECTO, no un fallo.
   if (obs && gestanteId) {
-    const subs = [
-      'controls', 'labs', 'ultrasounds', 'vaccines', 'pathologies',
-      'weight-records', 'dental', 'nutritional-counseling',
-    ];
-    for (const sub of subs) {
+    let flags = {};
+    try {
+      const ff = await req('GET', '/admin/feature-flags', { token: obs });
+      flags = ff.body?.data ?? ff.body ?? {};
+    } catch {
+      /* sin flags: se asume todo activo */
+    }
+
+    // Núcleo siempre activo
+    const coreSubs = ['controls', 'labs', 'vaccines'];
+    for (const sub of coreSubs) {
       const r = await req('GET', `/clinical/${sub}/${gestanteId}`, { token: obs });
       record(`GET /clinical/${sub}/:id`, r.status === 200, `status ${r.status}`);
     }
-    for (const sub of ['mental', 'violence']) {
+
+    // Módulos flaggeables: OK si responde 200 (activo) o 404 (desactivado a propósito)
+    const flagged = {
+      ultrasounds: 'ecografias',
+      pathologies: 'patologias',
+      'weight-records': 'pesoRegistros',
+      dental: 'odontograma',
+      'nutritional-counseling': 'consejeriaNutricional',
+    };
+    for (const [sub, flag] of Object.entries(flagged)) {
+      const r = await req('GET', `/clinical/${sub}/${gestanteId}`, { token: obs });
+      const enabled = flags[flag] === true;
+      const ok = enabled ? r.status === 200 : r.status === 200 || r.status === 404;
+      record(`GET /clinical/${sub}/:id`, ok, `status ${r.status}${enabled ? '' : ' (módulo OFF)'}`);
+    }
+    const screenFlags = { mental: 'tamizajeSaludMental', violence: 'tamizajeViolencia' };
+    for (const [sub, flag] of Object.entries(screenFlags)) {
       const r = await req('GET', `/clinical/screenings/${sub}/${gestanteId}`, { token: obs });
-      record(`GET /clinical/screenings/${sub}/:id`, r.status === 200, `status ${r.status}`);
+      const enabled = flags[flag] === true;
+      const ok = enabled ? r.status === 200 : r.status === 200 || r.status === 404;
+      record(`GET /clinical/screenings/${sub}/:id`, ok, `status ${r.status}${enabled ? '' : ' (módulo OFF)'}`);
     }
   }
 

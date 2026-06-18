@@ -36,6 +36,10 @@ describe('Danger sign auto-alert (RF-9.02)', () => {
   it('un signo GRAVE crea notificación in-app al obstetra y mensaje en el chat', async () => {
     const obsUser = await prisma.user.findUnique({ where: { dni: '11111111' } });
 
+    // Tipo de signo único por ejecución: evita la deduplicación de 10 min del
+    // servicio cuando la suite se corre varias veces sobre la misma BD.
+    const tipoSigno = `Sangrado vaginal (jest ${Date.now()})`;
+
     const notifBefore = await prisma.notification.count({
       where: { userId: obsUser!.id, tipo: 'signo_alarma' },
     });
@@ -43,7 +47,7 @@ describe('Danger sign auto-alert (RF-9.02)', () => {
     const create = await request(app)
       .post(`${PREFIX}/clinical/danger-signs`)
       .set('Authorization', `Bearer ${gestanteToken}`)
-      .send({ tipo_signo: 'Sangrado vaginal (jest)', descripcion: 'test RF-9.02', severidad: 'grave' });
+      .send({ tipo_signo: tipoSigno, descripcion: 'test RF-9.02', severidad: 'grave' });
     expect(create.status).toBe(201);
 
     // Notificación in-app persistente creada para el obstetra.
@@ -62,7 +66,7 @@ describe('Danger sign auto-alert (RF-9.02)', () => {
       where: {
         conversationId: conv!.id,
         tipo: 'alerta_emergencia',
-        contenido: { contains: 'Sangrado vaginal (jest)' },
+        contenido: { contains: tipoSigno },
       },
     });
     expect(alertMsg).toBeTruthy();
@@ -85,7 +89,7 @@ describe('Danger sign auto-alert (RF-9.02)', () => {
     const create = await request(app)
       .post(`${PREFIX}/clinical/danger-signs`)
       .set('Authorization', `Bearer ${gestanteToken}`)
-      .send({ tipo_signo: 'Fiebre alta (jest)', descripcion: 'test', severidad: 'moderado' });
+      .send({ tipo_signo: `Fiebre alta (jest ${Date.now()})`, descripcion: 'test', severidad: 'moderado' });
     expect(create.status).toBe(201);
 
     const notifAfter = await prisma.notification.count({

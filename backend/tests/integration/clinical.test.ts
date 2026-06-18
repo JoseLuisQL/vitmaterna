@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import type { Express } from 'express';
 import { createApp } from '../../src/config/app.js';
@@ -23,6 +23,37 @@ describe('Clinical API', () => {
 
   beforeAll(async () => {
     app = createApp();
+
+    // Los módulos clínicos "fuera de alcance" (peso, tamizajes, etc.) están
+    // desactivados por defecto vía feature flags. Esta suite los prueba, así que
+    // se habilitan explícitamente en SystemConfig antes de correr los casos.
+    await prisma.systemConfig.upsert({
+      where: { clave: 'featureFlags' },
+      create: {
+        clave: 'featureFlags',
+        valor: {
+          ecografias: true,
+          pesoRegistros: true,
+          tamizajeViolencia: true,
+          tamizajeSaludMental: true,
+          patologias: true,
+          odontograma: true,
+          consejeriaNutricional: true,
+        },
+      },
+      update: {
+        valor: {
+          ecografias: true,
+          pesoRegistros: true,
+          tamizajeViolencia: true,
+          tamizajeSaludMental: true,
+          patologias: true,
+          odontograma: true,
+          consejeriaNutricional: true,
+        },
+      },
+    });
+
     obstetraToken = await login(app, '11111111', 'Test@1234');
     gestanteToken = await login(app, '33333333', 'Test@1234');
 
@@ -31,6 +62,12 @@ describe('Clinical API', () => {
       .set('Authorization', `Bearer ${obstetraToken}`)
       .query({ limit: 1000 });
     gestanteId = patients.body.data[0].id;
+  });
+
+  afterAll(async () => {
+    // Restaura los feature flags a su estado por defecto (todo desactivado)
+    // para no contaminar la BD ni otras suites.
+    await prisma.systemConfig.deleteMany({ where: { clave: 'featureFlags' } });
   });
 
   it('GET /clinical/treatments (gestante) devuelve 200', async () => {
