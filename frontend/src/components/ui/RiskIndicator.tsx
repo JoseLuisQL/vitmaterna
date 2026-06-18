@@ -22,6 +22,9 @@ function normalize(level: RiskLevel): 0 | 1 | 2 {
   return 2;
 }
 
+// Etiqueta textual del nivel de riesgo (accesibilidad: no depender solo del color).
+const RISK_LABELS = ['Riesgo bajo', 'Riesgo medio', 'Riesgo alto'] as const;
+
 export function RiskIndicator({
   level,
   height = 6,
@@ -32,7 +35,12 @@ export function RiskIndicator({
   const positions = ['16.66%', '50%', '83.33%'] as const;
 
   return (
-    <View style={[styles.container, { height }, style]}>
+    <View
+      style={[styles.container, { height }, style]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`Nivel de riesgo: ${RISK_LABELS[idx]}`}
+    >
       <View style={styles.track}>
         <View style={[styles.seg, { backgroundColor: riskColors.riskGreen }]} />
         <View style={[styles.seg, { backgroundColor: riskColors.riskYellow }]} />

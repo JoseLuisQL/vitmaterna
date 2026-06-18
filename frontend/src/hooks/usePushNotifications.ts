@@ -114,7 +114,7 @@ export function usePushNotifications(): void {
           }
         });
       } catch (e) {
-        console.log('Push notifications no disponibles:', e);
+        if (__DEV__) console.log('Push notifications no disponibles:', e);
       }
     })();
 

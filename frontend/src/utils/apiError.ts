@@ -14,7 +14,11 @@ const TRANSLATIONS: Record<string, string> = {
   'Access token is required': 'Debes iniciar sesión.',
   'User not found': 'Usuario no encontrado.',
   'Account is locked': 'Cuenta bloqueada temporalmente por intentos fallidos. Espera unos minutos.',
+  'Account is temporarily locked due to multiple failed login attempts. Try again later.':
+    'Tu cuenta está bloqueada por seguridad tras varios intentos fallidos. Espera unos minutos e inténtalo de nuevo.',
   'Account is inactive': 'Tu cuenta está inactiva. Contacta al administrador.',
+  'Account is deactivated. Contact an administrator.':
+    'Tu cuenta está desactivada. Contacta al administrador del centro de salud.',
   'Too many authentication attempts. Please try again in 15 minutes.':
     'Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.',
   'Too many requests. Please try again later.':
@@ -35,8 +39,10 @@ const STATUS_FALLBACK: Record<number, string> = {
   403: 'No tienes permiso para realizar esta acción.',
   404: 'No se encontró el recurso solicitado.',
   409: 'Conflicto con el estado actual. Revisa los datos.',
+  423: 'Tu cuenta está bloqueada por seguridad. Espera unos minutos e inténtalo de nuevo.',
   429: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.',
   500: 'Ocurrió un error en el servidor. Inténtalo más tarde.',
+  503: 'El servicio no está disponible en este momento. Inténtalo más tarde.',
 };
 
 /**
@@ -46,6 +52,11 @@ const STATUS_FALLBACK: Record<number, string> = {
  */
 export function getApiErrorMessage(error: unknown, fallback = 'Ocurrió un error. Inténtalo de nuevo.'): string {
   const anyErr = error as any;
+
+  // Timeout de la petición (red lenta, frecuente en zona rural).
+  if (anyErr?.code === 'ECONNABORTED') {
+    return 'La conexión está lenta y la solicitud tardó demasiado. Inténtalo de nuevo.';
+  }
 
   // Sin respuesta del servidor → problema de red/conexión.
   if (anyErr?.isAxiosError && !anyErr.response) {

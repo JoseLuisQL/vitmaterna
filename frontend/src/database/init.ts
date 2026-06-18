@@ -36,7 +36,7 @@ export function initializeDatabase() {
     db.execSync('CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox (status, created_at);');
     db.execSync('CREATE UNIQUE INDEX IF NOT EXISTS idx_outbox_dedupe ON outbox (dedupe_key);');
 
-    console.log('✅ SQLite (outbox) inicializado correctamente.');
+    if (__DEV__) console.log('✅ SQLite (outbox) inicializado correctamente.');
   } catch (error) {
     console.error('❌ Error inicializando SQLite (outbox):', error);
   }

@@ -212,7 +212,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         finalStatus = status;
       }
       if (finalStatus !== 'granted') {
-        console.log('Failed to get push token for push notification!');
+        if (__DEV__) console.log('Failed to get push token for push notification!');
         return;
       }
 
@@ -237,7 +237,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await api.post('/notifications/token', { expoPushToken: token.data });
       }
     } catch (e) {
-      console.log('Error registering push token:', e);
+      if (__DEV__) console.log('Error registering push token:', e);
     }
   },
 }));

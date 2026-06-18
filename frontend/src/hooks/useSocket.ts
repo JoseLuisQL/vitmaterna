@@ -30,17 +30,17 @@ export const useSocket = () => {
 
     newSocket.on('connect', () => {
       setIsConnected(true);
-      console.log('Socket connected:', newSocket.id);
+      if (__DEV__) console.log('Socket connected:', newSocket.id);
     });
 
     newSocket.on('connect_error', (err) => {
       setIsConnected(false);
-      console.log('Socket connect_error:', err?.message);
+      if (__DEV__) console.log('Socket connect_error:', err?.message);
     });
 
     newSocket.on('disconnect', () => {
       setIsConnected(false);
-      console.log('Socket disconnected');
+      if (__DEV__) console.log('Socket disconnected');
     });
 
     // Si el socket YA estaba conectado antes de registrar el listener (el evento
