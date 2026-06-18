@@ -3,10 +3,10 @@
  * Displays gestante profile menu and allows editing personal/clinical data (FUM, dates).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Bell, HelpCircle, LogOut, ChevronRight, Home, CloudOff, BookOpen
+  User, Bell, HelpCircle, LogOut, ChevronRight, CloudOff, ArrowLeft
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -198,7 +198,19 @@ export default function PerfilScreen(): React.ReactElement {
       >
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <Text style={styles.headerTitle}>Perfil</Text>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(gestante)/(tabs)'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+            >
+              <ArrowLeft size={22} color={commonColors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Perfil</Text>
+            <View style={{ width: 40 }} />
+          </View>
           <View style={styles.headerProfile}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
@@ -220,13 +232,6 @@ export default function PerfilScreen(): React.ReactElement {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
-
-        <Text style={styles.sectionTitle}>Mi salud</Text>
-        <View style={styles.menuCard}>
-          <MenuItem icon={<BookOpen size={20} color={BRAND} />} title="Educación" onPress={() => router.push('/(gestante)/(tabs)/educacion')} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<Home size={20} color={BRAND} />} title="Visitas Domiciliarias" onPress={() => router.push('/(gestante)/visitas')} />
-        </View>
 
         <Text style={styles.sectionTitle}>Apariencia</Text>
         <View style={[styles.menuCard, { padding: spacing.sm2 }]}>
@@ -392,8 +397,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
   headerTitle: {
-    ...typography.display,
+    ...typography.h2,
     color: commonColors.white,
   },
   headerProfile: { alignItems: 'center', marginTop: spacing.md },

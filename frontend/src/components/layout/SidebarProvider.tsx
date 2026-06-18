@@ -39,6 +39,12 @@ const SECTIONS: Record<UserRole, SidebarSection[]> = {
         { icon: MapPin, label: 'Visitas domiciliarias', description: 'Historial de visitas', href: '/(gestante)/visitas' },
       ],
     },
+    {
+      title: 'Cuenta',
+      items: [
+        { icon: User, label: 'Mi perfil', description: 'Datos personales y FUM', href: '/(gestante)/(tabs)/perfil' },
+      ],
+    },
   ],
   obstetra: [
     {

@@ -3,12 +3,8 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   Calendar,
@@ -16,7 +12,6 @@ import {
   AlertTriangle,
   Phone,
   ChevronRight,
-  Heart,
   BookOpen,
   MessageCircle,
   Menu,
@@ -26,7 +21,6 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { ProgressRing } from '../../../src/components/ui/ProgressRing';
-import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast, AutoGrid } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -35,10 +29,10 @@ import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
-import { shadows } from '../../../src/theme/shadows';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { EmergencyAlert, type EmergencyCoords } from '../../../src/components/shared/EmergencyAlert';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 
 const BRAND = gestanteColors.primary;
 
@@ -112,16 +106,6 @@ export default function GestanteDashboard(): React.ReactElement {
     });
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <SafeAreaView edges={['top']} style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-          <DashboardSkeleton count={3} />
-        </SafeAreaView>
-      </View>
-    );
-  }
-
   const riskLevel = profile?.nivelRiesgo || 'verde';
   const getRiskLabel = (level: string) => {
     if (level === 'rojo') return 'Riesgo Alto';
@@ -135,48 +119,29 @@ export default function GestanteDashboard(): React.ReactElement {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: layout.tabBarSpace }}
+    <>
+      <ScreenLayout
+        role="gestante"
+        title={`Hola, ${displayName}`}
+        subtitle={gestationalWeekText}
+        loading={isLoading}
+        onRefresh={refetch}
+        accentColor={BRAND}
+        actions={
+          <>
+            <NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />
+            <TouchableOpacity
+              onPress={openSidebar}
+              style={styles.menuBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir menú"
+            >
+              <Menu size={22} color={commonColors.white} />
+            </TouchableOpacity>
+          </>
+        }
       >
-        
-        {/* Header con gradient lila */}
-        <LinearGradient
-          colors={gestanteColors.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerWrapper}
-        >
-          <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-            <View style={styles.headerRow}>
-              <TouchableOpacity
-                onPress={openSidebar}
-                style={styles.menuBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityRole="button"
-                accessibilityLabel="Abrir menú"
-              >
-                <Menu size={24} color={commonColors.white} />
-              </TouchableOpacity>
-              <View style={styles.headerGreeting}>
-                <Text style={styles.greeting}>Hola,</Text>
-                <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-              </View>
-              <View style={styles.headerActions}>
-                <View style={styles.weekBadge}>
-                  <Heart size={16} color={commonColors.white} />
-                  <Text style={styles.weekText}>{gestationalWeekText}</Text>
-                </View>
-                <NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />
-              </View>
-            </View>
-          </SafeAreaView>
-        </LinearGradient>
-
-        <View style={styles.contentWrapper}>
-          
           {/* Pregnancy Progress Card */}
           <AppCard style={styles.progressCard}>
             <View style={styles.progressHeader}>
@@ -209,12 +174,12 @@ export default function GestanteDashboard(): React.ReactElement {
               accessibilityRole="button"
               accessibilityLabel="Ver mis citas"
             >
-              <View style={[styles.cardIconCircle, { backgroundColor: gestanteColors.primaryLight }]}>
-                <Calendar size={22} color={BRAND} />
+              <View style={styles.cardIconCircle}>
+                <Calendar size={22} color={commonColors.textSecondary} />
               </View>
               <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle}>Próxima Cita</Text>
-                <Text style={styles.cardSubtitle}>{nextAppointment?.type || 'Control Prenatal'}</Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>Próxima Cita</Text>
+                <Text style={styles.cardSubtitle} numberOfLines={1}>{nextAppointment?.type || 'Control Prenatal'}</Text>
               </View>
               <ChevronRight size={20} color={commonColors.textTertiary} />
             </TouchableOpacity>
@@ -255,12 +220,12 @@ export default function GestanteDashboard(): React.ReactElement {
           {/* Today's Treatment */}
           <AppCard style={styles.sectionCard} onPress={() => router.push('/(gestante)/(tabs)/tratamiento')}>
             <View style={styles.cardHeader}>
-              <View style={[styles.cardIconCircle, { backgroundColor: semanticColors.infoLight }]}>
-                <Pill size={22} color={semanticColors.info} />
+              <View style={styles.cardIconCircle}>
+                <Pill size={22} color={commonColors.textSecondary} />
               </View>
               <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle}>Tratamiento del Día</Text>
-                <Text style={styles.cardSubtitle}>
+                <Text style={styles.cardTitle} numberOfLines={1}>Tratamiento del Día</Text>
+                <Text style={styles.cardSubtitle} numberOfLines={2}>
                   {totalTreatments > 0 ? `${takenCount} de ${totalTreatments} medicamentos tomados` : 'Sin tratamientos para hoy'}
                 </Text>
               </View>
@@ -271,12 +236,12 @@ export default function GestanteDashboard(): React.ReactElement {
                 <ProgressRing
                   value={treatmentPercentage}
                   size="md"
-                  color={semanticColors.info}
+                  color={BRAND}
                   label={`${takenCount}/${totalTreatments}`}
                 />
                 <View style={styles.treatmentInfo}>
-                  <Text style={styles.treatmentInfoValue}>{treatmentPercentage}% completado</Text>
-                  <Text style={styles.treatmentInfoLabel}>
+                  <Text style={styles.treatmentInfoValue} numberOfLines={1}>{treatmentPercentage}% completado</Text>
+                  <Text style={styles.treatmentInfoLabel} numberOfLines={2}>
                     {takenCount === totalTreatments
                       ? '¡Excelente! Tomaste todo hoy.'
                       : `Te faltan ${totalTreatments - takenCount} por tomar.`}
@@ -286,106 +251,56 @@ export default function GestanteDashboard(): React.ReactElement {
             )}
           </AppCard>
 
-          {/* Quick Actions */}
+          {/* Quick Actions — iconos limpios (minimalistas). Solo emergencia y
+              signos de alarma conservan color semántico por criticidad clínica. */}
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
           <AutoGrid minColumnWidth={100} maxColumns={4}>
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
-              <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.dangerLight }]}>
+              <View style={styles.quickActionIcon}>
                 <AlertTriangle size={24} color={semanticColors.danger} />
               </View>
-              <Text style={styles.quickActionTitle}>Reportar</Text>
-              <Text style={styles.quickActionSubtitle}>Signo de alarma</Text>
+              <Text style={styles.quickActionTitle} numberOfLines={1}>Reportar</Text>
+              <Text style={styles.quickActionSubtitle} numberOfLines={1}>Signo de alarma</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={handleEmergencyPress}>
-              <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.successLight }]}>
+              <View style={styles.quickActionIcon}>
                 <Phone size={24} color={semanticColors.success} />
               </View>
-              <Text style={styles.quickActionTitle}>Emergencia</Text>
-              <Text style={styles.quickActionSubtitle}>Pedir Auxilio</Text>
+              <Text style={styles.quickActionTitle} numberOfLines={1}>Emergencia</Text>
+              <Text style={styles.quickActionSubtitle} numberOfLines={1}>Pedir auxilio</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/chat')}>
-              <View style={[styles.quickActionIcon, { backgroundColor: gestanteColors.primaryLight }]}>
-                <MessageCircle size={24} color={BRAND} />
+              <View style={styles.quickActionIcon}>
+                <MessageCircle size={24} color={commonColors.textSecondary} />
               </View>
-              <Text style={styles.quickActionTitle}>Chat</Text>
-              <Text style={styles.quickActionSubtitle}>Consulta</Text>
+              <Text style={styles.quickActionTitle} numberOfLines={1}>Chat</Text>
+              <Text style={styles.quickActionSubtitle} numberOfLines={1}>Consulta</Text>
             </AppCard>
 
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/(tabs)/educacion')}>
-              <View style={[styles.quickActionIcon, { backgroundColor: semanticColors.infoLight }]}>
-                <BookOpen size={24} color={semanticColors.info} />
+              <View style={styles.quickActionIcon}>
+                <BookOpen size={24} color={commonColors.textSecondary} />
               </View>
-              <Text style={styles.quickActionTitle}>Educación</Text>
-              <Text style={styles.quickActionSubtitle}>Aprende más</Text>
+              <Text style={styles.quickActionTitle} numberOfLines={1}>Educación</Text>
+              <Text style={styles.quickActionSubtitle} numberOfLines={1}>Aprende más</Text>
             </AppCard>
           </AutoGrid>
-
-        </View>
-      </ScrollView>
+      </ScreenLayout>
 
       <EmergencyAlert
         visible={emergencyVisible}
         onClose={() => setEmergencyVisible(false)}
         onSend={sendEmergency}
       />
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerWrapper: {
-    paddingBottom: spacing.xl,
-    marginBottom: -spacing.lg,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  safeAreaHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
   menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
-  headerGreeting: { flexShrink: 1, minWidth: 0 },
-  greeting: {
-    ...typography.h3,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: 2,
-  },
-  name: {
-    ...typography.display,
-    color: commonColors.white,
-  },
-  headerTrimester: {
-    ...typography.bodySm,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
-  },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
-  weekBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderRadius: borderRadius.full,
-  },
-  weekText: {
-    ...typography.label,
-    color: commonColors.white,
-  },
-  contentWrapper: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
   progressCard: {
     marginBottom: spacing.lg,
     padding: spacing.lg,
@@ -418,7 +333,7 @@ const styles = StyleSheet.create({
   progressLabelBold: { ...typography.overline, color: BRAND },
   sectionCard: { marginBottom: spacing.lg, padding: spacing.lg },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-  cardIconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  cardIconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surfaceAlt },
   cardHeaderText: { flex: 1 },
   cardTitle: { ...typography.h3, color: commonColors.text },
   cardSubtitle: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
@@ -434,7 +349,7 @@ const styles = StyleSheet.create({
   treatmentInfoLabel: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.md, marginTop: spacing.sm },
   quickActionCard: { flex: 1, alignItems: 'center', padding: spacing.md, gap: spacing.sm + 4 },
-  quickActionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  quickActionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surfaceAlt },
   quickActionTitle: { ...typography.label, color: commonColors.text, textAlign: 'center' },
   quickActionSubtitle: { ...typography.overline, fontWeight: typography.caption.fontWeight, letterSpacing: 0.1, color: commonColors.textSecondary, textAlign: 'center' },
 

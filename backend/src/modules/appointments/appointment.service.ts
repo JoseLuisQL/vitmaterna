@@ -216,6 +216,10 @@ export class AppointmentService {
       fecha?: string;
       estado?: EstadoCita;
       modalidad?: 'establecimiento' | 'domiciliaria';
+      future?: boolean | string;
+      today?: boolean | string;
+      sort?: 'asc' | 'desc';
+      limit?: number;
     },
     userContext?: RequestUser,
   ) {
@@ -242,6 +246,30 @@ export class AppointmentService {
     if (filters.estado) where.estado = filters.estado;
     if ((filters as any).modalidad) where.modalidad = (filters as any).modalidad;
 
+    const isTrue = (v: unknown) => v === true || v === 'true';
+
+    // "Próxima cita": solo las PENDIENTES (no asistidas/canceladas) con fecha ≥ hoy.
+    // Esto evita que el dashboard muestre una cita ya asistida o pasada.
+    if (isTrue(filters.future)) {
+      const hoy = new Date();
+      const hoyMidnight = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()));
+      where.fecha = { gte: hoyMidnight };
+      where.estado = { in: ['programada', 'confirmada', 'reprogramada'] };
+    }
+
+    // "Hoy": solo las citas del día actual.
+    if (isTrue(filters.today)) {
+      const hoy = new Date();
+      const inicio = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()));
+      const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
+      where.fecha = { gte: inicio, lt: fin };
+    }
+
+    const dir = filters.sort === 'desc' ? 'desc' : 'asc';
+
+    // `limit` puede llegar como string desde la query: se normaliza a entero.
+    const take = filters.limit != null ? Number(filters.limit) : undefined;
+
     return prisma.appointment.findMany({
       where,
       include: {
@@ -256,7 +284,8 @@ export class AppointmentService {
           },
         },
       },
-      orderBy: [{ fecha: 'asc' }, { hora: 'asc' }],
+      orderBy: [{ fecha: dir }, { hora: dir }],
+      ...(take && Number.isFinite(take) && take > 0 ? { take } : {}),
     });
   }
 

@@ -60,6 +60,14 @@ export const getAppointmentsSchema = {
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     estado: z.enum(['programada', 'confirmada', 'asistida', 'no_asistida', 'reprogramada', 'cancelada']).optional(),
     modalidad: z.enum(['establecimiento', 'domiciliaria']).optional(),
+    // Solo próximas citas pendientes (programada/confirmada/reprogramada con fecha ≥ hoy).
+    future: z.union([z.literal('true'), z.literal('false'), z.boolean()]).optional(),
+    // Solo citas de hoy.
+    today: z.union([z.literal('true'), z.literal('false'), z.boolean()]).optional(),
+    // Orden por fecha: 'asc' (default) o 'desc'.
+    sort: z.enum(['asc', 'desc']).optional(),
+    // Límite de resultados.
+    limit: z.coerce.number().int().positive().max(1000).optional(),
   }).passthrough(),
 };
 

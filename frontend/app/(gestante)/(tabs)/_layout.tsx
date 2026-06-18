@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Calendar, Pill, MessageCircle, User } from 'lucide-react-native';
+import { Home, Calendar, Pill, MessageCircle } from 'lucide-react-native';
 import { gestanteColors } from '../../../src/theme/colors';
 import { PillTabBar } from '../../../src/components/ui/PillTabBar';
 
@@ -42,13 +42,9 @@ export default function GestanteTabsLayout(): React.ReactElement {
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="perfil"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
-        }}
-      />
+      {/* Funciones secundarias: viven en el sidebar (ocultas de la barra) para
+          un look más profesional, igual que en el módulo de administrador. */}
+      <Tabs.Screen name="perfil" options={{ title: 'Perfil', href: null }} />
       <Tabs.Screen name="educacion" options={{ title: 'Educación', href: null }} />
     </Tabs>
   );
