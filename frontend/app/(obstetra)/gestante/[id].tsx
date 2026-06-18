@@ -9,7 +9,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, Home, BookOpen, Search, Send, X,
-  Phone, MessageCircle,
+  Phone, MessageCircle, Sparkles,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
@@ -642,6 +642,26 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── SECCIÓN: RESUMEN (datos + obstétricos + antecedentes + embarazo) ── */}
           {activeTab === 'resumen' && (
             <View style={styles.dataTabContainer}>
+              {patient.resumenClinico?.texto ? (
+                <View style={[styles.resumenCard, designTokens.cardShadow]}>
+                  <View style={styles.resumenHeader}>
+                    <Sparkles size={16} color={obstetraColors.primary} />
+                    <Text style={styles.resumenTitle}>Resumen clínico</Text>
+                  </View>
+                  <Text style={styles.resumenTexto}>{patient.resumenClinico.texto}</Text>
+                  {patient.resumenClinico.alertas?.length > 0 && (
+                    <View style={styles.resumenAlertas}>
+                      {patient.resumenClinico.alertas.map((a: string, i: number) => (
+                        <View key={i} style={styles.resumenAlertaRow}>
+                          <AlertTriangle size={13} color={riskColors.riskRed} />
+                          <Text style={styles.resumenAlertaText}>{a}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ) : null}
+
               <Seccion titulo="Datos Personales" />
               <View style={[styles.insetGroup, designTokens.cardShadow]}>
                 <Fila label="Nombre completo" value={`${patient.firstName} ${patient.lastName}`} />
@@ -1641,6 +1661,32 @@ const styles = StyleSheet.create({
   dataTabContainer: {
     marginTop: -4,
   },
+  resumenCard: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: obstetraColors.primary,
+  },
+  resumenHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs2 },
+  resumenTitle: {
+    ...typography.label,
+    fontWeight: '700',
+    color: obstetraColors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  resumenTexto: { ...typography.bodySm, color: commonColors.text, lineHeight: 20 },
+  resumenAlertas: {
+    marginTop: spacing.sm,
+    gap: 4,
+    borderTopWidth: 1,
+    borderTopColor: commonColors.border,
+    paddingTop: spacing.sm,
+  },
+  resumenAlertaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  resumenAlertaText: { ...typography.caption, color: commonColors.textSecondary, flex: 1 },
   insetGroup: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,

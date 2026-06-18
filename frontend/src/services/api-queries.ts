@@ -198,6 +198,14 @@ const mapPatientProfile = (g: any) => {
         .map((l: any) => l.fecha?.split('T')[0] || ''),
       totalDias: t.duracionDias || 30,
     })),
+    // Resumen clínico autogenerado por el servidor (utils/clinicalSummary).
+    resumenClinico: g.resumenClinico
+      ? {
+          texto: g.resumenClinico.texto as string,
+          alertas: (g.resumenClinico.alertas || []) as string[],
+          destacados: g.resumenClinico.destacados || null,
+        }
+      : null,
   };
 };
 

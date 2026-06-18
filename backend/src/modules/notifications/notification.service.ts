@@ -5,6 +5,7 @@ import { prisma } from '../../config/database.js';
 import { smsChannel, whatsappChannel, sendSmsAndWhatsApp } from './channels.js';
 import { calculateEG } from '../../utils/dateCalc.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
+import { examenesPendientes } from '../../utils/examenesObligatorios.js';
 
 const expo = new Expo();
 
@@ -449,14 +450,6 @@ export async function scanUpcomingFPP() {
  * que deberían haberse tomado. Alerta al obstetra a cargo, una vez al día por
  * gestante (deduplicado por Notification del día).
  */
-const EXAMENES_OBLIGATORIOS: { nombre: string; alias: string[]; desdeSemana: number }[] = [
-  { nombre: 'Hemoglobina', alias: ['hemoglobina', 'hb'], desdeSemana: 12 },
-  { nombre: 'VIH', alias: ['vih'], desdeSemana: 12 },
-  { nombre: 'Sífilis (VDRL/RPR)', alias: ['vdrl', 'rpr', 'sifilis', 'sífilis'], desdeSemana: 12 },
-  { nombre: 'Glucosa', alias: ['glucosa', 'glucemia'], desdeSemana: 12 },
-  { nombre: 'Examen de orina', alias: ['orina', 'urocultivo', 'examen de orina'], desdeSemana: 12 },
-];
-
 export async function scanPendingExams() {
   const now = new Date();
 
@@ -491,18 +484,16 @@ export async function scanPendingExams() {
     }
     if (egWeeks == null || egWeeks < 12) continue;
 
-    const registrados = g.labResults.map((l) => (l.tipoExamen || '').toLowerCase());
-    const faltantes = EXAMENES_OBLIGATORIOS.filter(
-      (ex) =>
-        egWeeks! >= ex.desdeSemana &&
-        !registrados.some((r) => ex.alias.some((a) => r.includes(a))),
+    const faltantes = examenesPendientes(
+      egWeeks,
+      g.labResults.map((l) => l.tipoExamen || ''),
     );
     if (faltantes.length === 0) continue;
 
     // Una alerta por gestante por día (consulta en memoria).
     if (gestantesAlertadas.has(g.id)) continue;
 
-    const nombres = faltantes.map((f) => f.nombre).join(', ');
+    const nombres = faltantes.join(', ');
     const obstetraUserId = await findObstetraUserIdForGestante(g.id);
     if (obstetraUserId) {
       const nombreGestante = `${g.user.firstName} ${g.user.lastName}`;
@@ -511,7 +502,7 @@ export async function scanPendingExams() {
         'examenes_pendientes',
         'Exámenes pendientes',
         `${nombreGestante} (sem. ${egWeeks}) tiene exámenes del tamizaje básico sin registrar: ${nombres}.`,
-        { gestanteId: g.id, egWeeks, faltantes: faltantes.map((f) => f.nombre) },
+        { gestanteId: g.id, egWeeks, faltantes },
       );
     }
   }

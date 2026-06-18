@@ -5,6 +5,9 @@ import { classifyImc } from '../../utils/imcClassification.js';
 import { calculateFPP } from '../../utils/dateCalc.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
 import { predictNoShow } from '../../utils/noShowPrediction.js';
+import { generarResumenClinico } from '../../utils/clinicalSummary.js';
+import { examenesPendientes } from '../../utils/examenesObligatorios.js';
+import { calculateEG } from '../../utils/dateCalc.js';
 
 /**
  * Normaliza la respuesta de una gestante para que el DNI esté siempre disponible
@@ -252,7 +255,93 @@ export class PatientService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
     }
 
-    return normalizePatient(gestante);
+    const resumenClinico = this.buildResumenClinico(gestante);
+    return { ...normalizePatient(gestante), resumenClinico };
+  }
+
+  /**
+   * Construye el resumen clínico autogenerado a partir de la ficha completa.
+   * Sintetiza EG, riesgo, último control, última Hb, adherencia, exámenes
+   * pendientes y próxima cita en un párrafo + banderas para el obstetra.
+   */
+  private buildResumenClinico(g: any) {
+    const now = new Date();
+
+    // Último control prenatal (vienen ordenados desc).
+    const uc = g.prenatalControls?.[0] ?? null;
+
+    // Última hemoglobina registrada.
+    const hb = (g.labResults ?? []).find((l: any) =>
+      (l.tipoExamen || '').toLowerCase().includes('hemoglobina') ||
+      (l.tipoExamen || '').toLowerCase() === 'hb',
+    );
+
+    // Adherencia promedio entre tratamientos (fórmula única).
+    const treatments = g.treatments ?? [];
+    let adherenciaPct: number | null = null;
+    if (treatments.length > 0) {
+      const pcts = treatments.map(
+        (t: any) =>
+          calcularAdherencia({
+            fechaInicio: t.fechaInicio,
+            fechaFin: t.fechaFin,
+            duracionDias: t.duracionDias,
+            logs: t.supplementLogs ?? [],
+          }).porcentaje,
+      );
+      adherenciaPct = Math.round(pcts.reduce((a: number, b: number) => a + b, 0) / pcts.length);
+    }
+
+    // Edad gestacional y exámenes pendientes.
+    let egWeeks: number | null = null;
+    if (g.fum) egWeeks = calculateEG(new Date(g.fum), now).weeks;
+    const pendientes = examenesPendientes(
+      egWeeks,
+      (g.labResults ?? []).map((l: any) => l.tipoExamen || ''),
+    );
+
+    // Próxima cita programada/confirmada a futuro.
+    const proxima = (g.appointments ?? [])
+      .filter((a: any) => ['programada', 'confirmada'].includes(a.estado) && new Date(a.fecha) >= now)
+      .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0];
+
+    const edad = g.fechaNacimiento
+      ? now.getFullYear() - new Date(g.fechaNacimiento).getFullYear()
+      : g.ageAtRegistration ?? null;
+
+    return generarResumenClinico(
+      {
+        nombre: g.user ? `${g.user.firstName} ${g.user.lastName}` : null,
+        edad,
+        nivelRiesgo: g.nivelRiesgo ?? null,
+        fum: g.fum,
+        fppEco: g.fppEco,
+        fppFum: g.fppFum,
+        ultimoControl: uc
+          ? {
+              fecha: uc.fecha,
+              numeroControl: uc.numeroControl,
+              presionSistolica: uc.presionSistolica,
+              presionDiastolica: uc.presionDiastolica,
+              peso: uc.peso != null ? Number(uc.peso) : null,
+              alturaUterina: uc.alturaUterina != null ? Number(uc.alturaUterina) : null,
+              fcf: uc.fcf,
+            }
+          : null,
+        ultimaHb: hb
+          ? {
+              valorCorregido: hb.valorCorregido != null ? Number(hb.valorCorregido) : null,
+              valorNumerico: hb.valorNumerico != null ? Number(hb.valorNumerico) : null,
+              fecha: hb.fechaExamen,
+            }
+          : null,
+        adherenciaPct,
+        totalControles: g.prenatalControls?.length ?? 0,
+        examenesPendientes: pendientes,
+        proximaCita: proxima?.fecha ?? null,
+      },
+      now,
+    );
   }
 
   async findByDni(dni: string) {
