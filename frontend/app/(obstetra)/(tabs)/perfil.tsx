@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope, TrendingUp, ArrowLeft } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast } from '../../../src/components/ui';
@@ -138,12 +138,6 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
           {user?.dni && (
             <Text style={styles.profileDni}>DNI: {user.dni}</Text>
           )}
-        </View>
-
-        {/* Herramientas */}
-        <Text style={styles.sectionTitle}>Herramientas</Text>
-        <View style={styles.menuCard}>
-          <MenuItem icon={<TrendingUp size={20} color={BRAND} />} title="Reportes e indicadores" onPress={() => router.push('/(obstetra)/(tabs)/reportes')} />
         </View>
 
         {/* Menu Items */}
