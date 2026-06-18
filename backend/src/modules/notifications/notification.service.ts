@@ -7,6 +7,7 @@ import { calculateEG } from '../../utils/dateCalc.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
 import { examenesPendientes } from '../../utils/examenesObligatorios.js';
 import { emitNotificationEvent } from '../../utils/notificationEvents.js';
+import { getInvalidTokens, type PushTicketLike } from '../../utils/pushTickets.js';
 
 const expo = new Expo();
 
@@ -17,6 +18,8 @@ export async function sendPushNotification(
   data?: Record<string, unknown>
 ): Promise<void> {
   const messages: ExpoPushMessage[] = [];
+  // Tokens en el MISMO orden que los mensajes/tickets, para mapear errores.
+  const sentTokens: string[] = [];
 
   for (const pushToken of tokens) {
     if (!Expo.isExpoPushToken(pushToken)) {
@@ -24,6 +27,7 @@ export async function sendPushNotification(
       continue;
     }
 
+    sentTokens.push(pushToken);
     messages.push({
       to: pushToken,
       sound: 'default',
@@ -33,6 +37,7 @@ export async function sendPushNotification(
     });
   }
 
+  // Expo divide en chunks de 100; chunkPushNotifications respeta el orden.
   const chunks = expo.chunkPushNotifications(messages);
   const tickets: ExpoPushTicket[] = [];
 
@@ -45,7 +50,41 @@ export async function sendPushNotification(
     }
   }
 
-  // Optional: We can handle receipts later.
+  // Limpieza de tokens inválidos: si Expo reporta DeviceNotRegistered, el token
+  // ya no sirve → se elimina de las preferencias del usuario para no reintentar.
+  try {
+    const invalid = getInvalidTokens(sentTokens, tickets as unknown as PushTicketLike[]);
+    if (invalid.length > 0) {
+      await removeInvalidPushTokens(invalid);
+    }
+  } catch (e) {
+    console.error('Error cleaning invalid push tokens', e);
+  }
+}
+
+/** Elimina los `expoPushToken` inválidos de las preferencias de los usuarios. */
+async function removeInvalidPushTokens(tokens: string[]): Promise<void> {
+  for (const token of tokens) {
+    // Busca usuarios cuyo expoPushToken coincida (JSONB path).
+    const users = await prisma.user.findMany({
+      where: { notificationPreferences: { path: ['expoPushToken'], equals: token } },
+      select: { id: true, notificationPreferences: true },
+    });
+    for (const u of users) {
+      const prefs =
+        typeof u.notificationPreferences === 'object' && u.notificationPreferences !== null
+          ? ({ ...(u.notificationPreferences as object) } as Record<string, unknown>)
+          : {};
+      delete prefs.expoPushToken;
+      await prisma.user.update({
+        where: { id: u.id },
+        data: { notificationPreferences: prefs as object },
+      });
+    }
+    if (users.length > 0) {
+      console.log(`[PUSH] Token inválido eliminado de ${users.length} usuario(s).`);
+    }
+  }
 }
 
 /**
