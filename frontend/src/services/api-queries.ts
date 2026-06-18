@@ -49,6 +49,14 @@ const mapPatient = (gestante: any) => {
     documentNumber: gestante.dni || gestante.user?.dni || '',
     age,
     riskLevel: gestante.nivelRiesgo === 'rojo' ? 'Alto' : gestante.nivelRiesgo === 'amarillo' ? 'Medio' : 'Bajo',
+    // Predicción de inasistencia calculada por el servidor (utils/noShowPrediction).
+    noShowRisk: gestante.riesgoInasistencia
+      ? {
+          level: gestante.riesgoInasistencia.level as 'bajo' | 'medio' | 'alto',
+          score: gestante.riesgoInasistencia.score as number,
+          motivos: (gestante.riesgoInasistencia.motivos || []) as string[],
+        }
+      : null,
   };
 };
 

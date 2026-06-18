@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, TextInput, St
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Baby, Search, ChevronRight, Plus } from 'lucide-react-native';
+import { Baby, Search, ChevronRight, Plus, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -154,6 +154,31 @@ export default function GestantesScreen(): React.ReactElement {
               {item.currentWeek && (
                 <View style={styles.gestationalBadge}>
                   <Text style={styles.gestationalBadgeText}>Sem {item.currentWeek} · {item.currentTrimester}° trim.</Text>
+                </View>
+              )}
+
+              {/* Predicción de inasistencia: solo se muestra si es medio/alto,
+                  para destacar a quién priorizar (seguimiento/visita). */}
+              {item.noShowRisk && item.noShowRisk.level !== 'bajo' && (
+                <View
+                  style={[
+                    styles.noShowBadge,
+                    item.noShowRisk.level === 'alto' ? styles.noShowBadgeHigh : styles.noShowBadgeMedium,
+                  ]}
+                  accessibilityLabel={`Riesgo de inasistencia ${item.noShowRisk.level}. ${item.noShowRisk.motivos?.[0] ?? ''}`}
+                >
+                  <AlertTriangle
+                    size={12}
+                    color={item.noShowRisk.level === 'alto' ? riskColors.riskRed : riskColors.riskYellow}
+                  />
+                  <Text
+                    style={[
+                      styles.noShowBadgeText,
+                      item.noShowRisk.level === 'alto' ? styles.riskBadgeTextHigh : styles.riskBadgeTextMedium,
+                    ]}
+                  >
+                    {item.noShowRisk.level === 'alto' ? 'Riesgo de faltar' : 'Posible falta'}
+                  </Text>
                 </View>
               )}
             </View>
@@ -324,6 +349,17 @@ const styles = StyleSheet.create({
   riskBadgeTextLow: { color: riskColors.riskGreen },
   riskBadgeTextMedium: { color: riskColors.riskYellow },
   riskBadgeTextHigh: { color: riskColors.riskRed },
+  noShowBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  noShowBadgeMedium: { backgroundColor: riskColors.riskYellowLight },
+  noShowBadgeHigh: { backgroundColor: riskColors.riskRedLight },
+  noShowBadgeText: { ...typography.overline, letterSpacing: 0.1 },
   gestationalBadge: {
     backgroundColor: commonColors.surfaceAlt,
     paddingHorizontal: 8,

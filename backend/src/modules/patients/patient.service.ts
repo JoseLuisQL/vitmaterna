@@ -3,6 +3,8 @@ import { prisma } from '../../config/database.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
 import { classifyImc } from '../../utils/imcClassification.js';
 import { calculateFPP } from '../../utils/dateCalc.js';
+import { calcularAdherencia } from '../../utils/adherence.js';
+import { predictNoShow } from '../../utils/noShowPrediction.js';
 
 /**
  * Normaliza la respuesta de una gestante para que el DNI esté siempre disponible
@@ -69,13 +71,79 @@ export class PatientService {
               email: true,
             },
           },
+          // Datos para la predicción de inasistencia (sin N+1: vienen en el include).
+          appointments: { select: { estado: true } },
+          treatments: {
+            select: {
+              fechaInicio: true,
+              fechaFin: true,
+              duracionDias: true,
+              supplementLogs: { select: { tomado: true } },
+            },
+          },
         },
         // La última gestante registrada aparece primero (más comprensible).
         orderBy: { createdAt: 'desc' },
       }),
     ]);
 
-    return { total, gestantes: gestantes.map(normalizePatient), page, limit };
+    const enriched = gestantes.map((g) => {
+      const prediccion = this.computeNoShowForGestante(g);
+      const normalized = normalizePatient(g);
+      // Se descartan los datos crudos pesados del cálculo; solo se expone el resultado.
+      const { appointments: _a, treatments: _t, ...rest } = normalized as any;
+      return { ...rest, riesgoInasistencia: prediccion };
+    });
+
+    return { total, gestantes: enriched, page, limit };
+  }
+
+  /**
+   * Calcula la predicción de inasistencia de una gestante a partir de su
+   * historial de citas y su adherencia. Centraliza la lógica para reutilizarla.
+   */
+  private computeNoShowForGestante(g: {
+    nivelRiesgo?: string | null;
+    acompanantePhone?: string | null;
+    appointments?: { estado: string }[];
+    treatments?: {
+      fechaInicio: Date;
+      fechaFin: Date | null;
+      duracionDias: number | null;
+      supplementLogs: { tomado: boolean }[];
+    }[];
+  }) {
+    const appts = g.appointments ?? [];
+    const inasistenciasPrevias = appts.filter((a) => a.estado === 'no_asistida').length;
+    const asistenciasPrevias = appts.filter((a) => a.estado === 'asistida').length;
+    const reprogramacionesPrevias = appts.filter(
+      (a) => a.estado === 'reprogramada' || a.estado === 'cancelada' || a.estado === 'solicitud_reprogramacion',
+    ).length;
+
+    // Adherencia promedio entre los tratamientos (fórmula única).
+    const treatments = g.treatments ?? [];
+    let adherenciaPct: number | null = null;
+    if (treatments.length > 0) {
+      const pcts = treatments.map(
+        (t) =>
+          calcularAdherencia({
+            fechaInicio: t.fechaInicio,
+            fechaFin: t.fechaFin,
+            duracionDias: t.duracionDias,
+            logs: t.supplementLogs,
+          }).porcentaje,
+      );
+      adherenciaPct = Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+    }
+
+    return predictNoShow({
+      inasistenciasPrevias,
+      asistenciasPrevias,
+      reprogramacionesPrevias,
+      adherenciaPct,
+      tieneAcompanante: !!g.acompanantePhone,
+      nivelRiesgo: (g.nivelRiesgo as 'verde' | 'amarillo' | 'rojo' | null) ?? null,
+    });
   }
 
   async createPatient(obstetraUserId: string, data: any) {
