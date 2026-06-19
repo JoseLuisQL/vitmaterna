@@ -2,7 +2,8 @@ import { Expo, ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-ser
 import { Queue, Worker, Job } from 'bullmq';
 import { redis } from '../../config/redis.js';
 import { prisma } from '../../config/database.js';
-import { smsChannel, whatsappChannel, sendSmsAndWhatsApp } from './channels.js';
+import { smsChannel, whatsappChannel } from './channels.js';
+import { enqueueDelivery } from './queue.js';
 import { calculateEG } from '../../utils/dateCalc.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
 import { examenesPendientes } from '../../utils/examenesObligatorios.js';
@@ -91,14 +92,19 @@ async function removeInvalidPushTokens(tokens: string[]): Promise<void> {
 /**
  * Envía un SMS por el canal configurado (Twilio o mock según el entorno).
  * Se mantiene el nombre por compatibilidad con llamadas existentes.
+ * @param userId opcional, para registrar la entrega en el log de auditoría.
  */
-export function sendSmsMock(phone: string, text: string): void {
-  void smsChannel.send(phone, text);
+export function sendSmsMock(phone: string, text: string, userId?: string): void {
+  void smsChannel.send(phone, text).then((r) => {
+    void import('./channels.js').then(({ logDelivery }) => logDelivery(userId ?? null, r, text));
+  });
 }
 
 /** Envía un WhatsApp por el canal configurado (Cloud API o mock). */
-export function sendWhatsApp(phone: string, text: string): void {
-  void whatsappChannel.send(phone, text);
+export function sendWhatsApp(phone: string, text: string, userId?: string): void {
+  void whatsappChannel.send(phone, text).then((r) => {
+    void import('./channels.js').then(({ logDelivery }) => logDelivery(userId ?? null, r, text));
+  });
 }
 
 // BullMQ is disabled due to Redis 3.x on Windows not supporting it.
@@ -142,20 +148,21 @@ export async function scanAndSendReminders() {
       console.log(`[REMINDER 3D] Sending 3-day reminder for appointment ${appt.id} to user ${user.id}`);
       
       if (user.phone) {
-        await sendSmsAndWhatsApp(
-          user.phone,
-          `Hola ${user.firstName}, recuerda que tienes tu control prenatal programado para el día ${apptDate.toLocaleDateString()} a las 9:00 AM.`,
-          user.notificationPreferences as any,
-        );
+        await enqueueDelivery({
+          phone: user.phone,
+          message: `Hola ${user.firstName}, recuerda que tienes tu control prenatal programado para el día ${apptDate.toLocaleDateString()} a las 9:00 AM.`,
+          prefs: user.notificationPreferences as any,
+          userId: user.id,
+        });
       }
 
       // Notificar también al acompañante/familiar registrado (RF-7.14)
       const acompPhone3d = appt.gestante?.acompanantePhone;
       if (acompPhone3d) {
-        await sendSmsAndWhatsApp(
-          acompPhone3d,
-          `VITMATERNA: ${user.firstName} ${user.lastName} tiene un control prenatal el día ${apptDate.toLocaleDateString()} a las 9:00 AM. Apóyala para que asista.`
-        );
+        await enqueueDelivery({
+          phone: acompPhone3d,
+          message: `VITMATERNA: ${user.firstName} ${user.lastName} tiene un control prenatal el día ${apptDate.toLocaleDateString()} a las 9:00 AM. Apóyala para que asista.`,
+        });
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;
@@ -178,20 +185,21 @@ export async function scanAndSendReminders() {
       console.log(`[REMINDER 1D] Sending 1-day reminder for appointment ${appt.id} to user ${user.id}`);
       
       if (user.phone) {
-        await sendSmsAndWhatsApp(
-          user.phone,
-          `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`,
-          user.notificationPreferences as any,
-        );
+        await enqueueDelivery({
+          phone: user.phone,
+          message: `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`,
+          prefs: user.notificationPreferences as any,
+          userId: user.id,
+        });
       }
 
       // Notificar también al acompañante/familiar registrado (RF-7.14)
       const acompPhone1d = appt.gestante?.acompanantePhone;
       if (acompPhone1d) {
-        await sendSmsAndWhatsApp(
-          acompPhone1d,
-          `VITMATERNA: Mañana ${apptDate.toLocaleDateString()} ${user.firstName} ${user.lastName} tiene su control prenatal a las 9:00 AM. Recuérdale y acompáñala.`
-        );
+        await enqueueDelivery({
+          phone: acompPhone1d,
+          message: `VITMATERNA: Mañana ${apptDate.toLocaleDateString()} ${user.firstName} ${user.lastName} tiene su control prenatal a las 9:00 AM. Recuérdale y acompáñala.`,
+        });
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;
@@ -222,11 +230,12 @@ export async function scanAndSendReminders() {
         const horaTxt = `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`;
         const prefs = user.notificationPreferences as Record<string, any>;
         if (user.phone) {
-          await sendSmsAndWhatsApp(
-            user.phone,
-            `Hola ${user.firstName}, tu control prenatal es hoy a las ${horaTxt}. Acude con tiempo. ¡Te esperamos!`,
+          await enqueueDelivery({
+            phone: user.phone,
+            message: `Hola ${user.firstName}, tu control prenatal es hoy a las ${horaTxt}. Acude con tiempo. ¡Te esperamos!`,
             prefs,
-          );
+            userId: user.id,
+          });
         }
         if (prefs?.push !== false && prefs?.expoPushToken) {
           await sendPushNotification(
@@ -297,7 +306,7 @@ export async function scanSupplementReminders() {
     const horaTxt = `${String(ht.getUTCHours()).padStart(2, '0')}:${String(ht.getUTCMinutes()).padStart(2, '0')}`;
     const mensaje = `Hola ${user.firstName}, no olvides tomar tu ${t.nombre} (${t.dosis}) de las ${horaTxt}. Registra tu consumo en la app.`;
     if (user.phone) {
-      await sendSmsAndWhatsApp(user.phone, mensaje, user.notificationPreferences as any);
+      await enqueueDelivery({ phone: user.phone, message: mensaje, prefs: user.notificationPreferences as any, userId: user.id });
     }
     await notifyUser(user.id, 'recordatorio_suplemento', 'Recordatorio de medicamento', mensaje, {
       treatmentId: t.id,
@@ -504,13 +513,13 @@ export async function scanUpcomingFPP() {
 
     const mensaje = `Hola ${g.user.firstName}, tu fecha probable de parto se acerca (faltan ~${diasRestantes} días). Prepara tu plan de parto y tus cosas para el bebé.`;
     if (g.user.phone) {
-      await sendSmsAndWhatsApp(g.user.phone, mensaje, g.user.notificationPreferences as any);
+      await enqueueDelivery({ phone: g.user.phone, message: mensaje, prefs: g.user.notificationPreferences as any, userId: g.user.id });
     }
     if (g.acompanantePhone) {
-      await sendSmsAndWhatsApp(
-        g.acompanantePhone,
-        `VITMATERNA: la fecha probable de parto de ${g.user.firstName} ${g.user.lastName} se acerca (faltan ~${diasRestantes} días). Mantente atento(a).`,
-      );
+      await enqueueDelivery({
+        phone: g.acompanantePhone,
+        message: `VITMATERNA: la fecha probable de parto de ${g.user.firstName} ${g.user.lastName} se acerca (faltan ~${diasRestantes} días). Mantente atento(a).`,
+      });
     }
     await notifyUser(g.user.id, 'fpp_proxima', 'Tu parto se acerca', mensaje, { hito, diasRestantes });
   }

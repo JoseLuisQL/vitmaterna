@@ -253,8 +253,9 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     const code = await authService.createPasswordResetToken(user.id);
     const mensaje = `VITMATERNA: tu código para restablecer tu contraseña es ${code}. Vence en 30 minutos. No lo compartas.`;
     // Enviar por SMS y WhatsApp (en modo mock si no hay credenciales).
-    sendSmsMock(user.phone, mensaje);
-    sendWhatsApp(user.phone, mensaje);
+    // Se pasa el userId para registrar la entrega en el log de auditoría.
+    sendSmsMock(user.phone, mensaje, user.id);
+    sendWhatsApp(user.phone, mensaje, user.id);
   }
 
   res.json(

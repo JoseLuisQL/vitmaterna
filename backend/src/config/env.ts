@@ -49,6 +49,8 @@ const envSchema = z.object({
   WHATSAPP_PROVIDER: z.enum(['mock', 'whatsapp_cloud']).default('mock'),
   WHATSAPP_API_TOKEN: z.string().optional().default(''),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional().default(''),
+  // Versión de la Graph API de Meta para WhatsApp (configurable para migraciones).
+  WHATSAPP_API_VERSION: z.string().optional().default('v21.0'),
 });
 
 const parsed = envSchema.safeParse(process.env);

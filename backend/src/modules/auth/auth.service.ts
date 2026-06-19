@@ -358,6 +358,18 @@ export async function updateUserProfile(
     throw new AppError(404, ErrorCodes.NOT_FOUND, 'User not found');
   }
 
+  // Merge de preferencias: el cliente solo envía los canales (push/sms/whatsapp),
+  // pero el objeto guarda también `expoPushToken`. Hacemos merge para NO perder
+  // el token de push al actualizar preferencias de canal.
+  let mergedPreferences: object | undefined;
+  if (input.notificationPreferences) {
+    const current =
+      typeof user.notificationPreferences === 'object' && user.notificationPreferences !== null
+        ? (user.notificationPreferences as Record<string, unknown>)
+        : {};
+    mergedPreferences = { ...current, ...input.notificationPreferences };
+  }
+
   return prisma.user.update({
     where: { id: userId },
     data: {
@@ -365,7 +377,7 @@ export async function updateUserProfile(
       ...(input.lastName && { lastName: input.lastName }),
       ...(input.phone !== undefined && { phone: input.phone }),
       ...(input.email !== undefined && { email: input.email }),
-      ...(input.notificationPreferences && { notificationPreferences: input.notificationPreferences }),
+      ...(mergedPreferences && { notificationPreferences: mergedPreferences }),
       ...(input.biometricEnabled !== undefined && { biometricEnabled: input.biometricEnabled }),
     },
   });

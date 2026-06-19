@@ -9,6 +9,10 @@ const router = Router();
 
 router.use(authenticate);
 
+// Disponibilidad de canales (cualquier usuario autenticado): habilita/bloquea
+// los switches de preferencia SMS/WhatsApp en gestantes y obstetras.
+router.get('/channels/status', notificationController.getChannelsAvailability);
+
 // ─── Configuración de canales SMS / WhatsApp (solo admin) ──────────────────────
 router.get('/channels/config', rbac('admin'), notificationController.getChannelsConfig);
 router.put('/channels/sms', rbac('admin'), validate(notificationSchema.smsConfigSchema), notificationController.updateSmsConfig);

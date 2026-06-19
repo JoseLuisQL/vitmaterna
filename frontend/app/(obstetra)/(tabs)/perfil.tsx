@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
-import { ProfileInfoModal, useToast } from '../../../src/components/ui';
+import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
+import { useMyProfile, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
@@ -37,21 +38,48 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
   const router = useRouter();
   const [infoModal, setInfoModal] = useState<{ title: string; description?: string; rows?: { label: string; value: string }[] } | null>(null);
 
+  // Preferencias de notificación reales (canales) + disponibilidad de canales.
+  const { data: profileData, refetch: refetchProfile } = useMyProfile();
+  const updatePrefsMutation = useUpdateNotificationPreferences();
+  const { data: channels } = useChannelsStatus();
+  const smsAvailable = channels?.sms.configured ?? false;
+  const whatsappAvailable = channels?.whatsapp.configured ?? false;
+
+  const [isPrefsVisible, setIsPrefsVisible] = useState(false);
+  const [prefPush, setPrefPush] = useState(true);
+  const [prefSms, setPrefSms] = useState(true);
+  const [prefWhatsapp, setPrefWhatsapp] = useState(true);
+
+  // Sincroniza los switches con las preferencias guardadas al abrir.
+  useEffect(() => {
+    const prefs = (profileData?.user?.notificationPreferences ?? (user as any)?.notificationPreferences ?? {}) as
+      { push?: boolean; sms?: boolean; whatsapp?: boolean };
+    setPrefPush(prefs.push ?? true);
+    setPrefSms(prefs.sms ?? true);
+    setPrefWhatsapp(prefs.whatsapp ?? true);
+  }, [profileData, user]);
+
   const handleLogout = async () => {
     await logout();
     toast.info('Sesión cerrada', 'Has salido de VITMATERNA correctamente.');
     router.replace('/(auth)/login');
   };
 
-  const abrirNotificaciones = () => setInfoModal({
-    title: 'Notificaciones clínicas',
-    description: 'Tu bandeja recibe alertas de signos de alarma, mensajes de gestantes y recordatorios críticos del sistema.',
-    rows: [
-      { label: 'Alertas', value: 'Signos de alarma, emergencias y derivaciones' },
-      { label: 'Canales', value: 'App/push; SMS y WhatsApp si están configurados en el backend' },
-      { label: 'Prioridad', value: 'Las alertas graves aparecen en la bandeja de Alertas' },
-    ],
-  });
+  const handleSavePrefs = () => {
+    updatePrefsMutation.mutate(
+      { push: prefPush, sms: prefSms, whatsapp: prefWhatsapp },
+      {
+        onSuccess: () => {
+          toast.success('Preferencias guardadas', 'Tus canales de notificación se actualizaron.');
+          setIsPrefsVisible(false);
+          refetchProfile();
+        },
+        onError: () => toast.error('Error', 'No se pudieron guardar tus preferencias.'),
+      },
+    );
+  };
+
+  const abrirNotificaciones = () => setIsPrefsVisible(true);
 
   const abrirConfiguracion = () => setInfoModal({
     title: 'Configuración profesional',
@@ -159,6 +187,61 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         </View>
       </ScrollView>
 
+      {/* MODAL: PREFERENCIAS DE NOTIFICACIÓN (canales) */}
+      <AppModal
+        visible={isPrefsVisible}
+        onClose={() => setIsPrefsVisible(false)}
+        title="Preferencias de notificación"
+        subtitle="Elige por qué canales quieres recibir alertas y recordatorios."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsPrefsVisible(false)} style={{ flex: 1 }} disabled={updatePrefsMutation.isPending} />
+            <AppButton title="Guardar" onPress={handleSavePrefs} style={{ flex: 1 }} themeColor={BRAND} loading={updatePrefsMutation.isPending} />
+          </>
+        }
+      >
+        <View style={{ gap: 4 }}>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>Notificaciones en la app</Text>
+              <Text style={styles.prefDesc}>Avisos push dentro de VITMATERNA</Text>
+            </View>
+            <Switch value={prefPush} onValueChange={setPrefPush} trackColor={{ false: commonColors.border, true: obstetraColors.primaryLight }} thumbColor={prefPush ? BRAND : commonColors.textSecondary} />
+          </View>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={[styles.prefLabel, !smsAvailable && styles.prefLabelDisabled]}>SMS</Text>
+              <Text style={styles.prefDesc}>
+                {smsAvailable ? 'Mensajes de texto a tu teléfono' : 'No disponible — el administrador no ha configurado este canal'}
+              </Text>
+            </View>
+            <Switch
+              value={smsAvailable && prefSms}
+              onValueChange={setPrefSms}
+              disabled={!smsAvailable}
+              trackColor={{ false: commonColors.border, true: obstetraColors.primaryLight }}
+              thumbColor={smsAvailable && prefSms ? BRAND : commonColors.textSecondary}
+            />
+          </View>
+          <View style={[styles.prefRow, { borderBottomWidth: 0 }]}>
+            <View style={styles.prefTextWrap}>
+              <Text style={[styles.prefLabel, !whatsappAvailable && styles.prefLabelDisabled]}>WhatsApp</Text>
+              <Text style={styles.prefDesc}>
+                {whatsappAvailable ? 'Recordatorios y avisos por WhatsApp' : 'No disponible — el administrador no ha configurado este canal'}
+              </Text>
+            </View>
+            <Switch
+              value={whatsappAvailable && prefWhatsapp}
+              onValueChange={setPrefWhatsapp}
+              disabled={!whatsappAvailable}
+              trackColor={{ false: commonColors.border, true: obstetraColors.primaryLight }}
+              thumbColor={whatsappAvailable && prefWhatsapp ? BRAND : commonColors.textSecondary}
+            />
+          </View>
+          <Text style={styles.prefHint}>Las alertas clínicas urgentes siempre se enviarán por seguridad.</Text>
+        </View>
+      </AppModal>
+
       <ProfileInfoModal
         visible={!!infoModal}
         title={infoModal?.title ?? ''}
@@ -225,4 +308,11 @@ const styles = StyleSheet.create({
   menuItemTitle: { ...typography.bodyMedium, color: commonColors.text },
   menuItemDanger: { color: semanticColors.danger },
   menuDivider: { height: 1, backgroundColor: commonColors.borderLight, marginLeft: 76 },
+  // Preferencias de notificación
+  prefRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight, gap: spacing.md },
+  prefTextWrap: { flex: 1 },
+  prefLabel: { ...typography.bodyMedium, color: commonColors.text },
+  prefLabelDisabled: { color: commonColors.textTertiary },
+  prefDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  prefHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.md, lineHeight: 18 },
 });

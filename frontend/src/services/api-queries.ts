@@ -818,6 +818,23 @@ export const useMyProfile = () => useQuery({
   queryFn: fetchMyProfile
 });
 
+// ── Disponibilidad de canales SMS/WhatsApp (para habilitar/bloquear switches) ──
+export interface ChannelsAvailability {
+  sms: { configured: boolean };
+  whatsapp: { configured: boolean };
+}
+
+export const useChannelsStatus = () =>
+  useQuery({
+    queryKey: ['channelsStatus'],
+    queryFn: async (): Promise<ChannelsAvailability> => {
+      const res = await api.get('/notifications/channels/status');
+      return res.data?.data || { sms: { configured: false }, whatsapp: { configured: false } };
+    },
+    // El estado de los canales cambia poco; se mantiene fresco 5 min.
+    staleTime: 5 * 60 * 1000,
+  });
+
 // ── Preferencias de notificación (RF-7.13) ──
 export const useUpdateNotificationPreferences = () => {
   const queryClient = useQueryClient();

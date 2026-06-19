@@ -4,6 +4,7 @@ import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { connectRedis, disconnectRedis } from './config/redis.js';
 import { logger } from './middleware/requestLogger.middleware.js';
 import { startReminderCron } from './modules/notifications/notification.service.js';
+import { initNotificationQueue, closeNotificationQueue } from './modules/notifications/queue.js';
 
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -18,6 +19,10 @@ async function bootstrap(): Promise<void> {
 
   // Connect to Redis (non-blocking – continues even if Redis is unavailable)
   await connectRedis();
+
+  // Inicializar la cola de envío de notificaciones (BullMQ). Degrada a envío
+  // directo si Redis/BullMQ no están disponibles.
+  initNotificationQueue();
 
   // Create Express app
   const app = createApp();
@@ -56,6 +61,7 @@ async function bootstrap(): Promise<void> {
       logger.info('HTTP server closed');
 
       try {
+        await closeNotificationQueue();
         await disconnectDatabase();
         await disconnectRedis();
       } catch (err) {

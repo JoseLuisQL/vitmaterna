@@ -9,6 +9,9 @@ const TokenSchema = z.object({
   expoPushToken: z.string().min(1, 'Expo push token is required')
 });
 
+/** Tipos técnicos de log de entrega (SMS/WhatsApp): no se muestran en la bandeja. */
+const DELIVERY_LOG_TYPES = ['entrega_sms', 'entrega_whatsapp'];
+
 /**
  * Lista las notificaciones in-app del usuario autenticado (más recientes primero).
  * Soporta ?soloNoLeidas=true y ?limit.
@@ -20,7 +23,12 @@ export async function listNotifications(req: Request, res: Response): Promise<vo
   // conteo de no leídas; tope duro 500. La limpieza/retención evita el descontrol.
   const limit = Math.min(Number(req.query.limit) || 200, 500);
 
-  const where: { userId: string; leidaAt?: null } = { userId };
+  const where: { userId: string; leidaAt?: null; tipo?: { notIn: string[] } } = {
+    userId,
+    // Los registros técnicos de entrega (SMS/WhatsApp) son solo auditoría: no
+    // se muestran en la bandeja in-app del usuario.
+    tipo: { notIn: DELIVERY_LOG_TYPES },
+  };
   if (soloNoLeidas) where.leidaAt = null;
 
   const items = await prisma.notification.findMany({
@@ -181,6 +189,20 @@ import { setConfigValue } from '../../utils/systemSettings.js';
 export async function getChannelsConfig(_req: Request, res: Response): Promise<void> {
   const status = await getChannelsStatus();
   res.json(successResponse(status));
+}
+
+/**
+ * Estado mínimo de disponibilidad de canales para CUALQUIER usuario autenticado
+ * (gestante/obstetra). Solo expone si cada canal está `configured` (sin números
+ * ni secretos). Lo usa el frontend para habilitar/bloquear los switches de
+ * preferencia de SMS/WhatsApp.
+ */
+export async function getChannelsAvailability(_req: Request, res: Response): Promise<void> {
+  const status = await getChannelsStatus();
+  res.json(successResponse({
+    sms: { configured: status.sms.configured },
+    whatsapp: { configured: status.whatsapp.configured },
+  }));
 }
 
 /** Guarda credenciales SMS (Twilio) en SystemConfig. */

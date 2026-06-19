@@ -4,6 +4,10 @@
  * Permite al administrador activar los proveedores reales (Twilio para SMS y
  * WhatsApp Business Cloud API), guardar sus credenciales y probar la conexión
  * con un envío de prueba antes de usarlas en producción.
+ *
+ * UX: flujo guiado por canal (activar → credenciales → guardar → probar). El
+ * envío de prueba solo se habilita cuando el canal está configurado. El número
+ * de prueba se valida en formato E.164.
  */
 import React, { useEffect, useState } from 'react';
 import {
@@ -12,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MessageSquare, Phone, CheckCircle2, AlertCircle, Send } from 'lucide-react-native';
+import { ArrowLeft, MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
@@ -25,12 +29,17 @@ import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
 const BRAND = adminColors.primary;
 
+/** Valida E.164 (ej. +51987654321). Vacío = no validado todavía. */
+function isE164(v: string): boolean {
+  return /^\+[1-9]\d{7,14}$/.test(v.trim());
+}
+
 function StatusBadge({ configured }: { configured: boolean }) {
   return (
     <View style={[styles.badge, { backgroundColor: configured ? semanticColors.successLight : commonColors.surfaceAlt }]}>
       {configured ? <CheckCircle2 size={13} color={semanticColors.success} /> : <AlertCircle size={13} color={commonColors.textSecondary} />}
       <Text style={[styles.badgeText, { color: configured ? semanticColors.success : commonColors.textSecondary }]}>
-        {configured ? 'Configurado' : 'Modo prueba'}
+        {configured ? 'Activo' : 'Modo prueba'}
       </Text>
     </View>
   );
@@ -69,7 +78,14 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
     }
   }, [status]);
 
+  const smsConfigured = !!status?.sms.configured;
+  const waConfigured = !!status?.whatsapp.configured;
+
   const saveSms = () => {
+    if (smsOn && fromNumber.trim() && !isE164(fromNumber)) {
+      toast.error('Número inválido', 'El número remitente debe estar en formato E.164 (ej. +15550001111).');
+      return;
+    }
     updateSms.mutate(
       smsOn
         ? { provider: 'twilio', accountSid: accountSid || undefined, authToken: authToken || undefined, fromNumber: fromNumber || undefined }
@@ -97,6 +113,10 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
     const destino = (canal === 'sms' ? smsTest : waTest).trim();
     if (!destino) {
       toast.info('Falta el número', 'Ingresa un número de destino para la prueba.');
+      return;
+    }
+    if (!isE164(destino)) {
+      toast.error('Número inválido', 'Usa formato E.164, ej. +51987654321.');
       return;
     }
     setTesting(canal);
@@ -139,6 +159,24 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Resumen de estado */}
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <View style={[styles.summaryIcon, { backgroundColor: semanticColors.infoLight }]}>
+              <MessageSquare size={18} color={semanticColors.info} />
+            </View>
+            <Text style={styles.summaryLabel}>SMS</Text>
+            <StatusBadge configured={smsConfigured} />
+          </View>
+          <View style={styles.summaryCard}>
+            <View style={[styles.summaryIcon, { backgroundColor: '#E7F6EE' }]}>
+              <Phone size={18} color="#25D366" />
+            </View>
+            <Text style={styles.summaryLabel}>WhatsApp</Text>
+            <StatusBadge configured={waConfigured} />
+          </View>
+        </View>
+
         {/* ─── SMS (Twilio) ─── */}
         <View style={styles.card}>
           <View style={styles.cardHead}>
@@ -147,7 +185,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>SMS (Twilio)</Text>
-              <StatusBadge configured={!!status?.sms.configured} />
+              <Text style={styles.cardHint}>Recordatorios y alertas por mensaje de texto</Text>
             </View>
           </View>
 
@@ -158,23 +196,36 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
           {smsOn && (
             <>
+              <View style={styles.helpBox}>
+                <Info size={14} color={commonColors.textSecondary} />
+                <Text style={styles.helpText}>Obtén estas credenciales en tu consola de Twilio (Account SID, Auth Token y un número remitente verificado).</Text>
+              </View>
               <Text style={styles.label}>Account SID</Text>
               <TextInput style={styles.input} value={accountSid} onChangeText={setAccountSid} placeholder="AC… (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
               <Text style={styles.label}>Auth Token</Text>
               <TextInput style={styles.input} value={authToken} onChangeText={setAuthToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
               <Text style={styles.label}>Número remitente</Text>
-              <TextInput style={styles.input} value={fromNumber} onChangeText={setFromNumber} placeholder="+15550001111" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+              <TextInput style={[styles.input, fromNumber.trim() !== '' && !isE164(fromNumber) && styles.inputError]} value={fromNumber} onChangeText={setFromNumber} placeholder="+15550001111" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+              {fromNumber.trim() !== '' && !isE164(fromNumber) && <Text style={styles.errorHint}>Formato E.164 requerido (ej. +15550001111).</Text>}
             </>
           )}
 
           <AppButton title="Guardar SMS" onPress={saveSms} loading={updateSms.isPending} themeColor={BRAND} style={{ marginTop: spacing.md }} />
 
-          <View style={styles.testRow}>
-            <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="Número para probar" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-            <TouchableOpacity style={styles.testBtn} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8}>
-              {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
-              <Text style={styles.testBtnText}>Probar</Text>
-            </TouchableOpacity>
+          {/* Prueba: solo si el canal ya está configurado */}
+          <View style={styles.testBlock}>
+            <Text style={styles.testTitle}>Enviar prueba</Text>
+            {!smsConfigured ? (
+              <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
+            ) : (
+              <View style={styles.testRow}>
+                <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                <TouchableOpacity style={[styles.testBtn, testing === 'sms' && { opacity: 0.7 }]} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8}>
+                  {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
+                  <Text style={styles.testBtnText}>Probar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
 
@@ -186,7 +237,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>WhatsApp (Cloud API)</Text>
-              <StatusBadge configured={!!status?.whatsapp.configured} />
+              <Text style={styles.cardHint}>Mensajes vía WhatsApp Business</Text>
             </View>
           </View>
 
@@ -197,6 +248,10 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
           {waOn && (
             <>
+              <View style={styles.helpBox}>
+                <Info size={14} color={commonColors.textSecondary} />
+                <Text style={styles.helpText}>Desde Meta for Developers: token permanente de la app y el Phone Number ID del número de WhatsApp Business.</Text>
+              </View>
               <Text style={styles.label}>API Token</Text>
               <TextInput style={styles.input} value={apiToken} onChangeText={setApiToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
               <Text style={styles.label}>Phone Number ID</Text>
@@ -206,18 +261,26 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
           <AppButton title="Guardar WhatsApp" onPress={saveWa} loading={updateWa.isPending} themeColor={BRAND} style={{ marginTop: spacing.md }} />
 
-          <View style={styles.testRow}>
-            <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="Número para probar" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-            <TouchableOpacity style={styles.testBtn} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8}>
-              {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
-              <Text style={styles.testBtnText}>Probar</Text>
-            </TouchableOpacity>
+          <View style={styles.testBlock}>
+            <Text style={styles.testTitle}>Enviar prueba</Text>
+            {!waConfigured ? (
+              <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
+            ) : (
+              <View style={styles.testRow}>
+                <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                <TouchableOpacity style={[styles.testBtn, testing === 'whatsapp' && { opacity: 0.7 }]} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8}>
+                  {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
+                  <Text style={styles.testBtnText}>Probar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
 
         <Text style={styles.note}>
           En modo prueba los mensajes solo se registran en el servidor. Al activar un proveedor y
-          guardar credenciales válidas, las notificaciones se envían de forma real.
+          guardar credenciales válidas, las notificaciones se envían de forma real. Los números se
+          normalizan automáticamente a formato internacional (E.164).
         </Text>
       </ScrollView>
       )}
@@ -233,17 +296,30 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: commonColors.white },
   subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   content: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
+  // Resumen
+  summaryRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
+  summaryCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.border, padding: spacing.md, alignItems: 'center', gap: spacing.xs2 + 2 },
+  summaryIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  summaryLabel: { ...typography.bodyMedium, color: commonColors.text, fontWeight: '600' },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.border },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   cardIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { ...typography.h3, color: commonColors.text, marginBottom: 4 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: borderRadius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  cardTitle: { ...typography.h3, color: commonColors.text },
+  cardHint: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', borderRadius: borderRadius.full, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { ...typography.overline, letterSpacing: 0, fontWeight: '700' },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
   switchLabel: { ...typography.bodyMedium, color: commonColors.text },
+  helpBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: spacing.sm2, marginTop: spacing.sm },
+  helpText: { ...typography.caption, color: commonColors.textSecondary, flex: 1, lineHeight: 17 },
   label: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary, marginTop: spacing.md, marginBottom: 4 },
   input: { backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4, ...typography.body, fontSize: 15, color: commonColors.text },
-  testRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
+  inputError: { borderColor: semanticColors.danger },
+  errorHint: { ...typography.caption, color: semanticColors.danger, marginTop: 4 },
+  testBlock: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
+  testTitle: { ...typography.caption, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  testDisabledHint: { ...typography.caption, color: commonColors.textTertiary, fontStyle: 'italic' },
+  testRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   testBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
   testBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   note: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18, textAlign: 'center', paddingHorizontal: spacing.md },

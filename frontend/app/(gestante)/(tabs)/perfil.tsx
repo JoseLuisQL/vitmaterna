@@ -10,7 +10,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
-import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences } from '../../../src/services/api-queries';
+import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -48,6 +48,11 @@ export default function PerfilScreen(): React.ReactElement {
   const { data: profileData, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
   const updatePatientMutation = useUpdatePatient();
   const updatePrefsMutation = useUpdateNotificationPreferences();
+  // Disponibilidad de canales: si el admin no configuró SMS/WhatsApp, los
+  // switches correspondientes se bloquean (no tiene sentido activarlos).
+  const { data: channels } = useChannelsStatus();
+  const smsAvailable = channels?.sms.configured ?? false;
+  const whatsappAvailable = channels?.whatsapp.configured ?? false;
 
   // Preferencias de notificación (RF-7.13)
   const [isPrefsVisible, setIsPrefsVisible] = useState(false);
@@ -361,17 +366,33 @@ export default function PerfilScreen(): React.ReactElement {
           </View>
           <View style={styles.prefRow}>
             <View style={styles.prefTextWrap}>
-              <Text style={styles.prefLabel}>SMS</Text>
-              <Text style={styles.prefDesc}>Mensajes de texto a tu teléfono</Text>
+              <Text style={[styles.prefLabel, !smsAvailable && styles.prefLabelDisabled]}>SMS</Text>
+              <Text style={styles.prefDesc}>
+                {smsAvailable ? 'Mensajes de texto a tu teléfono' : 'No disponible — el administrador no ha configurado este canal'}
+              </Text>
             </View>
-            <Switch value={prefSms} onValueChange={setPrefSms} trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }} thumbColor={prefSms ? BRAND : commonColors.textSecondary} />
+            <Switch
+              value={smsAvailable && prefSms}
+              onValueChange={setPrefSms}
+              disabled={!smsAvailable}
+              trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }}
+              thumbColor={smsAvailable && prefSms ? BRAND : commonColors.textSecondary}
+            />
           </View>
           <View style={[styles.prefRow, { borderBottomWidth: 0 }]}>
             <View style={styles.prefTextWrap}>
-              <Text style={styles.prefLabel}>WhatsApp</Text>
-              <Text style={styles.prefDesc}>Recordatorios y tips por WhatsApp</Text>
+              <Text style={[styles.prefLabel, !whatsappAvailable && styles.prefLabelDisabled]}>WhatsApp</Text>
+              <Text style={styles.prefDesc}>
+                {whatsappAvailable ? 'Recordatorios y tips por WhatsApp' : 'No disponible — el administrador no ha configurado este canal'}
+              </Text>
             </View>
-            <Switch value={prefWhatsapp} onValueChange={setPrefWhatsapp} trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }} thumbColor={prefWhatsapp ? BRAND : commonColors.textSecondary} />
+            <Switch
+              value={whatsappAvailable && prefWhatsapp}
+              onValueChange={setPrefWhatsapp}
+              disabled={!whatsappAvailable}
+              trackColor={{ false: commonColors.border, true: gestanteColors.primaryLight }}
+              thumbColor={whatsappAvailable && prefWhatsapp ? BRAND : commonColors.textSecondary}
+            />
           </View>
           <Text style={styles.prefHint}>Las alertas clínicas urgentes siempre se enviarán por seguridad.</Text>
         </View>
@@ -491,6 +512,7 @@ const styles = StyleSheet.create({
   },
   prefTextWrap: { flex: 1 },
   prefLabel: { ...typography.bodyMedium, color: commonColors.text },
+  prefLabelDisabled: { color: commonColors.textTertiary },
   prefDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   prefHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.md, lineHeight: 18 },
 });
