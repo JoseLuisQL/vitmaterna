@@ -33,7 +33,7 @@ import { DashboardSkeleton } from '../ui/SkeletonLoader';
 import { commonColors, semanticColors } from '../../theme/colors';
 import { gradients, type GradientConfig } from '../../theme/gradients';
 import { typography } from '../../theme/typography';
-import { spacing, borderRadius, layout } from '../../theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../theme/spacing';
 import { useResponsive } from '../../theme/responsive';
 
 export type ScreenRole = 'gestante' | 'obstetra' | 'admin' | 'neutral';
@@ -86,6 +86,16 @@ interface ScreenLayoutProps {
   contentStyle?: ViewStyle;
   /** Quitar el padding horizontal del cuerpo (para listas full-bleed). */
   noPadding?: boolean;
+  /**
+   * Ancho del área de contenido (solo afecta a web/tablet anchos):
+   *   - 'readable' (default): columna estrecha centrada para lectura/formularios
+   *     (≈760–900px). Igual que el comportamiento histórico.
+   *   - 'wide': aprovecha el ancho del portal (1024/1280/1440 según breakpoint).
+   *     Para dashboards y grids de tarjetas.
+   *   - 'full': ocupa el 100% del área disponible. Para tablas y vistas densas.
+   * En móvil no tiene efecto (siempre full-bleed).
+   */
+  width?: 'readable' | 'wide' | 'full';
 }
 
 export function ScreenLayout({
@@ -111,17 +121,36 @@ export function ScreenLayout({
   accentColor = commonColors.text,
   contentStyle,
   noPadding = false,
+  width = 'readable',
 }: ScreenLayoutProps): React.ReactElement {
   const router = useRouter();
-  const { select, isWide } = useResponsive();
+  const { select, isWide, webShell } = useResponsive();
 
-  const hasGradient = role !== 'neutral';
+  // En el portal web el header del rol ya no necesita el gradiente gigante
+  // redondeado (esa estética es móvil): el color de rol vive en el sidebar y
+  // topbar. Mostramos un header plano y compacto. En móvil se conserva igual.
+  const hasGradient = role !== 'neutral' && !webShell;
   const gradient = hasGradient ? ROLE_GRADIENT[role as Exclude<ScreenRole, 'neutral'>] : null;
 
-  // Padding horizontal por breakpoint; ancho máximo de contenido en pantallas
-  // grandes para que no se estire de borde a borde (legibilidad).
-  const hPad = noPadding ? 0 : select({ base: spacing.lg, lg: spacing.xl });
-  const maxWidth = select({ base: 9999, lg: 760, xl: 900 });
+  // Padding horizontal por breakpoint; en el portal web usamos el gutter del
+  // contenido (más generoso). Ancho máximo según el modo `width`.
+  const hPad = noPadding
+    ? 0
+    : webShell
+      ? select({ base: spacing.lg, lg: webLayout.contentGutter.lg, xl: webLayout.contentGutter.xl, xxl: webLayout.contentGutter.xxl })
+      : select({ base: spacing.lg, lg: spacing.xl });
+
+  // Ancho máximo del contenido. 'readable' = histórico; 'wide' = ancho del
+  // portal; 'full' = sin límite. En móvil siempre full-bleed.
+  const maxWidth =
+    width === 'full'
+      ? 9999
+      : width === 'wide'
+        ? select({ base: 9999, lg: webLayout.contentMaxWidth.lg, xl: webLayout.contentMaxWidth.xl, xxl: webLayout.contentMaxWidth.xxl })
+        : select({ base: 9999, lg: 760, xl: 900 });
+
+  // En el portal web no hay barra inferior flotante → no reservamos su espacio.
+  const bottomSpace = webShell ? spacing.xl : layout.tabBarSpace;
 
   const handleBack = () => {
     if (onBack) return onBack();
@@ -202,7 +231,7 @@ export function ScreenLayout({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
-          { paddingHorizontal: hPad, paddingBottom: layout.tabBarSpace, paddingTop: spacing.lg },
+          { paddingHorizontal: hPad, paddingBottom: bottomSpace, paddingTop: spacing.lg },
           contentStyle,
         ]}
         refreshControl={
