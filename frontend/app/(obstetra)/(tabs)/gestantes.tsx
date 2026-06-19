@@ -7,8 +7,12 @@ import { Baby, Search, ChevronRight, Plus, AlertTriangle } from 'lucide-react-na
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { usePatientsInfinite } from '../../../src/services/api-queries';
+import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, obstetraColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -29,6 +33,7 @@ export default function GestantesScreen(): React.ReactElement {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'todas' | 'bajo' | 'medio' | 'alto'>('todas');
   const router = useRouter();
+  const { webShell } = useResponsive();
 
   const debouncedSearch = useDebouncedValue(search, 400);
 
@@ -218,6 +223,83 @@ export default function GestantesScreen(): React.ReactElement {
     </View>
   );
 
+  // ── PORTAL WEB: tabla densa de pacientes ──
+  if (webShell) {
+    const riskMeta = (lvl?: string) =>
+      lvl === 'Alto'
+        ? { label: 'Alto riesgo', variant: 'danger' as const }
+        : lvl === 'Medio'
+          ? { label: 'Riesgo moderado', variant: 'warning' as const }
+          : { label: 'Sin riesgo', variant: 'success' as const };
+
+    const WEB_FILTERS = [
+      { key: 'todas', label: 'Todas' },
+      { key: 'bajo', label: 'Sin riesgo' },
+      { key: 'medio', label: 'Moderado' },
+      { key: 'alto', label: 'Alto' },
+    ] as const;
+
+    const columns: DataTableColumn<any>[] = [
+      {
+        key: 'nombre', header: 'Gestante', flex: 2,
+        sortValue: (p) => `${p.firstName} ${p.lastName}`.toLowerCase(),
+        render: (p) => (
+          <View style={styles.tableUserCell}>
+            <View style={styles.tableAvatar}><Text style={styles.tableAvatarText}>{(p.firstName?.[0] || '') + (p.lastName?.[0] || '')}</Text></View>
+            <Text style={styles.tableName} numberOfLines={1}>{p.firstName} {p.lastName}</Text>
+          </View>
+        ),
+      },
+      { key: 'dni', header: 'DNI / HC', width: 140, sortValue: (p) => p.documentNumber || '', render: (p) => `${p.documentNumber || '—'}${p.historiaClinica ? ` · HC-${p.historiaClinica}` : ''}` },
+      { key: 'sem', header: 'Semanas', width: 120, align: 'center', sortValue: (p) => p.currentWeek || 0, render: (p) => (p.currentWeek ? `Sem ${p.currentWeek}${p.currentTrimester ? ` · ${p.currentTrimester}°` : ''}` : '—') },
+      { key: 'riesgo', header: 'Riesgo', width: 150, sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => { const m = riskMeta(p.riskLevel); return <AppBadge label={m.label} variant={m.variant} size="sm" />; } },
+      { key: 'fpp', header: 'FPP', width: 120, sortValue: (p) => p.estimatedDueDate || '', render: (p) => (p.estimatedDueDate ? new Date(p.estimatedDueDate).toISOString().split('T')[0] : '—') },
+    ];
+
+    return (
+      <View style={styles.container}>
+        <ScreenLayout
+          role="obstetra"
+          title="Gestantes"
+          subtitle="Tus pacientes asignadas"
+          width="full"
+          accentColor={BRAND}
+          scroll={false}
+        >
+          <View style={styles.webToolbar}>
+            <View style={styles.webSearchBox}>
+              <Search size={18} color={commonColors.textTertiary} />
+              <TextInput style={styles.webSearchInput} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o DNI..." placeholderTextColor={commonColors.textTertiary} />
+            </View>
+            <View style={styles.webFilterRow}>
+              {WEB_FILTERS.map((f) => (
+                <TouchableOpacity key={f.key} style={[styles.webChip, filterMode === f.key && styles.webChipActive]} onPress={() => setFilterMode(f.key as any)}>
+                  <Text style={[styles.webChipText, filterMode === f.key && styles.webChipTextActive]}>{f.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.webCreateBtn} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)} activeOpacity={0.85}>
+              <Plus size={18} color={commonColors.white} />
+              <Text style={styles.webCreateText}>Nueva gestante</Text>
+            </TouchableOpacity>
+          </View>
+
+          <DataTable
+            columns={columns}
+            data={processedPatients}
+            keyExtractor={(p) => p.id || p._id}
+            loading={isLoading}
+            onRowPress={(p) => router.push(`/(obstetra)/gestante/${p.id || p._id}` as any)}
+            emptyIcon={Baby as any}
+            emptyTitle="Sin resultados"
+            emptyMessage={search ? 'No se encontraron pacientes con esa búsqueda.' : 'Aún no tienes pacientes asignadas a tu cargo.'}
+            emptyAccent={BRAND}
+          />
+        </ScreenLayout>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {renderHeader()}
@@ -245,6 +327,23 @@ export default function GestantesScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
+
+  // ── Portal web ──
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
+  webSearchBox: { flex: 1, minWidth: 220, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44 },
+  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineWidth: 0 } as any,
+  webFilterRow: { flexDirection: 'row', gap: spacing.sm },
+  webChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
+  webChipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  webChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
+  webChipTextActive: { color: commonColors.white },
+  webCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: BRAND, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, height: 44 },
+  webCreateText: { ...typography.button, color: commonColors.white, fontSize: 14 },
+  tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  tableAvatarText: { ...typography.caption, fontWeight: '700', color: BRAND },
+  tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
+
   headerWrapper: {
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: borderRadius.xxl,

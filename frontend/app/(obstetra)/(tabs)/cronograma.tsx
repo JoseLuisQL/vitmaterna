@@ -19,7 +19,9 @@ import { useToast } from '../../../src/components/ui';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
+import { WebMaxWidth } from '../../../src/components/web';
 import {
   useAppointmentsFiltered,
   useUpdateAppointmentStatus,
@@ -59,6 +61,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function CronogramaScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const [scope, setScope] = useState<Scope>('hoy');
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput, 350);
@@ -235,6 +238,7 @@ export default function CronogramaScreen(): React.ReactElement {
       scroll={false}
       actions={<NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />}
     >
+      <WebMaxWidth width="wide">
       {/* Buscador */}
       <View style={styles.searchBar}>
         <Search size={18} color={commonColors.textSecondary} />
@@ -273,6 +277,7 @@ export default function CronogramaScreen(): React.ReactElement {
           );
         })}
       </View>
+      </WebMaxWidth>
 
       {isLoading ? (
         <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View>
@@ -288,7 +293,7 @@ export default function CronogramaScreen(): React.ReactElement {
             </View>
           )}
           stickySectionHeadersEnabled
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyState
@@ -340,6 +345,7 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: commonColors.white },
 
   listContent: { paddingBottom: layout.tabBarSpace + 80, paddingTop: spacing.xs },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
 
   sectionHeader: { backgroundColor: commonColors.background, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   sectionHeaderText: { ...typography.label, fontWeight: '700', color: commonColors.text },

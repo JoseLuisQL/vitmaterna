@@ -22,6 +22,7 @@ import {
 import { commonColors, obstetraColors, gestanteColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 import { useFeatureFlags, type FeatureModule } from '../../../src/hooks/useFeatureFlags';
 
@@ -267,6 +268,7 @@ export default function TamizajesScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         <Text style={styles.subtitle}>Selecciona el registro clínico que deseas añadir.</Text>
 
         {CARDS.length === 0 && (
@@ -288,6 +290,7 @@ export default function TamizajesScreen(): React.ReactElement {
             <Plus size={20} color={commonColors.textTertiary} />
           </TouchableOpacity>
         ))}
+        </WebMaxWidth>
       </ScrollView>
 
       {/* ── MODAL ── */}

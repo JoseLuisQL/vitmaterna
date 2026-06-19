@@ -19,9 +19,10 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
+import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 
 const BRAND = obstetraColors.primary;
 
@@ -42,6 +43,7 @@ export default function ObstetraDashboard(): React.ReactElement {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { open: openSidebar } = useSidebar();
+  const { webShell } = useResponsive();
   // Nombre real, sin prefijos asumidos (no se asume "Dra.").
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || 'Obstetra';
   const fecha = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -141,18 +143,20 @@ export default function ObstetraDashboard(): React.ReactElement {
       accentColor={BRAND}
       scroll={false}
       actions={
-        <>
-          <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />
-          <TouchableOpacity
-            onPress={openSidebar}
-            style={styles.menuBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel="Abrir menú"
-          >
-            <Menu size={22} color={commonColors.white} />
-          </TouchableOpacity>
-        </>
+        webShell ? undefined : (
+          <>
+            <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />
+            <TouchableOpacity
+              onPress={openSidebar}
+              style={styles.menuBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir menú"
+            >
+              <Menu size={22} color={commonColors.white} />
+            </TouchableOpacity>
+          </>
+        )
       }
     >
       <FlatList
@@ -160,7 +164,7 @@ export default function ObstetraDashboard(): React.ReactElement {
         keyExtractor={(item) => item.id || item._id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.flatListContent}
+        contentContainerStyle={[styles.flatListContent, webShell && styles.flatListWeb]}
         showsVerticalScrollIndicator={false}
         refreshing={isRefetching}
         onRefresh={onRefresh}
@@ -195,6 +199,7 @@ export default function ObstetraDashboard(): React.ReactElement {
 
 const styles = StyleSheet.create({
   flatListContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  flatListWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.xl, alignSelf: 'center', paddingBottom: spacing.xl },
   menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
 
   greeting: { ...typography.h3, color: commonColors.text },

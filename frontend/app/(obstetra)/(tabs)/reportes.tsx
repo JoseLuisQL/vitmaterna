@@ -17,6 +17,7 @@ import { exportExcel } from '../../../src/utils/exportExcel';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -228,6 +229,7 @@ export default function ReportesScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
+        <WebMaxWidth width="wide">
         {/* KPIs principales */}
         <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.xs }}>
           {[
@@ -294,6 +296,7 @@ export default function ReportesScreen(): React.ReactElement {
             ))
           )}
         </View>
+        </WebMaxWidth>
       </ScrollView>
     </View>
   );

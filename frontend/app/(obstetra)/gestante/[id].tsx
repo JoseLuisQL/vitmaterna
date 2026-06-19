@@ -20,7 +20,8 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
-import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { spacing, borderRadius, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
@@ -155,6 +156,7 @@ function riskLabel(riskLevel?: string): string {
 export default function PatientProfileScreen(): React.ReactElement {
   const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const router = useRouter();
+  const { webShell } = useResponsive();
   // Alcance: el acceso a "Tamizajes" (módulos opcionales) solo se ofrece si el
   // administrador activó al menos uno de esos módulos.
   const flags = useFeatureFlags();
@@ -693,7 +695,7 @@ export default function PatientProfileScreen(): React.ReactElement {
 
         <ScrollView 
           style={styles.scrollAreaWrapper}
-          contentContainerStyle={styles.scrollArea} 
+          contentContainerStyle={[styles.scrollArea, webShell && styles.scrollAreaWeb]}
           showsVerticalScrollIndicator={false}
         >
           {/* ── SECCIÓN: RESUMEN (estado + datos + obstétricos + antecedentes + embarazo) ── */}
@@ -1814,6 +1816,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 80,
   },
+  scrollAreaWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.xl, alignSelf: 'center' },
   dataTabContainer: {
     marginTop: -4,
   },

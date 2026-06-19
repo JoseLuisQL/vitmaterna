@@ -12,6 +12,7 @@ import { DateTimeField } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 import { useCreatePatient, useUpdatePatient, checkDniExists } from '../../../src/services/api-queries';
 import { notify } from '../../../src/utils/confirm';
@@ -262,6 +263,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <WebMaxWidth width="readable">
           <View style={styles.card}>
             {/* ── PASO 1: Identificación ── */}
             {currentStep === 1 && (
@@ -438,6 +440,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
               )}
             </View>
           </View>
+          </WebMaxWidth>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

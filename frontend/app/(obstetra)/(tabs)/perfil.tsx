@@ -9,6 +9,7 @@ import { useMyProfile, useUpdateNotificationPreferences, useChannelsStatus } fro
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { typography } from '../../../src/theme/typography';
 
 const BRAND = obstetraColors.primary;
@@ -153,6 +154,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
@@ -185,6 +187,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
         <View style={[styles.menuCard, { marginTop: 24 }]}>
           <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
         </View>
+        </WebMaxWidth>
       </ScrollView>
 
       {/* MODAL: PREFERENCIAS DE NOTIFICACIÓN (canales) */}

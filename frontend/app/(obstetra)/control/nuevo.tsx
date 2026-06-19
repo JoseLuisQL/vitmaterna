@@ -14,6 +14,7 @@ import { useCreateControl } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -131,6 +132,7 @@ export default function NuevoControlScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         <View style={styles.noteCard}>
           <Text style={styles.noteText}>
             Registro rápido del control. Solo la semana gestacional es obligatoria
@@ -176,6 +178,7 @@ export default function NuevoControlScreen(): React.ReactElement {
         </View>
 
         <AppButton title="Guardar Control" onPress={handleSubmit(onSubmit)} loading={isPending} disabled={isPending} style={styles.submitBtn} />
+        </WebMaxWidth>
       </ScrollView>
     </View>
   );

@@ -25,6 +25,7 @@ import { useFeatureFlags } from '../../../src/hooks/useFeatureFlags';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -171,6 +172,7 @@ export default function AtenderCitaScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         <Text style={styles.intro}>
           Registra los datos de esta consulta en orden. Puedes abrir y completar cada
           sección; lo registrado queda ligado a esta cita.
@@ -227,6 +229,7 @@ export default function AtenderCitaScreen(): React.ReactElement {
             style={styles.finishBtn}
           />
         </View>
+        </WebMaxWidth>
       </ScrollView>
     </View>
   );

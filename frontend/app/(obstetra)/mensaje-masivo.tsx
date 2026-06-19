@@ -11,6 +11,7 @@ import api from '../../src/services/api';
 import { confirmAction, notify } from '../../src/utils/confirm';
 import { commonColors, obstetraColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
+import { WebMaxWidth } from '../../src/components/web';
 
 const BRAND = obstetraColors.primary;
 
@@ -84,6 +85,7 @@ export default function MensajeMasivoScreen(): React.ReactElement {
       </SafeAreaView>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         <View style={styles.iconWrap}>
           <Megaphone size={28} color={BRAND} />
         </View>
@@ -136,6 +138,7 @@ export default function MensajeMasivoScreen(): React.ReactElement {
             </>
           )}
         </TouchableOpacity>
+        </WebMaxWidth>
       </ScrollView>
     </View>
   );
