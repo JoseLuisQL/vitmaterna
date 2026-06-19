@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Download, Sheet, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { AutoGrid, useToast } from '../../../src/components/ui';
+import { WebMaxWidth } from '../../../src/components/web';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
@@ -142,6 +143,7 @@ export default function AdminReportesScreen(): React.ReactElement {
         <View style={{ padding: spacing.lg }}><DashboardSkeleton count={2} /></View>
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
+          <WebMaxWidth width="wide">
           <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.lg }}>
             {[
               { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: adminColors.primaryLight },
@@ -179,6 +181,7 @@ export default function AdminReportesScreen(): React.ReactElement {
               <View style={styles.card}><ChartBar data={riskBars} height={160} showValues /></View>
             </>
           )}
+          </WebMaxWidth>
         </ScrollView>
       )}
     </View>

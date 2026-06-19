@@ -15,7 +15,8 @@ import { exportTextFile } from '../../../src/utils/exportFile';
 import { useToast } from '../../../src/components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
 
@@ -43,6 +44,7 @@ function accionMeta(accion?: string) {
 export default function AuditoriaScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const { data: logs, isLoading, refetch } = useAuditLogs();
   const exportMutation = useExportBackup();
 
@@ -134,7 +136,7 @@ export default function AuditoriaScreen(): React.ReactElement {
           data={logs}
           keyExtractor={(item, index) => item.id || item._id || String(index)}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
@@ -173,6 +175,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: layout.tabBarSpace,
   },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
   card: {
     marginBottom: spacing.sm,
   },

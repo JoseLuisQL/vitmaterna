@@ -15,7 +15,8 @@ import {
 } from '../../../src/services/admin-queries';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = adminColors.primary;
@@ -37,6 +38,7 @@ const emptyForm: FacilityForm = {
 export default function SedesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const { data: facilities, isLoading } = useFacilities();
   const createMut = useCreateFacility();
   const updateMut = useUpdateFacility();
@@ -171,7 +173,7 @@ export default function SedesScreen(): React.ReactElement {
         data={facilities}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={{ paddingTop: spacing.xl }}>
@@ -219,6 +221,7 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, paddingTop: spacing.md },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
   card: { flexDirection: 'row', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.md, ...shadows.card },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

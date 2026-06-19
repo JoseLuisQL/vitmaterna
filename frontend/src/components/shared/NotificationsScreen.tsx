@@ -34,8 +34,9 @@ import { ListSkeleton } from '../ui/SkeletonLoader';
 import { useAuthStore } from '../../store/authStore';
 import { commonColors, semanticColors, gestanteColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { spacing, borderRadius, layout } from '../../theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
+import { useResponsive } from '../../theme/responsive';
 
 interface Props {
   /** Color de acento del rol (gestante púrpura, obstetra azul). */
@@ -166,6 +167,7 @@ export function NotificationsScreen({
 }: Props): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const role = useAuthStore((s) => s.user?.role);
   const { data: items = [], isLoading, refetch, isRefetching } = useNotifications();
   const markRead = useMarkNotificationRead();
@@ -399,7 +401,7 @@ export function NotificationsScreen({
             <Text style={styles.sectionHeader}>{section.title}</Text>
           )}
           stickySectionHeadersEnabled={false}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, webShell && styles.listWeb]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={themeColor} />}
           ListEmptyComponent={
@@ -473,6 +475,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
   list: { padding: spacing.md, paddingBottom: layout.tabBarSpace },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
   card: {
     flexDirection: 'row',
     gap: spacing.md,

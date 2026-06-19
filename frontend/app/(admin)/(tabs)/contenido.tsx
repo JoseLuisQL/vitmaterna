@@ -26,7 +26,8 @@ import { confirmAction } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import {
   useEducationContent,
@@ -93,6 +94,7 @@ type FormValues = z.infer<typeof schema>;
 export default function ContenidoScreen(): React.ReactElement {
   const toast = useToast();
   const { open: openSidebar } = useSidebar();
+  const { webShell } = useResponsive();
   const { data: items = [], isLoading, refetch, isRefetching } = useEducationContent();
   const createMut = useCreateEducationContent();
   const updateMut = useUpdateEducationContent();
@@ -354,7 +356,7 @@ export default function ContenidoScreen(): React.ReactElement {
         keyExtractor={(i) => i.id}
         renderItem={renderItem}
         ListHeaderComponent={renderListHeader}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, webShell && styles.listWeb]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
         ListEmptyComponent={
@@ -529,6 +531,7 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.xl, alignSelf: 'center', paddingBottom: spacing.xl },
   // Editor: ayuda de formato + botón de previsualización
   formatHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.md },
   formatHint: { ...typography.caption, color: commonColors.textTertiary, flex: 1, lineHeight: 16 },

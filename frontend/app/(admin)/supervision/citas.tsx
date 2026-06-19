@@ -11,7 +11,10 @@ import { ArrowLeft, Calendar } from 'lucide-react-native';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { useAppointments } from '../../../src/services/api-queries';
+import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, adminColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -37,6 +40,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function AdminCitasScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const [filter, setFilter] = useState<'todas' | 'proximas' | 'hoy'>('todas');
   const { data: appointments = [], isLoading } = useAppointments();
 
@@ -56,6 +60,59 @@ export default function AdminCitasScreen(): React.ReactElement {
     const d = new Date(iso);
     return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
   };
+
+  const filterRow = (
+    <View style={styles.filterRow}>
+      {FILTERS.map((f) => (
+        <TouchableOpacity key={f.key} style={[styles.filterChip, filter === f.key && styles.filterChipActive]} onPress={() => setFilter(f.key)}>
+          <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  // ── PORTAL WEB: tabla densa ──
+  if (webShell) {
+    const columns: DataTableColumn<any>[] = [
+      { key: 'fecha', header: 'Fecha y hora', width: 150, sortValue: (a) => new Date(a.date).getTime(), render: (a) => (
+        <View style={styles.tableDateCell}><Calendar size={16} color={BRAND} /><Text style={styles.dateText}>{fmt(a.date)}</Text></View>
+      ) },
+      { key: 'paciente', header: 'Paciente', flex: 2, sortValue: (a) => (a.patientName || '').toLowerCase(), render: (a) => (
+        <Text style={styles.tableName} numberOfLines={1}>{a.patientName || 'Paciente'}</Text>
+      ) },
+      { key: 'tipo', header: 'Tipo', flex: 1, sortValue: (a) => a.type || '', render: (a) => a.type || 'Control Prenatal' },
+      { key: 'estado', header: 'Estado', width: 150, sortValue: (a) => a.status || '', render: (a) => (
+        <AppBadge label={STATUS_LABEL[a.status] || a.status} variant={STATUS_VARIANT[a.status] || 'default'} size="sm" />
+      ) },
+    ];
+
+    return (
+      <View style={styles.container}>
+        <ScreenLayout
+          role="admin"
+          title="Citas"
+          subtitle="Agenda global · solo lectura"
+          showBack
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
+          width="full"
+          accentColor={BRAND}
+          scroll={false}
+        >
+          <View style={{ marginBottom: spacing.sm }}>{filterRow}</View>
+          <DataTable
+            columns={columns}
+            data={isLoading ? [] : filtered}
+            keyExtractor={(a) => a.id}
+            loading={isLoading}
+            emptyIcon={Calendar}
+            emptyTitle="Sin citas"
+            emptyMessage="No hay citas con ese filtro."
+            emptyAccent={BRAND}
+          />
+        </ScreenLayout>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -125,4 +182,8 @@ const styles = StyleSheet.create({
   dateText: { ...typography.caption, fontWeight: '700', color: BRAND },
   name: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+
+  // ── Portal web ──
+  tableDateCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
 });

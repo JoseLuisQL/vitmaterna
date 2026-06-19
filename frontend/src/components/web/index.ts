@@ -5,3 +5,5 @@
 export { WebShell } from './WebShell';
 export { WebSidebar } from './WebSidebar';
 export { WebTopBar } from './WebTopBar';
+export { DataTable, type DataTableColumn } from './DataTable';
+export { WebMaxWidth } from './WebMaxWidth';

@@ -23,6 +23,7 @@ import { commonColors, adminColors, semanticColors } from '../../../src/theme/co
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
+import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = adminColors.primary;
 
@@ -56,6 +57,7 @@ export default function AdminInicioScreen(): React.ReactElement {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { open: openSidebar } = useSidebar();
+  const { webShell } = useResponsive();
   const { data, isLoading, refetch, isRefetching } = useAdminDashboard();
 
   const d = data;
@@ -71,19 +73,22 @@ export default function AdminInicioScreen(): React.ReactElement {
       refreshing={isRefetching}
       onRefresh={refetch}
       accentColor={BRAND}
+      width="wide"
       actions={
-        <>
-          <NotificationBell href="/(admin)/avisos" color={commonColors.white} />
-          <TouchableOpacity
-            onPress={openSidebar}
-            style={styles.menuBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel="Abrir menú"
-          >
-            <Menu size={22} color={commonColors.white} />
-          </TouchableOpacity>
-        </>
+        webShell ? undefined : (
+          <>
+            <NotificationBell href="/(admin)/avisos" color={commonColors.white} />
+            <TouchableOpacity
+              onPress={openSidebar}
+              style={styles.menuBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir menú"
+            >
+              <Menu size={22} color={commonColors.white} />
+            </TouchableOpacity>
+          </>
+        )
       }
     >
       {/* Acción directa: obstetras pendientes de aprobación */}
@@ -113,47 +118,55 @@ export default function AdminInicioScreen(): React.ReactElement {
         <Kpi icon={Calendar} label="Citas hoy" value={d?.citas.hoy ?? 0} color={semanticColors.info} bg={semanticColors.infoLight} />
       </AutoGrid>
 
-      {/* Estado del sistema: lo informativo, compacto (no como KPIs gigantes) */}
-      <Text style={styles.sectionTitle}>Estado del sistema</Text>
-      <View style={styles.statusCard}>
-        <StatusRow
-          icon={AlertTriangle}
-          label="Alertas pendientes"
-          value={String(d?.alertas.pendientes ?? 0)}
-          valueColor={(d?.alertas.pendientes ?? 0) > 0 ? semanticColors.danger : commonColors.textSecondary}
-        />
-        <StatusRow
-          icon={BookOpen}
-          label="Contenido publicado"
-          value={`${d?.contenido.publicado ?? 0} de ${d?.contenido.total ?? 0}`}
-        />
-        <StatusRow
-          icon={BellRing}
-          label="SMS"
-          value={d?.notificaciones.smsConfigurado ? 'Activo' : 'Modo prueba'}
-          valueColor={d?.notificaciones.smsConfigurado ? semanticColors.success : commonColors.textTertiary}
-        />
-        <StatusRow
-          icon={BellRing}
-          label="WhatsApp"
-          value={d?.notificaciones.whatsappConfigurado ? 'Activo' : 'Modo prueba'}
-          valueColor={d?.notificaciones.whatsappConfigurado ? semanticColors.success : commonColors.textTertiary}
-          last
-        />
-      </View>
+      {/* En el portal web, "Estado del sistema" y "Gestión" comparten fila
+          (2 columnas) para aprovechar el ancho. En móvil van apilados. */}
+      <View style={webShell ? styles.twoCol : undefined}>
+        <View style={webShell ? styles.col : undefined}>
+          {/* Estado del sistema: lo informativo, compacto */}
+          <Text style={styles.sectionTitle}>Estado del sistema</Text>
+          <View style={styles.statusCard}>
+            <StatusRow
+              icon={AlertTriangle}
+              label="Alertas pendientes"
+              value={String(d?.alertas.pendientes ?? 0)}
+              valueColor={(d?.alertas.pendientes ?? 0) > 0 ? semanticColors.danger : commonColors.textSecondary}
+            />
+            <StatusRow
+              icon={BookOpen}
+              label="Contenido publicado"
+              value={`${d?.contenido.publicado ?? 0} de ${d?.contenido.total ?? 0}`}
+            />
+            <StatusRow
+              icon={BellRing}
+              label="SMS"
+              value={d?.notificaciones.smsConfigurado ? 'Activo' : 'Modo prueba'}
+              valueColor={d?.notificaciones.smsConfigurado ? semanticColors.success : commonColors.textTertiary}
+            />
+            <StatusRow
+              icon={BellRing}
+              label="WhatsApp"
+              value={d?.notificaciones.whatsappConfigurado ? 'Activo' : 'Modo prueba'}
+              valueColor={d?.notificaciones.whatsappConfigurado ? semanticColors.success : commonColors.textTertiary}
+              last
+            />
+          </View>
+        </View>
 
-      {/* Accesos rápidos (3) */}
-      <Text style={styles.sectionTitle}>Gestión</Text>
-      <View style={styles.quickGrid}>
-        <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/usuarios')}>
-          <Users size={22} color={BRAND} /><Text style={styles.quickText}>Usuarios</Text>
-        </PressableScale>
-        <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/contenido')}>
-          <BookOpen size={22} color={BRAND} /><Text style={styles.quickText}>Contenido</Text>
-        </PressableScale>
-        <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/supervision/reportes')}>
-          <BarChart3 size={22} color={BRAND} /><Text style={styles.quickText}>Reportes</Text>
-        </PressableScale>
+        <View style={webShell ? styles.col : undefined}>
+          {/* Accesos rápidos (3) */}
+          <Text style={styles.sectionTitle}>Gestión</Text>
+          <View style={styles.quickGrid}>
+            <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/usuarios')}>
+              <Users size={22} color={BRAND} /><Text style={styles.quickText}>Usuarios</Text>
+            </PressableScale>
+            <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/contenido')}>
+              <BookOpen size={22} color={BRAND} /><Text style={styles.quickText}>Contenido</Text>
+            </PressableScale>
+            <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/supervision/reportes')}>
+              <BarChart3 size={22} color={BRAND} /><Text style={styles.quickText}>Reportes</Text>
+            </PressableScale>
+          </View>
+        </View>
       </View>
     </ScreenLayout>
   );
@@ -179,6 +192,8 @@ const styles = StyleSheet.create({
   statusLabel: { ...typography.bodySmall, color: commonColors.text, flex: 1 },
   statusValue: { ...typography.label, fontWeight: '700', color: commonColors.textSecondary },
 
+  twoCol: { flexDirection: 'row', gap: spacing.lg, alignItems: 'flex-start' },
+  col: { flex: 1, minWidth: 0 },
   quickGrid: { flexDirection: 'row', gap: spacing.sm },
   quickBtn: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, alignItems: 'center', gap: spacing.sm, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
   quickText: { ...typography.caption, fontWeight: '600', color: commonColors.text },

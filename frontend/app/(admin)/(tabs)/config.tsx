@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { WebMaxWidth } from '../../../src/components/web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -105,7 +106,7 @@ export default function ConfigScreen(): React.ReactElement {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
-        
+        <WebMaxWidth width="readable">
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Límites y Accesos</Text>
           <AppInput
@@ -216,6 +217,7 @@ export default function ConfigScreen(): React.ReactElement {
           icon={Save}
           loading={updateConfigMutation.isPending}
         />
+        </WebMaxWidth>
       </ScrollView>
       )}
     </View>

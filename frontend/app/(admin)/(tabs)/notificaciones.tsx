@@ -19,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { WebMaxWidth } from '../../../src/components/web';
 import { useToast } from '../../../src/components/ui';
 import {
   useChannelsConfig, useUpdateSmsConfig, useUpdateWhatsAppConfig, useTestChannel,
@@ -159,6 +160,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         {/* Resumen de estado */}
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -282,6 +284,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           guardar credenciales válidas, las notificaciones se envían de forma real. Los números se
           normalizan automáticamente a formato internacional (E.164).
         </Text>
+        </WebMaxWidth>
       </ScrollView>
       )}
     </View>

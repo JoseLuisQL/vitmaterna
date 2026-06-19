@@ -12,8 +12,11 @@ import { ArrowLeft, Search, X, Baby } from 'lucide-react-native';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { usePatients } from '../../../src/services/api-queries';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
+import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -29,6 +32,7 @@ const RISKS = [
 
 export default function AdminGestantesScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const [search, setSearch] = useState('');
   const [risk, setRisk] = useState<string | null>(null);
   const { data: patients = [], isLoading } = usePatients();
@@ -42,6 +46,70 @@ export default function AdminGestantesScreen(): React.ReactElement {
       return true;
     });
   }, [patients, debouncedSearch, risk]);
+
+  const riskBadge = (lvl?: string) => (
+    <AppBadge label={lvl || 'Bajo'} variant={lvl === 'Alto' ? 'danger' : lvl === 'Medio' ? 'warning' : 'success'} size="sm" />
+  );
+
+  // ── PORTAL WEB: tabla densa ──
+  if (webShell) {
+    const columns: DataTableColumn<any>[] = [
+      {
+        key: 'nombre', header: 'Gestante', flex: 2,
+        sortValue: (p) => `${p.firstName} ${p.lastName}`.toLowerCase(),
+        render: (p) => (
+          <View style={styles.tableUserCell}>
+            <View style={styles.tableAvatar}><Text style={styles.avatarText}>{(p.firstName?.[0] || '') + (p.lastName?.[0] || '')}</Text></View>
+            <Text style={styles.tableName} numberOfLines={1}>{p.firstName} {p.lastName}</Text>
+          </View>
+        ),
+      },
+      { key: 'dni', header: 'DNI', width: 120, sortValue: (p) => p.documentNumber || '', render: (p) => p.documentNumber || '—' },
+      { key: 'sem', header: 'Semanas', width: 110, align: 'center', sortValue: (p) => p.currentWeek || 0, render: (p) => (p.currentWeek ? `${p.currentWeek} sem` : '—') },
+      { key: 'riesgo', header: 'Riesgo', width: 120, sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => riskBadge(p.riskLevel) },
+    ];
+
+    return (
+      <View style={styles.container}>
+        <ScreenLayout
+          role="admin"
+          title="Gestantes"
+          subtitle={`${patients.length} registradas · solo lectura`}
+          showBack
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
+          width="full"
+          accentColor={BRAND}
+          scroll={false}
+        >
+          <View style={styles.webToolbar}>
+            <View style={styles.webSearchBox}>
+              <Search size={18} color={commonColors.textTertiary} />
+              <TextInput style={styles.webSearchInput} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o DNI…" placeholderTextColor={commonColors.textTertiary} />
+              {search ? <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity> : null}
+            </View>
+            <View style={styles.filterRow}>
+              {RISKS.map((r) => (
+                <TouchableOpacity key={String(r.key)} style={[styles.filterChip, risk === r.key && styles.filterChipActive]} onPress={() => setRisk(r.key)}>
+                  <Text style={[styles.filterChipText, risk === r.key && styles.filterChipTextActive]}>{r.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <DataTable
+            columns={columns}
+            data={isLoading ? [] : filtered}
+            keyExtractor={(p) => p.id}
+            loading={isLoading}
+            emptyIcon={Baby}
+            emptyTitle="Sin gestantes"
+            emptyMessage={search || risk ? 'No hay gestantes con ese filtro.' : 'Aún no hay gestantes registradas.'}
+            emptyAccent={BRAND}
+          />
+        </ScreenLayout>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -121,4 +189,12 @@ const styles = StyleSheet.create({
   avatarText: { ...typography.bodyMedium, fontWeight: '700', color: BRAND },
   name: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+
+  // ── Portal web ──
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
+  webSearchBox: { flex: 1, minWidth: 220, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44 },
+  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineWidth: 0 } as any,
+  tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
 });

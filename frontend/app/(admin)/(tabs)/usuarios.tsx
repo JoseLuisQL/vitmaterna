@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, Menu } from 'lucide-react-native';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -21,6 +22,8 @@ import { shadows } from '../../../src/theme/shadows';
 import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser } from '../../../src/services/admin-queries';
 import { confirmAction, notify } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
+import { useResponsive } from '../../../src/theme/responsive';
+import { DataTable, type DataTableColumn } from '../../../src/components/web';
 
 const BRAND = obstetraColors.primary;
 import { useAuthStore } from '../../../src/store/authStore';
@@ -74,6 +77,7 @@ export default function UsuariosScreen(): React.ReactElement {
   const toast = useToast();
   const { open: openSidebar } = useSidebar();
   const { user: authUser } = useAuthStore();
+  const { webShell } = useResponsive();
 
   // Edición / reset / baja
   const [isEditVisible, setIsEditVisible] = useState(false);
@@ -494,9 +498,95 @@ export default function UsuariosScreen(): React.ReactElement {
     </AppModal>
   );
 
+  // Columnas de la tabla web (portal de escritorio). En móvil se usa la lista
+  // de tarjetas (renderItem) de siempre.
+  const tableColumns: DataTableColumn<any>[] = [
+    {
+      key: 'nombre',
+      header: 'Usuario',
+      flex: 2,
+      sortValue: (u) => `${u.firstName} ${u.lastName}`.toLowerCase(),
+      render: (u) => (
+        <View style={styles.tableUserCell}>
+          <View style={[
+            styles.tableAvatar,
+            u.role === 'admin' ? styles.avatarAdmin : u.role === 'obstetra' ? styles.avatarObstetra : styles.avatarGestante,
+          ]}>
+            <Text style={[
+              styles.tableAvatarText,
+              u.role === 'admin' ? styles.avatarTextAdmin : u.role === 'obstetra' ? styles.avatarTextObstetra : styles.avatarTextGestante,
+            ]}>
+              {(u.firstName?.[0] || '') + (u.lastName?.[0] || '')}
+            </Text>
+          </View>
+          <Text style={styles.tableName} numberOfLines={1}>{u.firstName} {u.lastName}</Text>
+        </View>
+      ),
+    },
+    { key: 'dni', header: 'DNI', width: 110, sortValue: (u) => u.dni, render: (u) => u.dni },
+    {
+      key: 'rol',
+      header: 'Rol',
+      width: 130,
+      sortValue: (u) => u.role,
+      render: (u) => <AppBadge label={u.role.toUpperCase()} variant="info" size="sm" />,
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      width: 110,
+      sortValue: (u) => (u.isActive ? 1 : 0),
+      render: (u) => <AppBadge label={u.isActive ? 'Activo' : 'Inactivo'} variant={u.isActive ? 'success' : 'danger'} size="sm" />,
+    },
+  ];
+
+  // ── PORTAL WEB: tabla densa dentro del molde ScreenLayout ──
+  // Solo se sustituye la cabecera + lista; los modales y el FAB del return
+  // principal se comparten con la versión móvil.
+  const webBody = (
+    <ScreenLayout
+      role="admin"
+      title="Gestión de Usuarios"
+      subtitle="Administra los accesos y roles de la plataforma"
+      width="full"
+      accentColor={adminColors.primary}
+      scroll={false}
+    >
+      <View style={styles.webToolbar}>
+        <View style={styles.webSearchBox}>
+          <Search size={18} color={commonColors.textTertiary} />
+          <TextInput
+            style={styles.webSearchInput}
+            placeholder="Buscar por nombre o DNI..."
+            placeholderTextColor={commonColors.textTertiary}
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+        <TouchableOpacity style={styles.webCreateBtn} onPress={() => setIsCreateModalVisible(true)} activeOpacity={0.85}>
+          <Plus size={18} color={commonColors.white} />
+          <Text style={styles.webCreateText}>Nuevo usuario</Text>
+        </TouchableOpacity>
+      </View>
+
+      <DataTable
+        columns={tableColumns}
+        data={filteredUsers ?? []}
+        keyExtractor={(u) => u.id || u._id}
+        loading={isLoading}
+        onRowPress={(u) => { setSelectedUser(u); setIsDetailModalVisible(true); }}
+        emptyIcon={Users as any}
+        emptyTitle="Sin usuarios"
+        emptyMessage={search ? 'No se encontraron usuarios con esa búsqueda.' : 'Aún no hay usuarios registrados.'}
+        emptyAccent={adminColors.primary}
+      />
+    </ScreenLayout>
+  );
+
   return (
     <View style={styles.container}>
-      {renderHeader()}
+      {webShell ? webBody : renderHeader()}
+      {!webShell && (
       <FlashList
         data={filteredUsers}
         keyExtractor={(item) => item.id || item._id}
@@ -528,8 +618,10 @@ export default function UsuariosScreen(): React.ReactElement {
           />
         }
       />
+      )}
 
-      {/* FAB Button at the bottom right */}
+      {/* FAB Button at the bottom right (solo móvil; en web está en la toolbar) */}
+      {!webShell && (
       <TouchableOpacity 
         style={styles.fab} 
         onPress={() => setIsCreateModalVisible(true)}
@@ -537,6 +629,7 @@ export default function UsuariosScreen(): React.ReactElement {
       >
         <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
+      )}
 
       {/* MODAL: CREATE USER */}
       <AppModal
@@ -665,6 +758,25 @@ export default function UsuariosScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
+  // ── Portal web ──
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  webSearchBox: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border,
+    borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44,
+  },
+  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineWidth: 0 } as any,
+  webCreateBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: adminColors.primary, borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.lg, height: 44,
+  },
+  webCreateText: { ...typography.button, color: commonColors.white, fontSize: 14 },
+  tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  tableAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  tableAvatarText: { ...typography.caption, fontWeight: '700' },
+  tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
+
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
   actionBtnDanger: { backgroundColor: semanticColors.dangerLight, borderColor: semanticColors.danger },
