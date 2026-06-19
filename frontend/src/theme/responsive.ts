@@ -19,10 +19,11 @@
  *   md  >= 600   teléfonos grandes / phablets
  *   lg  >= 840   tablets / web angosto
  *   xl  >= 1240  web de escritorio amplio
+ *   xxl >= 1536  monitores grandes (portal SaaS)
  */
-import { useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 
-export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
 /** Límites inferiores (px) de cada breakpoint. */
 export const BREAKPOINTS: Record<Breakpoint, number> = {
@@ -31,13 +32,15 @@ export const BREAKPOINTS: Record<Breakpoint, number> = {
   md: 600,
   lg: 840,
   xl: 1240,
+  xxl: 1536,
 };
 
 /** Orden ascendente para resolver "el override aplicable más alto". */
-const ORDER: Breakpoint[] = ['xs', 'sm', 'md', 'lg', 'xl'];
+const ORDER: Breakpoint[] = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
 
 /** Devuelve el breakpoint activo para un ancho dado. */
 export function getBreakpoint(width: number): Breakpoint {
+  if (width >= BREAKPOINTS.xxl) return 'xxl';
   if (width >= BREAKPOINTS.xl) return 'xl';
   if (width >= BREAKPOINTS.lg) return 'lg';
   if (width >= BREAKPOINTS.md) return 'md';
@@ -65,6 +68,9 @@ export function resolveResponsive<T>(value: Responsive<T> | T, bp: Breakpoint): 
   return v.base;
 }
 
+/** true cuando la plataforma es web (navegador), no nativo. */
+export const IS_WEB = Platform.OS === 'web';
+
 export interface ResponsiveInfo {
   /** Ancho disponible (px). */
   width: number;
@@ -80,6 +86,14 @@ export interface ResponsiveInfo {
   isDesktop: boolean;
   /** true cuando hay espacio para layouts de varias columnas (>= lg). */
   isWide: boolean;
+  /** true cuando la plataforma es web (navegador). */
+  isWeb: boolean;
+  /**
+   * Switch maestro del portal web: solo es true en NAVEGADOR y con ancho >= lg.
+   * Toda la "cáscara" web (sidebar fijo, topbar, layouts multicolumna) debe
+   * activarse con esta bandera. En móvil/nativo SIEMPRE es false → render actual.
+   */
+  webShell: boolean;
 }
 
 /**
@@ -88,6 +102,7 @@ export interface ResponsiveInfo {
 export function useResponsive(): ResponsiveInfo {
   const { width, height } = useWindowDimensions();
   const bp = getBreakpoint(width);
+  const isWide = width >= BREAKPOINTS.lg;
   return {
     width,
     height,
@@ -96,7 +111,9 @@ export function useResponsive(): ResponsiveInfo {
     isPhone: width < BREAKPOINTS.lg,
     isTablet: width >= BREAKPOINTS.lg && width < BREAKPOINTS.xl,
     isDesktop: width >= BREAKPOINTS.xl,
-    isWide: width >= BREAKPOINTS.lg,
+    isWide,
+    isWeb: IS_WEB,
+    webShell: IS_WEB && isWide,
   };
 }
 

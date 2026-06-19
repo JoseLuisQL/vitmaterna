@@ -63,3 +63,23 @@ export const layout = {
    *  flotante (altura del tab bar + respiro). Usar en contentContainerStyle. */
   tabBarSpace: 96,
 } as const;
+
+/**
+ * Tokens del PORTAL WEB (cáscara de escritorio). Solo se usan cuando
+ * `useResponsive().webShell` es true. En móvil/nativo no aplican.
+ *
+ * `contentMaxWidth` y `contentGutter` se indexan por breakpoint para que el
+ * área de contenido respire en monitores grandes sin estirarse de borde a borde.
+ */
+export const webLayout = {
+  /** Ancho del sidebar fijo (expandido). */
+  sidebarWidth: 248,
+  /** Ancho del sidebar colapsado (solo iconos). */
+  sidebarCollapsedWidth: 72,
+  /** Alto de la barra superior. */
+  topbarHeight: 64,
+  /** Ancho máximo del área de contenido por breakpoint. */
+  contentMaxWidth: { lg: 1024, xl: 1280, xxl: 1440 },
+  /** Padding lateral del área de contenido por breakpoint. */
+  contentGutter: { lg: 32, xl: 40, xxl: 48 },
+} as const;
