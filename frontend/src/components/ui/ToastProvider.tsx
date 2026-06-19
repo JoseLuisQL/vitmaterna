@@ -5,6 +5,7 @@ import { commonColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
+import { useResponsive } from '../../theme/responsive';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -36,6 +37,7 @@ const TOAST_STYLE: Record<ToastType, { color: string; bg: string; Icon: React.Co
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }): React.ReactElement {
+  const { webShell } = useResponsive();
   const [toast, setToast] = useState<(ToastOptions & { id: number; type: ToastType }) | null>(null);
   const translateY = useRef(new Animated.Value(-120)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -77,7 +79,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }): Reac
     <ToastContext.Provider value={value}>
       {children}
       {toast && toastStyle && Icon && (
-        <Animated.View style={[styles.wrap, { opacity, transform: [{ translateY }] }]} pointerEvents="box-none">
+        <Animated.View style={[styles.wrap, webShell && styles.wrapWeb, { opacity, transform: [{ translateY }] }]} pointerEvents="box-none">
           <Pressable
             style={[styles.toast, shadows.modal]}
             accessibilityRole={toast.onPress ? 'button' : 'alert'}
@@ -114,6 +116,14 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     zIndex: 9999,
+  },
+  // En el portal web el toast se ancla arriba-derecha con ancho fijo.
+  wrapWeb: {
+    top: spacing.lg,
+    right: spacing.lg,
+    left: undefined,
+    width: 380,
+    maxWidth: 380,
   },
   toast: {
     flexDirection: 'row',

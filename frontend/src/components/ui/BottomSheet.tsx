@@ -3,6 +3,7 @@ import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-
 import { commonColors } from '../../theme/colors';
 import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
+import { useResponsive } from '../../theme/responsive';
 
 interface BottomSheetProps {
   visible: boolean;
@@ -17,6 +18,7 @@ interface BottomSheetProps {
  * inferior con esquinas superiores redondeadas.
  */
 export function BottomSheet({ visible, onClose, children, scroll = true }: BottomSheetProps): React.ReactElement {
+  const { webShell } = useResponsive();
   const translateY = useRef(new Animated.Value(40)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -36,10 +38,10 @@ export function BottomSheet({ visible, onClose, children, scroll = true }: Botto
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Animated.View style={[styles.backdrop, { opacity }]}>
+      <Animated.View style={[styles.backdrop, webShell && styles.backdropWeb, { opacity }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cerrar" />
-        <Animated.View style={[styles.sheet, shadows.modal, { transform: [{ translateY }] }]}>
-          <View style={styles.handle} />
+        <Animated.View style={[styles.sheet, webShell && styles.sheetWeb, shadows.modal, { transform: [{ translateY }] }]}>
+          {!webShell && <View style={styles.handle} />}
           <Content
             showsVerticalScrollIndicator={false}
             contentContainerStyle={scroll ? styles.scrollContent : undefined}
@@ -59,6 +61,12 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.overlay,
     justifyContent: 'flex-end',
   },
+  // En el portal web el sheet se centra como diálogo.
+  backdropWeb: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
   sheet: {
     backgroundColor: commonColors.surface,
     borderTopLeftRadius: borderRadius.xl,
@@ -67,6 +75,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.xl,
     maxHeight: '85%',
+  },
+  sheetWeb: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    paddingTop: spacing.lg,
   },
   handle: {
     alignSelf: 'center',
