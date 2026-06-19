@@ -35,7 +35,8 @@ import {
 } from '../../../src/utils/datetime';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = gestanteColors.primary;
 
@@ -84,6 +85,7 @@ function statusMeta(estado: string) {
 
 export default function AppointmentsScreen() {
   const toast = useToast();
+  const { webShell } = useResponsive();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
 
   // Datos vía React Query + actualización en tiempo real (Fase 2).
@@ -329,7 +331,7 @@ export default function AppointmentsScreen() {
       scroll={false}
       actions={<NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />}
     >
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, webShell && styles.webCenter]}>
         <ToggleTabs
           tabs={[
             { key: 'upcoming', label: 'Próximas', badge: upcoming.length },
@@ -352,7 +354,7 @@ export default function AppointmentsScreen() {
           </View>
         )}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, webShell && styles.webCenter]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ProgressHeader}
         ListEmptyComponent={renderEmpty}
@@ -556,6 +558,7 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
   tabContainer: { paddingBottom: spacing.sm },
   listContainer: { paddingBottom: layout.tabBarSpace },
+  webCenter: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: spacing.sm, marginTop: spacing.xs },
   sectionHeaderText: { ...typography.label, fontWeight: '700', color: commonColors.text },
   sectionHeaderSub: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'capitalize' },

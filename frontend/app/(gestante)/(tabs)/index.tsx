@@ -32,6 +32,7 @@ import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { EmergencyAlert, type EmergencyCoords } from '../../../src/components/shared/EmergencyAlert';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = gestanteColors.primary;
 
@@ -39,6 +40,7 @@ export default function GestanteDashboard(): React.ReactElement {
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const { open: openSidebar } = useSidebar();
+  const { webShell } = useResponsive();
   const displayName = user?.firstName || 'Gestante';
 
   const { data, isLoading, refetch } = useGestanteDashboard();
@@ -126,19 +128,22 @@ export default function GestanteDashboard(): React.ReactElement {
         loading={isLoading}
         onRefresh={refetch}
         accentColor={BRAND}
+        width="wide"
         actions={
-          <>
-            <NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />
-            <TouchableOpacity
-              onPress={openSidebar}
-              style={styles.menuBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir menú"
-            >
-              <Menu size={22} color={commonColors.white} />
-            </TouchableOpacity>
-          </>
+          webShell ? undefined : (
+            <>
+              <NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />
+              <TouchableOpacity
+                onPress={openSidebar}
+                style={styles.menuBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir menú"
+              >
+                <Menu size={22} color={commonColors.white} />
+              </TouchableOpacity>
+            </>
+          )
         }
       >
           {/* Pregnancy Progress Card */}

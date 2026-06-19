@@ -28,7 +28,8 @@ import { useTreatments, useLogTreatment, useAdherenceGamification } from '../../
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = gestanteColors.primary;
 
@@ -268,6 +269,7 @@ const calStyles = StyleSheet.create({
 });
 
 export default function TratamientoScreen(): React.ReactElement {
+  const { webShell } = useResponsive();
   const { data: treatments, isLoading, refetch, isRefetching } = useTreatments();
   const { mutate: logTreatment } = useLogTreatment();
   const toast = useToast();
@@ -420,7 +422,7 @@ export default function TratamientoScreen(): React.ReactElement {
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
       />
@@ -430,6 +432,7 @@ export default function TratamientoScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   listContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
 
   card: {
     backgroundColor: commonColors.surface,

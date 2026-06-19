@@ -23,7 +23,8 @@ import {
 } from 'lucide-react-native';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
@@ -301,6 +302,7 @@ type Seccion = 'recomendados' | 'parati' | 'biblioteca' | 'favoritos';
 
 export default function EducacionScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const [query, setQuery] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [toolsVisible, setToolsVisible] = useState(false);
@@ -483,7 +485,7 @@ export default function EducacionScreen(): React.ReactElement {
         )}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={isLoading ? <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View> : renderEmpty}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
         showsVerticalScrollIndicator={false}
       />
 
@@ -517,6 +519,7 @@ const styles = StyleSheet.create({
   toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 8 },
   toolBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.full,

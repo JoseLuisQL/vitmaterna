@@ -13,6 +13,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { WebMaxWidth } from '../../../src/components/web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -243,6 +244,7 @@ export default function PerfilScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
 
         <Text style={styles.sectionTitle}>Cuenta</Text>
@@ -258,6 +260,7 @@ export default function PerfilScreen(): React.ReactElement {
           <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
         </View>
         <View style={{ height: 40 }} />
+        </WebMaxWidth>
       </ScrollView>
 
       {/* MODAL: EDIT DATA & FUM */}

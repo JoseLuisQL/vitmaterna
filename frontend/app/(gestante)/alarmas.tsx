@@ -18,6 +18,7 @@ import { gradients } from '../../src/theme/gradients';
 import { commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
+import { WebMaxWidth } from '../../src/components/web';
 
 const SIGNOS_EMBARAZO = [
   { icono: 'Frown', texto: 'Vómitos frecuentes e intensos' },
@@ -163,6 +164,7 @@ export default function AlarmScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         <Text style={styles.groupTitle}>Durante el Embarazo</Text>
         <View style={styles.signosCard}>
           {SIGNOS_EMBARAZO.map((signo, i) => {
@@ -245,6 +247,7 @@ export default function AlarmScreen(): React.ReactElement {
             <Text style={styles.emergencyPhone}>083 – 421800</Text>
           </View>
         </TouchableOpacity>
+        </WebMaxWidth>
       </ScrollView>
     </View>
   );

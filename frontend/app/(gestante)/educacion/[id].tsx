@@ -20,6 +20,7 @@ import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educatio
 import { gestanteColors, commonColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
@@ -124,6 +125,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         {/* Portada */}
         {thumb ? (
           <Image source={{ uri: thumb }} style={styles.cover} resizeMode="cover" accessibilityLabel="Portada del artículo" />
@@ -145,6 +147,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
           <CheckCircle2 size={16} color={cat.color} />
           <Text style={[styles.readBadgeText, { color: cat.color }]}>Marcado como leído</Text>
         </View>
+        </WebMaxWidth>
       </ScrollView>
     </View>
   );

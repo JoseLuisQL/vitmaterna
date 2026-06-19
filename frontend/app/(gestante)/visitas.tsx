@@ -13,6 +13,7 @@ import { CardSkeleton } from '../../src/components/ui/SkeletonLoader';
 import { gestanteColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../src/theme/spacing';
+import { WebMaxWidth } from '../../src/components/web';
 import { shadows } from '../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
@@ -94,6 +95,7 @@ export default function VisitasGestante(): React.ReactElement {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
         {/* Ubicación */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Mi ubicación</Text>
@@ -150,6 +152,7 @@ export default function VisitasGestante(): React.ReactElement {
             </View>
           ))
         )}
+        </WebMaxWidth>
       </ScrollView>
       )}
     </View>
