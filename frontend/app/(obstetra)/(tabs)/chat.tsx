@@ -20,7 +20,8 @@ import { categoryMeta } from '../../../src/utils/educationMeta';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { useAuthStore } from '../../../src/store/authStore';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 
@@ -28,6 +29,7 @@ const BRAND = obstetraColors.primary;
 
 export default function ObstetraChatScreen() {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const { user } = useAuthStore();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -271,7 +273,7 @@ export default function ObstetraChatScreen() {
 
   if (!activeConv) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, webShell && styles.containerWeb]}>
         <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bandejaHeader}>
           <SafeAreaView edges={['top']}>
             <Text style={styles.bandejaTitle}>Bandeja de Consultas</Text>
@@ -356,13 +358,13 @@ export default function ObstetraChatScreen() {
     );
   }
 
-  if (isLoadingHistory && messages.length === 0) return <View style={styles.container}><ChatSkeleton count={7} /></View>;
+  if (isLoadingHistory && messages.length === 0) return <View style={[styles.container, webShell && styles.containerWeb]}><ChatSkeleton count={7} /></View>;
 
   const activePatientName = `${activeConv.gestante?.user?.firstName || 'Gestante'} ${activeConv.gestante?.user?.lastName || ''}`;
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.container, webShell && styles.containerWeb]} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
@@ -455,6 +457,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: commonColors.background,
   },
+  containerWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: commonColors.border },
   listContent: {
     padding: 16,
     paddingBottom: layout.tabBarSpace,

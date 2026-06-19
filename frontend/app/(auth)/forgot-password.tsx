@@ -22,6 +22,7 @@ import { getApiErrorMessage } from '../../src/utils/apiError';
 import { obstetraColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
+import { useResponsive } from '../../src/theme/responsive';
 import { shadows } from '../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -62,6 +63,7 @@ type Step = 'request' | 'reset' | 'done';
 export default function ForgotPasswordScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { isWeb } = useResponsive();
   const [step, setStep] = useState<Step>('request');
   const [dni, setDni] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,6 +116,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <View style={isWeb ? styles.webAuthCard : undefined}>
             <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
               <ArrowLeft size={24} color={commonColors.text} />
               <Text style={styles.backText}>Volver</Text>
@@ -231,6 +234,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                 </View>
               </View>
             )}
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -242,6 +246,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   safeArea: { flex: 1 },
   flex: { flex: 1 },
+  webAuthCard: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,

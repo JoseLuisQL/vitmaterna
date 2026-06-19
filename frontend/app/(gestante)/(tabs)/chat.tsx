@@ -20,13 +20,15 @@ import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
 export default function GestanteChatScreen() {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const { user } = useAuthStore();
   const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
@@ -206,12 +208,12 @@ export default function GestanteChatScreen() {
   };
 
   if (isResolvingConv || (isLoadingHistory && messages.length === 0)) {
-    return <View style={styles.container}><ChatSkeleton count={7} /></View>;
+    return <View style={[styles.container, webShell && styles.containerWeb]}><ChatSkeleton count={7} /></View>;
   }
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.container, webShell && styles.containerWeb]} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
@@ -320,6 +322,7 @@ export default function GestanteChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
+  containerWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: commonColors.border },
   headerGradient: {
     paddingBottom: spacing.md,
     borderBottomLeftRadius: borderRadius.xxl,

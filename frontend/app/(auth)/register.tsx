@@ -31,6 +31,7 @@ import type { UserRole, RegisterRequest } from '../../src/types/user';
 import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
+import { useResponsive } from '../../src/theme/responsive';
 import { shadows } from '../../src/theme/shadows';
 import { notify } from '../../src/utils/confirm';
 
@@ -72,6 +73,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function RegisterScreen(): React.ReactElement {
   const router = useRouter();
   const { register: registerUser, isLoading } = useAuthStore();
+  const { isWeb } = useResponsive();
   const [selectedRole, setSelectedRole] = useState<UserRole>('gestante');
   const [consentAccepted, setConsentAccepted] = useState(false);
 
@@ -147,7 +149,7 @@ export default function RegisterScreen(): React.ReactElement {
           </View>
 
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            
+            <View style={isWeb ? styles.webAuthCard : undefined}>
             <View style={styles.headerSection}>
               <Text style={styles.title}>Bienvenida</Text>
               <Text style={styles.tagline}>Crea tu cuenta para comenzar</Text>
@@ -241,7 +243,7 @@ export default function RegisterScreen(): React.ReactElement {
                 <Text style={[styles.loginLink, { color: themeColor }]}>Inicia Sesión</Text>
               </Pressable>
             </View>
-
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -276,6 +278,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
   },
+  webAuthCard: { width: '100%', maxWidth: 460, alignSelf: 'center' },
   headerSection: {
     alignItems: 'center',
     marginBottom: spacing.xl,

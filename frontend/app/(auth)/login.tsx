@@ -24,6 +24,7 @@ import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { shadows } from '../../src/theme/shadows';
 import { notify } from '../../src/utils/confirm';
+import { useResponsive } from '../../src/theme/responsive';
 
 const BRAND = obstetraColors.primary;
 
@@ -44,6 +45,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginScreen(): React.ReactElement {
   const router = useRouter();
   const { login, isLoading } = useAuthStore();
+  const { isWeb } = useResponsive();
 
   const {
     control,
@@ -90,6 +92,7 @@ export default function LoginScreen(): React.ReactElement {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <View style={isWeb ? styles.webAuthCard : undefined}>
             <View style={styles.header}>
               <View style={styles.logoContainer}>
                 <VitMaternaLogo size={150} color="pink" />
@@ -156,6 +159,7 @@ export default function LoginScreen(): React.ReactElement {
                 <Text style={styles.registerLink}>Regístrate</Text>
               </Pressable>
             </View>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -193,6 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
   },
+  webAuthCard: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   header: {
     alignItems: 'center',
     marginBottom: spacing.xl,
