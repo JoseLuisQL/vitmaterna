@@ -14,6 +14,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '../../theme/responsive';
 import { commonColors, gestanteColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
@@ -69,6 +70,7 @@ export function PillTabBar({
   const descriptors = descriptorsRaw as Record<string, TabBarDescriptor>;
   const navigation = navigationRaw as NavigationLike;
   const insets = useSafeAreaInsets();
+  const { webShell } = useResponsive();
   const [barWidth, setBarWidth] = React.useState(0);
 
   // Ruta activa según el índice del estado COMPLETO (incluye ocultas).
@@ -111,6 +113,13 @@ export function PillTabBar({
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
+
+  // En el portal web (escritorio) la navegación vive en el sidebar fijo, así
+  // que ocultamos la barra inferior. No se desmonta el navegador de tabs (solo
+  // no se pinta la barra), por lo que no se pierde estado. En móvil sigue igual.
+  if (webShell) {
+    return <View style={styles.hidden} />;
+  }
 
   return (
     <View
@@ -178,6 +187,7 @@ export function PillTabBar({
 }
 
 const styles = StyleSheet.create({
+  hidden: { height: 0, width: 0, overflow: 'hidden' },
   bar: {
     flexDirection: 'row',
     backgroundColor: commonColors.surface,
