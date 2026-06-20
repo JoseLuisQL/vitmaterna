@@ -22,6 +22,7 @@ export class AdminService {
           lastName: true,
           role: true,
           isActive: true,
+          isVerified: true,
           phone: true,
           email: true,
           createdAt: true,
@@ -397,6 +398,7 @@ export class AdminService {
 
     const [
       totalAdmins, totalObstetras, totalGestantesUsers, obstetrasPendientes,
+      usuariosPendientes,
       gestantesActivas, gestantesRiesgoAlto,
       citasHoy, citasProximas, alertasPendientes,
       contenidoActivo, contenidoTotal, vistasAgg,
@@ -406,6 +408,8 @@ export class AdminService {
       prisma.user.count({ where: { role: 'gestante', deletedAt: null } }),
       // Obstetras pendientes de aprobación: inactivos o no verificados.
       prisma.user.count({ where: { role: 'obstetra', deletedAt: null, OR: [{ isActive: false }, { isVerified: false }] } }),
+      // Cualquier usuario pendiente de aprobación (no verificado), todos los roles.
+      prisma.user.count({ where: { deletedAt: null, isVerified: false } }),
       prisma.gestante.count({ where: { estado: 'activa' } }),
       prisma.gestante.count({ where: { estado: 'activa', nivelRiesgo: 'rojo' } }),
       prisma.appointment.count({ where: { fecha: { gte: startOfDay, lte: endOfDay }, deletedAt: null } }),
@@ -426,6 +430,7 @@ export class AdminService {
         obstetras: totalObstetras,
         gestantes: totalGestantesUsers,
         obstetrasPendientes,
+        pendientes: usuariosPendientes,
       },
       gestantes: { activas: gestantesActivas, altoRiesgo: gestantesRiesgoAlto },
       citas: { hoy: citasHoy, proximas7dias: citasProximas },

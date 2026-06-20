@@ -142,7 +142,9 @@ export function PillTabBar({
           typeof options.tabBarLabel === 'string'
             ? options.tabBarLabel
             : options.title ?? route.name;
-        const color = isFocused ? accentColor : commonColors.textTertiary;
+        // Inactivo en textSecondary (AA sobre superficie) en vez de textTertiary
+        // (~2.3:1, no cumplía contraste) — issue #11.
+        const color = isFocused ? accentColor : commonColors.textSecondary;
         const badge = options.tabBarBadge;
 
         const onPress = () => {
@@ -208,8 +210,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.overline,
-    fontSize: 10,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    letterSpacing: 0.2,
   },
   badge: {
     position: 'absolute',

@@ -61,7 +61,9 @@ export default function AdminInicioScreen(): React.ReactElement {
   const { data, isLoading, refetch, isRefetching } = useAdminDashboard();
 
   const d = data;
-  const pendientes = d?.usuarios.obstetrasPendientes ?? 0;
+  // Pendientes de aprobación de TODOS los roles (issue #7). Fallback al conteo
+  // de obstetras si el backend aún no expone el total general.
+  const pendientes = d?.usuarios.pendientes ?? d?.usuarios.obstetrasPendientes ?? 0;
   const fecha = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
@@ -83,19 +85,19 @@ export default function AdminInicioScreen(): React.ReactElement {
         )
       }
     >
-      {/* Acción directa: obstetras pendientes de aprobación */}
+      {/* Acción directa: usuarios pendientes de aprobación (cualquier rol) */}
       {pendientes > 0 && (
         <TouchableOpacity
           style={styles.alertCard}
           onPress={() => router.push('/(admin)/(tabs)/usuarios')}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={`${pendientes} obstetras por aprobar`}
+          accessibilityLabel={`${pendientes} cuentas por aprobar`}
         >
           <View style={styles.alertIcon}><UserCheck size={22} color={semanticColors.warning} /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>{pendientes} obstetra{pendientes > 1 ? 's' : ''} por aprobar</Text>
-            <Text style={styles.alertText}>Toca para revisar y activar las cuentas</Text>
+            <Text style={styles.alertTitle}>{pendientes} cuenta{pendientes > 1 ? 's' : ''} por aprobar</Text>
+            <Text style={styles.alertText}>Toca para revisar y aprobar las cuentas pendientes</Text>
           </View>
           <ChevronRight size={20} color={commonColors.textTertiary} />
         </TouchableOpacity>

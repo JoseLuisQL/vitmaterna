@@ -13,6 +13,8 @@ export interface User {
   profileImageUrl: string | null;
   isActive: boolean;
   isVerified: boolean;
+  /** Si true, el usuario debe cambiar su contraseña antes de continuar (issue #14). */
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }

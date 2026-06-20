@@ -265,7 +265,7 @@ export const useTestChannel = () =>
 
 // --- Admin Dashboard (resumen global) ---
 export interface AdminDashboard {
-  usuarios: { total: number; admins: number; obstetras: number; gestantes: number; obstetrasPendientes: number };
+  usuarios: { total: number; admins: number; obstetras: number; gestantes: number; obstetrasPendientes: number; pendientes?: number };
   gestantes: { activas: number; altoRiesgo: number };
   citas: { hoy: number; proximas7dias: number };
   alertas: { pendientes: number };

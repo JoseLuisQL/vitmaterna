@@ -338,11 +338,36 @@ export async function resetPasswordWithToken(dni: string, code: string, newPassw
       resetTokenExpires: null,
       failedLoginAttempts: 0,
       lockedUntil: null,
+      mustChangePassword: false,
     },
   });
   // Revocar sesiones activas por seguridad.
   await revokeAllUserSessions(user.id);
   return true;
+}
+
+/**
+ * Cambia la contraseña del propio usuario autenticado (issue #14).
+ * Valida la contraseña actual y limpia la bandera `mustChangePassword`.
+ */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new AppError(404, ErrorCodes.NOT_FOUND, 'Usuario no encontrado');
+  }
+  const valid = await comparePassword(currentPassword, user.passwordHash);
+  if (!valid) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'La contraseña actual es incorrecta.');
+  }
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, mustChangePassword: false },
+  });
 }
 
 // ============================================

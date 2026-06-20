@@ -19,7 +19,25 @@ import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColo
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
-import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser } from '../../../src/services/admin-queries';
+import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser, useApproveUser } from '../../../src/services/admin-queries';
+
+/**
+ * Estado real de una cuenta de 3 valores (issue #8):
+ *  - Pendiente: registrada pero NO verificada (no puede iniciar sesión).
+ *  - Activo:    verificada y activa.
+ *  - Inactivo:  desactivada por el admin.
+ * El login del backend bloquea por `isVerified`, así que `isActive` por sí solo
+ * no refleja si la cuenta puede entrar.
+ */
+function getUserStatus(u: { isActive?: boolean; isVerified?: boolean }): {
+  label: string;
+  variant: 'success' | 'danger' | 'warning';
+  pending: boolean;
+} {
+  if (u?.isVerified === false) return { label: 'Pendiente', variant: 'warning', pending: true };
+  if (u?.isActive) return { label: 'Activo', variant: 'success', pending: false };
+  return { label: 'Inactivo', variant: 'danger', pending: false };
+}
 import { confirmAction } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -71,6 +89,7 @@ export default function UsuariosScreen(): React.ReactElement {
   const { data: users, isLoading, refetch } = useAdminUsers();
   const createUserMutation = useCreateUser();
   const toggleUserActiveMutation = useToggleUserActive();
+  const approveUserMutation = useApproveUser();
   const updateUserMutation = useUpdateUser();
   const resetPasswordMutation = useResetUserPassword();
   const deleteUserMutation = useDeleteUser();
@@ -194,6 +213,28 @@ export default function UsuariosScreen(): React.ReactElement {
     });
   };
 
+  // Aprobar una cuenta pendiente (issue #5): verifica + activa, permitiendo el
+  // ingreso. Se basa en `isVerified`, no en `isActive`.
+  const handleApprove = async (user: any) => {
+    const ok = await confirmAction({
+      title: 'Aprobar cuenta',
+      message: `¿Aprobar el acceso de ${user.firstName} ${user.lastName}? Podrá iniciar sesión de inmediato.`,
+      confirmText: 'Aprobar',
+    });
+    if (!ok) return;
+    approveUserMutation.mutate(user.id, {
+      onSuccess: () => {
+        toast.success('Cuenta aprobada', `${user.firstName} ${user.lastName} ya puede iniciar sesión.`);
+        if (selectedUser && selectedUser.id === user.id) {
+          setSelectedUser({ ...selectedUser, isActive: true, isVerified: true });
+        }
+      },
+      onError: (err: any) => {
+        toast.error('No se pudo aprobar', err.response?.data?.message || 'Inténtalo de nuevo en unos momentos.');
+      },
+    });
+  };
+
   const handleCreateSubmit = () => {
     if (!dni || !firstName || !lastName || !password) {
       return toast.warning('Faltan datos', 'Completa los campos marcados con (*).');
@@ -308,8 +349,8 @@ export default function UsuariosScreen(): React.ReactElement {
           <Text style={styles.details}>DNI: {item.dni} • Rol: {item.role.toUpperCase()}</Text>
         </View>
         <AppBadge 
-          label={item.isActive ? 'Activo' : 'Inactivo'} 
-          variant={item.isActive ? 'success' : 'danger'} 
+          label={getUserStatus(item).label} 
+          variant={getUserStatus(item).variant} 
           size="sm" 
         />
         <ChevronRight size={20} color={commonColors.textTertiary} style={{ marginLeft: 12 }} />
@@ -356,8 +397,8 @@ export default function UsuariosScreen(): React.ReactElement {
                 <View style={styles.badgeRow}>
                   <AppBadge label={user.role.toUpperCase()} variant="info" />
                   <AppBadge 
-                    label={user.isActive ? 'Activo' : 'Inactivo'} 
-                    variant={user.isActive ? 'success' : 'danger'} 
+                    label={getUserStatus(user).label} 
+                    variant={getUserStatus(user).variant} 
                   />
                 </View>
               </View>
@@ -406,27 +447,46 @@ export default function UsuariosScreen(): React.ReactElement {
                 </View>
               )}
 
-              {/* Action Button: Toggle Active Status */}
-              <TouchableOpacity
-                style={[
-                  styles.statusToggleButton,
-                  user.isActive ? styles.statusToggleButtonDeactivate : styles.statusToggleButtonActivate
-                ]}
-                onPress={() => handleToggleActive(user)}
-                disabled={toggleUserActiveMutation.isPending}
-                activeOpacity={0.8}
-              >
-                {toggleUserActiveMutation.isPending ? (
-                  <ActivityIndicator color={commonColors.white} size="small" />
-                ) : (
-                  <Text style={[
-                    styles.statusToggleButtonText,
-                    user.isActive ? styles.statusToggleButtonTextDeactivate : styles.statusToggleButtonTextActivate
-                  ]}>
-                    {user.isActive ? 'Desactivar Cuenta' : 'Activar / Aprobar Cuenta'}
-                  </Text>
-                )}
-              </TouchableOpacity>
+              {/* Acción principal de cuenta (issue #5).
+                  - Pendiente (no verificada) → "Aprobar Cuenta" (verifica + activa).
+                  - Verificada → activar/desactivar según isActive. */}
+              {getUserStatus(user).pending ? (
+                <TouchableOpacity
+                  style={[styles.statusToggleButton, styles.statusToggleButtonActivate]}
+                  onPress={() => handleApprove(user)}
+                  disabled={approveUserMutation.isPending}
+                  activeOpacity={0.8}
+                >
+                  {approveUserMutation.isPending ? (
+                    <ActivityIndicator color={commonColors.white} size="small" />
+                  ) : (
+                    <Text style={[styles.statusToggleButtonText, styles.statusToggleButtonTextActivate]}>
+                      Aprobar Cuenta
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.statusToggleButton,
+                    user.isActive ? styles.statusToggleButtonDeactivate : styles.statusToggleButtonActivate
+                  ]}
+                  onPress={() => handleToggleActive(user)}
+                  disabled={toggleUserActiveMutation.isPending}
+                  activeOpacity={0.8}
+                >
+                  {toggleUserActiveMutation.isPending ? (
+                    <ActivityIndicator color={commonColors.white} size="small" />
+                  ) : (
+                    <Text style={[
+                      styles.statusToggleButtonText,
+                      user.isActive ? styles.statusToggleButtonTextDeactivate : styles.statusToggleButtonTextActivate
+                    ]}>
+                      {user.isActive ? 'Desactivar Cuenta' : 'Activar Cuenta'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
 
               {/* Acciones de gestión */}
               <View style={styles.actionsRow}>
@@ -537,8 +597,8 @@ export default function UsuariosScreen(): React.ReactElement {
       header: 'Estado',
       width: 110,
       align: 'center',
-      sortValue: (u) => (u.isActive ? 1 : 0),
-      render: (u) => <AppBadge label={u.isActive ? 'Activo' : 'Inactivo'} variant={u.isActive ? 'success' : 'danger'} size="sm" />,
+      sortValue: (u) => (u.isVerified === false ? 2 : u.isActive ? 1 : 0),
+      render: (u) => { const s = getUserStatus(u); return <AppBadge label={s.label} variant={s.variant} size="sm" />; },
     },
   ];
 

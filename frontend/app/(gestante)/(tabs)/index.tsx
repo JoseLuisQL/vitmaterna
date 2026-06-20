@@ -81,6 +81,8 @@ export default function GestanteDashboard(): React.ReactElement {
     return Math.min(42, Math.floor(diffDays / 7));
   }, [profile?.fum]);
 
+  // Sin FUM registrada no podemos calcular semanas: ofrecemos onboarding (issue #12).
+  const hasFum = !!profile?.fum && !isNaN(new Date(profile.fum).getTime());
   const gestationalWeekText = weeks > 0 ? `Semana ${weeks}` : 'Semana --';
   const progressText = weeks > 0 ? `Sem. ${weeks} de 40` : 'Sem. -- de 40';
   const progressPercent = weeks > 0 ? Math.min(100, Math.round((weeks / 40) * 100)) : 0;
@@ -138,6 +140,26 @@ export default function GestanteDashboard(): React.ReactElement {
           )
         }
       >
+          {/* Onboarding (issue #12): si no hay FUM, invitamos a registrarla para
+              ver de inmediato las semanas de embarazo. Convierte el estado vacío
+              en una acción útil. */}
+          {!hasFum && (
+            <AppCard style={styles.onboardingCard} onPress={() => router.push('/(gestante)/(tabs)/perfil')}>
+              <View style={styles.onboardingRow}>
+                <View style={styles.onboardingIcon}>
+                  <Calendar size={24} color={BRAND} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.onboardingTitle}>Empecemos por tu embarazo</Text>
+                  <Text style={styles.onboardingText}>
+                    Cuéntanos la fecha de tu última regla y te mostramos en qué semana estás.
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={commonColors.textTertiary} />
+              </View>
+            </AppCard>
+          )}
+
           {/* Pregnancy Progress Card */}
           <AppCard style={styles.progressCard}>
             <View style={styles.progressHeader}>
@@ -288,6 +310,19 @@ export default function GestanteDashboard(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
+  onboardingCard: {
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    backgroundColor: gestanteColors.primaryLight,
+  },
+  onboardingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  onboardingIcon: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: commonColors.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  onboardingTitle: { ...typography.h4, color: commonColors.text },
+  onboardingText: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
   progressCard: {
     marginBottom: spacing.lg,
     padding: spacing.lg,

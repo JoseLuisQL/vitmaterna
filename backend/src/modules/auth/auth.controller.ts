@@ -239,6 +239,21 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * POST /v1/auth/change-password
+ * Cambio de contraseña del usuario autenticado (issue #14).
+ */
+export async function changePassword(req: Request, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
+
+  await authService.changePassword(userId, currentPassword, newPassword);
+
+  res.json(
+    successResponse({ message: 'Tu contraseña se actualizó correctamente.' }),
+  );
+}
+
+/**
  * POST /v1/auth/forgot-password
  * In a real implementation, this would send an SMS/WhatsApp with a reset code.
  * For now, it acknowledges the request without exposing whether the DNI exists.

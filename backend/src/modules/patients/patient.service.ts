@@ -175,6 +175,9 @@ export class PatientService {
           lastName,
           phone,
           isVerified: true,
+          // La contraseña inicial es el DNI (dato semi-público): se obliga a
+          // cambiarla en el primer ingreso por seguridad (issue #14).
+          mustChangePassword: true,
           consentAccepted: true,
           consentDate: new Date(),
         }

@@ -210,7 +210,7 @@ export default function PerfilScreen(): React.ReactElement {
 
       <Text style={styles.sectionTitle}>Cuenta</Text>
       <View style={styles.menuCard}>
-        <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
+        <MenuItem icon={<User size={20} color={BRAND} />} title="Mis datos y fecha de última regla" onPress={openEditModal} />
         <View style={styles.menuDivider} />
         <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
         <View style={styles.menuDivider} />
@@ -296,14 +296,14 @@ export default function PerfilScreen(): React.ReactElement {
           />
 
           <DateTimeField
-            label="Fecha Última Menstruación (FUM) *"
+            label="Fecha de tu última regla (FUM) *"
             mode="date"
             value={fum}
             onChange={setFum}
             themeColor={BRAND}
             maximumDate={new Date()}
-            placeholder="Seleccionar fecha"
-            helperText="Modificar tu FUM reprograma tu cronograma de 8 controles prenatales MINSA."
+            placeholder="Toca para elegir la fecha"
+            helperText="Es el primer día de tu última menstruación. Con esto calculamos las semanas de tu embarazo y tu cronograma de 8 controles."
           />
         </View>
       </AppModal>

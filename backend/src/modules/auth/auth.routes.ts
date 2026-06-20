@@ -9,6 +9,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   updateProfileSchema,
+  changePasswordSchema,
 } from './auth.schema.js';
 import * as authController from './auth.controller.js';
 
@@ -143,6 +144,14 @@ router.post('/logout', authenticate, authController.logout);
  *         description: User profile with role-specific data
  */
 router.get('/me', authenticate, authController.getMe);
+
+// Cambio de contraseña del usuario autenticado (issue #14).
+router.post(
+  '/change-password',
+  authenticate,
+  validate({ body: changePasswordSchema }),
+  authController.changePassword,
+);
 
 /**
  * @swagger

@@ -34,6 +34,7 @@ export function RoleGuard({ allow, children }: RoleGuardProps): React.ReactEleme
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const role = useAuthStore((s) => s.user?.role);
+  const mustChangePassword = useAuthStore((s) => s.user?.mustChangePassword);
 
   // Mientras se restaura la sesión, mostrar carga (evita parpadeos/redirección
   // prematura).
@@ -49,6 +50,12 @@ export function RoleGuard({ allow, children }: RoleGuardProps): React.ReactEleme
   // Rol distinto al del área → enviar a su propia área.
   if (role !== allow) {
     return <Redirect href={HOME_BY_ROLE[role]} />;
+  }
+
+  // Cambio de contraseña obligatorio (issue #14): no se puede usar la app hasta
+  // cambiar la contraseña inicial (DNI).
+  if (mustChangePassword) {
+    return <Redirect href={'/(auth)/cambiar-password' as Href} />;
   }
 
   return <>{children}</>;

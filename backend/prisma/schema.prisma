@@ -36,6 +36,7 @@ model User {
   lastLoginAt             DateTime? @map("last_login_at") @db.Timestamptz()
   lastSeenAt              DateTime? @map("last_seen_at") @db.Timestamptz()
   biometricEnabled        Boolean   @default(false) @map("biometric_enabled")
+  mustChangePassword      Boolean   @default(false) @map("must_change_password")
   notificationPreferences Json      @default("{\"push\": true, \"sms\": true, \"whatsapp\": true}") @map("notification_preferences") @db.JsonB
   consentAccepted         Boolean   @default(false) @map("consent_accepted")
   consentDate             DateTime? @map("consent_date") @db.Timestamptz()

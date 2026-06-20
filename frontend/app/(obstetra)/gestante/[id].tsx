@@ -592,6 +592,16 @@ export default function PatientProfileScreen(): React.ReactElement {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Historia Clínica</Text>
             <View style={{ flexDirection: 'row', gap: spacing.xs2 }}>
+              {/* Acción rápida: registrar control desde la cabecera (issue #10),
+                  el flujo más frecuente del obstetra. */}
+              <TouchableOpacity
+                style={styles.iconBtnGlass}
+                onPress={() => router.push({ pathname: '/(obstetra)/control/nuevo', params: { patientId: patient.id } } as any)}
+                accessibilityLabel="Registrar nuevo control"
+                accessibilityRole="button"
+              >
+                <Stethoscope size={20} color={commonColors.white} />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconBtnGlass}
                 onPress={handleCall}

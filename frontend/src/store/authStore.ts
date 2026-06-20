@@ -28,6 +28,7 @@ interface AuthState {
   clearError: () => void;
   setUser: (user: User) => void;
   registerPushToken: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -193,6 +194,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setUser: (user: User): void => {
     set({ user });
+  },
+
+  changePassword: async (currentPassword, newPassword, confirmPassword): Promise<void> => {
+    try {
+      await api.post('/auth/change-password', { currentPassword, newPassword, confirmPassword });
+      // Limpiar la bandera localmente para liberar el guard de cambio obligatorio.
+      const current = get().user;
+      if (current) set({ user: { ...current, mustChangePassword: false } });
+    } catch (error: unknown) {
+      throw new Error(getApiErrorMessage(error, 'No se pudo cambiar la contraseña. Inténtalo de nuevo.'));
+    }
   },
 
   registerPushToken: async (): Promise<void> => {

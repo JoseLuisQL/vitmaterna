@@ -20,9 +20,12 @@ import {
   Phone,
   Stethoscope,
   Baby,
-  ChevronLeft,
-  CheckSquare,
-  Square,
+   ChevronLeft,
+   CheckSquare,
+   Square,
+   Info,
+   Check,
+   Circle,
 } from 'lucide-react-native';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
@@ -30,7 +33,7 @@ import { LinkButton } from '../../src/components/ui/LinkButton';
 import { useToast } from '../../src/components/ui';
 import { useAuthStore } from '../../src/store/authStore';
 import type { UserRole, RegisterRequest } from '../../src/types/user';
-import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/colors';
+import { gestanteColors, obstetraColors, commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { useResponsive } from '../../src/theme/responsive';
@@ -55,12 +58,17 @@ const registerSchema = z
       .string()
       .min(1, 'El teléfono es obligatorio')
       .regex(/^9\d{8}$/, 'Debe ser un celular válido de 9 dígitos (empieza en 9)'),
+    // Reglas alineadas con el backend (issue #6): 8+ caracteres con minúscula,
+    // mayúscula, número y un símbolo (@$!%*?&#). Evita el rechazo del servidor
+    // tras enviar el formulario.
     password: z
       .string()
       .min(1, 'La contraseña es obligatoria')
       .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .regex(/[A-Za-z]/, 'Incluye al menos una letra')
-      .regex(/\d/, 'Incluye al menos un número'),
+      .regex(/[a-z]/, 'Incluye al menos una minúscula')
+      .regex(/[A-Z]/, 'Incluye al menos una mayúscula')
+      .regex(/\d/, 'Incluye al menos un número')
+      .regex(/[@$!%*?&#]/, 'Incluye al menos un símbolo (@$!%*?&#)'),
     confirmPassword: z.string().min(1, 'Confirma tu contraseña'),
     cop: z.string().optional(),
   })
@@ -70,6 +78,37 @@ const registerSchema = z
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
+
+/** Requisitos de contraseña alineados con el backend (issue #6). */
+const PASSWORD_RULES: { test: (v: string) => boolean; label: string }[] = [
+  { test: (v) => v.length >= 8, label: 'Al menos 8 caracteres' },
+  { test: (v) => /[a-z]/.test(v), label: 'Una minúscula' },
+  { test: (v) => /[A-Z]/.test(v), label: 'Una mayúscula' },
+  { test: (v) => /\d/.test(v), label: 'Un número' },
+  { test: (v) => /[@$!%*?&#]/.test(v), label: 'Un símbolo (@$!%*?&#)' },
+];
+
+/** Lista visual de requisitos de contraseña que se marca en vivo. */
+function PasswordChecklist({ value, accent }: { value: string; accent: string }): React.ReactElement | null {
+  if (!value) return null;
+  return (
+    <View style={styles.pwChecklist}>
+      {PASSWORD_RULES.map((rule, i) => {
+        const ok = rule.test(value);
+        return (
+          <View key={i} style={styles.pwRuleRow}>
+            {ok ? (
+              <Check size={14} color={semanticColors.success} />
+            ) : (
+              <Circle size={14} color={commonColors.textTertiary} />
+            )}
+            <Text style={[styles.pwRuleText, ok && { color: semanticColors.success }]}>{rule.label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function RegisterScreen(): React.ReactElement {
   const router = useRouter();
@@ -87,6 +126,7 @@ export default function RegisterScreen(): React.ReactElement {
     control,
     handleSubmit,
     setError,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -175,6 +215,18 @@ export default function RegisterScreen(): React.ReactElement {
                 </Pressable>
               </View>
 
+              {/* Aviso de aprobación (issue #9): toda cuenta auto-registrada queda
+                  pendiente de aprobación. Para la gestante, lo más rápido es que su
+                  obstetra la dé de alta (entra al instante con su DNI). */}
+              <View style={styles.roleNotice}>
+                <Info size={16} color={themeColor} style={{ marginTop: 1 }} />
+                <Text style={styles.roleNoticeText}>
+                  {isGestante
+                    ? 'Si ya te atiende un obstetra, pídele que te registre: podrás entrar de inmediato con tu DNI. Si te registras aquí, tu cuenta quedará pendiente de aprobación.'
+                    : 'Tu cuenta quedará pendiente de aprobación del administrador. Te avisaremos cuando puedas ingresar.'}
+                </Text>
+              </View>
+
               <AppInput<RegisterFormData>
                 name="dni" control={control} label="DNI" placeholder="8 dígitos"
                 leftIcon={CreditCard} keyboardType="number-pad" maxLength={8}
@@ -213,6 +265,10 @@ export default function RegisterScreen(): React.ReactElement {
                 name="password" control={control} label="Contraseña" placeholder="Mínimo 8 caracteres"
                 leftIcon={Lock} secureTextEntry error={errors.password?.message} themeColor={themeColor} autoCapitalize="none"
               />
+
+              {/* Checklist de requisitos en vivo (issue #6): muestra qué falta
+                  ANTES de enviar, evitando el rechazo del servidor. */}
+              <PasswordChecklist value={watch('password') || ''} accent={themeColor} />
 
               <AppInput<RegisterFormData>
                 name="confirmPassword" control={control} label="Confirmar Contraseña" placeholder="Repite tu contraseña"
@@ -314,6 +370,33 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 4,
     borderRadius: borderRadius.full,
     gap: spacing.sm,
+  },
+  roleNotice: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.md,
+  },
+  roleNoticeText: {
+    ...typography.bodySmall,
+    color: commonColors.textSecondary,
+    flex: 1,
+  },
+  pwChecklist: {
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+    gap: 4,
+  },
+  pwRuleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  pwRuleText: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
   },
   roleOptionActive: {
     backgroundColor: commonColors.surface,
