@@ -13,7 +13,7 @@ import {
   Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse, ArrowLeft,
 } from 'lucide-react-native';
 import { reportDangerSign } from '../../src/services/api-queries';
-import { notify } from '../../src/utils/confirm';
+import { useToast } from '../../src/components/ui';
 import { gradients } from '../../src/theme/gradients';
 import { commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
@@ -65,6 +65,7 @@ function SignoIcon({ name, color }: { name: string; color: string }) {
 
 export default function AlarmScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const { webShell } = useResponsive();
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [notas, setNotas] = useState('');
@@ -90,7 +91,7 @@ export default function AlarmScreen(): React.ReactElement {
 
   async function handleEnviar() {
     if (seleccionados.length === 0) {
-      notify('Seleccione síntomas', 'Por favor marque al menos un síntoma antes de enviar.');
+      toast.warning('Marca un síntoma', 'Selecciona al menos un síntoma antes de enviar.');
       return;
     }
     const sintomas = seleccionados.map((i) => TODOS_LOS_SIGNOS[i].texto);
@@ -98,9 +99,9 @@ export default function AlarmScreen(): React.ReactElement {
       await enviarAlerta({ sintomas, notas });
       setEnviado(true);
     } catch (error) {
-      notify(
+      toast.error(
         'No se pudo enviar la alerta',
-        'Ocurrió un problema al enviar tus síntomas. Revisa tu conexión e inténtalo de nuevo. Si es urgente, llama al centro de salud.'
+        'Revisa tu conexión e inténtalo de nuevo. Si es urgente, llama al centro de salud.'
       );
     }
   }
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   backBtn: { marginBottom: spacing.sm + 4 },
   headerTitle: { ...typography.h1, color: commonColors.surface },
-  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  headerSubtitle: { ...typography.body, color: commonColors.onColorTextStrong, marginTop: 4 },
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl, marginTop: -24 },
   webScrollContent: { marginTop: 0 },
   groupTitle: { ...typography.overline, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.md, marginLeft: spacing.md },
@@ -314,7 +315,7 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { opacity: 0.7 },
   sendBtnText: { ...typography.button, color: commonColors.surface },
   emergencyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.text, borderRadius: borderRadius.xl, padding: spacing.lg, marginTop: spacing.md, gap: spacing.md },
-  emergencyIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  emergencyIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: commonColors.onColorSurfaceFaint, alignItems: 'center', justifyContent: 'center' },
   emergencyInfo: { flex: 1 },
   emergencyLabel: { ...typography.caption, color: commonColors.textTertiary },
   emergencyPhone: { ...typography.h3, color: commonColors.surface, marginTop: 2 },

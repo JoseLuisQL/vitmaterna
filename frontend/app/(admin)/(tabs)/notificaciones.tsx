@@ -24,7 +24,7 @@ import { useResponsive } from '../../../src/theme/responsive';
 import {
   useChannelsConfig, useUpdateSmsConfig, useUpdateWhatsAppConfig, useTestChannel,
 } from '../../../src/services/admin-queries';
-import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, adminColors, semanticColors, accentColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 
@@ -159,8 +159,8 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
             <StatusBadge configured={smsConfigured} />
           </View>
           <View style={styles.summaryCard}>
-            <View style={[styles.summaryIcon, { backgroundColor: '#E7F6EE' }]}>
-              <Phone size={18} color="#25D366" />
+            <View style={[styles.summaryIcon, { backgroundColor: accentColors.whatsappLight }]}>
+              <Phone size={18} color={accentColors.whatsapp} />
             </View>
             <Text style={styles.summaryLabel}>WhatsApp</Text>
             <StatusBadge configured={waConfigured} />
@@ -223,8 +223,8 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           {/* ─── WhatsApp (Cloud API) ─── */}
           <View style={[styles.card, webShell && { flex: 1 }]}>
             <View style={styles.cardHead}>
-              <View style={[styles.cardIcon, { backgroundColor: '#E7F6EE' }]}>
-                <Phone size={20} color="#25D366" />
+              <View style={[styles.cardIcon, { backgroundColor: accentColors.whatsappLight }]}>
+                <Phone size={20} color={accentColors.whatsapp} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>WhatsApp (Cloud API)</Text>

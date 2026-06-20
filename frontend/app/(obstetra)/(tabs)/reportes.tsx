@@ -263,11 +263,11 @@ const styles = StyleSheet.create({
   // Header con padding fijo (sin solape de margen negativo) — igual que admin.
   header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
   title: { ...typography.h1, color: commonColors.white },
-  subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  subtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
   exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: commonColors.onColorSurfaceStrong, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   // KPIs (mismo estilo que admin).

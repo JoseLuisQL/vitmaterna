@@ -256,9 +256,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
   headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
+  headerSubtitle: { ...typography.body, color: commonColors.onColorTextSoft },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace, paddingTop: 16 },
   profileCard: {

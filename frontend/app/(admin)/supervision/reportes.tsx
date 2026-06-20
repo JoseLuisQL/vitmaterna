@@ -189,7 +189,7 @@ export default function AdminReportesScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   exportRow: { flexDirection: 'row', gap: spacing.sm },
-  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: commonColors.onColorSurfaceStrong, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   content: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },

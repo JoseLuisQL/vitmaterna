@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   header: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
   headerTitle: { ...typography.h2, color: commonColors.white },
   content: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
   webContent: { paddingBottom: spacing.xl },

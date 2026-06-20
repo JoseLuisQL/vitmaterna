@@ -53,7 +53,11 @@ function walk(dir) {
   return out;
 }
 
-const files = walk(APP_DIR);
+// app/_layout.tsx contiene CSS de scrollbar GLOBAL para web (no son estilos de
+// pantalla, sino bootstrap del documento), por eso queda fuera del escaneo.
+const EXCLUDE = new Set([join(APP_DIR, '_layout.tsx')]);
+
+const files = walk(APP_DIR).filter((f) => !EXCLUDE.has(f));
 /** @type {Record<string, {count:number, files:Record<string,number>}>} */
 const results = Object.fromEntries(RULES.map((r) => [r.id, { count: 0, files: {} }]));
 

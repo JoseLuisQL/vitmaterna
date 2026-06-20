@@ -51,6 +51,7 @@ export const commonColors = {
   onColorTextFaint: 'rgba(255,255,255,0.75)', // etiqueta tenue sobre gradiente
   onColorSurface: 'rgba(255,255,255,0.18)', // fondo de botón sobre gradiente
   onColorSurfaceStrong: 'rgba(255,255,255,0.20)', // fondo de botón (énfasis)
+  onColorSurfaceFaint: 'rgba(255,255,255,0.10)', // halo muy tenue sobre gradiente
   onColorTrack: 'rgba(255,255,255,0.25)', // pista de progreso sobre gradiente
 } as const;
 
@@ -125,6 +126,8 @@ export const accentColors = {
   tealLight: '#CFFAFE',
   /** Verde de marca WhatsApp (botón de contacto). */
   whatsapp: '#25D366',
+  /** Fondo verde muy claro para íconos/sumarios de WhatsApp. */
+  whatsappLight: '#E7F6EE',
 } as const;
 
 /**

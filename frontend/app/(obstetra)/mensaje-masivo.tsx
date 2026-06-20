@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, TextInput, TouchableOpacity, ScrollView,
-  Alert, ActivityIndicator, StatusBar,
+  ActivityIndicator, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ChevronLeft, Megaphone, Users } from 'lucide-react-native';
 import api from '../../src/services/api';
-import { confirmAction, notify } from '../../src/utils/confirm';
+import { confirmAction } from '../../src/utils/confirm';
+import { useToast } from '../../src/components/ui';
 import { useResponsive } from '../../src/theme/responsive';
 import { commonColors, obstetraColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
@@ -22,6 +23,7 @@ type Riesgo = '' | 'verde' | 'amarillo' | 'rojo';
 
 export default function MensajeMasivoScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const { webShell } = useResponsive();
   const [contenido, setContenido] = useState('');
   const [trimestre, setTrimestre] = useState<Trimestre>(0);
@@ -36,20 +38,17 @@ export default function MensajeMasivoScreen(): React.ReactElement {
       return res.data?.data;
     },
     onSuccess: (data) => {
-      Alert.alert(
-        'Mensaje enviado',
-        `Se envió el mensaje a ${data?.enviados ?? 0} gestante(s).`,
-        [{ text: 'Listo', onPress: () => router.back() }]
-      );
+      toast.success('Mensaje enviado', `Llegó a ${data?.enviados ?? 0} gestante(s).`);
+      router.back();
     },
     onError: () => {
-      Alert.alert('Error', 'No se pudo enviar el mensaje masivo. Inténtalo de nuevo.');
+      toast.error('No se pudo enviar', 'Inténtalo de nuevo en unos momentos.');
     },
   });
 
   const enviar = async () => {
     if (!contenido.trim()) {
-      return notify('Mensaje vacío', 'Escribe el contenido del mensaje antes de enviar.');
+      return toast.warning('Mensaje vacío', 'Escribe el contenido antes de enviar.');
     }
     const filtros: string[] = [];
     if (trimestre !== 0) filtros.push(`${trimestre}° trimestre`);
