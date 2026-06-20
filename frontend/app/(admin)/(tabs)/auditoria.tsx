@@ -14,6 +14,7 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { exportTextFile } from '../../../src/utils/exportFile';
 import { useToast } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { DataTable } from '../../../src/components/web';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -93,6 +94,73 @@ export default function AuditoriaScreen(): React.ReactElement {
     );
   };
 
+  const webColumns = [
+    {
+      key: 'accion',
+      header: 'Acción',
+      flex: 1.2,
+      render: (row: any) => {
+        const { label, Icon, color } = accionMeta(row.accion);
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: color + '1A', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon size={14} color={color} />
+            </View>
+            <Text style={{ ...typography.bodySmall, fontWeight: '600', color: commonColors.text }}>{label}</Text>
+          </View>
+        );
+      },
+      sortValue: (row: any) => accionMeta(row.accion).label,
+    },
+    {
+      key: 'entidad',
+      header: 'Entidad Afectada',
+      flex: 1.2,
+      render: (row: any) => {
+        const entidad = ENTIDAD_LABEL[row.entidad as string] || row.entidad || 'Sistema';
+        return (
+          <Text style={{ ...typography.bodySmall, color: commonColors.text }}>{entidad}</Text>
+        );
+      },
+      sortValue: (row: any) => ENTIDAD_LABEL[row.entidad as string] || row.entidad || 'Sistema',
+    },
+    {
+      key: 'usuario',
+      header: 'Realizado por',
+      flex: 1.5,
+      render: (row: any) => {
+        const usuario = row.user
+          ? `${row.user.firstName || ''} ${row.user.lastName || ''}`.trim() || 'Usuario'
+          : 'Sistema';
+        return (
+          <View style={{ gap: 2 }}>
+            <Text style={{ ...typography.bodySmall, fontWeight: '500', color: commonColors.text }}>{usuario}</Text>
+            {row.user?.role ? (
+              <Text style={{ ...typography.caption, color: commonColors.textSecondary, textTransform: 'uppercase' as const, fontSize: 10 }}>{row.user.role}</Text>
+            ) : null}
+          </View>
+        );
+      },
+      sortValue: (row: any) => {
+        return row.user
+          ? `${row.user.firstName || ''} ${row.user.lastName || ''}`.trim()
+          : 'Sistema';
+      },
+    },
+    {
+      key: 'fecha',
+      header: 'Fecha y Hora',
+      flex: 1.5,
+      render: (row: any) => {
+        const dateStr = row.createdAt ? new Date(row.createdAt).toLocaleString('es-PE') : 'Fecha desconocida';
+        return (
+          <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary }}>{dateStr}</Text>
+        );
+      },
+      sortValue: (row: any) => row.createdAt || '',
+    },
+  ];
+
   return (
     <ScreenLayout
       role="admin"
@@ -103,11 +171,11 @@ export default function AuditoriaScreen(): React.ReactElement {
         <AppButton
           title="Exportar Backup BD"
           onPress={handleExportBackup}
-          variant="secondary"
+          variant={webShell ? 'primary' : 'secondary'}
           size="sm"
           icon={Download}
           loading={exportMutation.isPending}
-          themeColor={commonColors.white}
+          themeColor={webShell ? adminColors.primary : commonColors.white}
         />
       }
       loading={isLoading}
@@ -116,22 +184,35 @@ export default function AuditoriaScreen(): React.ReactElement {
       emptyTitle="Sin registros"
       emptyMessage="No hay logs de auditoría disponibles."
       accentColor={semanticColors.warning}
-      width={webShell ? 'readable' : 'full'}
+      width="full"
     >
-      <FlatList
-        data={logs}
-        keyExtractor={(item, index) => item.id || item._id || String(index)}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            colors={[BRAND]}
+      {webShell ? (
+        <View style={{ marginTop: spacing.md }}>
+          <DataTable
+            columns={webColumns}
+            data={logs || []}
+            keyExtractor={(item) => item.id || item._id}
+            emptyIcon={ShieldAlert as any}
+            emptyTitle="Sin registros"
+            emptyMessage="No hay logs de auditoría disponibles."
           />
-        }
-      />
+        </View>
+      ) : (
+        <FlatList
+          data={logs}
+          keyExtractor={(item, index) => item.id || item._id || String(index)}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: spacing.xxl }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              colors={[BRAND]}
+            />
+          }
+        />
+      )}
     </ScreenLayout>
   );
 }
