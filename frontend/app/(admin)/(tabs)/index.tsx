@@ -13,7 +13,7 @@ import {
   Users, Baby, Calendar, AlertTriangle, BookOpen, ChevronRight,
   UserCheck, BellRing, BarChart3, Menu,
 } from 'lucide-react-native';
-import { AutoGrid, PressableScale } from '../../../src/components/ui';
+import { AutoGrid, PressableScale, IconButton } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
@@ -78,15 +78,7 @@ export default function AdminInicioScreen(): React.ReactElement {
         webShell ? undefined : (
           <>
             <NotificationBell href="/(admin)/avisos" color={commonColors.white} />
-            <TouchableOpacity
-              onPress={openSidebar}
-              style={styles.menuBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir menú"
-            >
-              <Menu size={22} color={commonColors.white} />
-            </TouchableOpacity>
+            <IconButton icon={Menu} onPress={openSidebar} accessibilityLabel="Abrir menú" variant="onColor" />
           </>
         )
       }
@@ -173,7 +165,6 @@ export default function AdminInicioScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   alertCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: semanticColors.warningLight, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: semanticColors.warning },
   alertIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center' },
   alertTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },

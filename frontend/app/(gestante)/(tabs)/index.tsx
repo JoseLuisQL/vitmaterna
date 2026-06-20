@@ -20,7 +20,7 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { ProgressRing } from '../../../src/components/ui/ProgressRing';
-import { useToast, AutoGrid } from '../../../src/components/ui';
+import { useToast, AutoGrid, IconButton } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
@@ -133,15 +133,7 @@ export default function GestanteDashboard(): React.ReactElement {
           webShell ? undefined : (
             <>
               <NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />
-              <TouchableOpacity
-                onPress={openSidebar}
-                style={styles.menuBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityRole="button"
-                accessibilityLabel="Abrir menú"
-              >
-                <Menu size={22} color={commonColors.white} />
-              </TouchableOpacity>
+              <IconButton icon={Menu} onPress={openSidebar} accessibilityLabel="Abrir menú" variant="onColor" />
             </>
           )
         }
@@ -296,7 +288,6 @@ export default function GestanteDashboard(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   progressCard: {
     marginBottom: spacing.lg,
     padding: spacing.lg,

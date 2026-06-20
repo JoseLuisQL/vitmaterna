@@ -13,6 +13,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from '
 import { ChevronRight, Activity, Calendar, Users, AlertTriangle, Menu } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
+import { IconButton } from '../../../src/components/ui/IconButton';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -147,15 +148,7 @@ export default function ObstetraDashboard(): React.ReactElement {
         webShell ? undefined : (
           <>
             <NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />
-            <TouchableOpacity
-              onPress={openSidebar}
-              style={styles.menuBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir menú"
-            >
-              <Menu size={22} color={commonColors.white} />
-            </TouchableOpacity>
+            <IconButton icon={Menu} onPress={openSidebar} accessibilityLabel="Abrir menú" variant="onColor" />
           </>
         )
       }
@@ -300,7 +293,6 @@ export default function ObstetraDashboard(): React.ReactElement {
 const styles = StyleSheet.create({
   flatListContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   flatListWeb: { width: '100%', paddingBottom: spacing.xl },
-  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   twoCol: {
     flexDirection: 'row',
     gap: spacing.lg,
