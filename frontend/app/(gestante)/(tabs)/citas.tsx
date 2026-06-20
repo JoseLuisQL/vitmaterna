@@ -346,11 +346,12 @@ export default function AppointmentsScreen() {
       },
       {
         key: 'estado', header: 'Estado', width: 150,
+        align: 'center',
         sortValue: (p: Appointment) => p.estado || 'programada',
         render: (p: Appointment) => {
           const meta = statusMeta(p.estado);
           return (
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: meta.bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: meta.bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, alignSelf: 'center', gap: 4 }}>
               {React.createElement(meta.icon, { size: 12, color: meta.text })}
               <Text style={{ ...typography.caption, color: meta.text, fontWeight: '600' }}>{meta.label}</Text>
             </View>
@@ -361,7 +362,7 @@ export default function AppointmentsScreen() {
         key: 'acciones', header: '', width: 100, align: 'right',
         render: (p: Appointment) => (
           <TouchableOpacity
-            style={{ backgroundColor: commonColors.surfaceAlt, paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.full }}
+            style={{ backgroundColor: commonColors.surfaceAlt, paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.full, cursor: 'pointer', outlineStyle: 'none' } as any}
             onPress={() => openDetail(p)}
           >
             <Text style={{ ...typography.caption, fontWeight: '600', color: BRAND }}>Ver</Text>

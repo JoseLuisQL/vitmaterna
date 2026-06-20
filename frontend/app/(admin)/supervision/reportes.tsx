@@ -156,7 +156,7 @@ export default function AdminReportesScreen(): React.ReactElement {
           <View style={webShell ? styles.twoCol : undefined}>
             <View style={webShell ? styles.col : undefined}>
               <Text style={styles.sectionTitle}>Indicadores MINSA</Text>
-              <View style={styles.card}>
+              <View style={[styles.card, webShell && { flex: 1 }]}>
                 {(data?.kpisMinsa || []).map((k) => {
                   const ok = k.pct >= k.meta;
                   return (
@@ -176,7 +176,7 @@ export default function AdminReportesScreen(): React.ReactElement {
               {riskBars.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
-                  <View style={styles.card}><ChartBar data={riskBars} height={160} showValues /></View>
+                  <View style={[styles.card, webShell && { flex: 1 }]}><ChartBar data={riskBars} height={160} showValues /></View>
                 </>
               )}
             </View>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   twoCol: {
     flexDirection: 'row',
     gap: spacing.lg,
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
   col: {
     flex: 1,

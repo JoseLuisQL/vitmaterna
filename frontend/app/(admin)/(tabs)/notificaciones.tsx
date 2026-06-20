@@ -169,7 +169,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
         <View style={webShell ? styles.twoCol : undefined}>
           {/* ─── SMS (Twilio) ─── */}
-          <View style={[styles.card, webShell ? styles.col : undefined]}>
+          <View style={[styles.card, webShell && { flex: 1 }]}>
             <View style={styles.cardHead}>
               <View style={[styles.cardIcon, { backgroundColor: semanticColors.infoLight }]}>
                 <MessageSquare size={20} color={semanticColors.info} />
@@ -221,7 +221,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           </View>
 
           {/* ─── WhatsApp (Cloud API) ─── */}
-          <View style={[styles.card, webShell ? styles.col : undefined]}>
+          <View style={[styles.card, webShell && { flex: 1 }]}>
             <View style={styles.cardHead}>
               <View style={[styles.cardIcon, { backgroundColor: '#E7F6EE' }]}>
                 <Phone size={20} color="#25D366" />
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   twoCol: {
     flexDirection: 'row',
     gap: spacing.lg,
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
   col: {
     flex: 1,

@@ -89,9 +89,10 @@ export default function ConfigScreen(): React.ReactElement {
       width="full"
       contentStyle={{ paddingBottom: spacing.xxl }}
     >
-      <View style={webShell ? styles.twoCol : undefined}>
-        <View style={webShell ? styles.col : undefined}>
-          <View style={styles.section}>
+      <View style={webShell ? styles.formGrid : undefined}>
+        {/* Fila 1 */}
+        <View style={webShell ? styles.rowGrid : undefined}>
+          <View style={[styles.section, webShell && styles.col]}>
             <Text style={styles.sectionTitle}>Límites y Accesos</Text>
             <AppInput
               name="maxPatientsPerObstetra"
@@ -122,7 +123,25 @@ export default function ConfigScreen(): React.ReactElement {
             </View>
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, webShell && styles.col]}>
+            <Text style={styles.sectionTitle}>Parámetros Clínicos</Text>
+            <AppInput
+              name="altitudMsnm"
+              control={control}
+              label="Altitud del establecimiento (msnm)"
+              keyboardType="numeric"
+              error={errors.altitudMsnm?.message}
+              themeColor={BRAND}
+            />
+            <Text style={styles.helperText}>
+              Se usa para corregir la hemoglobina por altitud (MINSA). Talavera ≈ 2926 msnm.
+            </Text>
+          </View>
+        </View>
+
+        {/* Fila 2 */}
+        <View style={webShell ? styles.rowGrid : undefined}>
+          <View style={[styles.section, webShell && styles.col]}>
             <Text style={styles.sectionTitle}>Citas Prenatales</Text>
             <View style={[styles.switchRow, { borderBottomWidth: 0, marginBottom: 0 }]}>
               <View>
@@ -146,25 +165,8 @@ export default function ConfigScreen(): React.ReactElement {
               />
             </View>
           </View>
-        </View>
 
-        <View style={webShell ? styles.col : undefined}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Parámetros Clínicos</Text>
-            <AppInput
-              name="altitudMsnm"
-              control={control}
-              label="Altitud del establecimiento (msnm)"
-              keyboardType="numeric"
-              error={errors.altitudMsnm?.message}
-              themeColor={BRAND}
-            />
-            <Text style={styles.helperText}>
-              Se usa para corregir la hemoglobina por altitud (MINSA). Talavera ≈ 2926 msnm.
-            </Text>
-          </View>
-
-          <View style={styles.section}>
+          <View style={[styles.section, webShell && styles.col]}>
             <Text style={styles.sectionTitle}>Sistema</Text>
             <View style={styles.switchRow}>
               <View>
@@ -259,8 +261,17 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     alignItems: 'flex-start',
   },
+  formGrid: {
+    gap: spacing.lg,
+  },
+  rowGrid: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'stretch',
+  },
   col: {
     flex: 1,
     minWidth: 0,
+    marginBottom: 0,
   },
 });

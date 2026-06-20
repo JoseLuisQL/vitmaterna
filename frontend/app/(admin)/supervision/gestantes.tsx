@@ -66,7 +66,7 @@ export default function AdminGestantesScreen(): React.ReactElement {
       },
       { key: 'dni', header: 'DNI', width: 120, sortValue: (p) => p.documentNumber || '', render: (p) => p.documentNumber || '—' },
       { key: 'sem', header: 'Semanas', width: 110, align: 'center', sortValue: (p) => p.currentWeek || 0, render: (p) => (p.currentWeek ? `${p.currentWeek} sem` : '—') },
-      { key: 'riesgo', header: 'Riesgo', width: 120, sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => riskBadge(p.riskLevel) },
+      { key: 'riesgo', header: 'Riesgo', width: 120, align: 'center', sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => riskBadge(p.riskLevel) },
     ];
 
     return (

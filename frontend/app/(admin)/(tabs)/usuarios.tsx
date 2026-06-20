@@ -523,11 +523,12 @@ export default function UsuariosScreen(): React.ReactElement {
         </View>
       ),
     },
-    { key: 'dni', header: 'DNI', width: 110, sortValue: (u) => u.dni, render: (u) => u.dni },
+    { key: 'dni', header: 'DNI', width: 110, align: 'center', sortValue: (u) => u.dni, render: (u) => u.dni },
     {
       key: 'rol',
       header: 'Rol',
       width: 130,
+      align: 'center',
       sortValue: (u) => u.role,
       render: (u) => <AppBadge label={u.role.toUpperCase()} variant="info" size="sm" />,
     },
@@ -535,6 +536,7 @@ export default function UsuariosScreen(): React.ReactElement {
       key: 'estado',
       header: 'Estado',
       width: 110,
+      align: 'center',
       sortValue: (u) => (u.isActive ? 1 : 0),
       render: (u) => <AppBadge label={u.isActive ? 'Activo' : 'Inactivo'} variant={u.isActive ? 'success' : 'danger'} size="sm" />,
     },

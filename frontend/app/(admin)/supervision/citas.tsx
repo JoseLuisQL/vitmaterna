@@ -81,7 +81,7 @@ export default function AdminCitasScreen(): React.ReactElement {
         <Text style={styles.tableName} numberOfLines={1}>{a.patientName || 'Paciente'}</Text>
       ) },
       { key: 'tipo', header: 'Tipo', flex: 1, sortValue: (a) => a.type || '', render: (a) => a.type || 'Control Prenatal' },
-      { key: 'estado', header: 'Estado', width: 150, sortValue: (a) => a.status || '', render: (a) => (
+      { key: 'estado', header: 'Estado', width: 150, align: 'center', sortValue: (a) => a.status || '', render: (a) => (
         <AppBadge label={STATUS_LABEL[a.status] || a.status} variant={STATUS_VARIANT[a.status] || 'default'} size="sm" />
       ) },
     ];

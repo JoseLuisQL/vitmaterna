@@ -252,8 +252,8 @@ export default function GestantesScreen(): React.ReactElement {
       },
       { key: 'dni', header: 'DNI / HC', width: 140, sortValue: (p) => p.documentNumber || '', render: (p) => `${p.documentNumber || '—'}${p.historiaClinica ? ` · HC-${p.historiaClinica}` : ''}` },
       { key: 'sem', header: 'Semanas', width: 120, align: 'center', sortValue: (p) => p.currentWeek || 0, render: (p) => (p.currentWeek ? `Sem ${p.currentWeek}${p.currentTrimester ? ` · ${p.currentTrimester}°` : ''}` : '—') },
-      { key: 'riesgo', header: 'Riesgo', width: 150, sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => { const m = riskMeta(p.riskLevel); return <AppBadge label={m.label} variant={m.variant} size="sm" />; } },
-      { key: 'fpp', header: 'FPP', width: 120, sortValue: (p) => p.estimatedDueDate || '', render: (p) => (p.estimatedDueDate ? new Date(p.estimatedDueDate).toISOString().split('T')[0] : '—') },
+      { key: 'riesgo', header: 'Riesgo', width: 150, align: 'center', sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => { const m = riskMeta(p.riskLevel); return <AppBadge label={m.label} variant={m.variant} size="sm" />; } },
+      { key: 'fpp', header: 'FPP', width: 120, align: 'center', sortValue: (p) => p.estimatedDueDate || '', render: (p) => (p.estimatedDueDate ? new Date(p.estimatedDueDate).toISOString().split('T')[0] : '—') },
     ];
 
     return (

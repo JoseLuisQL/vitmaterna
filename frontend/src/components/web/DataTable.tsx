@@ -99,37 +99,6 @@ export function DataTable<T>({
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      {/* Cabecera */}
-      <View style={[
-        styles.headerRow,
-        { backgroundColor: colors.surfaceAlt, borderBottomColor: colors.border },
-        IS_WEB && ({ position: 'sticky', top: 0, zIndex: 1 } as any)
-      ]}>
-        {columns.map((col) => {
-          const active = sortKey === col.key;
-          return (
-            <Pressable
-              key={col.key}
-              onPress={() => toggleSort(col)}
-              disabled={!col.sortValue}
-              style={[
-                styles.headerCell,
-                colStyle(col),
-                { justifyContent: cellAlign(col.align) },
-                col.sortValue && IS_WEB && ({ cursor: 'pointer' } as any),
-              ]}
-            >
-              <Text style={[styles.headerText, { color: colors.textSecondary }]} numberOfLines={1}>{col.header}</Text>
-              {col.sortValue && active ? (
-                sortDir === 'asc'
-                  ? <ChevronUp size={14} color={colors.textSecondary} />
-                  : <ChevronDown size={14} color={colors.textSecondary} />
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </View>
-
       {/* Cuerpo */}
       {loading ? (
         <View style={styles.stateWrap}>
@@ -140,7 +109,42 @@ export function DataTable<T>({
           <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyMessage} themeColor={emptyAccent} />
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator>
+        <ScrollView
+          showsVerticalScrollIndicator
+          stickyHeaderIndices={[0]}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          {/* Cabecera */}
+          <View style={[
+            styles.headerRow,
+            { backgroundColor: colors.surfaceAlt, borderBottomColor: colors.border },
+          ]}>
+            {columns.map((col) => {
+              const active = sortKey === col.key;
+              return (
+                <Pressable
+                  key={col.key}
+                  onPress={() => toggleSort(col)}
+                  disabled={!col.sortValue}
+                  style={[
+                    styles.headerCell,
+                    colStyle(col),
+                    { justifyContent: cellAlign(col.align) },
+                    col.sortValue && IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+                  ]}
+                >
+                  <Text style={[styles.headerText, { color: colors.textSecondary }]} numberOfLines={1}>{col.header}</Text>
+                  {col.sortValue && active ? (
+                    sortDir === 'asc'
+                      ? <ChevronUp size={14} color={colors.textSecondary} style={{ marginLeft: 4 }} />
+                      : <ChevronDown size={14} color={colors.textSecondary} style={{ marginLeft: 4 }} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Filas de datos */}
           {sorted.map((row, i) => {
             const RowComp: any = onRowPress ? Pressable : View;
             return (
@@ -151,7 +155,7 @@ export function DataTable<T>({
                   styles.row,
                   i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
                   pressed && { backgroundColor: colors.surfaceAlt },
-                  IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
+                  IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s', outlineStyle: 'none' } as any),
                 ] : [
                   styles.row,
                   i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },

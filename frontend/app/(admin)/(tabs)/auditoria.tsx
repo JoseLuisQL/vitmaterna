@@ -116,7 +116,7 @@ export default function AuditoriaScreen(): React.ReactElement {
       emptyTitle="Sin registros"
       emptyMessage="No hay logs de auditoría disponibles."
       accentColor={semanticColors.warning}
-      width="full"
+      width={webShell ? 'readable' : 'full'}
     >
       <FlatList
         data={logs}

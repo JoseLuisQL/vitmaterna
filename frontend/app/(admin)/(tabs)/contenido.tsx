@@ -375,6 +375,7 @@ export default function ContenidoScreen(): React.ReactElement {
       key: 'tipo',
       header: 'Tipo',
       width: 120,
+      align: 'center',
       sortValue: (u) => u.tipo || '',
       render: (u) => <AppBadge label={TIPO_LABEL[u.tipo || ''] || u.tipo || '—'} variant="default" size="sm" />,
     },
@@ -382,6 +383,7 @@ export default function ContenidoScreen(): React.ReactElement {
       key: 'categoria',
       header: 'Categoría',
       width: 140,
+      align: 'center',
       sortValue: (u) => u.categoria || '',
       render: (u) => <AppBadge label={CATEGORIA_LABEL[u.categoria || ''] || 'General'} variant="info" size="sm" />,
     },
@@ -389,9 +391,10 @@ export default function ContenidoScreen(): React.ReactElement {
       key: 'vistas',
       header: 'Vistas',
       width: 90,
+      align: 'center',
       sortValue: (u) => u.viewsCount || 0,
       render: (u) => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
           <Eye size={14} color={commonColors.textSecondary} />
           <Text style={{ ...typography.bodySm, color: commonColors.textSecondary }}>{u.viewsCount || 0}</Text>
         </View>
@@ -401,6 +404,7 @@ export default function ContenidoScreen(): React.ReactElement {
       key: 'estado',
       header: 'Estado',
       width: 100,
+      align: 'center',
       sortValue: (u) => (u.activo ? 1 : 0),
       render: (u) => <AppBadge label={u.activo ? 'Activo' : 'Inactivo'} variant={u.activo ? 'success' : 'danger'} size="sm" />,
     },
@@ -408,12 +412,13 @@ export default function ContenidoScreen(): React.ReactElement {
       key: 'acciones',
       header: '',
       width: 100,
+      align: 'right',
       render: (u) => (
         <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4 }}>
+          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any}>
             <Pencil size={18} color={commonColors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4 }}>
+          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any}>
             <Trash2 size={18} color={semanticColors.danger} />
           </TouchableOpacity>
         </View>

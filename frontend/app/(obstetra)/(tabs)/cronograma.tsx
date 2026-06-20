@@ -268,6 +268,7 @@ export default function CronogramaScreen(): React.ReactElement {
       },
       {
         key: 'estado', header: 'Estado', width: 150,
+        align: 'center',
         sortValue: (p: any) => p.estado || 'programada',
         render: (p: any) => {
           const estado = p.estado || 'programada';
