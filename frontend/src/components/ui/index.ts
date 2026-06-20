@@ -3,6 +3,8 @@
  */
 // Primitives
 export { AppButton } from './AppButton';
+export { IconButton } from './IconButton';
+export { LinkButton } from './LinkButton';
 export { AppCard } from './AppCard';
 export { AppText } from './AppText';
 export { PressableScale } from './PressableScale';
@@ -10,6 +12,11 @@ export { ThemeToggle } from './ThemeToggle';
 export { AppInput } from './AppInput';
 export { PlainInput } from './PlainInput';
 export { AppBadge } from './AppBadge';
+export type { AppBadgeVariant } from './AppBadge';
+
+// Form fields (controlados, desacoplados de RHF)
+export { TextField, TextAreaField, NumberField, SearchField, SelectField } from './Field';
+export type { FieldBaseProps } from './Field';
 
 // Feedback
 export { ToastProvider, useToast } from './ToastProvider';
@@ -23,6 +30,10 @@ export {
   DashboardSkeleton,
   ListSkeleton,
   ChatSkeleton,
+  TableSkeleton,
+  KpiRowSkeleton,
+  FormSkeleton,
+  DetailHeaderSkeleton,
 } from './SkeletonLoader';
 
 // Layout

@@ -9,7 +9,7 @@ import { commonColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 
-type BadgeVariant =
+export type AppBadgeVariant =
   | 'success'
   | 'warning'
   | 'danger'
@@ -17,6 +17,8 @@ type BadgeVariant =
   | 'neutral'
   | 'outline'
   | 'default';
+/** @deprecated usar AppBadgeVariant */
+type BadgeVariant = AppBadgeVariant;
 type BadgeSize = 'sm' | 'md';
 
 interface AppBadgeProps {

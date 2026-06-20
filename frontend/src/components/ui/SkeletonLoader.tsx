@@ -139,6 +139,64 @@ export const ChatSkeleton: React.FC<{ count?: number }> = ({ count = 6 }) => (
   </View>
 );
 
+/** Skeleton de tabla (web): cabecera + N filas con celdas. */
+export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({ rows = 8, cols = 5 }) => (
+  <View style={styles.table}>
+    <View style={[styles.tableRow, styles.tableHeader]}>
+      {Array.from({ length: cols }).map((_, c) => (
+        <View key={c} style={styles.flex}>
+          <Skeleton shape="line" width="60%" height={10} />
+        </View>
+      ))}
+    </View>
+    {Array.from({ length: rows }).map((_, r) => (
+      <View key={r} style={styles.tableRow}>
+        {Array.from({ length: cols }).map((_, c) => (
+          <View key={c} style={styles.flex}>
+            <Skeleton shape="line" width={c === 0 ? '80%' : '50%'} />
+          </View>
+        ))}
+      </View>
+    ))}
+  </View>
+);
+
+/** Skeleton de una fila de KPIs (3 tarjetas). */
+export const KpiRowSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => (
+  <View style={styles.kpiRow}>
+    {Array.from({ length: count }).map((_, i) => (
+      <Skeleton key={i} shape="rect" height={96} style={styles.flex} radius={borderRadius.xl} />
+    ))}
+  </View>
+);
+
+/** Skeleton de formulario: N campos (label + control). */
+export const FormSkeleton: React.FC<{ fields?: number }> = ({ fields = 4 }) => (
+  <View style={styles.form}>
+    {Array.from({ length: fields }).map((_, i) => (
+      <View key={i} style={styles.formField}>
+        <Skeleton shape="line" width="35%" height={11} />
+        <Skeleton shape="rect" height={52} radius={borderRadius.lg} style={{ marginTop: spacing.sm }} />
+      </View>
+    ))}
+    <Skeleton shape="rect" height={52} radius={borderRadius.lg} style={{ marginTop: spacing.md }} />
+  </View>
+);
+
+/** Skeleton de cabecera de detalle: avatar grande + título + meta + acciones. */
+export const DetailHeaderSkeleton: React.FC<{ style?: ViewStyle }> = ({ style }) => (
+  <View style={[styles.card, style]}>
+    <View style={styles.row}>
+      <Skeleton shape="circle" height={64} />
+      <View style={styles.flex}>
+        <Skeleton shape="line" width="65%" height={18} />
+        <Skeleton shape="line" width="45%" style={{ marginTop: spacing.sm }} />
+        <Skeleton shape="line" width="30%" style={{ marginTop: spacing.sm }} />
+      </View>
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
   base: {
     backgroundColor: commonColors.surfaceHover,
@@ -166,4 +224,23 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
   },
+  table: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    overflow: 'hidden',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm2,
+    borderTopWidth: 1,
+    borderTopColor: commonColors.borderLight,
+  },
+  tableHeader: { backgroundColor: commonColors.surfaceAlt, borderTopWidth: 0 },
+  form: { gap: spacing.md },
+  formField: {},
 });
