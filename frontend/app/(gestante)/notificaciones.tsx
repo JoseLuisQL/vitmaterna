@@ -3,5 +3,5 @@ import { NotificationsScreen } from '../../src/components/shared/NotificationsSc
 import { gestanteColors } from '../../src/theme/colors';
 
 export default function NotificacionesGestante(): React.ReactElement {
-  return <NotificationsScreen themeColor={gestanteColors.primary} gradient={gestanteColors.gradient} />;
+  return <NotificationsScreen role="gestante" themeColor={gestanteColors.primary} gradient={gestanteColors.gradient} />;
 }

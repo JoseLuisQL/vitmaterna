@@ -21,12 +21,15 @@ import { gestanteColors, commonColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { WebMaxWidth } from '../../../src/components/web';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
 
 export default function EducacionDetalleScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useEducation();
@@ -76,6 +79,62 @@ export default function EducacionDetalleScreen(): React.ReactElement {
   const thumb = resolveMediaUrl(item.thumbnailUrl);
   const isPlayable = item.tipo === 'video' || item.tipo === 'audio';
 
+
+
+  const mainContent = (
+    <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, webShell && styles.webContent]} showsVerticalScrollIndicator={false}>
+      <WebMaxWidth width="readable">
+      {/* Portada */}
+      {thumb ? (
+        <Image source={{ uri: thumb }} style={styles.cover} resizeMode="cover" accessibilityLabel="Portada del artículo" />
+      ) : null}
+
+      {/* Recurso multimedia */}
+      {media ? (
+        <TouchableOpacity style={styles.mediaCard} onPress={() => Linking.openURL(media)} activeOpacity={0.85}>
+          {isPlayable ? <PlayCircle size={24} color={BRAND} /> : <ExternalLink size={20} color={BRAND} />}
+          <Text style={styles.mediaText}>
+            {item.tipo === 'video' ? 'Ver video' : item.tipo === 'audio' ? 'Escuchar audio' : 'Abrir recurso'}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+
+      <RichText content={item.contenido} accentColor={cat.color} />
+
+      <View style={styles.readBadge}>
+        <CheckCircle2 size={16} color={cat.color} />
+        <Text style={[styles.readBadgeText, { color: cat.color }]}>Marcado como leído</Text>
+      </View>
+      </WebMaxWidth>
+    </ScrollView>
+  );
+
+  if (webShell) {
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="gestante"
+          title={item.titulo}
+          subtitle={cat.label}
+          accentColor={cat.color}
+          width="readable"
+          scroll={false}
+          actions={
+            <TouchableOpacity
+              onPress={() => toggleFavorite(item.id)}
+              style={[styles.favBtn, { backgroundColor: commonColors.surfaceAlt }]}
+              accessibilityLabel={fav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+            >
+              <Heart size={22} color={fav ? cat.color : commonColors.textSecondary} fill={fav ? cat.color : 'transparent'} />
+            </TouchableOpacity>
+          }
+        >
+          {mainContent}
+        </ScreenLayout>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -124,31 +183,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        {/* Portada */}
-        {thumb ? (
-          <Image source={{ uri: thumb }} style={styles.cover} resizeMode="cover" accessibilityLabel="Portada del artículo" />
-        ) : null}
-
-        {/* Recurso multimedia */}
-        {media ? (
-          <TouchableOpacity style={styles.mediaCard} onPress={() => Linking.openURL(media)} activeOpacity={0.85}>
-            {isPlayable ? <PlayCircle size={24} color={BRAND} /> : <ExternalLink size={20} color={BRAND} />}
-            <Text style={styles.mediaText}>
-              {item.tipo === 'video' ? 'Ver video' : item.tipo === 'audio' ? 'Escuchar audio' : 'Abrir recurso'}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-
-        <RichText content={item.contenido} accentColor={cat.color} />
-
-        <View style={styles.readBadge}>
-          <CheckCircle2 size={16} color={cat.color} />
-          <Text style={[styles.readBadgeText, { color: cat.color }]}>Marcado como leído</Text>
-        </View>
-        </WebMaxWidth>
-      </ScrollView>
+      {mainContent}
     </View>
   );
 }
@@ -169,6 +204,7 @@ const styles = StyleSheet.create({
   metaChipText: { ...typography.caption, color: commonColors.white, fontWeight: '600' },
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  webContent: { paddingBottom: spacing.xl },
   cover: { width: '100%', height: 180, borderRadius: borderRadius.xl, backgroundColor: commonColors.surfaceAlt, marginBottom: spacing.lg },
   mediaCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

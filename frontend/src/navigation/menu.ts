@@ -110,7 +110,7 @@ export const NAVIGATION: Record<UserRole, RoleNav> = {
       {
         title: 'Supervisión',
         items: [
-          { icon: BarChart3, label: 'Reportes e indicadores', description: 'KPIs clínicos y MINSA', href: '/(admin)/supervision/reportes' },
+          { icon: BarChart3, label: 'Reportes', description: 'KPIs clínicos y MINSA', href: '/(admin)/supervision/reportes' },
           { icon: Baby, label: 'Gestantes', description: 'Todas las registradas', href: '/(admin)/supervision/gestantes' },
           { icon: Calendar, label: 'Citas', description: 'Agenda global', href: '/(admin)/supervision/citas' },
         ],

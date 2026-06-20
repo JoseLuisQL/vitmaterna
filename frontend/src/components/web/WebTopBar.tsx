@@ -7,8 +7,9 @@
  * (web ancho); en móvil/nativo no existe.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { usePathname } from 'expo-router';
+import { Menu } from 'lucide-react-native';
 import { NotificationBell } from '../shared/NotificationBell';
 import { Breadcrumb } from './Breadcrumb';
 import { useAuthStore } from '../../store/authStore';
@@ -57,9 +58,10 @@ function useSectionTitle(role: UserRole): string {
 
 interface WebTopBarProps {
   role: UserRole;
+  collapsed: boolean;
 }
 
-export function WebTopBar({ role }: WebTopBarProps): React.ReactElement {
+export function WebTopBar({ role, collapsed }: WebTopBarProps): React.ReactElement {
   const user = useAuthStore((s) => s.user);
   const colors = useThemedColors();
   const accent = ACCENT[role];
@@ -97,10 +99,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
+    paddingHorizontal: spacing.md,
   },
-  left: { flex: 1, minWidth: 0 },
+  left: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   title: { ...typography.h2 },
   right: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   userChip: {

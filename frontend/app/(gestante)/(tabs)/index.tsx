@@ -128,7 +128,7 @@ export default function GestanteDashboard(): React.ReactElement {
         loading={isLoading}
         onRefresh={refetch}
         accentColor={BRAND}
-        width="wide"
+        width="full"
         actions={
           webShell ? undefined : (
             <>

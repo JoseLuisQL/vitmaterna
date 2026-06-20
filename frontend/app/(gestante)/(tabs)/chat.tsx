@@ -5,12 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import api, { resolveMediaUrl } from '../../../src/services/api';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { TypingDots } from '../../../src/components/shared/TypingDots';
 import { EmergencyMessageCard } from '../../../src/components/shared/EmergencyMessageCard';
+import api, { resolveMediaUrl } from '../../../src/services/api';
 import { Send, Bot, ImagePlus, Check, CheckCheck, ChevronRight } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
 import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
@@ -78,6 +79,11 @@ export default function GestanteChatScreen() {
     const saludo = `Hola Obst. ${obstetra.firstName}, soy ${user?.firstName || ''}. Tengo una consulta sobre mi control prenatal.`;
     const ok = await openWhatsApp(obstetra.phone, saludo);
     if (!ok) toast.error('No se pudo abrir WhatsApp', 'Verifica que tengas WhatsApp instalado.');
+  };
+
+  const handleTyping = (text: string) => {
+    setInputText(text);
+    notifyTyping();
   };
 
   const handleSend = () => {
@@ -211,58 +217,12 @@ export default function GestanteChatScreen() {
     return <View style={[styles.container, webShell && styles.containerWeb]}><ChatSkeleton count={7} /></View>;
   }
 
-  return (
-    <KeyboardAvoidingView 
-      style={[styles.container, webShell && styles.containerWeb]} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
-      <LinearGradient
-        colors={gestanteColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerTopRow}>
-            <View style={styles.headerAvatar}>
-              <Text style={styles.headerAvatarText}>
-                {obstetra ? `${obstetra.firstName?.[0] ?? ''}${obstetra.lastName?.[0] ?? ''}` : 'OB'}
-              </Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle} numberOfLines={1}>
-                {obstetra ? `Obst. ${obstetra.firstName} ${obstetra.lastName}` : 'Mi obstetra'}
-              </Text>
-              <View style={styles.statusRow}>
-                {otherTyping ? (
-                  <Text style={[styles.headerSubtitle, styles.typingText]}>escribiendo…</Text>
-                ) : otherOnline ? (
-                  <>
-                    <View style={[styles.statusDot, { backgroundColor: semanticColors.successMid }]} />
-                    <Text style={styles.headerSubtitle}>En línea</Text>
-                  </>
-                ) : (
-                  <Text style={styles.headerSubtitle} numberOfLines={1}>
-                    {otherLastSeen || obstetra?.lastSeenAt
-                      ? formatLastSeen(otherLastSeen || obstetra?.lastSeenAt)
-                      : isConnected ? 'Desconectada' : 'Conectando…'}
-                  </Text>
-                )}
-              </View>
-            </View>
-            <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp" accessibilityRole="button">
-              <WhatsAppIcon size={22} color={commonColors.white} />
-            </TouchableOpacity>
-          </View>
+  const typingStatusText = otherTyping ? 'escribiendo…' :
+    otherOnline ? 'En línea' :
+    (otherLastSeen || obstetra?.lastSeenAt ? formatLastSeen(otherLastSeen || obstetra?.lastSeenAt) : isConnected ? 'Desconectada' : 'Conectando…');
 
-          <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/alarmas')} activeOpacity={0.85}>
-            <Bot size={18} color={commonColors.white} />
-            <Text style={styles.botBtnText}>Reportar un síntoma a mi obstetra</Text>
-          </TouchableOpacity>
-        </SafeAreaView>
-      </LinearGradient>
-
+  const mainContent = (
+    <>
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -301,24 +261,102 @@ export default function GestanteChatScreen() {
         </TouchableOpacity>
         <TextInput
           style={styles.input}
-          value={inputText}
-          onChangeText={(t) => { setInputText(t); notifyTyping(); }}
-          placeholder="Escribe tu mensaje..."
+          placeholder="Escribe un mensaje..."
           placeholderTextColor={commonColors.textTertiary}
+          value={inputText}
+          onChangeText={handleTyping}
           multiline
-          maxLength={500}
         />
-        <TouchableOpacity 
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.sendButton, !inputText.trim() && !uploading && styles.sendButtonDisabled]}
           onPress={handleSend}
-          disabled={!inputText.trim()}
+          disabled={!inputText.trim() || uploading}
+          accessibilityLabel="Enviar mensaje"
         >
-          <Send size={20} color={commonColors.surface} />
+          <Send size={18} color={(!inputText.trim() && !uploading) ? commonColors.textTertiary : commonColors.white} />
         </TouchableOpacity>
       </View>
+    </>
+  );
+
+  if (webShell) {
+    return (
+      <View style={styles.containerWeb}>
+        <ScreenLayout
+          role="gestante"
+          title={obstetra ? `Obst. ${obstetra.firstName} ${obstetra.lastName}` : 'Mi obstetra'}
+          subtitle={typingStatusText}
+          width="full"
+          accentColor={BRAND}
+          scroll={false}
+          actions={
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND, paddingHorizontal: 16, height: 36, borderRadius: 18, gap: 8 }} onPress={() => router.push('/(gestante)/alarmas')}>
+              <Bot size={16} color={commonColors.white} />
+              <Text style={{ ...typography.bodySm, fontWeight: '600', color: commonColors.white }}>Reportar síntoma</Text>
+            </TouchableOpacity>
+          }
+        >
+          {mainContent}
+        </ScreenLayout>
+      </View>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <LinearGradient
+        colors={gestanteColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+          <View style={styles.headerTopRow}>
+            <View style={styles.headerAvatar}>
+              <Text style={styles.headerAvatarText}>
+                {obstetra ? `${obstetra.firstName?.[0] ?? ''}${obstetra.lastName?.[0] ?? ''}` : 'OB'}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {obstetra ? `Obst. ${obstetra.firstName} ${obstetra.lastName}` : 'Mi obstetra'}
+              </Text>
+              <View style={styles.statusRow}>
+                {otherTyping ? (
+                  <Text style={[styles.headerSubtitle, styles.typingText]}>escribiendo…</Text>
+                ) : otherOnline ? (
+                  <>
+                    <View style={[styles.statusDot, { backgroundColor: semanticColors.successMid }]} />
+                    <Text style={styles.headerSubtitle}>En línea</Text>
+                  </>
+                ) : (
+                  <Text style={styles.headerSubtitle} numberOfLines={1}>
+                    {typingStatusText}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <TouchableOpacity style={styles.waBtn} onPress={handleWhatsApp} activeOpacity={0.8} accessibilityLabel="Consultar por WhatsApp" accessibilityRole="button">
+              <WhatsAppIcon size={22} color={commonColors.white} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.botBtn} onPress={() => router.push('/(gestante)/alarmas')} activeOpacity={0.85}>
+            <Bot size={18} color={commonColors.white} />
+            <Text style={styles.botBtnText}>Reportar un síntoma a mi obstetra</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </LinearGradient>
+
+      {mainContent}
     </KeyboardAvoidingView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },

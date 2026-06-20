@@ -11,6 +11,7 @@ import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, useToast } from '../../../src/components/ui';
 import { TypingDots } from '../../../src/components/shared/TypingDots';
 import { EmergencyMessageCard } from '../../../src/components/shared/EmergencyMessageCard';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { usePatients } from '../../../src/services/api-queries';
 import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search, Check, CheckCheck } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
@@ -272,6 +273,93 @@ export default function ObstetraChatScreen() {
   };
 
   if (!activeConv) {
+    if (webShell) {
+      return (
+        <View style={styles.container}>
+          <ScreenLayout
+            role="obstetra"
+            title="Bandeja de Consultas"
+            subtitle="Mensajes con tus gestantes"
+            width="full"
+            accentColor={BRAND}
+            scroll={false}
+          >
+            <View style={styles.webToolbar}>
+              <TouchableOpacity
+                style={styles.webCreateBtn}
+                onPress={() => setPickerVisible(true)}
+                activeOpacity={0.85}
+              >
+                <Plus size={18} color={commonColors.white} />
+                <Text style={styles.webCreateText}>Nueva conversación</Text>
+              </TouchableOpacity>
+            </View>
+
+            {isLoadingConvs ? (
+              <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+                <ListSkeleton count={5} />
+              </View>
+            ) : (
+            <FlatList
+              data={conversations}
+              keyExtractor={(item) => item.id}
+              renderItem={renderConvItem}
+              contentContainerStyle={styles.listContent}
+              refreshing={isLoadingConvs}
+              onRefresh={refetchConvs}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <MessageSquare size={48} color={commonColors.textTertiary} style={{ marginBottom: 16 }} />
+                  <Text style={styles.emptyText}>Aún no tienes chats activos. Pulsa "Nueva conversación" para escribir a una gestante asignada.</Text>
+                </View>
+              }
+            />
+            )}
+            <AppModal
+              visible={pickerVisible}
+              onClose={() => setPickerVisible(false)}
+              title="Nueva conversación"
+              subtitle="Selecciona una gestante para iniciar el chat."
+            >
+              <View style={styles.searchBox}>
+                <Search size={18} color={commonColors.textTertiary} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar por nombre o DNI..."
+                  placeholderTextColor={commonColors.textTertiary}
+                  value={pickerSearch}
+                  onChangeText={setPickerSearch}
+                />
+              </View>
+              <View style={{ maxHeight: 360 }}>
+                {filteredPatients.length === 0 ? (
+                  <Text style={styles.pickerEmpty}>No se encontraron gestantes.</Text>
+                ) : (
+                  filteredPatients.map((p: any) => (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={styles.pickerRow}
+                      onPress={() => startChatWith(p.id, `${p.firstName} ${p.lastName}`)}
+                      disabled={startingChat}
+                    >
+                      <View style={styles.pickerAvatar}>
+                        <Text style={styles.pickerAvatarText}>{(p.firstName || '?')[0]}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.pickerName}>{p.firstName} {p.lastName}</Text>
+                        <Text style={styles.pickerDni}>DNI: {p.documentNumber}</Text>
+                      </View>
+                      <ChevronLeft size={20} color={commonColors.border} style={{ transform: [{ rotate: '180deg' }] }} />
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            </AppModal>
+          </ScreenLayout>
+        </View>
+      );
+    }
+
     return (
       <View style={[styles.container, webShell && styles.containerWeb]}>
         <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bandejaHeader}>
@@ -457,7 +545,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: commonColors.background,
   },
-  containerWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: commonColors.border },
+  containerWeb: { width: '100%', borderLeftWidth: 1, borderRightWidth: 1, borderColor: commonColors.border },
   listContent: {
     padding: 16,
     paddingBottom: layout.tabBarSpace,
@@ -734,4 +822,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginTop: 6,
   },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
+  webCreateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND, paddingHorizontal: spacing.md, height: 40, borderRadius: borderRadius.full, gap: spacing.sm },
+  webCreateText: { ...typography.bodySm, fontWeight: '600', color: commonColors.white },
 });

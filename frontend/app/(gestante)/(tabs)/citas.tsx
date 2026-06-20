@@ -13,6 +13,7 @@ import {
 import { AppModal, AppButton, useToast, ToggleTabs, ListSkeleton } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { DataTable } from '../../../src/components/web';
 import { useFocusEffect } from 'expo-router';
 import {
   Calendar, CheckCircle2, Flag, XCircle, Hourglass, Clock, Info,
@@ -320,6 +321,174 @@ export default function AppointmentsScreen() {
       </Text>
     </View>
   ) : null;
+
+  if (webShell) {
+    const columns: any[] = [
+      {
+        key: 'fecha', header: 'Fecha y Hora', width: 150,
+        sortValue: (p: Appointment) => p.fecha,
+        render: (p: Appointment) => (
+          <View>
+            <Text style={{ ...typography.bodySm, fontWeight: '600', color: commonColors.text }}>{fechaLarga(p.fecha)}</Text>
+            <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>{horaTexto(p.hora)}</Text>
+          </View>
+        ),
+      },
+      {
+        key: 'motivo', header: 'Cita', flex: 2,
+        sortValue: (p: Appointment) => p.motivo,
+        render: (p: Appointment) => (
+          <View>
+            <Text style={{ ...typography.bodySm, fontWeight: '600', color: commonColors.text }} numberOfLines={1}>{p.motivo}</Text>
+            {p.obstetraNombre && <Text style={{ ...typography.caption, color: commonColors.textSecondary }} numberOfLines={1}>{p.obstetraNombre}</Text>}
+          </View>
+        ),
+      },
+      {
+        key: 'estado', header: 'Estado', width: 150,
+        sortValue: (p: Appointment) => p.estado || 'programada',
+        render: (p: Appointment) => {
+          const meta = statusMeta(p.estado);
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: meta.bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', gap: 4 }}>
+              {React.createElement(meta.icon, { size: 12, color: meta.text })}
+              <Text style={{ ...typography.caption, color: meta.text, fontWeight: '600' }}>{meta.label}</Text>
+            </View>
+          );
+        },
+      },
+      {
+        key: 'acciones', header: '', width: 100, align: 'right',
+        render: (p: Appointment) => (
+          <TouchableOpacity
+            style={{ backgroundColor: commonColors.surfaceAlt, paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.full }}
+            onPress={() => openDetail(p)}
+          >
+            <Text style={{ ...typography.caption, fontWeight: '600', color: BRAND }}>Ver</Text>
+          </TouchableOpacity>
+        ),
+      },
+    ];
+
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="gestante"
+          title="Mis Citas"
+          subtitle="Control de tu embarazo"
+          accentColor={BRAND}
+          loading={loading && !refreshing}
+          scroll={false}
+        >
+          <View style={styles.webToolbar}>
+            <View style={styles.webFilterRow}>
+              <TouchableOpacity style={[styles.webChip, activeTab === 'upcoming' && styles.webChipActive]} onPress={() => setActiveTab('upcoming')}>
+                <Text style={[styles.webChipText, activeTab === 'upcoming' && styles.webChipTextActive]}>Próximas ({upcoming.length})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.webChip, activeTab === 'history' && styles.webChipActive]} onPress={() => setActiveTab('history')}>
+                <Text style={[styles.webChipText, activeTab === 'history' && styles.webChipTextActive]}>Historial ({history.length})</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {ProgressHeader}
+
+          <DataTable
+            columns={columns}
+            data={displayed as any[]}
+            keyExtractor={(p: Appointment) => p.id}
+            loading={loading && !refreshing}
+            onRowPress={(p: Appointment) => openDetail(p)}
+            emptyIcon={CalendarX as any}
+            emptyTitle="Sin citas"
+            emptyMessage={activeTab === 'upcoming' ? 'No tienes próximas citas programadas.' : 'No tienes un historial de citas.'}
+            emptyAccent={BRAND}
+          />
+
+          <AppModal visible={detailVisible} onClose={() => setDetailVisible(false)} title="Detalle de la cita" subtitle={selected ? selected.motivo : undefined} footer={
+            canAct ? (
+              <>
+                <AppButton title="Reprogramar" variant="outline" onPress={() => selected && openReschedule(selected)} style={{ flex: 1 }} />
+                <AppButton title="Confirmar" onPress={() => selected && handleConfirm(selected)} loading={confirmMutation.isPending} themeColor={BRAND} style={{ flex: 1 }} />
+              </>
+            ) : canRescheduleFromConfirmed ? (
+              <AppButton title="Solicitar reprogramación" variant="outline" onPress={() => selected && openReschedule(selected)} style={{ flex: 1 }} />
+            ) : (
+              <AppButton title="Cerrar" variant="outline" onPress={() => setDetailVisible(false)} style={{ flex: 1 }} />
+            )
+          }>
+            {selected && selMeta && (
+              <View>
+                <View style={[styles.detailStatus, { backgroundColor: selMeta.bg }]}>
+                  {React.createElement(selMeta.icon, { size: 16, color: selMeta.text })}
+                  <Text style={[styles.detailStatusText, { color: selMeta.text }]}>{selMeta.label}</Text>
+                </View>
+
+                <DetailRow icon={Calendar} label="Fecha" value={fechaLarga(selected.fecha)} />
+                <DetailRow icon={Clock} label="Hora" value={horaTexto(selected.hora)} />
+                {selected.obstetraNombre ? <DetailRow icon={User} label="Profesional" value={selected.obstetraNombre} /> : null}
+                {selected.numeroControl ? <DetailRow icon={FileText} label="N.º de control" value={`Control ${selected.numeroControl}`} /> : null}
+                {selected.observaciones ? <DetailRow icon={Info} label="Indicaciones" value={selected.observaciones} /> : null}
+
+                {selected.estado === 'solicitud_reprogramacion' && (
+                  <View style={styles.pendingBox}>
+                    <Text style={styles.pendingTitle}>Solicitud de reprogramación pendiente</Text>
+                    <Text style={styles.pendingText}>Propuesta: {fechaLarga(selected.fechaReprogramada)} a las {horaTexto(selected.horaReprogramada)}.</Text>
+                    {selected.motivoReprogramacion ? <Text style={styles.pendingText}>Motivo: {selected.motivoReprogramacion}</Text> : null}
+                    <Text style={styles.pendingHint}>Tu obstetra debe aprobarla. Te notificaremos.</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </AppModal>
+
+          <AppModal visible={rescheduleVisible} onClose={() => setRescheduleVisible(false)} title="Solicitar reprogramación" subtitle="Elige una nueva fecha y un horario disponible." footer={
+            <>
+              <AppButton title="Cancelar" variant="outline" onPress={() => setRescheduleVisible(false)} style={{ flex: 1 }} />
+              <AppButton title="Enviar solicitud" onPress={handleSendReschedule} loading={rescheduleMutation.isPending} themeColor={BRAND} style={{ flex: 1 }} />
+            </>
+          }>
+            <View>
+              <Text style={styles.inputLabel}>Fecha deseada</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+                {dateOptions.map((opt) => {
+                  const isActive = pickedDate === opt.value;
+                  return (
+                    <TouchableOpacity key={opt.value} style={[styles.dateChip, isActive && styles.dateChipActive]} onPress={() => { setPickedDate(opt.value); setPickedTime(null); }}>
+                      <Text style={[styles.dateChipDow, isActive && styles.dateChipTextActive]}>{opt.dow.toUpperCase()}</Text>
+                      <Text style={[styles.dateChipDay, isActive && styles.dateChipTextActive]}>{opt.day}</Text>
+                      <Text style={[styles.dateChipMonth, isActive && styles.dateChipTextActive]}>{opt.month}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              <Text style={styles.inputLabel}>Horarios disponibles</Text>
+              {!pickedDate ? (
+                <Text style={styles.helperText}>Selecciona una fecha para ver horarios.</Text>
+              ) : slotsLoading ? (
+                <ActivityIndicator size="small" color={BRAND} style={{ marginTop: 10 }} />
+              ) : slots.length === 0 ? (
+                <Text style={styles.helperText}>No hay horarios disponibles para esta fecha.</Text>
+              ) : (
+                <View style={styles.slotsGrid}>
+                  {slots.map((s: any) => {
+                    const active = pickedTime === s.hora;
+                    return (
+                      <TouchableOpacity key={s.hora} disabled={!s.disponible} style={[styles.slotChip, !s.disponible && styles.slotChipDisabled, active && styles.slotChipActive]} onPress={() => setPickedTime(s.hora)}>
+                        <Text style={[styles.slotText, !s.disponible && styles.slotTextDisabled, active && styles.slotTextActive]}>{s.hora}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+              <Text style={styles.inputLabel}>Motivo de la reprogramación</Text>
+              <TextInput style={styles.modalInput} placeholder="Ej: Motivos laborales, problemas de salud..." placeholderTextColor={commonColors.textTertiary} value={motivo} onChangeText={setMotivo} multiline numberOfLines={3} />
+            </View>
+          </AppModal>
+        </ScreenLayout>
+      </View>
+    );
+  }
 
   return (
     <ScreenLayout
@@ -708,4 +877,11 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.background,
     textAlignVertical: 'top',
   },
+
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
+  webFilterRow: { flexDirection: 'row', gap: spacing.xs, backgroundColor: commonColors.surfaceAlt, padding: 4, borderRadius: borderRadius.full },
+  webChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: borderRadius.full },
+  webChipActive: { backgroundColor: BRAND },
+  webChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
+  webChipTextActive: { color: commonColors.white },
 });

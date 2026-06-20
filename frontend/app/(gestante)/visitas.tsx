@@ -14,6 +14,8 @@ import { gestanteColors, commonColors, semanticColors } from '../../src/theme/co
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../src/theme/spacing';
 import { WebMaxWidth } from '../../src/components/web';
+import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../src/theme/responsive';
 import { shadows } from '../../src/theme/shadows';
 
 const BRAND = gestanteColors.primary;
@@ -31,6 +33,7 @@ function fmtHora(iso?: string | null) {
 
 export default function VisitasGestante(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const toast = useToast();
   const { data: profileData, isLoading: loadingProfile } = useMyProfile();
   const gestanteId = profileData?.profile?.id;
@@ -77,6 +80,93 @@ export default function VisitasGestante(): React.ReactElement {
     );
   };
 
+  const mainContent = (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.content, webShell && styles.webContent]} showsVerticalScrollIndicator={false}>
+      <WebMaxWidth width="readable">
+      {/* Ubicación */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Mi ubicación</Text>
+        <Text style={styles.cardSub}>Comparte la ubicación de tu domicilio para que tu obstetra pueda visitarte fácilmente.</Text>
+
+        <TouchableOpacity style={styles.locBtn} onPress={capturar} disabled={capturing}>
+          {capturing ? <ActivityIndicator size="small" color={BRAND} /> : <MapPin size={18} color={BRAND} />}
+          <Text style={styles.locBtnText}>{coords ? 'Actualizar mi ubicación actual' : 'Usar mi ubicación actual'}</Text>
+        </TouchableOpacity>
+
+        {coords && (
+          <View style={styles.coordsBox}>
+            <CheckCircle2 size={16} color={semanticColors.success} />
+            <Text style={styles.coordsText}>{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</Text>
+          </View>
+        )}
+
+        <Text style={styles.inputLabel}>Referencia (opcional)</Text>
+        <TextInput
+          style={styles.input}
+          value={referencia}
+          onChangeText={setReferencia}
+          placeholder="Ej. Casa azul frente a la loza deportiva"
+          placeholderTextColor={commonColors.textTertiary}
+        />
+
+        <TouchableOpacity style={[styles.saveBtn, (!coords || updateUbicacion.isPending) && styles.saveBtnDisabled]} onPress={guardar} disabled={!coords || updateUbicacion.isPending}>
+          <Text style={styles.saveBtnText}>{updateUbicacion.isPending ? 'Guardando…' : 'Guardar ubicación'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Historial */}
+      <Text style={styles.sectionTitle}>Historial de visitas</Text>
+      {loadingVisits ? (
+        <ActivityIndicator color={BRAND} style={{ marginTop: spacing.lg }} />
+      ) : visits.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Home size={40} color={commonColors.textTertiary} />
+          <Text style={styles.emptyText}>Aún no has recibido visitas domiciliarias.</Text>
+        </View>
+      ) : (
+        visits.map((v) => (
+          <View key={v.id} style={styles.visitCard}>
+            <View style={styles.visitHeader}>
+              <View style={styles.numBadge}><Text style={styles.numText}>N°{v.numeroVisita}</Text></View>
+              <Text style={styles.visitDate}>{fmtFecha(v.fecha)} · {fmtHora(v.horaLlegada)}</Text>
+            </View>
+            <Text style={styles.visitMotivo}>{v.motivo}</Text>
+            <Text style={styles.visitText}>{v.acciones}</Text>
+            {v.acuerdos ? <Text style={styles.visitAcuerdo}>Acuerdos: {v.acuerdos}</Text> : null}
+            {v.obstetra?.user ? (
+              <Text style={styles.personal}>Obst. {v.obstetra.user.firstName} {v.obstetra.user.lastName}{v.obstetra.cop ? ` — COP N° ${v.obstetra.cop}` : ''}</Text>
+            ) : null}
+          </View>
+        ))
+      )}
+      </WebMaxWidth>
+    </ScrollView>
+  );
+
+  if (webShell) {
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="gestante"
+          title="Visitas domiciliarias"
+          subtitle="Historial y ubicación"
+          accentColor={BRAND}
+          width="readable"
+          scroll={false}
+        >
+          {loadingProfile ? (
+            <View style={styles.content}>
+              <CardSkeleton />
+              <CardSkeleton style={{ marginTop: spacing.lg }} />
+            </View>
+          ) : (
+            mainContent
+          )}
+        </ScreenLayout>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
@@ -94,66 +184,7 @@ export default function VisitasGestante(): React.ReactElement {
           <CardSkeleton style={{ marginTop: spacing.lg }} />
         </View>
       ) : (
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        {/* Ubicación */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Mi ubicación</Text>
-          <Text style={styles.cardSub}>Comparte la ubicación de tu domicilio para que tu obstetra pueda visitarte fácilmente.</Text>
-
-          <TouchableOpacity style={styles.locBtn} onPress={capturar} disabled={capturing}>
-            {capturing ? <ActivityIndicator size="small" color={BRAND} /> : <MapPin size={18} color={BRAND} />}
-            <Text style={styles.locBtnText}>{coords ? 'Actualizar mi ubicación actual' : 'Usar mi ubicación actual'}</Text>
-          </TouchableOpacity>
-
-          {coords && (
-            <View style={styles.coordsBox}>
-              <CheckCircle2 size={16} color={semanticColors.success} />
-              <Text style={styles.coordsText}>{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</Text>
-            </View>
-          )}
-
-          <Text style={styles.inputLabel}>Referencia (opcional)</Text>
-          <TextInput
-            style={styles.input}
-            value={referencia}
-            onChangeText={setReferencia}
-            placeholder="Ej. Casa azul frente a la loza deportiva"
-            placeholderTextColor={commonColors.textTertiary}
-          />
-
-          <TouchableOpacity style={[styles.saveBtn, (!coords || updateUbicacion.isPending) && styles.saveBtnDisabled]} onPress={guardar} disabled={!coords || updateUbicacion.isPending}>
-            <Text style={styles.saveBtnText}>{updateUbicacion.isPending ? 'Guardando…' : 'Guardar ubicación'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Historial */}
-        <Text style={styles.sectionTitle}>Historial de visitas</Text>
-        {loadingVisits ? (
-          <ActivityIndicator color={BRAND} style={{ marginTop: spacing.lg }} />
-        ) : visits.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Home size={40} color={commonColors.textTertiary} />
-            <Text style={styles.emptyText}>Aún no has recibido visitas domiciliarias.</Text>
-          </View>
-        ) : (
-          visits.map((v) => (
-            <View key={v.id} style={styles.visitCard}>
-              <View style={styles.visitHeader}>
-                <View style={styles.numBadge}><Text style={styles.numText}>N°{v.numeroVisita}</Text></View>
-                <Text style={styles.visitDate}>{fmtFecha(v.fecha)} · {fmtHora(v.horaLlegada)}</Text>
-              </View>
-              <Text style={styles.visitMotivo}>{v.motivo}</Text>
-              <Text style={styles.visitText}>{v.acciones}</Text>
-              {v.acuerdos ? <Text style={styles.visitAcuerdo}>Acuerdos: {v.acuerdos}</Text> : null}
-              {v.obstetra?.user ? (
-                <Text style={styles.personal}>Obst. {v.obstetra.user.firstName} {v.obstetra.user.lastName}{v.obstetra.cop ? ` — COP N° ${v.obstetra.cop}` : ''}</Text>
-              ) : null}
-            </View>
-          ))
-        )}
-        </WebMaxWidth>
-      </ScrollView>
+        mainContent
       )}
     </View>
   );
@@ -166,6 +197,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
   headerTitle: { ...typography.h2, color: commonColors.white },
   content: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
+  webContent: { paddingBottom: spacing.xl },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
   cardTitle: { ...typography.h3, color: commonColors.text },
   cardSub: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: 4, marginBottom: spacing.md },

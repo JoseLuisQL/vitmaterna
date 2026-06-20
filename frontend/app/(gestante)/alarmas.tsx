@@ -19,6 +19,8 @@ import { commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { WebMaxWidth } from '../../src/components/web';
+import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../src/theme/responsive';
 
 const SIGNOS_EMBARAZO = [
   { icono: 'Frown', texto: 'Vómitos frecuentes e intensos' },
@@ -63,6 +65,7 @@ function SignoIcon({ name, color }: { name: string; color: string }) {
 
 export default function AlarmScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [notas, setNotas] = useState('');
   const [enviado, setEnviado] = useState(false);
@@ -102,45 +105,164 @@ export default function AlarmScreen(): React.ReactElement {
     }
   }
 
+  const confirmView = (
+    <View style={styles.confirmContainer}>
+      <View style={styles.confirmIconWrap}>
+        <CheckCircle size={48} color={semanticColors.success} />
+      </View>
+      <Text style={styles.confirmTitle}>Alerta enviada</Text>
+      <Text style={styles.confirmSubtitle}>Tu obstetra ha sido notificada y se pondrá en contacto contigo a la brevedad.</Text>
+
+      <View style={styles.confirmList}>
+        <Text style={styles.confirmListLabel}>Síntomas reportados:</Text>
+        {seleccionados.map((i) => (
+          <View key={i} style={styles.confirmItem}>
+            <SignoIcon name={TODOS_LOS_SIGNOS[i].icono} color={commonColors.textSecondary} />
+            <Text style={styles.confirmItemText}>{TODOS_LOS_SIGNOS[i].texto}</Text>
+          </View>
+        ))}
+      </View>
+
+      <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
+        <View style={styles.emergencyIconWrap}>
+          <Phone size={24} color={commonColors.surface} />
+        </View>
+        <View style={styles.emergencyInfo}>
+          <Text style={styles.emergencyLabel}>Si es urgente</Text>
+          <Text style={styles.emergencyPhone}>083 – 421800</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.resetBtn} onPress={() => { setEnviado(false); setSeleccionados([]); setNotas(''); }}>
+        <Text style={styles.resetBtnText}>Reportar otro síntoma</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.resetBtn} onPress={() => router.back()}>
+        <Text style={styles.resetBtnText}>Volver al inicio</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   if (enviado) {
+    if (webShell) {
+      return (
+        <View style={{ flex: 1, backgroundColor: commonColors.background, alignItems: 'center', justifyContent: 'center' }}>
+          <WebMaxWidth width="readable">
+            {confirmView}
+          </WebMaxWidth>
+        </View>
+      );
+    }
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.confirmContainer}>
-          <View style={styles.confirmIconWrap}>
-            <CheckCircle size={48} color={semanticColors.success} />
-          </View>
-          <Text style={styles.confirmTitle}>Alerta enviada</Text>
-          <Text style={styles.confirmSubtitle}>Tu obstetra ha sido notificada y se pondrá en contacto contigo a la brevedad.</Text>
-
-          <View style={styles.confirmList}>
-            <Text style={styles.confirmListLabel}>Síntomas reportados:</Text>
-            {seleccionados.map((i) => (
-              <View key={i} style={styles.confirmItem}>
-                <SignoIcon name={TODOS_LOS_SIGNOS[i].icono} color={commonColors.textSecondary} />
-                <Text style={styles.confirmItemText}>{TODOS_LOS_SIGNOS[i].texto}</Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
-            <View style={styles.emergencyIconWrap}>
-              <Phone size={24} color={commonColors.surface} />
-            </View>
-            <View style={styles.emergencyInfo}>
-              <Text style={styles.emergencyLabel}>Si es urgente</Text>
-              <Text style={styles.emergencyPhone}>083 – 421800</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.resetBtn} onPress={() => { setEnviado(false); setSeleccionados([]); setNotas(''); }}>
-            <Text style={styles.resetBtnText}>Reportar otro síntoma</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.resetBtn} onPress={() => router.back()}>
-            <Text style={styles.resetBtnText}>Volver al inicio</Text>
-          </TouchableOpacity>
-        </View>
+        {confirmView}
       </SafeAreaView>
+    );
+  }
+
+  const mainForm = (
+    <ScrollView contentContainerStyle={[styles.scrollContent, webShell && styles.webScrollContent]} showsVerticalScrollIndicator={false}>
+      <WebMaxWidth width="readable">
+      <Text style={styles.groupTitle}>Durante el Embarazo</Text>
+      <View style={styles.signosCard}>
+        {SIGNOS_EMBARAZO.map((signo, i) => {
+          const isSelected = seleccionados.includes(i);
+          return (
+            <TouchableOpacity key={i} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(i)} activeOpacity={0.7}>
+              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
+              </View>
+              <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
+              <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={styles.groupTitle}>Durante el Parto</Text>
+      <View style={styles.signosCard}>
+        {SIGNOS_PARTO.map((signo, i) => {
+          const idx = SIGNOS_EMBARAZO.length + i;
+          const isSelected = seleccionados.includes(idx);
+          return (
+            <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
+              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
+              </View>
+              <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
+              <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={styles.groupTitle}>Después del Parto</Text>
+      <View style={styles.signosCard}>
+        {SIGNOS_POSTPARTO.map((signo, i) => {
+          const idx = SIGNOS_EMBARAZO.length + SIGNOS_PARTO.length + i;
+          const isSelected = seleccionados.includes(idx);
+          return (
+            <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
+              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
+              </View>
+              <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
+              <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={styles.groupTitle}>Información adicional (opcional)</Text>
+      <TextInput
+        style={styles.textArea}
+        value={notas}
+        onChangeText={setNotas}
+        multiline
+        numberOfLines={4}
+        placeholder="Describa con más detalle cómo se siente..."
+        placeholderTextColor={commonColors.textTertiary}
+        textAlignVertical="top"
+      />
+
+      {seleccionados.length > 0 && (
+        <View style={styles.countBox}>
+          <Text style={styles.countText}>Seleccionaste {seleccionados.length} síntoma(s). Tu obstetra será notificada.</Text>
+        </View>
+      )}
+
+      <TouchableOpacity style={[styles.sendBtn, isPending && styles.sendBtnDisabled]} onPress={handleEnviar} disabled={isPending}>
+        <Send size={20} color={commonColors.surface} />
+        <Text style={styles.sendBtnText}>{isPending ? 'Enviando...' : 'Enviar alerta a mi obstetra'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
+        <View style={styles.emergencyIconWrap}>
+          <Phone size={24} color={commonColors.surface} />
+        </View>
+        <View style={styles.emergencyInfo}>
+          <Text style={styles.emergencyLabel}>Emergencia — Centro de Salud</Text>
+          <Text style={styles.emergencyPhone}>083 – 421800</Text>
+        </View>
+      </TouchableOpacity>
+      </WebMaxWidth>
+    </ScrollView>
+  );
+
+  if (webShell) {
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="gestante"
+          title="Reportar Alarma"
+          subtitle="Selecciona los síntomas que presentas"
+          accentColor={semanticColors.danger}
+          width="readable"
+          scroll={false}
+        >
+          {mainForm}
+        </ScreenLayout>
+      </View>
     );
   }
 
@@ -163,92 +285,7 @@ export default function AlarmScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        <Text style={styles.groupTitle}>Durante el Embarazo</Text>
-        <View style={styles.signosCard}>
-          {SIGNOS_EMBARAZO.map((signo, i) => {
-            const isSelected = seleccionados.includes(i);
-            return (
-              <TouchableOpacity key={i} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(i)} activeOpacity={0.7}>
-                <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
-                </View>
-                <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
-                <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Text style={styles.groupTitle}>Durante el Parto</Text>
-        <View style={styles.signosCard}>
-          {SIGNOS_PARTO.map((signo, i) => {
-            const idx = SIGNOS_EMBARAZO.length + i;
-            const isSelected = seleccionados.includes(idx);
-            return (
-              <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
-                <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
-                </View>
-                <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
-                <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Text style={styles.groupTitle}>Después del Parto</Text>
-        <View style={styles.signosCard}>
-          {SIGNOS_POSTPARTO.map((signo, i) => {
-            const idx = SIGNOS_EMBARAZO.length + SIGNOS_PARTO.length + i;
-            const isSelected = seleccionados.includes(idx);
-            return (
-              <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
-                <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
-                </View>
-                <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
-                <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Text style={styles.groupTitle}>Información adicional (opcional)</Text>
-        <TextInput
-          style={styles.textArea}
-          value={notas}
-          onChangeText={setNotas}
-          multiline
-          numberOfLines={4}
-          placeholder="Describa con más detalle cómo se siente..."
-          placeholderTextColor={commonColors.textTertiary}
-          textAlignVertical="top"
-        />
-
-        {seleccionados.length > 0 && (
-          <View style={styles.countBox}>
-            <Text style={styles.countText}>Seleccionaste {seleccionados.length} síntoma(s). Tu obstetra será notificada.</Text>
-          </View>
-        )}
-
-        <TouchableOpacity style={[styles.sendBtn, isPending && styles.sendBtnDisabled]} onPress={handleEnviar} disabled={isPending}>
-          <Send size={20} color={commonColors.surface} />
-          <Text style={styles.sendBtnText}>{isPending ? 'Enviando...' : 'Enviar alerta a mi obstetra'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
-          <View style={styles.emergencyIconWrap}>
-            <Phone size={24} color={commonColors.surface} />
-          </View>
-          <View style={styles.emergencyInfo}>
-            <Text style={styles.emergencyLabel}>Emergencia — Centro de Salud</Text>
-            <Text style={styles.emergencyPhone}>083 – 421800</Text>
-          </View>
-        </TouchableOpacity>
-        </WebMaxWidth>
-      </ScrollView>
+      {mainForm}
     </View>
   );
 }
@@ -261,6 +298,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h1, color: commonColors.surface },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl, marginTop: -24 },
+  webScrollContent: { marginTop: 0 },
   groupTitle: { ...typography.overline, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.md, marginLeft: spacing.md },
   signosCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, paddingVertical: spacing.sm, borderWidth: 1, borderColor: commonColors.border },
   signoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, paddingHorizontal: spacing.lg, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },

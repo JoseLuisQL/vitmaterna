@@ -1816,7 +1816,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 80,
   },
-  scrollAreaWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.xl, alignSelf: 'center' },
+  scrollAreaWeb: { width: '100%' },
   dataTabContainer: {
     marginTop: -4,
   },

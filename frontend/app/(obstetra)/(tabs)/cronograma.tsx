@@ -21,7 +21,7 @@ import { commonColors, obstetraColors, semanticColors } from '../../../src/theme
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
-import { WebMaxWidth } from '../../../src/components/web';
+import { WebMaxWidth, DataTable } from '../../../src/components/web';
 import {
   useAppointmentsFiltered,
   useUpdateAppointmentStatus,
@@ -229,16 +229,110 @@ export default function CronogramaScreen(): React.ReactElement {
     { key: 'todas', label: 'Todas' },
   ];
 
+  if (webShell) {
+    const columns: any[] = [
+      {
+        key: 'fecha', header: 'Fecha y Hora', width: 140,
+        sortValue: (p: any) => p.fecha,
+        render: (p: any) => (
+          <View>
+            <Text style={{ ...typography.bodySm, fontWeight: '600', color: commonColors.text }}>{new Date(p.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })}</Text>
+            <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>{formatHora(p.hora)}</Text>
+          </View>
+        ),
+      },
+      {
+        key: 'paciente', header: 'Paciente', flex: 2,
+        sortValue: (p: any) => p.gestante?.user?.firstName || '',
+        render: (p: any) => {
+          const name = `${p.gestante?.user?.firstName || ''} ${p.gestante?.user?.lastName || ''}`.trim();
+          return (
+            <View>
+              <Text style={{ ...typography.bodySm, fontWeight: '600', color: commonColors.text }} numberOfLines={1}>{name || 'Paciente sin nombre'}</Text>
+              <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>{p.motivo || 'Control prenatal'}</Text>
+            </View>
+          );
+        },
+      },
+      {
+        key: 'modalidad', header: 'Modalidad', width: 140,
+        sortValue: (p: any) => p.modalidad,
+        render: (p: any) => (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {p.modalidad === 'domiciliaria' ? <Home size={14} color={BRAND} /> : <MapPin size={14} color={commonColors.textTertiary} />}
+            <Text style={{ ...typography.bodySm, color: p.modalidad === 'domiciliaria' ? BRAND : commonColors.textSecondary, fontWeight: p.modalidad === 'domiciliaria' ? '600' : '400' }}>
+              {p.modalidad === 'domiciliaria' ? 'Domicilio' : 'Consultorio'}
+            </Text>
+          </View>
+        ),
+      },
+      {
+        key: 'estado', header: 'Estado', width: 150,
+        sortValue: (p: any) => p.estado || 'programada',
+        render: (p: any) => {
+          const estado = p.estado || 'programada';
+          const variant = STATUS_VARIANT[estado] || 'default';
+          const label = STATUS_LABEL[estado] || estado;
+          return <AppBadge label={label} variant={variant} size="sm" />;
+        },
+      },
+    ];
+
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="obstetra"
+          title="Cronograma"
+          subtitle="Agenda de citas"
+          width="full"
+          accentColor={BRAND}
+          scroll={false}
+        >
+          <View style={styles.webToolbar}>
+            <View style={styles.webSearchBox}>
+              <Search size={18} color={commonColors.textTertiary} />
+              <TextInput style={styles.webSearchInput} value={searchInput} onChangeText={setSearchInput} placeholder="Buscar paciente por nombre o DNI..." placeholderTextColor={commonColors.textTertiary} />
+            </View>
+            <View style={styles.webFilterRow}>
+              {SEGMENTS.map((s) => (
+                <TouchableOpacity key={s.key} style={[styles.webChip, scope === s.key && styles.webChipActive]} onPress={() => setScope(s.key)}>
+                  <Text style={[styles.webChipText, scope === s.key && styles.webChipTextActive]}>{s.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.webCreateBtn} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
+              <Plus size={18} color={commonColors.white} />
+              <Text style={styles.webCreateText}>Nueva cita</Text>
+            </TouchableOpacity>
+          </View>
+
+          <DataTable
+            columns={columns}
+            data={appointments as any[]}
+            keyExtractor={(p: any) => p.id}
+            loading={isLoading}
+            onRowPress={(p: any) => p.gestante?.id && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: p.gestante.id } } as any)}
+            emptyIcon={Clock as any}
+            emptyTitle="Sin citas"
+            emptyMessage={search ? 'No hay resultados para tu búsqueda.' : 'No hay citas para este filtro.'}
+            emptyAccent={BRAND}
+          />
+          <NuevaCitaModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+        </ScreenLayout>
+      </View>
+    );
+  }
+
   return (
     <ScreenLayout
       role="obstetra"
       title="Cronograma"
       subtitle="Agenda de citas"
+      width="full"
       accentColor={BRAND}
       scroll={false}
       actions={<NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />}
     >
-      <WebMaxWidth width="wide">
       {/* Buscador */}
       <View style={styles.searchBar}>
         <Search size={18} color={commonColors.textSecondary} />
@@ -277,7 +371,6 @@ export default function CronogramaScreen(): React.ReactElement {
           );
         })}
       </View>
-      </WebMaxWidth>
 
       {isLoading ? (
         <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View>
@@ -345,7 +438,7 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: commonColors.white },
 
   listContent: { paddingBottom: layout.tabBarSpace + 80, paddingTop: spacing.xs },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
+  listWeb: { width: '100%', paddingBottom: spacing.xl },
 
   sectionHeader: { backgroundColor: commonColors.background, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   sectionHeaderText: { ...typography.label, fontWeight: '700', color: commonColors.text },
@@ -390,4 +483,15 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
+
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
+  webSearchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 40 },
+  webSearchInput: { flex: 1, ...typography.bodySm, color: commonColors.text, marginLeft: spacing.sm, padding: 0 },
+  webFilterRow: { flexDirection: 'row', gap: spacing.xs, backgroundColor: commonColors.surfaceAlt, padding: 4, borderRadius: borderRadius.full },
+  webChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: borderRadius.full },
+  webChipActive: { backgroundColor: BRAND },
+  webChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
+  webChipTextActive: { color: commonColors.white },
+  webCreateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND, paddingHorizontal: spacing.md, height: 40, borderRadius: borderRadius.full, gap: spacing.sm },
+  webCreateText: { ...typography.bodySm, fontWeight: '600', color: commonColors.white },
 });

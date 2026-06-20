@@ -147,11 +147,14 @@ export function DataTable<T>({
               <RowComp
                 key={keyExtractor(row)}
                 onPress={onRowPress ? () => onRowPress(row) : undefined}
-                style={({ pressed }: { pressed?: boolean }) => [
+                style={onRowPress ? ({ pressed }: { pressed?: boolean }) => [
                   styles.row,
                   i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
                   pressed && { backgroundColor: colors.surfaceAlt },
-                  onRowPress && IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
+                  IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
+                ] : [
+                  styles.row,
+                  i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
                 ]}
               >
                 {columns.map((col) => (

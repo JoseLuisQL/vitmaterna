@@ -23,6 +23,7 @@ import { commonColors, obstetraColors, gestanteColors, semanticColors } from '..
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { WebMaxWidth } from '../../../src/components/web';
+import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 import { useFeatureFlags, type FeatureModule } from '../../../src/hooks/useFeatureFlags';
 
@@ -44,6 +45,7 @@ const FORM_FLAG: Record<FormKey, FeatureModule> = {
 
 export default function TamizajesScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const { id, nombre } = useLocalSearchParams<{ id: string; nombre?: string }>();
   const gestanteId = id || '';
   const flags = useFeatureFlags();
@@ -268,7 +270,7 @@ export default function TamizajesScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
+        <WebMaxWidth width="full">
         <Text style={styles.subtitle}>Selecciona el registro clínico que deseas añadir.</Text>
 
         {CARDS.length === 0 && (
@@ -278,8 +280,9 @@ export default function TamizajesScreen(): React.ReactElement {
           </Text>
         )}
 
+        <View style={webShell ? styles.cardGrid : undefined}>
         {CARDS.map(({ key, label, desc, icon: Icon, color, bg }) => (
-          <TouchableOpacity key={key} style={styles.card} onPress={() => setOpenForm(key)} activeOpacity={0.7}>
+          <TouchableOpacity key={key} style={StyleSheet.flatten([styles.card, webShell && styles.cardWeb])} onPress={() => setOpenForm(key)} activeOpacity={0.7}>
             <View style={[styles.cardIcon, { backgroundColor: bg }]}>
               <Icon size={24} color={color} />
             </View>
@@ -290,6 +293,7 @@ export default function TamizajesScreen(): React.ReactElement {
             <Plus size={20} color={commonColors.textTertiary} />
           </TouchableOpacity>
         ))}
+        </View>
         </WebMaxWidth>
       </ScrollView>
 
@@ -496,4 +500,15 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: obstetraColors.primaryLight, borderColor: PINK },
   segmentText: { ...typography.caption, color: commonColors.textSecondary },
   segmentTextActive: { color: PINK, fontFamily: typography.label.fontFamily },
+  cardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  cardWeb: {
+    width: '48%',
+    minWidth: 280,
+    flexGrow: 1,
+    marginBottom: 0,
+  },
 });

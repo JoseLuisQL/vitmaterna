@@ -141,6 +141,7 @@ export default function ObstetraDashboard(): React.ReactElement {
       subtitle="Panel de trabajo"
       loading={isStatsLoading || isApptsLoading}
       accentColor={BRAND}
+      width="full"
       scroll={false}
       actions={
         webShell ? undefined : (
@@ -199,7 +200,7 @@ export default function ObstetraDashboard(): React.ReactElement {
 
 const styles = StyleSheet.create({
   flatListContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
-  flatListWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.xl, alignSelf: 'center', paddingBottom: spacing.xl },
+  flatListWeb: { width: '100%', paddingBottom: spacing.xl },
   menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
 
   greeting: { ...typography.h3, color: commonColors.text },

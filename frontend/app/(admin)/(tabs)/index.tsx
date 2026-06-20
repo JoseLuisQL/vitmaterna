@@ -73,7 +73,7 @@ export default function AdminInicioScreen(): React.ReactElement {
       refreshing={isRefetching}
       onRefresh={refetch}
       accentColor={BRAND}
-      width="wide"
+      width="full"
       actions={
         webShell ? undefined : (
           <>

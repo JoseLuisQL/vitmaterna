@@ -10,8 +10,6 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, SectionList, TouchableOpacity, RefreshControl } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CheckCircle2, Hourglass, Calendar, XCircle, AlertTriangle, AlertCircle,
   TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, Siren, type LucideIcon,
@@ -38,7 +36,10 @@ import { spacing, borderRadius, layout, webLayout } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
 import { useResponsive } from '../../theme/responsive';
 
+import { ScreenLayout, type ScreenRole } from '../layout/ScreenLayout';
+
 interface Props {
+  role: ScreenRole;
   /** Color de acento del rol (gestante púrpura, obstetra azul). */
   themeColor?: string;
   /** Gradiente del rol para el header. */
@@ -161,14 +162,10 @@ function agrupar(items: AppNotification[]): { title: string; data: DisplayNotifi
 
 type Filtro = 'todas' | 'no_leidas' | 'urgentes';
 
-export function NotificationsScreen({
-  themeColor = gestanteColors.primary,
-  gradient = gestanteColors.gradient,
-}: Props): React.ReactElement {
+export function NotificationsScreen({ role, themeColor = commonColors.text, gradient }: Props): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
-  const role = useAuthStore((s) => s.user?.role);
   const { data: items = [], isLoading, refetch, isRefetching } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
@@ -319,107 +316,76 @@ export function NotificationsScreen({
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-                <ChevronLeft size={24} color={commonColors.white} />
+      <ScreenLayout
+        role={role}
+        title="Notificaciones"
+        subtitle={unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día'}
+        showBack={router.canGoBack()}
+        onBack={() => router.back()}
+        scroll={false}
+        width={webShell ? 'readable' : 'full'}
+        actions={
+          <View style={styles.headerActions}>
+            {unreadCount > 0 && (
+              <TouchableOpacity onPress={() => markAll.mutate()} disabled={markAll.isPending} style={[styles.headerActionBtn, webShell && { backgroundColor: commonColors.surfaceAlt }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Marcar todo como leído">
+                <CheckCheck size={16} color={webShell ? themeColor : commonColors.white} />
+                <Text style={[styles.headerActionText, webShell && { color: themeColor }]}>Leer todo</Text>
               </TouchableOpacity>
-              <View>
-                <Text style={styles.headerTitle}>Notificaciones</Text>
-                <Text style={styles.headerSubtitle}>
-                  {unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.headerActions}>
-              {unreadCount > 0 && (
-                <TouchableOpacity
-                  onPress={() => markAll.mutate()}
-                  disabled={markAll.isPending}
-                  style={styles.headerActionBtn}
-                  hitSlop={6}
-                  accessibilityRole="button"
-                  accessibilityLabel="Marcar todo como leído"
-                >
-                  <CheckCheck size={16} color={commonColors.white} />
-                  <Text style={styles.headerActionText}>Leer todo</Text>
-                </TouchableOpacity>
-              )}
-              {items.length > 0 && (
-                <TouchableOpacity
-                  onPress={handleClear}
-                  disabled={clearAll.isPending}
-                  style={styles.headerActionBtn}
-                  hitSlop={6}
-                  accessibilityRole="button"
-                  accessibilityLabel="Limpiar notificaciones"
-                >
-                  <Trash2 size={16} color={commonColors.white} />
-                  <Text style={styles.headerActionText}>Limpiar</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            )}
+            {items.length > 0 && (
+              <TouchableOpacity onPress={handleClear} disabled={clearAll.isPending} style={[styles.headerActionBtn, webShell && { backgroundColor: commonColors.surfaceAlt }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Limpiar notificaciones">
+                <Trash2 size={16} color={webShell ? semanticColors.danger : commonColors.white} />
+                <Text style={[styles.headerActionText, webShell && { color: semanticColors.danger }]}>Limpiar</Text>
+              </TouchableOpacity>
+            )}
           </View>
-
-          {/* Filtros: Todas / No leídas / Urgentes */}
-          <View style={styles.filterRow}>
-            {(['todas', 'no_leidas', 'urgentes'] as Filtro[]).map((f) => {
-              const active = filtro === f;
-              const label =
-                f === 'todas'
-                  ? 'Todas'
-                  : f === 'no_leidas'
-                    ? `No leídas${unreadCount > 0 ? ` (${unreadCount})` : ''}`
-                    : `Urgentes${urgentCount > 0 ? ` (${urgentCount})` : ''}`;
-              return (
-                <TouchableOpacity
-                  key={f}
-                  onPress={() => setFiltro(f)}
-                  style={[styles.filterChip, active && styles.filterChipActive]}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.filterText, active && { color: themeColor }]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      {isLoading ? (
-        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.lg }}>
-          <ListSkeleton count={5} />
+        }
+      >
+        <View style={styles.filterRow}>
+          {(['todas', 'no_leidas', 'urgentes'] as Filtro[]).map((f) => {
+            const active = filtro === f;
+            const label = f === 'todas' ? 'Todas' : f === 'no_leidas' ? `No leídas${unreadCount > 0 ? ` (${unreadCount})` : ''}` : `Urgentes${urgentCount > 0 ? ` (${urgentCount})` : ''}`;
+            return (
+              <TouchableOpacity key={f} onPress={() => setFiltro(f)} style={[styles.filterChip, webShell && { backgroundColor: commonColors.surfaceAlt }, active && (webShell ? { backgroundColor: themeColor } : styles.filterChipActive)]} activeOpacity={0.8}>
+                <Text style={[styles.filterText, webShell && { color: commonColors.textSecondary }, active && (webShell ? { color: commonColors.white } : { color: themeColor })]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(n) => n.id}
-          renderItem={renderItem}
-          renderSectionHeader={({ section }) => (
-            <Text style={styles.sectionHeader}>{section.title}</Text>
-          )}
-          stickySectionHeadersEnabled={false}
-          contentContainerStyle={[styles.list, webShell && styles.listWeb]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={themeColor} />}
-          ListEmptyComponent={
-            <View style={{ marginTop: 60 }}>
-              <EmptyState
-                icon={BellOff}
-                title={filtro === 'no_leidas' ? 'Sin pendientes' : 'Sin notificaciones'}
-                description={
-                  filtro === 'no_leidas'
-                    ? 'No tienes notificaciones sin leer. ¡Estás al día!'
-                    : 'Aquí verás avisos de tus citas, recordatorios y alertas.'
-                }
-                themeColor={themeColor}
-              />
-            </View>
-          }
-        />
-      )}
+
+        {isLoading ? (
+          <View style={{ paddingTop: spacing.lg }}>
+            <ListSkeleton count={5} />
+          </View>
+        ) : (
+          <SectionList
+            sections={sections}
+            keyExtractor={(n) => n.id}
+            renderItem={renderItem}
+            renderSectionHeader={({ section }) => (
+              <Text style={styles.sectionHeader}>{section.title}</Text>
+            )}
+            stickySectionHeadersEnabled={false}
+            contentContainerStyle={[styles.list, webShell && styles.listWeb]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={themeColor} />}
+            ListEmptyComponent={
+              <View style={{ marginTop: 60 }}>
+                <EmptyState
+                  icon={BellOff}
+                  title={filtro === 'no_leidas' ? 'Sin pendientes' : 'Sin notificaciones'}
+                  description={
+                    filtro === 'no_leidas'
+                      ? 'No tienes notificaciones sin leer. ¡Estás al día!'
+                      : 'Aquí verás avisos de tus citas, recordatorios y alertas.'
+                  }
+                  themeColor={themeColor}
+                />
+              </View>
+            }
+          />
+        )}
+      </ScreenLayout>
     </View>
   );
 }
@@ -474,8 +440,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
   },
-  list: { padding: spacing.md, paddingBottom: layout.tabBarSpace },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
+  list: { paddingTop: spacing.md, paddingBottom: layout.tabBarSpace },
+  listWeb: { width: '100%', paddingBottom: spacing.xl },
   card: {
     flexDirection: 'row',
     gap: spacing.md,

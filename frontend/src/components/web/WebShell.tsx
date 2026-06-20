@@ -62,7 +62,7 @@ export function WebShell({ children }: { children: React.ReactNode }): React.Rea
     <View style={[styles.shell, { backgroundColor: colors.background }]}>
       <WebSidebar role={role} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       <View style={styles.main}>
-        <WebTopBar role={role} />
+        <WebTopBar role={role} collapsed={collapsed} />
         <View style={[styles.content, { backgroundColor: colors.background }]}>{children}</View>
       </View>
     </View>

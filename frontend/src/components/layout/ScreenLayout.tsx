@@ -166,7 +166,7 @@ export function ScreenLayout({
             <HeaderRow
               title={title}
               subtitle={subtitle}
-              showBack={showBack}
+              showBack={webShell ? false : showBack}
               onBack={handleBack}
               actions={actions}
               onLight
@@ -174,14 +174,16 @@ export function ScreenLayout({
           </SafeAreaView>
         </LinearGradient>
       ) : (
-        <SafeAreaView edges={['top']} style={styles.headerFlatSafe}>
-          <HeaderRow
-            title={title}
-            subtitle={subtitle}
-            showBack={showBack}
-            onBack={handleBack}
-            actions={actions}
-          />
+        <SafeAreaView edges={['top']} style={[styles.headerFlatSafe, webShell && { backgroundColor: commonColors.surface, paddingHorizontal: hPad }]}>
+          <View style={isWide ? [styles.centered, { maxWidth }] : undefined}>
+            <HeaderRow
+              title={title}
+              subtitle={subtitle}
+              showBack={webShell ? false : showBack}
+              onBack={handleBack}
+              actions={actions}
+            />
+          </View>
         </SafeAreaView>
       )}
     </>
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: borderRadius.xxl,
   },
   headerSafe: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  headerFlatSafe: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  headerFlatSafe: { paddingTop: spacing.md, paddingBottom: spacing.sm, paddingHorizontal: spacing.lg },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerTexts: { flex: 1, minWidth: 0 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },

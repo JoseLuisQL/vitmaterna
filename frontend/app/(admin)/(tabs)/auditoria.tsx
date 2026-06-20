@@ -13,7 +13,7 @@ import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { exportTextFile } from '../../../src/utils/exportFile';
 import { useToast } from '../../../src/components/ui';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -94,88 +94,49 @@ export default function AuditoriaScreen(): React.ReactElement {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
-              style={styles.backBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Volver"
-              accessibilityRole="button"
-            >
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Auditoría y Backup</Text>
-          </View>
-          <AppButton
-            title="Exportar Backup BD"
-            onPress={handleExportBackup}
-            variant="secondary"
-            size="sm"
-            icon={Download}
-            loading={exportMutation.isPending}
-            themeColor={commonColors.white}
-            style={styles.exportBtn}
+    <ScreenLayout
+      role="admin"
+      title="Auditoría y Backup"
+      showBack
+      scroll={false}
+      actions={
+        <AppButton
+          title="Exportar Backup BD"
+          onPress={handleExportBackup}
+          variant="secondary"
+          size="sm"
+          icon={Download}
+          loading={exportMutation.isPending}
+          themeColor={commonColors.white}
+        />
+      }
+      loading={isLoading}
+      isEmpty={!logs || logs.length === 0}
+      emptyIcon={ShieldAlert as any}
+      emptyTitle="Sin registros"
+      emptyMessage="No hay logs de auditoría disponibles."
+      accentColor={semanticColors.warning}
+      width="full"
+    >
+      <FlatList
+        data={logs}
+        keyExtractor={(item, index) => item.id || item._id || String(index)}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            colors={[BRAND]}
           />
-        </SafeAreaView>
-      </LinearGradient>
-
-      {isLoading ? (
-        <View style={styles.listContent}><ListSkeleton count={7} /></View>
-      ) : !logs || logs.length === 0 ? (
-        <EmptyState
-          icon={ShieldAlert as any}
-          title="Sin registros"
-          description="No hay logs de auditoría disponibles."
-          themeColor={semanticColors.warning}
-        />
-      ) : (
-        <FlatList
-          data={logs}
-          keyExtractor={(item, index) => item.id || item._id || String(index)}
-          renderItem={renderItem}
-          contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={refetch}
-              colors={[BRAND]}
-            />
-          }
-        />
-      )}
-    </View>
+        }
+      />
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: commonColors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
-  title: {
-    ...typography.h1,
-    color: commonColors.white,
-    marginBottom: spacing.md,
-  },
-  exportBtn: {
-    alignSelf: 'flex-start',
-  },
-  listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: layout.tabBarSpace,
-  },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
   card: {
     marginBottom: spacing.sm,
   },

@@ -24,6 +24,7 @@ import {
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -435,6 +436,72 @@ export default function EducacionScreen(): React.ReactElement {
     </View>
   );
 
+  const mainList = (
+    <FlashList
+      data={isLoading ? [] : filtered}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <ContentCard
+          item={item}
+          leido={isRead(item.id)}
+          fav={isFavorite(item.id)}
+          onPress={() => router.push(`/(gestante)/educacion/${item.id}`)}
+          onToggleFav={() => toggleFavorite(item.id)}
+        />
+      )}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={isLoading ? <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View> : renderEmpty}
+      contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+
+  const modals = (
+    <AppModal
+      visible={toolsVisible}
+      onClose={() => setToolsVisible(false)}
+      title="Calculadora de edad gestacional"
+      subtitle="Calcula tus semanas y tu fecha probable de parto."
+    >
+      <CalculadoraEG />
+      <TouchableOpacity style={styles.emergencyRow} onPress={() => Linking.openURL('tel:083421800')}>
+        <Phone size={18} color={semanticColors.danger} />
+        <Text style={styles.emergencyRowText}>¿Emergencia? Llama al 083 – 421800</Text>
+        <ChevronRight size={16} color={commonColors.textTertiary} />
+      </TouchableOpacity>
+    </AppModal>
+  );
+
+  if (webShell) {
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="gestante"
+          title="Educación"
+          subtitle="Aprende sobre tu embarazo"
+          accentColor={BRAND}
+          width="wide"
+          scroll={false}
+          actions={
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={[styles.toolBtn, { backgroundColor: commonColors.surfaceAlt }]} onPress={() => setToolsVisible(true)}>
+                <Calculator size={16} color={commonColors.textSecondary} />
+                <Text style={[styles.toolBtnText, { color: commonColors.textSecondary }]}>Calcular EG</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.toolBtn, { backgroundColor: commonColors.surfaceAlt }]} onPress={() => router.push('/(gestante)/alarmas')}>
+                <AlertTriangle size={16} color={commonColors.textSecondary} />
+                <Text style={[styles.toolBtnText, { color: commonColors.textSecondary }]}>Signos de alarma</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        >
+          {mainList}
+        </ScreenLayout>
+        {modals}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerWrapper}>
@@ -470,39 +537,8 @@ export default function EducacionScreen(): React.ReactElement {
           </View>
         </SafeAreaView>
       </LinearGradient>
-
-      <FlashList
-        data={isLoading ? [] : filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ContentCard
-            item={item}
-            leido={isRead(item.id)}
-            fav={isFavorite(item.id)}
-            onPress={() => router.push(`/(gestante)/educacion/${item.id}`)}
-            onToggleFav={() => toggleFavorite(item.id)}
-          />
-        )}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={isLoading ? <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View> : renderEmpty}
-        contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Modal de herramientas: Calculadora EG */}
-      <AppModal
-        visible={toolsVisible}
-        onClose={() => setToolsVisible(false)}
-        title="Calculadora de edad gestacional"
-        subtitle="Calcula tus semanas y tu fecha probable de parto."
-      >
-        <CalculadoraEG />
-        <TouchableOpacity style={styles.emergencyRow} onPress={() => Linking.openURL('tel:083421800')}>
-          <Phone size={18} color={semanticColors.danger} />
-          <Text style={styles.emergencyRowText}>¿Emergencia? Llama al 083 – 421800</Text>
-          <ChevronRight size={16} color={commonColors.textTertiary} />
-        </TouchableOpacity>
-      </AppModal>
+      {mainList}
+      {modals}
     </View>
   );
 }

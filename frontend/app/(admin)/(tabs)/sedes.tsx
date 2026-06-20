@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain, ArrowLeft } from 'lucide-react-native';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -18,7 +19,7 @@ import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
-
+import { DataTable } from '../../../src/components/web';
 const BRAND = adminColors.primary;
 
 interface FacilityForm {
@@ -91,21 +92,6 @@ export default function SedesScreen(): React.ReactElement {
     });
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerWrapper}>
-          <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-            <Text style={styles.headerTitle}>Establecimientos</Text>
-          </SafeAreaView>
-        </LinearGradient>
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-          <ListSkeleton count={4} />
-        </View>
-      </View>
-    );
-  }
-
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardIcon}>
@@ -136,51 +122,107 @@ export default function SedesScreen(): React.ReactElement {
     </View>
   );
 
-  return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={adminColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
-      >
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <TouchableOpacity
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
-                style={styles.backBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityLabel="Volver"
-                accessibilityRole="button"
-              >
-                <ArrowLeft size={22} color={commonColors.white} />
-              </TouchableOpacity>
-              <View>
-                <Text style={styles.headerTitle}>Establecimientos</Text>
-                <Text style={styles.headerSubtitle}>Sedes del centro de salud</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-              <Plus size={18} color={commonColors.white} />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+  const webColumns = [
+    {
+      key: 'nombre',
+      header: 'Nombre de Sede',
+      flex: 2,
+      render: (row: any) => (
+        <View style={{ gap: 4 }}>
+          <Text style={[styles.cardName, { color: commonColors.text }]}>{row.nombre}</Text>
+          {!row.activo && <Text style={styles.inactiveBadge}>Inactivo</Text>}
+        </View>
+      ),
+      sortValue: (row: any) => row.nombre,
+    },
+    {
+      key: 'codigo',
+      header: 'Código',
+      flex: 1,
+      render: (row: any) => <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary }}>{row.codigo || '-'}</Text>,
+      sortValue: (row: any) => row.codigo || '',
+    },
+    {
+      key: 'direccion',
+      header: 'Dirección',
+      flex: 2,
+      render: (row: any) => <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary }}>{row.direccion || '-'}</Text>,
+    },
+    {
+      key: 'telefono',
+      header: 'Teléfono',
+      flex: 1,
+      render: (row: any) => <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary }}>{row.telefono || '-'}</Text>,
+    },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      width: 100,
+      align: 'right' as const,
+      render: (row: any) => (
+        <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
+          <TouchableOpacity onPress={() => openEdit(row)} hitSlop={8} style={[styles.actionBtn, { width: 32, height: 32 }]} accessibilityRole="button">
+            <Pencil size={16} color={BRAND} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => confirmDelete(row)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn, { width: 32, height: 32 }]} accessibilityRole="button">
+            <Trash2 size={16} color={semanticColors.danger} />
+          </TouchableOpacity>
+        </View>
+      ),
+    },
+  ];
 
-      <FlatList
-        data={facilities}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={{ paddingTop: spacing.xl }}>
-            <EmptyState icon={Building2 as any} title="Sin establecimientos" description="Registra el primer establecimiento de salud." themeColor={BRAND} />
-          </View>
-        }
-      />
+  const mainContent = (
+    <>
+      {isLoading ? (
+        <View style={{ paddingTop: spacing.lg }}>
+          <ListSkeleton count={4} />
+        </View>
+      ) : webShell ? (
+        <View style={{ marginTop: spacing.md }}>
+          <DataTable
+            columns={webColumns}
+            data={facilities || []}
+            keyExtractor={(item) => item.id}
+            emptyIcon={Building2 as any}
+            emptyTitle="Sin establecimientos"
+            emptyMessage="Registra el primer establecimiento de salud."
+          />
+        </View>
+      ) : (
+        <FlatList
+          data={facilities}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={{ paddingTop: spacing.xl }}>
+              <EmptyState icon={Building2 as any} title="Sin establecimientos" description="Registra el primer establecimiento de salud." themeColor={BRAND} />
+            </View>
+          }
+        />
+      )}
+    </>
+  );
+
+  return (
+    <ScreenLayout
+      role="admin"
+      title="Establecimientos"
+      subtitle="Sedes del centro de salud"
+      showBack={router.canGoBack()}
+      onBack={() => router.back()}
+      width="full"
+      scroll={webShell}
+      actions={
+        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
+          <Plus size={18} color={commonColors.white} />
+        </TouchableOpacity>
+      }
+    >
+      {mainContent}
+
 
       <AppModal
         visible={modalVisible}
@@ -202,7 +244,7 @@ export default function SedesScreen(): React.ReactElement {
           <Field label="Servicios (separados por coma)"><TextInput style={[styles.input, { height: 70 }]} value={form.servicios} onChangeText={(t) => setForm({ ...form, servicios: t })} multiline placeholder="control prenatal, laboratorio, ecografía" placeholderTextColor={commonColors.textTertiary} /></Field>
         </View>
       </AppModal>
-    </View>
+    </ScreenLayout>
   );
 }
 
@@ -220,8 +262,8 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h1, color: commonColors.white },
   headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: layout.tabBarSpace, paddingTop: spacing.md },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
+  listContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace + spacing.xl },
+  listWeb: { width: '100%' },
   card: { flexDirection: 'row', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.md, ...shadows.card },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

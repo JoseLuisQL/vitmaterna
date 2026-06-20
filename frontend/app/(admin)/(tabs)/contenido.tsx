@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus, Eye, TrendingUp, Menu } from 'lucide-react-native';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,8 +20,10 @@ import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { AppModal } from '../../../src/components/ui/AppModal';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast, RichText } from '../../../src/components/ui';
+import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
@@ -332,31 +335,13 @@ export default function ContenidoScreen(): React.ReactElement {
     </View>
   );
 
-  return (
-    <View style={styles.container}>
-      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.menuBtn} onPress={openSidebar} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Abrir menú">
-              <Menu size={22} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Contenido educativo</Text>
-              <Text style={styles.subtitle}>{items.length} recurso(s) · {items.filter((i) => i.activo).length} activos</Text>
-            </View>
-            <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8}>
-              <Plus size={22} color={commonColors.white} />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
+  const contentList = (
       <FlatList
         data={isLoading ? [] : filteredItems}
         keyExtractor={(i) => i.id}
         renderItem={renderItem}
         ListHeaderComponent={renderListHeader}
-        contentContainerStyle={[styles.list, webShell && styles.listWeb]}
+        contentContainerStyle={[styles.list, webShell ? styles.listWeb : null]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
         ListEmptyComponent={
@@ -364,11 +349,158 @@ export default function ContenidoScreen(): React.ReactElement {
             <View style={{ paddingTop: spacing.md }}><ListSkeleton count={6} /></View>
           ) : (
             <View style={{ marginTop: 60 }}>
-              <EmptyState icon={BookOpen} title="Sin contenido" description={search || filterCat ? 'No hay recursos con ese filtro.' : 'Crea el primer recurso educativo para las gestantes.'} themeColor={BRAND} />
+              <EmptyState icon={BookOpen as any} title="Sin contenido" description={search || filterCat ? 'No hay recursos con ese filtro.' : 'Crea el primer recurso educativo para las gestantes.'} themeColor={BRAND} />
             </View>
           )
         }
       />
+  );
+
+  const tableColumns: DataTableColumn<EducationContent>[] = [
+    {
+      key: 'titulo',
+      header: 'Título del Recurso',
+      flex: 2,
+      sortValue: (u) => u.titulo.toLowerCase(),
+      render: (u) => (
+        <View style={styles.tableTitleCell}>
+          <View style={styles.tableIcon}>
+            <BookOpen size={16} color={BRAND} />
+          </View>
+          <Text style={styles.tableName} numberOfLines={1}>{u.titulo}</Text>
+        </View>
+      ),
+    },
+    {
+      key: 'tipo',
+      header: 'Tipo',
+      width: 120,
+      sortValue: (u) => u.tipo || '',
+      render: (u) => <AppBadge label={TIPO_LABEL[u.tipo || ''] || u.tipo || '—'} variant="default" size="sm" />,
+    },
+    {
+      key: 'categoria',
+      header: 'Categoría',
+      width: 140,
+      sortValue: (u) => u.categoria || '',
+      render: (u) => <AppBadge label={CATEGORIA_LABEL[u.categoria || ''] || 'General'} variant="info" size="sm" />,
+    },
+    {
+      key: 'vistas',
+      header: 'Vistas',
+      width: 90,
+      sortValue: (u) => u.viewsCount || 0,
+      render: (u) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Eye size={14} color={commonColors.textSecondary} />
+          <Text style={{ ...typography.bodySm, color: commonColors.textSecondary }}>{u.viewsCount || 0}</Text>
+        </View>
+      ),
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      width: 100,
+      sortValue: (u) => (u.activo ? 1 : 0),
+      render: (u) => <AppBadge label={u.activo ? 'Activo' : 'Inactivo'} variant={u.activo ? 'success' : 'danger'} size="sm" />,
+    },
+    {
+      key: 'acciones',
+      header: '',
+      width: 100,
+      render: (u) => (
+        <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4 }}>
+            <Pencil size={18} color={commonColors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4 }}>
+            <Trash2 size={18} color={semanticColors.danger} />
+          </TouchableOpacity>
+        </View>
+      ),
+    },
+  ];
+
+  const webBody = (
+    <ScreenLayout
+      role="admin"
+      title="Contenido educativo"
+      subtitle={`${items.length} recurso(s) · ${items.filter((i) => i.activo).length} activos`}
+      scroll={false}
+      width="full"
+      accentColor={adminColors.primary}
+    >
+      <>
+        <View style={styles.webToolbar}>
+          <View style={styles.webSearchBox}>
+            <Search size={18} color={commonColors.textTertiary} />
+            <TextInput
+              style={styles.webSearchInput}
+              placeholder="Buscar contenido..."
+              placeholderTextColor={commonColors.textTertiary}
+              value={search}
+              onChangeText={setSearch}
+            />
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
+            ) : null}
+          </View>
+          <TouchableOpacity style={styles.webCreateBtn} onPress={openCreate} activeOpacity={0.85}>
+            <Plus size={18} color={commonColors.white} />
+            <Text style={styles.webCreateText}>Nuevo contenido</Text>
+          </TouchableOpacity>
+        </View>
+        {availableCats.length > 0 && (
+          <View style={styles.webFilterRow}>
+            <TouchableOpacity style={[styles.filterChip, !filterCat && styles.filterChipActive]} onPress={() => setFilterCat(null)}>
+              <Text style={[styles.filterChipText, !filterCat && styles.filterChipTextActive]}>Todas</Text>
+            </TouchableOpacity>
+            {availableCats.map((c) => (
+              <TouchableOpacity key={c} style={[styles.filterChip, filterCat === c && styles.filterChipActive]} onPress={() => setFilterCat(filterCat === c ? null : c)}>
+                <Text style={[styles.filterChipText, filterCat === c && styles.filterChipTextActive]}>{CATEGORIA_LABEL[c]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </>
+
+      <DataTable
+        columns={tableColumns}
+        data={filteredItems ?? []}
+        keyExtractor={(u) => u.id}
+        loading={isLoading}
+        onRowPress={(u) => openEdit(u)}
+        emptyIcon={BookOpen as any}
+        emptyTitle="Sin contenido"
+        emptyMessage={search || filterCat ? 'No hay recursos con ese filtro.' : 'Crea el primer recurso educativo para las gestantes.'}
+        emptyAccent={adminColors.primary}
+      />
+    </ScreenLayout>
+  );
+
+  return (
+    <View style={styles.container}>
+      {webShell ? webBody : (
+        <>
+          <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
+            <SafeAreaView edges={['top']}>
+              <View style={styles.header}>
+                <TouchableOpacity style={styles.menuBtn} onPress={openSidebar} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Abrir menú">
+                  <Menu size={22} color={commonColors.white} />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title}>Contenido educativo</Text>
+                  <Text style={styles.subtitle}>{items.length} recurso(s) · {items.filter((i) => i.activo).length} activos</Text>
+                </View>
+                <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8}>
+                  <Plus size={22} color={commonColors.white} />
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </LinearGradient>
+          {contentList}
+        </>
+      )}
 
       <AppModal
         visible={modalVisible}
@@ -530,8 +662,21 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: commonColors.white },
   subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  webCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: adminColors.primary, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, height: 44 },
+  webCreateText: { ...typography.button, color: commonColors.white, fontSize: 14 },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.xl, alignSelf: 'center', paddingBottom: spacing.xl },
+  listWeb: { width: '100%', paddingBottom: spacing.xl },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  webSearchBox: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border,
+    borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44,
+  },
+  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineStyle: 'none' } as any,
+  webFilterRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.md },
+  tableTitleCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  tableIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
   // Editor: ayuda de formato + botón de previsualización
   formatHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.md },
   formatHint: { ...typography.caption, color: commonColors.textTertiary, flex: 1, lineHeight: 16 },

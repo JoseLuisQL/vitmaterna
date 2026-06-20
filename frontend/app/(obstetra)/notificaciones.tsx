@@ -3,5 +3,5 @@ import { NotificationsScreen } from '../../src/components/shared/NotificationsSc
 import { obstetraColors } from '../../src/theme/colors';
 
 export default function NotificacionesObstetra(): React.ReactElement {
-  return <NotificationsScreen themeColor={obstetraColors.primary} gradient={obstetraColors.gradient} />;
+  return <NotificationsScreen role="obstetra" themeColor={obstetraColors.primary} gradient={obstetraColors.gradient} />;
 }

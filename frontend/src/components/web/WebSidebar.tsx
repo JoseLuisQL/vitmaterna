@@ -15,9 +15,9 @@
  * móvil/nativo nunca aparece, por lo que no altera la experiencia móvil.
  */
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname, type Href } from 'expo-router';
-import { LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react-native';
+import { LogOut, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react-native';
 import { VitMaternaLogo } from '../ui/VitMaternaLogo';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/authStore';
@@ -99,7 +99,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
 
   return (
     <View style={[styles.container, { width, backgroundColor: colors.surface, borderRightColor: colors.border }]}>
-      {/* Cabecera: marca + colapsar */}
+      {/* Cabecera: marca */}
       <View style={[styles.brandRow, collapsed && styles.brandRowCollapsed, { borderBottomColor: colors.borderLight }]}>
         <VitMaternaLogo size={collapsed ? 36 : 40} />
         {!collapsed && (
@@ -108,19 +108,21 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
             <Text style={[styles.brandRole, { color: colors.textSecondary }]} numberOfLines={1}>{roleLabel}</Text>
           </View>
         )}
-        <Pressable
-          onPress={onToggleCollapsed}
-          style={[styles.collapseBtn, { backgroundColor: colors.surfaceAlt }, IS_WEB && ({ cursor: 'pointer' } as any)]}
-          accessibilityRole="button"
-          accessibilityLabel={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-        >
-          {collapsed ? (
-            <PanelLeftOpen size={18} color={colors.textSecondary} />
-          ) : (
-            <PanelLeftClose size={18} color={colors.textSecondary} />
-          )}
-        </Pressable>
       </View>
+
+      {/* Botón flotante para colapsar/expandir */}
+      <TouchableOpacity
+        style={[
+          styles.collapseBtn,
+          { backgroundColor: colors.surface, borderColor: colors.border, cursor: 'pointer' } as any
+        ]}
+        onPress={onToggleCollapsed}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={collapsed ? "Expandir menú" : "Colapsar menú"}
+      >
+        {collapsed ? <ChevronRight size={14} color={colors.textSecondary} /> : <ChevronLeft size={14} color={colors.textSecondary} />}
+      </TouchableOpacity>
 
       <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Primarios */}
@@ -142,20 +144,8 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
         ))}
       </ScrollView>
 
-      {/* Pie: identidad + tema + logout */}
+      {/* Pie: tema + logout */}
       <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
-        {!collapsed && (
-          <View style={styles.userRow}>
-            <View style={[styles.avatar, { backgroundColor: accent }]}>
-              <Text style={styles.avatarText}>{initial}</Text>
-            </View>
-            <View style={styles.userTexts}>
-              <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>{userName}</Text>
-              <Text style={[styles.userSub, { color: colors.textSecondary }]} numberOfLines={1}>{roleLabel}</Text>
-            </View>
-          </View>
-        )}
-
         {!collapsed && (
           <View style={styles.themeWrap}>
             <ThemeToggle accentColor={accent} />
@@ -202,7 +192,6 @@ function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): Reac
       accessibilityState={{ selected: active }}
       accessibilityLabel={item.label}
     >
-      {active ? <View style={[styles.activeBar, { backgroundColor: accent }]} /> : null}
       <Icon size={20} color={color} />
       {!collapsed && (
         <Text style={[styles.navLabel, { color: active ? accent : colors.text }, active && styles.navLabelActive]} numberOfLines={1}>
@@ -231,10 +220,6 @@ const styles = StyleSheet.create({
   brandTexts: { flex: 1, minWidth: 0 },
   brandName: { ...typography.h3, letterSpacing: 0.5 },
   brandRole: { ...typography.caption },
-  collapseBtn: {
-    width: 32, height: 32, borderRadius: borderRadius.sm,
-    alignItems: 'center', justifyContent: 'center',
-  },
 
   scroll: { paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
   group: { marginBottom: spacing.md, gap: 2 },
@@ -244,6 +229,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs, marginLeft: spacing.sm, marginTop: spacing.xs,
   },
   collapsedDivider: { height: 1, marginVertical: spacing.xs, marginHorizontal: spacing.xs },
+  
+  collapseBtn: {
+    position: 'absolute',
+    top: webLayout.topbarHeight / 2 - 12,
+    right: -12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
 
   navRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm2,
@@ -252,7 +255,6 @@ const styles = StyleSheet.create({
   },
   navRowCollapsed: { justifyContent: 'center', paddingHorizontal: 0 },
   navRowPressed: { },
-  activeBar: { position: 'absolute', left: 0, top: 8, bottom: 8, width: 3, borderRadius: borderRadius.full },
   navLabel: { ...typography.bodyMedium, flex: 1 },
   navLabelActive: { ...typography.bodyMedium, fontWeight: '600' },
 

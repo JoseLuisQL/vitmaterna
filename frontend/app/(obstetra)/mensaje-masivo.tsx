@@ -9,9 +9,11 @@ import { useMutation } from '@tanstack/react-query';
 import { ChevronLeft, Megaphone, Users } from 'lucide-react-native';
 import api from '../../src/services/api';
 import { confirmAction, notify } from '../../src/utils/confirm';
+import { useResponsive } from '../../src/theme/responsive';
 import { commonColors, obstetraColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
-import { WebMaxWidth } from '../../src/components/web';
+import { spacing } from '../../src/theme/spacing';
+import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
 
 const BRAND = obstetraColors.primary;
 
@@ -20,6 +22,7 @@ type Riesgo = '' | 'verde' | 'amarillo' | 'rojo';
 
 export default function MensajeMasivoScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const [contenido, setContenido] = useState('');
   const [trimestre, setTrimestre] = useState<Trimestre>(0);
   const [riesgo, setRiesgo] = useState<Riesgo>('');
@@ -72,75 +75,72 @@ export default function MensajeMasivoScreen(): React.ReactElement {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <SafeAreaView edges={['top']}>
-        <View style={styles.headerNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <ChevronLeft size={24} color={commonColors.text} />
+    <ScreenLayout
+      role="obstetra"
+      title="Mensaje masivo"
+      width="full"
+      showBack
+      accentColor={BRAND}
+    >
+      <View style={webShell ? styles.twoCol : undefined}>
+        <View style={webShell ? styles.col : undefined}>
+          <View style={styles.iconWrap}>
+            <Megaphone size={28} color={BRAND} />
+          </View>
+          <Text style={styles.intro}>
+            Envía un aviso a un grupo de gestantes (cambios de horario, campañas, jornadas de salud).
+          </Text>
+
+          <Text style={styles.label}>Filtrar por trimestre</Text>
+          <View style={styles.chipRow}>
+            <Chip label="Todas" active={trimestre === 0} onPress={() => setTrimestre(0)} />
+            <Chip label="1°" active={trimestre === 1} onPress={() => setTrimestre(1)} />
+            <Chip label="2°" active={trimestre === 2} onPress={() => setTrimestre(2)} />
+            <Chip label="3°" active={trimestre === 3} onPress={() => setTrimestre(3)} />
+          </View>
+
+          <Text style={styles.label}>Filtrar por riesgo</Text>
+          <View style={styles.chipRow}>
+            <Chip label="Todos" active={riesgo === ''} onPress={() => setRiesgo('')} />
+            <Chip label="Verde" active={riesgo === 'verde'} onPress={() => setRiesgo('verde')} />
+            <Chip label="Amarillo" active={riesgo === 'amarillo'} onPress={() => setRiesgo('amarillo')} />
+            <Chip label="Rojo" active={riesgo === 'rojo'} onPress={() => setRiesgo('rojo')} />
+          </View>
+        </View>
+
+        <View style={webShell ? styles.col : undefined}>
+          <Text style={styles.label}>Mensaje</Text>
+          <TextInput
+            style={styles.textArea}
+            value={contenido}
+            onChangeText={setContenido}
+            placeholder="Escribe el mensaje que recibirán las gestantes..."
+            placeholderTextColor={commonColors.textTertiary}
+            multiline
+            numberOfLines={5}
+            maxLength={1000}
+            textAlignVertical="top"
+          />
+          <Text style={styles.counter}>{contenido.length}/1000</Text>
+
+          <TouchableOpacity
+            style={StyleSheet.flatten([styles.sendBtn, mutation.isPending && styles.sendBtnDisabled, webShell && styles.sendBtnWeb])}
+            onPress={enviar}
+            disabled={mutation.isPending}
+            activeOpacity={0.85}
+          >
+            {mutation.isPending ? (
+              <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
+            ) : (
+              <>
+                <Users size={18} color={obstetraColors.onPrimary} />
+                <Text style={styles.sendBtnText}>Enviar a gestantes</Text>
+              </>
+            )}
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mensaje masivo</Text>
-          <View style={{ width: 40 }} />
         </View>
-      </SafeAreaView>
-
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        <View style={styles.iconWrap}>
-          <Megaphone size={28} color={BRAND} />
-        </View>
-        <Text style={styles.intro}>
-          Envía un aviso a un grupo de gestantes (cambios de horario, campañas, jornadas de salud).
-        </Text>
-
-        <Text style={styles.label}>Filtrar por trimestre</Text>
-        <View style={styles.chipRow}>
-          <Chip label="Todas" active={trimestre === 0} onPress={() => setTrimestre(0)} />
-          <Chip label="1°" active={trimestre === 1} onPress={() => setTrimestre(1)} />
-          <Chip label="2°" active={trimestre === 2} onPress={() => setTrimestre(2)} />
-          <Chip label="3°" active={trimestre === 3} onPress={() => setTrimestre(3)} />
-        </View>
-
-        <Text style={styles.label}>Filtrar por riesgo</Text>
-        <View style={styles.chipRow}>
-          <Chip label="Todos" active={riesgo === ''} onPress={() => setRiesgo('')} />
-          <Chip label="Verde" active={riesgo === 'verde'} onPress={() => setRiesgo('verde')} />
-          <Chip label="Amarillo" active={riesgo === 'amarillo'} onPress={() => setRiesgo('amarillo')} />
-          <Chip label="Rojo" active={riesgo === 'rojo'} onPress={() => setRiesgo('rojo')} />
-        </View>
-
-        <Text style={styles.label}>Mensaje</Text>
-        <TextInput
-          style={styles.textArea}
-          value={contenido}
-          onChangeText={setContenido}
-          placeholder="Escribe el mensaje que recibirán las gestantes..."
-          placeholderTextColor={commonColors.textTertiary}
-          multiline
-          numberOfLines={5}
-          maxLength={1000}
-          textAlignVertical="top"
-        />
-        <Text style={styles.counter}>{contenido.length}/1000</Text>
-
-        <TouchableOpacity
-          style={[styles.sendBtn, mutation.isPending && styles.sendBtnDisabled]}
-          onPress={enviar}
-          disabled={mutation.isPending}
-          activeOpacity={0.85}
-        >
-          {mutation.isPending ? (
-            <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
-          ) : (
-            <>
-              <Users size={18} color={obstetraColors.onPrimary} />
-              <Text style={styles.sendBtnText}>Enviar a gestantes</Text>
-            </>
-          )}
-        </TouchableOpacity>
-        </WebMaxWidth>
-      </ScrollView>
-    </View>
+      </View>
+    </ScreenLayout>
   );
 }
 
@@ -163,4 +163,17 @@ const styles = StyleSheet.create({
   sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: BRAND, borderRadius: 99, paddingVertical: 16, marginTop: 24 },
   sendBtnDisabled: { opacity: 0.7 },
   sendBtnText: { ...typography.button, fontSize: 16, color: obstetraColors.onPrimary },
+  sendBtnWeb: {
+    maxWidth: 320,
+    alignSelf: 'flex-end',
+  },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });
