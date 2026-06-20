@@ -69,10 +69,36 @@ function buildBreadcrumbs(role: UserRole, pathname: string): Crumb[] {
     }
   }
 
-  // Fallback: solo "Inicio" + ruta limpia.
-  const lastSegment = current.split('/').filter(Boolean).pop() ?? '';
-  if (lastSegment) {
-    crumbs.push({ label: lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1) });
+  // Fallback para rutas de detalle no listadas en el menú (p. ej.
+  // /gestante/{id}, /atender/{id}). Issue #4: nunca mostrar el id crudo
+  // (UUID) como miga; mapear a una etiqueta legible por sección.
+  const segments = current.split('/').filter(Boolean);
+
+  /** ¿El segmento parece un id (uuid, numérico o token largo) y no una palabra? */
+  const looksLikeId = (s: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(s) || /^\d+$/.test(s) || (s.length >= 16 && !/\s/.test(s));
+
+  // Mapa de la primera parte de la ruta → etiqueta legible del detalle. No se
+  // enlaza un padre porque la misma ruta de detalle la usan varios roles
+  // (obstetra y admin) con distinta sección padre; mejor una miga clara y
+  // estable que un enlace potencialmente equivocado.
+  const DETAIL_LABELS: Record<string, string> = {
+    gestante: 'Historia clínica',
+    atender: 'Atención de cita',
+    control: 'Nuevo control',
+    educacion: 'Contenido educativo',
+  };
+
+  const detailLabel = DETAIL_LABELS[segments[0]];
+  if (detailLabel) {
+    crumbs.push({ label: detailLabel });
+    return crumbs;
+  }
+
+  // Fallback genérico: última parte legible, descartando ids.
+  const readable = [...segments].reverse().find((s) => !looksLikeId(s));
+  if (readable) {
+    crumbs.push({ label: readable.charAt(0).toUpperCase() + readable.slice(1) });
   }
   return crumbs;
 }
