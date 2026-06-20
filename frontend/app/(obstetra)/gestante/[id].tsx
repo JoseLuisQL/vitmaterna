@@ -218,6 +218,13 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [embGrupo, setEmbGrupo] = useState('');
   const [embFactor, setEmbFactor] = useState('');
 
+  // Editar antecedentes obstétricos (G/P/C/A) — fórmula obstétrica
+  const [isObsModalVisible, setIsObsModalVisible] = useState(false);
+  const [obsGestaciones, setObsGestaciones] = useState('');
+  const [obsPartos, setObsPartos] = useState('');
+  const [obsCesareas, setObsCesareas] = useState('');
+  const [obsAbortos, setObsAbortos] = useState('');
+
   // Editar/suspender tratamiento (RF-4.10)
   const [editTreat, setEditTreat] = useState<any | null>(null);
   const [editDosis, setEditDosis] = useState('');
@@ -355,6 +362,54 @@ export default function PatientProfileScreen(): React.ReactElement {
         onSuccess: () => {
           toast.success('Datos actualizados', 'La FPP se recalculó automáticamente.');
           setIsEmbModalVisible(false);
+        },
+        onError: (e: any) => toast.error('No se pudo guardar', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
+      },
+    );
+  };
+
+  const openObsModal = () => {
+    if (!patient) return;
+    setObsGestaciones(patient.gestaciones != null ? String(patient.gestaciones) : '');
+    setObsPartos(patient.partos != null ? String(patient.partos) : '');
+    setObsCesareas(patient.cesareas != null ? String(patient.cesareas) : '');
+    setObsAbortos(patient.abortos != null ? String(patient.abortos) : '');
+    setIsObsModalVisible(true);
+  };
+
+  const handleSaveObstetricos = () => {
+    if (!patient) return;
+    // Validación: enteros >= 0. Un campo vacío se interpreta como 0.
+    const parse = (v: string, label: string): number | null => {
+      const s = v.trim();
+      if (s === '') return 0;
+      const n = Number(s);
+      if (!Number.isInteger(n) || n < 0) {
+        toast.error('Valor inválido', `${label} debe ser un número entero igual o mayor a 0.`);
+        return null;
+      }
+      return n;
+    };
+    const gestaciones = parse(obsGestaciones, 'Gestaciones');
+    const partosVaginales = parse(obsPartos, 'Partos');
+    const cesareas = parse(obsCesareas, 'Cesáreas');
+    const abortos = parse(obsAbortos, 'Abortos');
+    if (gestaciones === null || partosVaginales === null || cesareas === null || abortos === null) return;
+
+    // Coherencia obstétrica básica: P + C + A no debería superar G.
+    if (partosVaginales + cesareas + abortos > gestaciones) {
+      return toast.error(
+        'Datos incoherentes',
+        'La suma de partos, cesáreas y abortos no puede ser mayor que el número de gestaciones.',
+      );
+    }
+
+    updatePatient(
+      { id: patient.id, data: { gestaciones, partosVaginales, cesareas, abortos } },
+      {
+        onSuccess: () => {
+          toast.success('Antecedentes actualizados', 'Se recalculó el nivel de riesgo.');
+          setIsObsModalVisible(false);
         },
         onError: (e: any) => toast.error('No se pudo guardar', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
       },
@@ -825,7 +880,17 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <Fila label="Grupo sanguíneo" value={patient.bloodType} isLast />
               </Accordion>
 
-              <Accordion title="Antecedentes obstétricos" icon={Baby} accentColor={BRAND}>
+              <Accordion
+                title="Antecedentes obstétricos"
+                icon={Baby}
+                accentColor={BRAND}
+                headerAction={(
+                  <TouchableOpacity style={styles.addChip} onPress={openObsModal} hitSlop={6}>
+                    <Plus size={13} color={BRAND} />
+                    <Text style={styles.addChipText}>Editar</Text>
+                  </TouchableOpacity>
+                )}
+              >
                 <Fila label="Gestaciones (G)" value={patient.gestaciones} />
                 <Fila label="Partos (P)" value={patient.partos} />
                 <Fila label="Cesáreas (C)" value={patient.cesareas} />
@@ -1337,6 +1402,39 @@ export default function PatientProfileScreen(): React.ReactElement {
             </View>
             <View style={{ flex: 1 }}>
               <PlainInput label="Factor RH" placeholder="Ej. +" value={embFactor} onChangeText={setEmbFactor} themeColor={BRAND} />
+            </View>
+          </View>
+        </View>
+      </AppModal>
+
+      {/* ── MODAL: EDITAR ANTECEDENTES OBSTÉTRICOS (fórmula G/P/C/A) ── */}
+      <AppModal
+        visible={isObsModalVisible}
+        onClose={() => setIsObsModalVisible(false)}
+        title="Antecedentes obstétricos"
+        subtitle="Fórmula obstétrica de la gestante. Al guardar se recalcula el nivel de riesgo."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsObsModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSaveObstetricos} style={{ flex: 1 }} themeColor={BRAND} loading={isSavingEmb} disabled={isSavingEmb} />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Gestaciones (G)" placeholder="Ej. 2" value={obsGestaciones} onChangeText={setObsGestaciones} keyboardType="number-pad" themeColor={BRAND} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Partos (P)" placeholder="Ej. 1" value={obsPartos} onChangeText={setObsPartos} keyboardType="number-pad" themeColor={BRAND} />
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Cesáreas (C)" placeholder="Ej. 0" value={obsCesareas} onChangeText={setObsCesareas} keyboardType="number-pad" themeColor={BRAND} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Abortos (A)" placeholder="Ej. 0" value={obsAbortos} onChangeText={setObsAbortos} keyboardType="number-pad" themeColor={BRAND} />
             </View>
           </View>
         </View>
