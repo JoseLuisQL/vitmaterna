@@ -229,6 +229,42 @@ export default function CronogramaScreen(): React.ReactElement {
     { key: 'todas', label: 'Todas' },
   ];
 
+  // ── Acciones de cita reutilizables (móvil y web) — issue #5 ──
+  const patientNameOf = (item: any) =>
+    item.gestante?.user ? `${item.gestante.user.firstName} ${item.gestante.user.lastName}` : 'Paciente';
+
+  const atenderCita = (item: any) => {
+    router.push({
+      pathname: '/(obstetra)/atender/[appointmentId]',
+      params: { appointmentId: item.id, gestanteId: item.gestanteId || '', patientName: patientNameOf(item) },
+    } as any);
+  };
+
+  const marcarNoAsistio = async (item: any) => {
+    const ok = await confirmAction({
+      title: 'Marcar como no asistió',
+      message: `¿Confirmas que ${patientNameOf(item)} no asistió a su cita?`,
+      confirmText: 'Sí, no asistió',
+      destructive: true,
+    });
+    if (!ok) return;
+    updateStatus({ id: item.id, status: 'no_asistida' });
+  };
+
+  const resolverReprogramacion = (item: any, aprobar: boolean) => {
+    resolveReschedule(
+      { id: item.id, aprobar },
+      {
+        onSuccess: () =>
+          toast.success(
+            aprobar ? 'Reprogramación aprobada' : 'Solicitud rechazada',
+            aprobar ? 'La gestante fue notificada de la nueva fecha.' : 'La gestante fue notificada.',
+          ),
+        onError: () => toast.error('No se pudo procesar', 'Inténtalo nuevamente.'),
+      },
+    );
+  };
+
   if (webShell) {
     const columns: any[] = [
       {
@@ -277,6 +313,38 @@ export default function CronogramaScreen(): React.ReactElement {
           return <AppBadge label={label} variant={variant} size="sm" />;
         },
       },
+      {
+        // Acciones contextuales de la cita en escritorio (issue #5).
+        key: 'acciones', header: 'Acciones', width: 230,
+        render: (p: any) => {
+          const estado = p.estado || 'programada';
+          if (estado === 'solicitud_reprogramacion') {
+            return (
+              <View style={styles.rowActions}>
+                <TouchableOpacity style={[styles.rowActionBtn, styles.rowActionPrimary]} disabled={isResolving} onPress={() => resolverReprogramacion(p, true)} accessibilityRole="button" accessibilityLabel={`Aprobar reprogramación de ${patientNameOf(p)}`}>
+                  <Text style={styles.rowActionPrimaryText}>Aprobar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.rowActionBtn, styles.rowActionGhost]} disabled={isResolving} onPress={() => resolverReprogramacion(p, false)} accessibilityRole="button" accessibilityLabel={`Rechazar reprogramación de ${patientNameOf(p)}`}>
+                  <Text style={styles.rowActionGhostText}>Rechazar</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          if (estado === 'programada' || estado === 'confirmada') {
+            return (
+              <View style={styles.rowActions}>
+                <TouchableOpacity style={[styles.rowActionBtn, styles.rowActionPrimary]} onPress={() => atenderCita(p)} accessibilityRole="button" accessibilityLabel={`Atender cita de ${patientNameOf(p)}`}>
+                  <Text style={styles.rowActionPrimaryText}>Atender</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.rowActionBtn, styles.rowActionGhost]} onPress={() => marcarNoAsistio(p)} accessibilityRole="button" accessibilityLabel={`Marcar que ${patientNameOf(p)} no asistió`}>
+                  <Text style={styles.rowActionGhostText}>No asistió</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          return <Text style={{ ...typography.caption, color: commonColors.textTertiary }}>—</Text>;
+        },
+      },
     ];
 
     return (
@@ -313,7 +381,7 @@ export default function CronogramaScreen(): React.ReactElement {
             keyExtractor={(p: any) => p.id}
             loading={isLoading}
             onRowPress={(p: any) => p.gestante?.id && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: p.gestante.id } } as any)}
-            rowLabel={(p: any) => `Abrir cita de ${p.gestante?.user?.firstName || 'gestante'} ${p.gestante?.user?.lastName || ''}`.trim()}
+            rowLabel={(p: any) => `Abrir ficha de ${p.gestante?.user?.firstName || 'gestante'} ${p.gestante?.user?.lastName || ''}`.trim()}
             emptyIcon={Clock as any}
             emptyTitle="Sin citas"
             emptyMessage={search ? 'No hay resultados para tu búsqueda.' : 'No hay citas para este filtro.'}
@@ -496,4 +564,11 @@ const styles = StyleSheet.create({
   webChipTextActive: { color: commonColors.white },
   webCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: BRAND, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, height: 44 },
   webCreateText: { ...typography.button, color: commonColors.white, fontSize: 14 },
+  // Acciones por fila en la tabla web (issue #5)
+  rowActions: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  rowActionBtn: { paddingHorizontal: spacing.sm2, paddingVertical: 6, borderRadius: borderRadius.md },
+  rowActionPrimary: { backgroundColor: BRAND },
+  rowActionPrimaryText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
+  rowActionGhost: { backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  rowActionGhostText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
 });
