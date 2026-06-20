@@ -26,6 +26,7 @@ import { commonColors, obstetraColors, semanticColors } from '../../../src/theme
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { WebMaxWidth } from '../../../src/components/web';
+import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -48,6 +49,7 @@ const STEPS: StepDef[] = [
 
 export default function AtenderCitaScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const toast = useToast();
   const { appointmentId, gestanteId, patientName } = useLocalSearchParams<{
     appointmentId: string;
@@ -172,63 +174,69 @@ export default function AtenderCitaScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        <Text style={styles.intro}>
-          Registra los datos de esta consulta en orden. Puedes abrir y completar cada
-          sección; lo registrado queda ligado a esta cita.
-        </Text>
+        <WebMaxWidth width="full">
+          <View style={webShell ? styles.twoCol : undefined}>
+            <View style={webShell ? styles.col : undefined}>
+              <Text style={styles.intro}>
+                Registra los datos de esta consulta en orden. Puedes abrir y completar cada
+                sección; lo registrado queda ligado a esta cita.
+              </Text>
 
-        {visibleSteps.map((step, idx) => {
-          const Icon = step.icon;
-          const isDone = done[step.key];
-          return (
-            <TouchableOpacity
-              key={step.key}
-              style={[styles.stepCard, isDone && styles.stepCardDone]}
-              activeOpacity={0.7}
-              onPress={() => openStep(step.key)}
-              accessibilityRole="button"
-              accessibilityLabel={`${step.label}. ${isDone ? 'Registrado' : 'Pendiente'}`}
-              accessibilityHint={step.desc}
-            >
-              <View style={[styles.stepIconWrap, isDone && styles.stepIconWrapDone]}>
-                <Icon size={22} color={isDone ? semanticColors.success : BRAND} />
-              </View>
-              <View style={styles.stepInfo}>
-                <View style={styles.stepTitleRow}>
-                  <Text style={styles.stepNum}>{idx + 1}.</Text>
-                  <Text style={styles.stepLabel}>{step.label}</Text>
+              <View style={styles.finishWrap}>
+                <View style={styles.finishHint}>
+                  <CalendarCheck size={18} color={BRAND} />
+                  <Text style={styles.finishHintText}>
+                    Al finalizar, la cita se marcará como asistida y la gestante será notificada.
+                  </Text>
                 </View>
-                <Text style={styles.stepDesc}>{step.desc}</Text>
+                <AppButton
+                  title="Finalizar atención"
+                  onPress={handleFinish}
+                  loading={isFinishing}
+                  disabled={isFinishing}
+                  themeColor={BRAND}
+                  style={styles.finishBtn}
+                />
               </View>
-              {isDone ? (
-                <CheckCircle2 size={22} color={semanticColors.success} />
-              ) : (
-                <View style={styles.stepRight}>
-                  <Circle size={20} color={commonColors.borderStrong} />
-                  <ChevronRight size={18} color={commonColors.textTertiary} />
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+            </View>
 
-        <View style={styles.finishWrap}>
-          <View style={styles.finishHint}>
-            <CalendarCheck size={18} color={BRAND} />
-            <Text style={styles.finishHintText}>
-              Al finalizar, la cita se marcará como asistida y la gestante será notificada.
-            </Text>
+            <View style={webShell ? styles.col : undefined}>
+              {visibleSteps.map((step, idx) => {
+                const Icon = step.icon;
+                const isDone = done[step.key];
+                return (
+                  <TouchableOpacity
+                    key={step.key}
+                    style={[styles.stepCard, isDone && styles.stepCardDone]}
+                    activeOpacity={0.7}
+                    onPress={() => openStep(step.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${step.label}. ${isDone ? 'Registrado' : 'Pendiente'}`}
+                    accessibilityHint={step.desc}
+                  >
+                    <View style={[styles.stepIconWrap, isDone && styles.stepIconWrapDone]}>
+                      <Icon size={22} color={isDone ? semanticColors.success : BRAND} />
+                    </View>
+                    <View style={styles.stepInfo}>
+                      <View style={styles.stepTitleRow}>
+                        <Text style={styles.stepNum}>{idx + 1}.</Text>
+                        <Text style={styles.stepLabel}>{step.label}</Text>
+                      </View>
+                      <Text style={styles.stepDesc}>{step.desc}</Text>
+                    </View>
+                    {isDone ? (
+                      <CheckCircle2 size={22} color={semanticColors.success} />
+                    ) : (
+                      <View style={styles.stepRight}>
+                        <Circle size={20} color={commonColors.borderStrong} />
+                        <ChevronRight size={18} color={commonColors.textTertiary} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-          <AppButton
-            title="Finalizar atención"
-            onPress={handleFinish}
-            loading={isFinishing}
-            disabled={isFinishing}
-            themeColor={BRAND}
-            style={styles.finishBtn}
-          />
-        </View>
         </WebMaxWidth>
       </ScrollView>
     </View>
@@ -275,4 +283,13 @@ const styles = StyleSheet.create({
   finishHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: obstetraColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md },
   finishHintText: { flex: 1, ...typography.caption, color: commonColors.text, lineHeight: 18 },
   finishBtn: { borderRadius: borderRadius.full, paddingVertical: spacing.md },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });

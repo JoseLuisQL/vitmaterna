@@ -9,6 +9,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { DateTimeField } from '../../../src/components/ui';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
@@ -93,6 +95,7 @@ type DniStatus = 'idle' | 'checking' | 'available' | 'taken';
 
 export default function NuevaGestanteScreen(): React.ReactElement {
   const router = useRouter();
+  const { webShell } = useResponsive();
   const [currentStep, setCurrentStep] = useState(1);
   const [dniStatus, setDniStatus] = useState<DniStatus>('idle');
   const { mutateAsync: createPatient, isPending: creating } = useCreatePatient();
@@ -245,6 +248,243 @@ export default function NuevaGestanteScreen(): React.ReactElement {
     </View>
   );
 
+  if (webShell) {
+    return (
+      <View style={styles.container}>
+        <ScreenLayout
+          role="obstetra"
+          title="Registrar nueva gestante"
+          subtitle="Formulario clínico de ingreso"
+          showBack
+          onBack={() => router.back()}
+          width="full"
+          scroll={true}
+        >
+          <View style={styles.twoCol}>
+            {/* Stepper on the left (vertical checklist) */}
+            <View style={styles.stepperWebCol}>
+              {STEPS.map((step) => {
+                const isActive = step.id === currentStep;
+                const isCompleted = step.id < currentStep;
+                return (
+                  <TouchableOpacity
+                    key={step.id}
+                    disabled={isPending}
+                    onPress={async () => {
+                      // Validate previous steps before switching directly
+                      if (step.id < currentStep) {
+                        setCurrentStep(step.id);
+                      } else if (step.id > currentStep) {
+                        // Validate active step fields
+                        const fields = STEP_FIELDS[currentStep] ?? [];
+                        const isStepValid = await trigger(fields as any);
+                        if (currentStep === 1 && dniStatus === 'taken') return;
+                        if (isStepValid) {
+                          setCurrentStep(step.id);
+                        }
+                      }
+                    }}
+                    style={[styles.stepRowWeb, isActive && styles.stepRowWebActive]}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.stepDotWeb, isActive && styles.stepDotWebActive, isCompleted && styles.stepDotWebCompleted]}>
+                      {isCompleted ? (
+                        <Check size={12} color={commonColors.white} strokeWidth={3} />
+                      ) : (
+                        <Text style={[styles.stepDotNumWeb, isActive && styles.stepDotNumWebActive]}>{step.id}</Text>
+                      )}
+                    </View>
+                    <Text style={[styles.stepLabelWeb, isActive && styles.stepLabelWebActive]}>{step.title}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Form on the right */}
+            <View style={styles.col}>
+              <View style={styles.card}>
+                {/* Paso 1 */}
+                {currentStep === 1 && (
+                  <View style={styles.formGrid}>
+                    <Text style={styles.sectionTitle}>Identificación</Text>
+                    <Text style={styles.sectionHint}>Los campos con * son obligatorios.</Text>
+                    <AppInput name="firstName" control={control} label="Nombres *" placeholder="Ej. María Elena" error={errors.firstName?.message} themeColor={BRAND} />
+                    <AppInput name="lastName" control={control} label="Apellidos *" placeholder="Ej. Quispe Ramos" error={errors.lastName?.message} themeColor={BRAND} />
+
+                    <View>
+                      <AppInput
+                        name="dni"
+                        control={control}
+                        label="DNI *"
+                        keyboardType="number-pad"
+                        maxLength={8}
+                        placeholder="8 dígitos"
+                        error={errors.dni?.message}
+                        themeColor={BRAND}
+                        onBlur={verifyDni}
+                      />
+                      {dniStatus === 'checking' && (
+                        <View style={styles.dniStatusRow}>
+                          <ActivityIndicator size="small" color={commonColors.textTertiary} />
+                          <Text style={styles.dniStatusText}>Verificando DNI…</Text>
+                        </View>
+                      )}
+                      {dniStatus === 'available' && !errors.dni && (
+                        <View style={styles.dniStatusRow}>
+                          <CheckCircle2 size={14} color={semanticColors.success} />
+                          <Text style={[styles.dniStatusText, { color: semanticColors.success }]}>DNI disponible</Text>
+                        </View>
+                      )}
+                      {dniStatus === 'taken' && (
+                        <View style={styles.dniStatusRow}>
+                          <AlertCircle size={14} color={semanticColors.danger} />
+                          <Text style={[styles.dniStatusText, { color: semanticColors.danger }]}>Este DNI ya está registrado</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <Controller
+                      control={control}
+                      name="fechaNacimiento"
+                      render={({ field: { value, onChange } }) => (
+                        <DateTimeField
+                          label="Fecha de nacimiento *"
+                          mode="date"
+                          value={value || ''}
+                          onChange={onChange}
+                          themeColor={BRAND}
+                          maximumDate={new Date()}
+                          placeholder="Seleccionar fecha"
+                        />
+                      )}
+                    />
+                    {errors.fechaNacimiento && <Text style={styles.fieldError}>{errors.fechaNacimiento.message}</Text>}
+
+                    <AppInput name="historiaClinica" control={control} label="N° de historia clínica" placeholder="Opcional" themeColor={BRAND} />
+                  </View>
+                )}
+
+                {/* Paso 2 */}
+                {currentStep === 2 && (
+                  <View style={styles.formGrid}>
+                    <Text style={styles.sectionTitle}>Embarazo actual</Text>
+                    <Text style={styles.sectionHint}>
+                      La FUM es obligatoria: con ella se calcula la fecha probable de parto, la edad
+                      gestacional y se genera automáticamente el cronograma de controles.
+                    </Text>
+                    <Controller
+                      control={control}
+                      name="fum"
+                      render={({ field: { value, onChange } }) => (
+                        <DateTimeField
+                          label="Fecha de última menstruación (FUM) *"
+                          mode="date"
+                          value={value || ''}
+                          onChange={onChange}
+                          themeColor={BRAND}
+                          maximumDate={new Date()}
+                          placeholder="Seleccionar fecha"
+                        />
+                      )}
+                    />
+                    {errors.fum && <Text style={styles.fieldError}>{errors.fum.message}</Text>}
+
+                    <TouchableOpacity
+                      style={styles.checkboxRow}
+                      onPress={() => setValue('fumDudosa', !watch('fumDudosa'))}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.checkbox, watch('fumDudosa') && styles.checkboxActive]}>
+                        {watch('fumDudosa') && <Check size={14} color={obstetraColors.onPrimary} />}
+                      </View>
+                      <Text style={styles.checkboxText}>Hay duda sobre la FUM (se confirmará por ecografía)</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Paso 3 */}
+                {currentStep === 3 && (
+                  <View style={styles.formGrid}>
+                    <Text style={styles.sectionTitle}>Medidas y antecedentes</Text>
+                    <Text style={styles.subTitle}>Antropometría y tipo de sangre</Text>
+                    <AppInput name="pesoHabitual" control={control} label="Peso habitual (kg)" keyboardType="decimal-pad" placeholder="Ej. 62" error={errors.pesoHabitual?.message} themeColor={BRAND} />
+                    <AppInput name="talla" control={control} label="Talla (en metros, ej. 1.58)" keyboardType="decimal-pad" placeholder="Ej. 1.58" error={errors.talla?.message} themeColor={BRAND} />
+                    <View style={styles.row}>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <AppInput name="grupoSanguineo" control={control} label="Grupo sanguíneo" placeholder="O, A, B, AB" autoCapitalize="characters" themeColor={BRAND} />
+                      </View>
+                      <View style={{ flex: 1, paddingLeft: 8 }}>
+                        <AppInput name="factorRh" control={control} label="Factor RH" placeholder="+ o −" themeColor={BRAND} />
+                      </View>
+                    </View>
+
+                    <Text style={[styles.subTitle, { marginTop: 8 }]}>Antecedentes obstétricos</Text>
+                    <View style={styles.row}>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <AppInput name="gestaciones" control={control} label="Gestaciones (G)" keyboardType="number-pad" placeholder="0" error={errors.gestaciones?.message} themeColor={BRAND} />
+                      </View>
+                      <View style={{ flex: 1, paddingLeft: 8 }}>
+                        <AppInput name="partosVaginales" control={control} label="Partos (P)" keyboardType="number-pad" placeholder="0" error={errors.partosVaginales?.message} themeColor={BRAND} />
+                      </View>
+                    </View>
+                    <View style={styles.row}>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <AppInput name="cesareas" control={control} label="Cesáreas (C)" keyboardType="number-pad" placeholder="0" error={errors.cesareas?.message} themeColor={BRAND} />
+                      </View>
+                      <View style={{ flex: 1, paddingLeft: 8 }}>
+                        <AppInput name="abortos" control={control} label="Abortos (A)" keyboardType="number-pad" placeholder="0" error={errors.abortos?.message} themeColor={BRAND} />
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Paso 4 */}
+                {currentStep === 4 && (
+                  <View style={styles.formGrid}>
+                    <Text style={styles.sectionTitle}>Contacto y datos sociales</Text>
+                    <Text style={styles.subTitle}>Todos opcionales, pero recomendados para el seguimiento</Text>
+                    <AppInput name="phone" control={control} label="Teléfono" keyboardType="phone-pad" maxLength={9} placeholder="9 dígitos" error={errors.phone?.message} themeColor={BRAND} />
+                    <AppInput name="acompanantePhone" control={control} label="Teléfono del acompañante" keyboardType="phone-pad" maxLength={9} placeholder="9 dígitos" error={errors.acompanantePhone?.message} themeColor={BRAND} />
+                    <AppInput name="direccion" control={control} label="Dirección" placeholder="Ej. Jr. Libertad 789" themeColor={BRAND} />
+                    <AppInput name="localidad" control={control} label="Localidad" themeColor={BRAND} />
+                    <AppInput name="codigoSis" control={control} label="Código SIS" themeColor={BRAND} />
+                    <AppInput name="ocupacion" control={control} label="Ocupación" themeColor={BRAND} />
+                  </View>
+                )}
+
+                {/* Acciones */}
+                <View style={styles.footerActions}>
+                  {currentStep > 1 && (
+                    <TouchableOpacity style={styles.btnSecondary} onPress={prevStep}>
+                      <ChevronLeft size={18} color={commonColors.textSecondary} />
+                      <Text style={styles.btnSecondaryText}>Anterior</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {currentStep < STEPS.length ? (
+                    <TouchableOpacity style={styles.btnPrimary} onPress={nextStep}>
+                      <Text style={styles.btnPrimaryText}>Siguiente</Text>
+                      <ChevronRight size={18} color={obstetraColors.onPrimary} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.btnSuccess, isPending && { opacity: 0.7 }]}
+                      onPress={handleSubmit(onSubmit)}
+                      disabled={isPending}
+                    >
+                      <Check size={18} color={obstetraColors.onPrimary} style={{ marginRight: 8 }} />
+                      <Text style={styles.btnSuccessText}>{isPending ? 'Guardando…' : 'Registrar gestante'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScreenLayout>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerContainer}>
@@ -263,7 +503,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <WebMaxWidth width="readable">
+          <WebMaxWidth width="full">
           <View style={styles.card}>
             {/* ── PASO 1: Identificación ── */}
             {currentStep === 1 && (
@@ -517,4 +757,64 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: BRAND,
   },
   btnSuccessText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
+  stepperWebCol: {
+    width: 240,
+    paddingRight: spacing.md,
+    gap: spacing.sm,
+  },
+  stepRowWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    gap: spacing.sm,
+  },
+  stepRowWebActive: {
+    backgroundColor: obstetraColors.primaryLight,
+    borderColor: BRAND,
+  },
+  stepDotWeb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: commonColors.disabled,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepDotWebActive: {
+    backgroundColor: BRAND,
+  },
+  stepDotWebCompleted: {
+    backgroundColor: semanticColors.success,
+  },
+  stepDotNumWeb: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: commonColors.white,
+  },
+  stepDotNumWebActive: {
+    color: commonColors.white,
+  },
+  stepLabelWeb: {
+    ...typography.bodySmall,
+    fontWeight: '600',
+    color: commonColors.textSecondary,
+  },
+  stepLabelWebActive: {
+    color: BRAND,
+    fontWeight: '700',
+  },
 });

@@ -15,6 +15,7 @@ import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { WebMaxWidth } from '../../../src/components/web';
+import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
@@ -66,6 +67,7 @@ type ControlFormData = z.infer<typeof controlSchema>;
 export default function NuevoControlScreen(): React.ReactElement {
   const { patientId, appointmentId } = useLocalSearchParams<{ patientId: string; appointmentId?: string }>();
   const router = useRouter();
+  const { webShell } = useResponsive();
   const toast = useToast();
   const { mutate: createControl, isPending } = useCreateControl();
 
@@ -132,7 +134,7 @@ export default function NuevoControlScreen(): React.ReactElement {
       </LinearGradient>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
+        <WebMaxWidth width="full">
         <View style={styles.noteCard}>
           <Text style={styles.noteText}>
             Registro rápido del control. Solo la semana gestacional es obligatoria
@@ -141,43 +143,49 @@ export default function NuevoControlScreen(): React.ReactElement {
           </Text>
         </View>
 
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
-            <Text style={styles.sectionTitle}>Datos del control</Text>
+        <View style={webShell ? styles.twoCol : undefined}>
+          <View style={webShell ? styles.col : undefined}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
+                <Text style={styles.sectionTitle}>Datos del control</Text>
+              </View>
+              <View style={styles.formGroup}>
+                <AppInput control={control} name="week" label="Semana Gestacional" placeholder="Ej. 24" keyboardType="numeric" error={errors.week?.message} />
+                <AppInput control={control} name="weight" label="Peso (kg) — opcional" placeholder="Ej. 65.5" keyboardType="numeric" error={errors.weight?.message} />
+                <AppInput control={control} name="bloodPressure" label="Presión Arterial (mmHg) — opcional" placeholder="Ej. 120/80" error={errors.bloodPressure?.message} />
+                <AppInput control={control} name="temperatura" label="Temperatura (°C) — opcional" placeholder="Ej. 36.5" keyboardType="numeric" error={errors.temperatura?.message} />
+                <AppInput control={control} name="pulsoMaterno" label="Pulso materno (lpm) — opcional" placeholder="Ej. 78" keyboardType="numeric" error={errors.pulsoMaterno?.message} />
+              </View>
+            </View>
+
+            <AppButton title="Guardar Control" onPress={handleSubmit(onSubmit)} loading={isPending} disabled={isPending} style={StyleSheet.flatten([styles.submitBtn, webShell && styles.submitBtnWeb])} />
           </View>
-          <View style={styles.formGroup}>
-            <AppInput control={control} name="week" label="Semana Gestacional" placeholder="Ej. 24" keyboardType="numeric" error={errors.week?.message} />
-            <AppInput control={control} name="weight" label="Peso (kg) — opcional" placeholder="Ej. 65.5" keyboardType="numeric" error={errors.weight?.message} />
-            <AppInput control={control} name="bloodPressure" label="Presión Arterial (mmHg) — opcional" placeholder="Ej. 120/80" error={errors.bloodPressure?.message} />
-            <AppInput control={control} name="temperatura" label="Temperatura (°C) — opcional" placeholder="Ej. 36.5" keyboardType="numeric" error={errors.temperatura?.message} />
-            <AppInput control={control} name="pulsoMaterno" label="Pulso materno (lpm) — opcional" placeholder="Ej. 78" keyboardType="numeric" error={errors.pulsoMaterno?.message} />
+
+          <View style={webShell ? styles.col : undefined}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconWrap}><Baby size={20} color={BRAND} /></View>
+                <Text style={styles.sectionTitle}>Datos Fetales — opcional</Text>
+              </View>
+              <View style={styles.formGroup}>
+                <AppInput control={control} name="fetalHeartRate" label="Frecuencia Cardíaca Fetal (lpm) — opcional" placeholder="Ej. 140" keyboardType="numeric" error={errors.fetalHeartRate?.message} />
+                <AppInput control={control} name="fundalHeight" label="Altura Uterina (cm) — opcional" placeholder="Ej. 22" keyboardType="numeric" error={errors.fundalHeight?.message} />
+                <AppInput control={control} name="movimientoFetal" label="Movimiento fetal — opcional" placeholder="Ej. Presente / Ausente" error={errors.movimientoFetal?.message} />
+              </View>
+            </View>
+
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconWrap}><Stethoscope size={20} color={BRAND} /></View>
+                <Text style={styles.sectionTitle}>Indicaciones</Text>
+              </View>
+              <View style={styles.formGroup}>
+                <AppInput control={control} name="indications" label="Observaciones y Recomendaciones" placeholder="Escribe las indicaciones aquí..." multiline numberOfLines={4} error={errors.indications?.message} />
+              </View>
+            </View>
           </View>
         </View>
-
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Baby size={20} color={BRAND} /></View>
-            <Text style={styles.sectionTitle}>Datos Fetales — opcional</Text>
-          </View>
-          <View style={styles.formGroup}>
-            <AppInput control={control} name="fetalHeartRate" label="Frecuencia Cardíaca Fetal (lpm) — opcional" placeholder="Ej. 140" keyboardType="numeric" error={errors.fetalHeartRate?.message} />
-            <AppInput control={control} name="fundalHeight" label="Altura Uterina (cm) — opcional" placeholder="Ej. 22" keyboardType="numeric" error={errors.fundalHeight?.message} />
-            <AppInput control={control} name="movimientoFetal" label="Movimiento fetal — opcional" placeholder="Ej. Presente / Ausente" error={errors.movimientoFetal?.message} />
-          </View>
-        </View>
-
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconWrap}><Stethoscope size={20} color={BRAND} /></View>
-            <Text style={styles.sectionTitle}>Indicaciones</Text>
-          </View>
-          <View style={styles.formGroup}>
-            <AppInput control={control} name="indications" label="Observaciones y Recomendaciones" placeholder="Escribe las indicaciones aquí..." multiline numberOfLines={4} error={errors.indications?.message} />
-          </View>
-        </View>
-
-        <AppButton title="Guardar Control" onPress={handleSubmit(onSubmit)} loading={isPending} disabled={isPending} style={styles.submitBtn} />
         </WebMaxWidth>
       </ScrollView>
     </View>
@@ -205,4 +213,17 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.bodyMedium, color: commonColors.text },
   formGroup: { gap: 16 },
   submitBtn: { backgroundColor: BRAND, borderRadius: 99, paddingVertical: 16, marginTop: 12 },
+  submitBtnWeb: {
+    maxWidth: 320,
+    alignSelf: 'flex-end',
+  },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });
