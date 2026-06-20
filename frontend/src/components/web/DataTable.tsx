@@ -42,6 +42,8 @@ interface DataTableProps<T> {
   keyExtractor: (row: T) => string;
   /** Acción al pulsar una fila. */
   onRowPress?: (row: T) => void;
+  /** Etiqueta de accesibilidad por fila clicable (lector de pantalla). */
+  rowLabel?: (row: T) => string;
   loading?: boolean;
   /** Estado vacío. */
   emptyIcon?: LucideIcon;
@@ -57,6 +59,7 @@ export function DataTable<T>({
   data,
   keyExtractor,
   onRowPress,
+  rowLabel,
   loading = false,
   emptyIcon,
   emptyTitle = 'Sin registros',
@@ -151,6 +154,8 @@ export function DataTable<T>({
               <RowComp
                 key={keyExtractor(row)}
                 onPress={onRowPress ? () => onRowPress(row) : undefined}
+                accessibilityRole={onRowPress ? 'button' : undefined}
+                accessibilityLabel={onRowPress ? (rowLabel ? rowLabel(row) : undefined) : undefined}
                 style={onRowPress ? ({ pressed }: { pressed?: boolean }) => [
                   styles.row,
                   i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },

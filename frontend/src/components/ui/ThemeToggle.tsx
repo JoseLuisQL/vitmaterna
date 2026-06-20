@@ -16,13 +16,28 @@ const OPTIONS: { mode: ThemeMode; label: string; icon: LucideIcon }[] = [
   { mode: 'dark', label: 'Oscuro', icon: Moon },
 ];
 
-export function ThemeToggle({ accentColor = '#4A90D9' }: { accentColor?: string }): React.ReactElement {
+/**
+ * Modos disponibles actualmente. El modo oscuro/sistema está en desarrollo, así
+ * que solo se ofrece 'light'. En vez de mostrar opciones deshabilitadas (ruido),
+ * se ocultan; cuando se reactive el dark mode, basta ampliar esta lista.
+ */
+const AVAILABLE_MODES: ThemeMode[] = ['light'];
+
+/** ¿Tiene sentido mostrar el selector de tema? (≥2 modos disponibles). */
+export const isThemeToggleAvailable = AVAILABLE_MODES.length >= 2;
+
+export function ThemeToggle({ accentColor = '#4A90D9' }: { accentColor?: string }): React.ReactElement | null {
   const { mode, setMode, colors } = useTheme();
+  const options = OPTIONS.filter((o) => AVAILABLE_MODES.includes(o.mode));
+
+  // Con un solo modo disponible, el selector no aporta nada → no se muestra.
+  if (options.length < 2) return null;
+
   return (
     <View style={[styles.row, { backgroundColor: colors.surfaceAlt }]}>
-      {OPTIONS.map((opt) => {
+      {options.map((opt) => {
         const active = mode === opt.mode;
-        const disabled = opt.mode !== 'light';
+        const disabled = false;
         const Icon = opt.icon;
         return (
           <Pressable

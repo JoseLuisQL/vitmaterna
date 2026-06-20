@@ -51,7 +51,10 @@ corrigió antes **no reapareció**.
 > de enviar mensaje (obstetra y gestante). Verificado en navegador: las filas
 > ahora se anuncian como botones con nombre, **y el envío de mensaje funciona de
 > extremo a extremo por la UI** (mensaje persistido en el backend).
-> Pendiente (mismo patrón, menor): filas de `DataTable` (gestantes/cronograma).
+> Filas de `DataTable` — ✅ CORREGIDO: nuevo prop `rowLabel` en DataTable
+> (`accessibilityRole="button"` + label) aplicado en gestantes, cronograma,
+> citas, usuarios y contenido. Verificado: las filas se anuncian como botones con
+> nombre ("Abrir ficha de Lucía Sánchez") y son clicables por su nombre.
 
 _Descripción original:_
 Las filas de la **DataTable** (gestantes, cronograma) y de la **bandeja de chat**,
@@ -66,14 +69,14 @@ accesibilidad aparecen como `generic clickable` sin nombre.
   (p. ej. "Abrir conversación con Ana Gómez", "Enviar mensaje") a las filas de
   `DataTable`, a las filas de la bandeja de chat y al botón de envío.
 
-### 🟡 A11y-2 · Controles "Apariencia" deshabilitados visibles en el menú
-El sidebar muestra "Apariencia Sistema (No disponible)" y "Apariencia Oscuro
+### 🟡 A11y-2 · Controles "Apariencia" deshabilitados visibles en el menú — ✅ CORREGIDO
+El sidebar mostraba "Apariencia Sistema (No disponible)" y "Apariencia Oscuro
 (No disponible)" como botones deshabilitados.
-- **Impacto**: ruido para el usuario; ocupan espacio y confunden ("¿por qué está
-  esto si no funciona?").
-- **Contexto**: el modo oscuro está congelado a propósito (deuda técnica conocida).
-- **Recomendación**: ocultar las opciones de tema mientras el dark mode esté
-  deshabilitado, en vez de mostrarlas atenuadas.
+- **Impacto**: ruido para el usuario; ocupaban espacio y confundían.
+- **Corregido**: `ThemeToggle` ahora filtra a los modos disponibles y, con uno
+  solo, no se renderiza; las secciones "Apariencia" del sidebar móvil y web se
+  ocultan vía `isThemeToggleAvailable`. Verificado: ya no aparecen opciones de
+  tema en el menú. Cuando se reactive el dark mode, basta ampliar `AVAILABLE_MODES`.
 
 ### 🔵 DATA-1 · Gestante de alto riesgo sin FUM en el seed
 Lucía (riesgo alto) no tiene FUM, por lo que el dashboard muestra "Semana --".
@@ -97,8 +100,9 @@ formularios con `fill`+click), la automatización sí funciona.
 
 ## Resumen
 - **0 crashes · 0 errores de consola · 0 fallos funcionales** en el recorrido.
-- 3 hallazgos: 2 de accesibilidad (filas/botón de chat sin label; opciones de
-  tema deshabilitadas visibles) y 1 de datos de seed.
+- 3 hallazgos: **A11y-1 ✅ corregido** (filas de chat + DataTable y botón de
+  enviar con rol/label), **A11y-2 ✅ corregido** (opciones de tema deshabilitadas
+  ocultas), y DATA-1 (gestante sin FUM en seed — dato, no bug).
 - Validaciones, toasts, estados vacíos y degradación con datos faltantes:
   **sólidos**.
 

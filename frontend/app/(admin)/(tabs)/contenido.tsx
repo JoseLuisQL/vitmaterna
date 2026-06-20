@@ -475,6 +475,7 @@ export default function ContenidoScreen(): React.ReactElement {
         keyExtractor={(u) => u.id}
         loading={isLoading}
         onRowPress={(u) => openEdit(u)}
+        rowLabel={(u: any) => `Editar contenido: ${u.titulo || ''}`.trim()}
         emptyIcon={BookOpen as any}
         emptyTitle="Sin contenido"
         emptyMessage={search || filterCat ? 'No hay recursos con ese filtro.' : 'Crea el primer recurso educativo para las gestantes.'}

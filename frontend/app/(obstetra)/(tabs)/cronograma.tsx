@@ -313,6 +313,7 @@ export default function CronogramaScreen(): React.ReactElement {
             keyExtractor={(p: any) => p.id}
             loading={isLoading}
             onRowPress={(p: any) => p.gestante?.id && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: p.gestante.id } } as any)}
+            rowLabel={(p: any) => `Abrir cita de ${p.gestante?.user?.firstName || 'gestante'} ${p.gestante?.user?.lastName || ''}`.trim()}
             emptyIcon={Clock as any}
             emptyTitle="Sin citas"
             emptyMessage={search ? 'No hay resultados para tu búsqueda.' : 'No hay citas para este filtro.'}

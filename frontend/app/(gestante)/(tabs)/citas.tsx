@@ -401,6 +401,7 @@ export default function AppointmentsScreen() {
             keyExtractor={(p: Appointment) => p.id}
             loading={loading && !refreshing}
             onRowPress={(p: Appointment) => openDetail(p)}
+            rowLabel={(p: Appointment) => `Ver detalle de la cita: ${p.motivo || 'control prenatal'}`}
             emptyIcon={CalendarX as any}
             emptyTitle="Sin citas"
             emptyMessage={activeTab === 'upcoming' ? 'No tienes próximas citas programadas.' : 'No tienes un historial de citas.'}

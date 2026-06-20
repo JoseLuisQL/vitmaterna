@@ -23,7 +23,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import { LogOut, X, type LucideIcon, ChevronRight } from 'lucide-react-native';
-import { ThemeToggle } from '../ui/ThemeToggle';
+import { ThemeToggle, isThemeToggleAvailable } from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../ui/ToastProvider';
 import { confirmAction } from '../../utils/confirm';
@@ -162,13 +162,15 @@ export function AppSidebar({
               </View>
             ))}
 
-            {/* Apariencia */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Apariencia</Text>
-              <View style={[styles.sectionCard, { padding: spacing.sm2 }]}>
-                <ThemeToggle accentColor={accentColor} />
+            {/* Apariencia (oculto mientras solo haya un tema disponible) */}
+            {isThemeToggleAvailable && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Apariencia</Text>
+                <View style={[styles.sectionCard, { padding: spacing.sm2 }]}>
+                  <ThemeToggle accentColor={accentColor} />
+                </View>
               </View>
-            </View>
+            )}
 
             {/* Cerrar sesión */}
             <View style={styles.section}>

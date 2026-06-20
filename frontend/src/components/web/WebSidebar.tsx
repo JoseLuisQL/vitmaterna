@@ -19,7 +19,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, TouchableOpacity } from 
 import { useRouter, usePathname, type Href } from 'expo-router';
 import { LogOut, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react-native';
 import { VitMaternaLogo } from '../ui/VitMaternaLogo';
-import { ThemeToggle } from '../ui/ThemeToggle';
+import { ThemeToggle, isThemeToggleAvailable } from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../ui/ToastProvider';
 import { confirmAction } from '../../utils/confirm';
@@ -147,7 +147,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
 
       {/* Pie: tema + logout */}
       <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
-        {!collapsed && (
+        {!collapsed && isThemeToggleAvailable && (
           <View style={styles.themeWrap}>
             <ThemeToggle accentColor={accent} />
           </View>

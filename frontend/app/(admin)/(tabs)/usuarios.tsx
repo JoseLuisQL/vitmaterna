@@ -577,6 +577,7 @@ export default function UsuariosScreen(): React.ReactElement {
         keyExtractor={(u) => u.id || u._id}
         loading={isLoading}
         onRowPress={(u) => { setSelectedUser(u); setIsDetailModalVisible(true); }}
+        rowLabel={(u: any) => `Ver usuario ${u.firstName || ''} ${u.lastName || ''}`.trim()}
         emptyIcon={Users as any}
         emptyTitle="Sin usuarios"
         emptyMessage={search ? 'No se encontraron usuarios con esa búsqueda.' : 'Aún no hay usuarios registrados.'}

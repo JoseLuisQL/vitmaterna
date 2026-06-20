@@ -290,6 +290,7 @@ export default function GestantesScreen(): React.ReactElement {
             keyExtractor={(p) => p.id || p._id}
             loading={isLoading}
             onRowPress={(p) => router.push(`/(obstetra)/gestante/${p.id || p._id}` as any)}
+            rowLabel={(p) => `Abrir ficha de ${p.firstName || ''} ${p.lastName || ''}`.trim()}
             emptyIcon={Baby as any}
             emptyTitle="Sin resultados"
             emptyMessage={search ? 'No se encontraron pacientes con esa búsqueda.' : 'Aún no tienes pacientes asignadas a tu cargo.'}
