@@ -79,11 +79,12 @@ obstetra `11111111`/`Test@1234`, gestante `33333333`/`Test@1234`.
 Render dual confirmado de extremo a extremo: el MISMO código muestra sidebar+tabla
 en web y tab bar+tarjetas+BottomSheet en móvil, según `webShell`.
 
-#### Hallazgo (menor, no bloqueante)
-- Consola en cronograma: `Unexpected text node: ". "` dentro de un `<View>`.
-  Es un warning de desarrollo de react-native-web, **pre-existente** (la pantalla
-  solo se tocó para tokens en el refactor), no rompe el render ni afecta a
-  producción. Pendiente de localizar el nodo de texto suelto.
+#### Hallazgo (RESUELTO)
+- `Unexpected text node` al abrir el overlay "Nueva cita". Causa:
+  `{gestanteId && dateStr && timeStr && (...)}` con `gestanteId=''` (estado
+  inicial) evaluaba a `''` y RNW lo renderizaba como nodo de texto dentro de un
+  `<View>`. **Corregido** envolviendo la condición en `Boolean(...)` en
+  `NuevaCitaModal.tsx`. Verificado: 0 warnings antes/después de abrir el overlay.
 
 ### Pendiente (opcional)
 QA visual de overlays, formularios completos y ficha clínica de detalle, y
