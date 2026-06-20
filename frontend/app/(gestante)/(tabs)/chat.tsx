@@ -21,7 +21,7 @@ import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { gestanteColors, commonColors, semanticColors, accentColors, chatColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
@@ -361,7 +361,9 @@ export default function GestanteChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  containerWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: commonColors.border },
+  // En el portal web el chat llena el área de contenido (a la derecha del
+  // sidebar) en vez de quedar como una columna fija centrada.
+  containerWeb: { flex: 1, width: '100%' },
   headerGradient: {
     paddingBottom: spacing.md,
     borderBottomLeftRadius: borderRadius.xxl,
