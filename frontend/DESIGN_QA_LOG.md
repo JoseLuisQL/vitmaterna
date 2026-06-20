@@ -64,6 +64,27 @@ en web las listas usan tabla; en móvil, tarjetas.
 Credenciales de prueba (seed): admin `99999999`/`Admin@2026`,
 obstetra `11111111`/`Test@1234`, gestante `33333333`/`Test@1234`.
 
+### QA visual MÓVIL — viewport 390×844 (iPhone), backend en vivo
+`agent-browser set viewport 390 844` → `webShell=false` → experiencia móvil real.
+
+| Pantalla | Estado | Verificado |
+|---|---|---|
+| Dashboard obstetra | OK | **tab bar inferior** (Inicio/Gestantes/Agenda/Chat) en vez del sidebar web |
+| Formulario "Nueva gestante" | OK | stepper "Paso 1 de 4", campos `Field`, escritura OK |
+| Cronograma | OK | lista de citas reales (incluye pacientes del recorrido e2e) |
+| **Overlay "Nueva cita"** | OK | se abre como **BottomSheet** (móvil): buscar paciente, modalidad, motivo, fecha, horario |
+| Dashboard gestante | OK | "Tu Embarazo", acciones rápidas (Reportar / Emergencia) |
+| Reportar signo de alarma | OK | lista de síntomas + "Enviar alerta a mi obstetra" |
+
+Render dual confirmado de extremo a extremo: el MISMO código muestra sidebar+tabla
+en web y tab bar+tarjetas+BottomSheet en móvil, según `webShell`.
+
+#### Hallazgo (menor, no bloqueante)
+- Consola en cronograma: `Unexpected text node: ". "` dentro de un `<View>`.
+  Es un warning de desarrollo de react-native-web, **pre-existente** (la pantalla
+  solo se tocó para tokens en el refactor), no rompe el render ni afecta a
+  producción. Pendiente de localizar el nodo de texto suelto.
+
 ### Pendiente (opcional)
 QA visual de overlays, formularios completos y ficha clínica de detalle, y
 captura en viewport móvil estrecho para regresión visual formal.
