@@ -74,7 +74,8 @@
     "test": "jest",
     "audit:design": "node scripts/audit-design.mjs",
     "audit:design:strict": "node scripts/audit-design.mjs --strict",
-    "verify": "npm run tsc && npm run audit:design:strict && npm run test"
+    "verify": "npm run tsc && npm run audit:design:strict && npm run test",
+    "setup:hooks": "git -C .. config core.hooksPath .githooks && echo 'Hooks de git activados (.githooks).'"
   },
   "jest": {
     "preset": "jest-expo",

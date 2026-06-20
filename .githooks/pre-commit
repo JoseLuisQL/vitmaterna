@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# VITMATERNA — pre-commit
+# Si el commit toca el frontend, valida el sistema de diseño y los tipos antes
+# de permitir el commit. Mantiene el audit en 0 y evita regresiones de chrome.
+#
+# Instalación (una vez por clon):
+#   git config core.hooksPath .githooks
+# o:
+#   cd frontend && npm run setup:hooks
+
+set -euo pipefail
+
+# ¿Hay archivos del frontend en el staging?
+staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
+if ! echo "$staged" | grep -q '^frontend/'; then
+  exit 0
+fi
+
+echo "▶ pre-commit: validando sistema de diseño del frontend…"
+
+cd frontend
+
+# 1) Auditoría de diseño (bloqueante): 0 hex/rgba/Alert.alert/Modal/SafeAreaView en app/
+if ! node scripts/audit-design.mjs --strict >/tmp/vit-audit.log 2>&1; then
+  echo ""
+  cat /tmp/vit-audit.log
+  echo ""
+  echo "✗ pre-commit: hay violaciones del sistema de diseño en app/."
+  echo "  Revisa el detalle arriba o corre: cd frontend && npm run audit:design"
+  exit 1
+fi
+
+# 2) Typecheck (bloqueante).
+if ! npx tsc --noEmit >/tmp/vit-tsc.log 2>&1; then
+  echo ""
+  tail -30 /tmp/vit-tsc.log
+  echo ""
+  echo "✗ pre-commit: TypeScript tiene errores. Corre: cd frontend && npm run tsc"
+  exit 1
+fi
+
+echo "✓ pre-commit: diseño y tipos OK."
+exit 0
