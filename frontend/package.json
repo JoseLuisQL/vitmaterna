@@ -71,7 +71,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "tsc": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "audit:design": "node scripts/audit-design.mjs"
   },
   "jest": {
     "preset": "jest-expo",

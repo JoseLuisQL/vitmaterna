@@ -37,6 +37,7 @@ import {
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { zIndex } from '../../../src/theme/zIndex';
 import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = gestanteColors.primary;
@@ -763,7 +764,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: borderRadius.md,
     backgroundColor: BRAND,
-    zIndex: 1,
+    zIndex: zIndex.raised,
   },
   nextBadgeText: { ...typography.overline, color: commonColors.white, textTransform: 'uppercase', letterSpacing: 0.4 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

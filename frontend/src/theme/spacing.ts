@@ -27,6 +27,30 @@ export const spacing = {
   xxxl: 64,
 } as const;
 
+/**
+ * Ritmo vertical SEMÁNTICO. Envuelve los valores de `spacing` con nombres por
+ * intención para acabar con los `marginBottom: 14/18/22` arbitrarios entre
+ * secciones. No introduce píxeles nuevos: reusa el grid de 8pt.
+ *
+ *   tight   → entre un label y su control
+ *   element → entre elementos relacionados dentro de una tarjeta
+ *   group   → entre grupos dentro de una sección
+ *   section → entre secciones de una pantalla
+ *   block   → separación mayor entre bloques temáticos
+ */
+export const stack = {
+  /** 8px — label ↔ control */
+  tight: 8,
+  /** 12px — elementos relacionados */
+  element: 12,
+  /** 16px — grupos dentro de una sección */
+  group: 16,
+  /** 24px — entre secciones */
+  section: 24,
+  /** 32px — entre bloques temáticos */
+  block: 32,
+} as const;
+
 export const borderRadius = {
   /** 4px - Minimal rounding */
   xs: 4,

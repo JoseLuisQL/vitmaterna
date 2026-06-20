@@ -14,10 +14,14 @@ export {
 } from './colors';
 export { typography, fontFamilies } from './typography';
 export type { TypographyStyle } from './typography';
-export { spacing, borderRadius, layout } from './spacing';
+export { spacing, stack, borderRadius, layout, webLayout } from './spacing';
 export { shadows, applyShadow, coloredGlow } from './shadows';
 export { animations } from './animations';
 export type { Animations } from './animations';
+export { zIndex } from './zIndex';
+export type { ZIndex } from './zIndex';
+export { motion, prefersReducedMotion, prefersReducedMotionSync } from './motion';
+export type { Motion } from './motion';
 export { gradients, makeGradient } from './gradients';
 export type { Gradients, GradientConfig } from './gradients';
 export { makeStyles } from './makeStyles';

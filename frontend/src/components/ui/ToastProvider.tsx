@@ -5,6 +5,7 @@ import { commonColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
+import { zIndex } from '../../theme/zIndex';
 import { useResponsive } from '../../theme/responsive';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
     top: 54,
     left: spacing.md,
     right: spacing.md,
-    zIndex: 9999,
+    zIndex: zIndex.toast,
   },
   // En el portal web el toast se ancla arriba-derecha con ancho fijo.
   wrapWeb: {
