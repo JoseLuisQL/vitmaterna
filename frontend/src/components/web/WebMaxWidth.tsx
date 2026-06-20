@@ -38,7 +38,7 @@ export function WebMaxWidth({ children, width = 'wide' }: WebMaxWidthProps): Rea
 }
 
 const styles = StyleSheet.create({
-  center: { width: '100%', alignSelf: 'center' },
+  center: { width: '100%', alignSelf: 'center', marginHorizontal: 'auto' },
 });
 
 export default WebMaxWidth;

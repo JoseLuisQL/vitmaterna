@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   flex: { flex: 1 },
   bodyWrap: { flex: 1 },
-  centered: { width: '100%', alignSelf: 'center' },
+  centered: { width: '100%', alignSelf: 'center', marginHorizontal: 'auto' },
 
   headerGradient: {
     paddingBottom: spacing.xl,
