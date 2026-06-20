@@ -6,11 +6,11 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
 import { useMyProfile, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
-import { LinearGradient } from 'expo-linear-gradient';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
-import { WebMaxWidth } from '../../../src/components/web';
 import { typography } from '../../../src/theme/typography';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = obstetraColors.primary;
 
@@ -35,6 +35,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
 
 export default function ObstetraPerfilScreen(): React.ReactElement {
   const { user, logout } = useAuthStore();
+  const { webShell } = useResponsive();
   const toast = useToast();
   const router = useRouter();
   const [infoModal, setInfoModal] = useState<{ title: string; description?: string; rows?: { label: string; value: string }[] } | null>(null);
@@ -127,68 +128,55 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={obstetraColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
+      <ScreenLayout
+        role="obstetra"
+        title="Mi Perfil"
+        subtitle="Ajustes de cuenta"
+        showBack={router.canGoBack()}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
+        width="full"
+        scroll={true}
+        contentStyle={{ paddingBottom: layout.tabBarSpace, paddingTop: 16 }}
       >
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
-              style={styles.backBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Volver"
-              accessibilityRole="button"
-            >
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Mi Perfil</Text>
-              <Text style={styles.headerSubtitle}>Ajustes de cuenta</Text>
+        <View style={webShell ? styles.twoCol : undefined}>
+          <View style={webShell ? styles.col : undefined}>
+            {/* Profile Card */}
+            <View style={styles.profileCard}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initials}</Text>
+              </View>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <View style={styles.roleRow}>
+                <Stethoscope size={16} color={BRAND} />
+                <Text style={styles.profileRole}>Obstetra</Text>
+              </View>
+              {user?.dni && (
+                <Text style={styles.profileDni}>DNI: {user.dni}</Text>
+              )}
             </View>
           </View>
-        </SafeAreaView>
-      </LinearGradient>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
+          <View style={webShell ? styles.col : undefined}>
+            {/* Menu Items */}
+            <Text style={styles.sectionTitle}>General</Text>
+            <View style={styles.menuCard}>
+              <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Profesionales" onPress={verDatosProfesionales} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={abrirConfiguracion} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={abrirPrivacidad} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
+            </View>
+
+            <View style={[styles.menuCard, { marginTop: 24 }]}>
+              <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
+            </View>
           </View>
-          <Text style={styles.profileName}>{displayName}</Text>
-          <View style={styles.roleRow}>
-            <Stethoscope size={16} color={BRAND} />
-            <Text style={styles.profileRole}>Obstetra</Text>
-          </View>
-          {user?.dni && (
-            <Text style={styles.profileDni}>DNI: {user.dni}</Text>
-          )}
         </View>
-
-        {/* Menu Items */}
-        <Text style={styles.sectionTitle}>General</Text>
-        <View style={styles.menuCard}>
-          <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Profesionales" onPress={verDatosProfesionales} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={abrirConfiguracion} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={abrirPrivacidad} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
-        </View>
-
-        <View style={[styles.menuCard, { marginTop: 24 }]}>
-          <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
-        </View>
-        </WebMaxWidth>
-      </ScrollView>
+      </ScreenLayout>
 
       {/* MODAL: PREFERENCIAS DE NOTIFICACIÓN (canales) */}
       <AppModal
@@ -318,4 +306,13 @@ const styles = StyleSheet.create({
   prefLabelDisabled: { color: commonColors.textTertiary },
   prefDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   prefHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.md, lineHeight: 18 },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });

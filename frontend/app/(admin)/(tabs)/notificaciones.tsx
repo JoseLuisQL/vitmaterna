@@ -14,13 +14,13 @@ import {
   View, StyleSheet, Text, ScrollView, TextInput, TouchableOpacity, Switch, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
+import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { WebMaxWidth } from '../../../src/components/web';
 import { useToast } from '../../../src/components/ui';
+import { useResponsive } from '../../../src/theme/responsive';
 import {
   useChannelsConfig, useUpdateSmsConfig, useUpdateWhatsAppConfig, useTestChannel,
 } from '../../../src/services/admin-queries';
@@ -49,6 +49,7 @@ function StatusBadge({ configured }: { configured: boolean }) {
 export default function AdminNotificacionesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const { data: status, isLoading } = useChannelsConfig();
   const updateSms = useUpdateSmsConfig();
   const updateWa = useUpdateWhatsAppConfig();
@@ -132,27 +133,15 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
-              style={styles.backBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Volver"
-              accessibilityRole="button"
-            >
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Canales de notificación</Text>
-              <Text style={styles.subtitle}>SMS y WhatsApp para mensajes reales</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
+    <ScreenLayout
+      role="admin"
+      title="Canales de notificación"
+      subtitle="SMS y WhatsApp para mensajes reales"
+      showBack={router.canGoBack()}
+      onBack={() => router.back()}
+      width="full"
+      scroll={false}
+    >
       {isLoading ? (
         <View style={styles.content}>
           <CardSkeleton />
@@ -160,7 +149,6 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
         {/* Resumen de estado */}
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -179,103 +167,105 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           </View>
         </View>
 
-        {/* ─── SMS (Twilio) ─── */}
-        <View style={styles.card}>
-          <View style={styles.cardHead}>
-            <View style={[styles.cardIcon, { backgroundColor: semanticColors.infoLight }]}>
-              <MessageSquare size={20} color={semanticColors.info} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>SMS (Twilio)</Text>
-              <Text style={styles.cardHint}>Recordatorios y alertas por mensaje de texto</Text>
-            </View>
-          </View>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Activar Twilio</Text>
-            <Switch value={smsOn} onValueChange={setSmsOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
-          </View>
-
-          {smsOn && (
-            <>
-              <View style={styles.helpBox}>
-                <Info size={14} color={commonColors.textSecondary} />
-                <Text style={styles.helpText}>Obtén estas credenciales en tu consola de Twilio (Account SID, Auth Token y un número remitente verificado).</Text>
+        <View style={webShell ? styles.twoCol : undefined}>
+          {/* ─── SMS (Twilio) ─── */}
+          <View style={[styles.card, webShell ? styles.col : undefined]}>
+            <View style={styles.cardHead}>
+              <View style={[styles.cardIcon, { backgroundColor: semanticColors.infoLight }]}>
+                <MessageSquare size={20} color={semanticColors.info} />
               </View>
-              <Text style={styles.label}>Account SID</Text>
-              <TextInput style={styles.input} value={accountSid} onChangeText={setAccountSid} placeholder="AC… (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
-              <Text style={styles.label}>Auth Token</Text>
-              <TextInput style={styles.input} value={authToken} onChangeText={setAuthToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
-              <Text style={styles.label}>Número remitente</Text>
-              <TextInput style={[styles.input, fromNumber.trim() !== '' && !isE164(fromNumber) && styles.inputError]} value={fromNumber} onChangeText={setFromNumber} placeholder="+15550001111" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-              {fromNumber.trim() !== '' && !isE164(fromNumber) && <Text style={styles.errorHint}>Formato E.164 requerido (ej. +15550001111).</Text>}
-            </>
-          )}
-
-          <AppButton title="Guardar SMS" onPress={saveSms} loading={updateSms.isPending} themeColor={BRAND} style={{ marginTop: spacing.md }} />
-
-          {/* Prueba: solo si el canal ya está configurado */}
-          <View style={styles.testBlock}>
-            <Text style={styles.testTitle}>Enviar prueba</Text>
-            {!smsConfigured ? (
-              <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
-            ) : (
-              <View style={styles.testRow}>
-                <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-                <TouchableOpacity style={[styles.testBtn, testing === 'sms' && { opacity: 0.7 }]} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8}>
-                  {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
-                  <Text style={styles.testBtnText}>Probar</Text>
-                </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>SMS (Twilio)</Text>
+                <Text style={styles.cardHint}>Recordatorios y alertas por mensaje de texto</Text>
               </View>
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Activar Twilio</Text>
+              <Switch value={smsOn} onValueChange={setSmsOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
+            </View>
+
+            {smsOn && (
+              <>
+                <View style={styles.helpBox}>
+                  <Info size={14} color={commonColors.textSecondary} />
+                  <Text style={styles.helpText}>Obtén estas credenciales en tu consola de Twilio (Account SID, Auth Token y un número remitente verificado).</Text>
+                </View>
+                <Text style={styles.label}>Account SID</Text>
+                <TextInput style={styles.input} value={accountSid} onChangeText={setAccountSid} placeholder="AC… (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
+                <Text style={styles.label}>Auth Token</Text>
+                <TextInput style={styles.input} value={authToken} onChangeText={setAuthToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
+                <Text style={styles.label}>Número remitente</Text>
+                <TextInput style={[styles.input, fromNumber.trim() !== '' && !isE164(fromNumber) && styles.inputError]} value={fromNumber} onChangeText={setFromNumber} placeholder="+15550001111" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                {fromNumber.trim() !== '' && !isE164(fromNumber) && <Text style={styles.errorHint}>Formato E.164 requerido (ej. +15550001111).</Text>}
+              </>
             )}
-          </View>
-        </View>
 
-        {/* ─── WhatsApp (Cloud API) ─── */}
-        <View style={styles.card}>
-          <View style={styles.cardHead}>
-            <View style={[styles.cardIcon, { backgroundColor: '#E7F6EE' }]}>
-              <Phone size={20} color="#25D366" />
+            <AppButton title="Guardar SMS" onPress={saveSms} loading={updateSms.isPending} themeColor={BRAND} style={{ marginTop: spacing.md }} />
+
+            {/* Prueba: solo si el canal ya está configurado */}
+            <View style={styles.testBlock}>
+              <Text style={styles.testTitle}>Enviar prueba</Text>
+              {!smsConfigured ? (
+                <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
+              ) : (
+                <View style={styles.testRow}>
+                  <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                  <TouchableOpacity style={[styles.testBtn, testing === 'sms' && { opacity: 0.7 }]} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8}>
+                    {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
+                    <Text style={styles.testBtnText}>Probar</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>WhatsApp (Cloud API)</Text>
-              <Text style={styles.cardHint}>Mensajes vía WhatsApp Business</Text>
+          </View>
+
+          {/* ─── WhatsApp (Cloud API) ─── */}
+          <View style={[styles.card, webShell ? styles.col : undefined]}>
+            <View style={styles.cardHead}>
+              <View style={[styles.cardIcon, { backgroundColor: '#E7F6EE' }]}>
+                <Phone size={20} color="#25D366" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>WhatsApp (Cloud API)</Text>
+                <Text style={styles.cardHint}>Mensajes vía WhatsApp Business</Text>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Activar WhatsApp Business</Text>
-            <Switch value={waOn} onValueChange={setWaOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
-          </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Activar WhatsApp Business</Text>
+              <Switch value={waOn} onValueChange={setWaOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
+            </View>
 
-          {waOn && (
-            <>
-              <View style={styles.helpBox}>
-                <Info size={14} color={commonColors.textSecondary} />
-                <Text style={styles.helpText}>Desde Meta for Developers: token permanente de la app y el Phone Number ID del número de WhatsApp Business.</Text>
-              </View>
-              <Text style={styles.label}>API Token</Text>
-              <TextInput style={styles.input} value={apiToken} onChangeText={setApiToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
-              <Text style={styles.label}>Phone Number ID</Text>
-              <TextInput style={styles.input} value={phoneNumberId} onChangeText={setPhoneNumberId} placeholder="ID del número de WhatsApp" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
-            </>
-          )}
-
-          <AppButton title="Guardar WhatsApp" onPress={saveWa} loading={updateWa.isPending} themeColor={BRAND} style={{ marginTop: spacing.md }} />
-
-          <View style={styles.testBlock}>
-            <Text style={styles.testTitle}>Enviar prueba</Text>
-            {!waConfigured ? (
-              <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
-            ) : (
-              <View style={styles.testRow}>
-                <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-                <TouchableOpacity style={[styles.testBtn, testing === 'whatsapp' && { opacity: 0.7 }]} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8}>
-                  {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
-                  <Text style={styles.testBtnText}>Probar</Text>
-                </TouchableOpacity>
-              </View>
+            {waOn && (
+              <>
+                <View style={styles.helpBox}>
+                  <Info size={14} color={commonColors.textSecondary} />
+                  <Text style={styles.helpText}>Desde Meta for Developers: token permanente de la app y el Phone Number ID del número de WhatsApp Business.</Text>
+                </View>
+                <Text style={styles.label}>API Token</Text>
+                <TextInput style={styles.input} value={apiToken} onChangeText={setApiToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
+                <Text style={styles.label}>Phone Number ID</Text>
+                <TextInput style={styles.input} value={phoneNumberId} onChangeText={setPhoneNumberId} placeholder="ID del número de WhatsApp" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
+              </>
             )}
+
+            <AppButton title="Guardar WhatsApp" onPress={saveWa} loading={updateWa.isPending} themeColor={BRAND} style={{ marginTop: spacing.md }} />
+
+            <View style={styles.testBlock}>
+              <Text style={styles.testTitle}>Enviar prueba</Text>
+              {!waConfigured ? (
+                <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
+              ) : (
+                <View style={styles.testRow}>
+                  <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                  <TouchableOpacity style={[styles.testBtn, testing === 'whatsapp' && { opacity: 0.7 }]} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8}>
+                    {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
+                    <Text style={styles.testBtnText}>Probar</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -284,21 +274,14 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           guardar credenciales válidas, las notificaciones se envían de forma real. Los números se
           normalizan automáticamente a formato internacional (E.164).
         </Text>
-        </WebMaxWidth>
       </ScrollView>
       )}
-    </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
-  title: { ...typography.h1, color: commonColors.white },
-  subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  content: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
+  content: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   // Resumen
   summaryRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
   summaryCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.border, padding: spacing.md, alignItems: 'center', gap: spacing.xs2 + 2 },
@@ -326,4 +309,13 @@ const styles = StyleSheet.create({
   testBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
   testBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   note: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18, textAlign: 'center', paddingHorizontal: spacing.md },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });

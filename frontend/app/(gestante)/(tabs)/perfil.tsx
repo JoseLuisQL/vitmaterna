@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
 import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { WebMaxWidth } from '../../../src/components/web';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +21,7 @@ import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { usePendingSync } from '../../../src/hooks/usePendingSync';
 import { confirmAction } from '../../../src/utils/confirm';
+import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = gestanteColors.primary;
 
@@ -42,6 +44,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => 
 
 export default function PerfilScreen(): React.ReactElement {
   const { user: authUser, logout } = useAuthStore();
+  const { webShell } = useResponsive();
   const pendingSync = usePendingSync();
   const toast = useToast();
   const router = useRouter();
@@ -201,69 +204,28 @@ export default function PerfilScreen(): React.ReactElement {
   const initials = (profileData?.user?.firstName?.charAt(0) || authUser?.firstName?.charAt(0) || '') + 
     (profileData?.user?.lastName?.charAt(0) || authUser?.lastName?.charAt(0) || '') || 'G';
 
-  return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={gestanteColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
-      >
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerTopRow}>
-            <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(gestante)/(tabs)'))}
-              style={styles.backBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="Volver"
-            >
-              <ArrowLeft size={22} color={commonColors.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Perfil</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          <View style={styles.headerProfile}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            <Text style={styles.profileName}>{displayName}</Text>
-            <Text style={styles.profileRole}>Gestante</Text>
-            {profileData?.user?.dni && <Text style={styles.profileDni}>DNI: {profileData.user.dni}</Text>}
-            {pendingSync > 0 && (
-              <View style={styles.syncChip}>
-                <CloudOff size={13} color={commonColors.white} />
-                <Text style={styles.syncChipText}>
-                  {pendingSync} cambio{pendingSync > 1 ? 's' : ''} por sincronizar
-                </Text>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+  const menuContent = (
+    <>
+      {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="readable">
-        {isProfileLoading && <CardSkeleton style={{ marginBottom: spacing.lg }} />}
+      <Text style={styles.sectionTitle}>Cuenta</Text>
+      <View style={styles.menuCard}>
+        <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
+        <View style={styles.menuDivider} />
+        <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
+        <View style={styles.menuDivider} />
+        <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
+      </View>
 
-        <Text style={styles.sectionTitle}>Cuenta</Text>
-        <View style={styles.menuCard}>
-          <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Personales y FUM" onPress={openEditModal} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
-          <View style={styles.menuDivider} />
-          <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
-        </View>
+      <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>
+        <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
+      </View>
+      <View style={{ height: 40 }} />
+    </>
+  );
 
-        <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>
-          <MenuItem icon={<LogOut size={20} color={semanticColors.danger} />} title="Cerrar Sesión" danger onPress={handleLogout} />
-        </View>
-        <View style={{ height: 40 }} />
-        </WebMaxWidth>
-      </ScrollView>
-
-      {/* MODAL: EDIT DATA & FUM */}
+  const modals = (
+    <>
       <AppModal
         visible={isEditModalVisible}
         onClose={() => setIsEditModalVisible(false)}
@@ -346,7 +308,6 @@ export default function PerfilScreen(): React.ReactElement {
         </View>
       </AppModal>
 
-      {/* MODAL: PREFERENCIAS DE NOTIFICACIÓN (RF-7.13) */}
       <AppModal
         visible={isPrefsVisible}
         onClose={() => setIsPrefsVisible(false)}
@@ -408,6 +369,76 @@ export default function PerfilScreen(): React.ReactElement {
         rows={infoModal?.rows}
         onClose={() => setInfoModal(null)}
       />
+    </>
+  );
+
+  if (webShell) {
+    return (
+      <View style={{ flex: 1, backgroundColor: commonColors.background }}>
+        <ScreenLayout
+          role="gestante"
+          title="Mi Perfil"
+          subtitle="Configuración y cuenta"
+          accentColor={BRAND}
+          width="readable"
+          scroll={true}
+        >
+          {menuContent}
+        </ScreenLayout>
+        {modals}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={gestanteColors.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(gestante)/(tabs)'))}
+              style={styles.backBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+            >
+              <ArrowLeft size={22} color={commonColors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Perfil</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <View style={styles.headerProfile}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <Text style={styles.profileName}>{displayName}</Text>
+            <Text style={styles.profileRole}>Gestante</Text>
+            {profileData?.user?.dni && <Text style={styles.profileDni}>DNI: {profileData.user.dni}</Text>}
+            {pendingSync > 0 && (
+              <View style={styles.syncChip}>
+                <CloudOff size={13} color={commonColors.white} />
+                <Text style={styles.syncChipText}>
+                  {pendingSync} cambio{pendingSync > 1 ? 's' : ''} por sincronizar
+                </Text>
+              </View>
+            )}
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <WebMaxWidth width="readable">
+          {menuContent}
+        </WebMaxWidth>
+      </ScrollView>
+
+      {modals}
     </View>
   );
 }
