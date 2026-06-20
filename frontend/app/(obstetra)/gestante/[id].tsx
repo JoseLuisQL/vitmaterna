@@ -652,30 +652,15 @@ export default function PatientProfileScreen(): React.ReactElement {
               </Text>
               <Text style={styles.patientSub}>DNI {patient.documentNumber}{patient.age ? ` • ${patient.age} años` : ''}</Text>
             </View>
-            <View style={styles.riskPill}>
-              <View style={[styles.riskDot, { backgroundColor: riskTextColor(patient.riskLevel) }]} />
-              <Text style={styles.riskPillText}>{patient.riskLevel || 'Bajo'}</Text>
-            </View>
+            {/* El nivel de riesgo se muestra (con jerarquía) en el banner de estado
+                del tab Resumen; aquí se omite para no duplicarlo (issue #3). */}
           </View>
         </SafeAreaView>
       </LinearGradient>
 
-      {/* ── KPI HIGHLIGHTS (glass, superpuestas al header) ── */}
-      <View style={styles.kpiWrapper}>
-        <View style={styles.kpiGrid}>
-          {[
-            { label: 'Semana', value: `${patient.currentWeek || '—'}` },
-            { label: 'Trimestre', value: patient.currentTrimester ? `${patient.currentTrimester}°` : '—' },
-            { label: 'FPP', value: patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { month: 'short', day: 'numeric' }) : '—' },
-            { label: 'IMC', value: displayImc },
-          ].map((kpi) => (
-            <View key={kpi.label} style={[styles.kpiCard, designTokens.cardShadow]}>
-              <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>{kpi.value}</Text>
-              <Text style={styles.kpiLabel}>{kpi.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      {/* KPIs de Semana/Trimestre/FPP/IMC eliminados aquí: duplicaban el banner
+          de estado clínico del tab Resumen (issue #2/#3). El estado glanceable
+          vive ahora en un solo lugar (statusBanner), con mejor jerarquía. */}
 
       {/* ── PANTALLA PRINCIPAL CON TABS ── */}
       <View style={styles.mainContent}>
@@ -730,14 +715,18 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <View style={styles.statusMetricsRow}>
                   <View style={styles.statusMetric}>
                     <Baby size={15} color={obstetraColors.primary} />
-                    <Text style={styles.statusMetricVal}>{patient.currentWeek ? `${patient.currentWeek} sem` : '—'}</Text>
-                    <Text style={styles.statusMetricLbl}>Edad gest.</Text>
+                    <Text style={styles.statusMetricVal}>
+                      {patient.currentWeek ? `${patient.currentWeek} sem` : '—'}
+                    </Text>
+                    <Text style={styles.statusMetricLbl}>
+                      {patient.currentTrimester ? `Edad gest. · ${patient.currentTrimester}° trim.` : 'Edad gest.'}
+                    </Text>
                   </View>
                   <View style={styles.statusDivider} />
                   <View style={styles.statusMetric}>
                     <CalendarHeart size={15} color={obstetraColors.primary} />
                     <Text style={styles.statusMetricVal}>
-                      {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '—'}
+                      {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </Text>
                     <Text style={styles.statusMetricLbl}>FPP</Text>
                   </View>
@@ -748,6 +737,12 @@ export default function PatientProfileScreen(): React.ReactElement {
                       {nextAppointment ? new Date(nextAppointment.fecha).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '—'}
                     </Text>
                     <Text style={styles.statusMetricLbl}>Próx. cita</Text>
+                  </View>
+                  <View style={styles.statusDivider} />
+                  <View style={styles.statusMetric}>
+                    <Activity size={15} color={obstetraColors.primary} />
+                    <Text style={styles.statusMetricVal}>{displayImc}</Text>
+                    <Text style={styles.statusMetricLbl}>IMC</Text>
                   </View>
                 </View>
               </View>
@@ -1740,52 +1735,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: commonColors.onColorTextSoft,
   },
-  riskPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: commonColors.white,
-    paddingHorizontal: spacing.sm2,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-  },
-  riskDot: { width: 7, height: 7, borderRadius: 4 },
-  riskPillText: {
-    ...typography.overline,
-    color: commonColors.text,
-  },
-
-  // KPIs (glass superpuestas)
-  kpiWrapper: {
-    paddingHorizontal: spacing.md,
-    marginTop: -spacing.lg,
-  },
-  kpiGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  kpiCard: {
-    flex: 1,
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.sm2,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  kpiValue: {
-    ...typography.numericSm,
-    color: commonColors.text,
-    marginBottom: 2,
-  },
-  kpiLabel: {
-    ...typography.overline,
-    fontSize: 10,
-    color: commonColors.textSecondary,
-    textTransform: 'uppercase',
-  },
-
   // Main Content
   mainContent: {
     flex: 1,
