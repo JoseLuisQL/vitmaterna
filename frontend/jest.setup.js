@@ -4,6 +4,12 @@
  * que usan animaciones se rendericen en el entorno de pruebas (sin parte nativa
  * de worklets).
  */
+// AsyncStorage: mock oficial para que los componentes que leen el tema
+// (ThemeContext) y la persistencia funcionen en el entorno de pruebas.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 jest.mock('react-native-reanimated', () => {
   const React = require('react');
   const { View, Text, Pressable } = require('react-native');
