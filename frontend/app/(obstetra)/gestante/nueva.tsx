@@ -17,7 +17,7 @@ import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { WebMaxWidth } from '../../../src/components/web';
 import { shadows } from '../../../src/theme/shadows';
 import { useCreatePatient, useUpdatePatient, checkDniExists } from '../../../src/services/api-queries';
-import { notify } from '../../../src/utils/confirm';
+import { useToast } from '../../../src/components/ui';
 
 const BRAND = obstetraColors.primary;
 
@@ -95,6 +95,7 @@ type DniStatus = 'idle' | 'checking' | 'available' | 'taken';
 
 export default function NuevaGestanteScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const { webShell } = useResponsive();
   const [currentStep, setCurrentStep] = useState(1);
   const [dniStatus, setDniStatus] = useState<DniStatus>('idle');
@@ -194,9 +195,9 @@ export default function NuevaGestanteScreen(): React.ReactElement {
         },
       });
 
-      notify(
-        '¡Registro exitoso!',
-        'La paciente fue registrada con todos sus datos clínicos. Su cronograma de controles se generó a partir de la FUM. Su usuario inicial es su propio DNI.',
+      toast.success(
+        'Gestante registrada',
+        'Su cronograma de controles se generó a partir de la FUM. El usuario inicial es su propio DNI.',
       );
       router.back();
     } catch (err: any) {
@@ -207,10 +208,10 @@ export default function NuevaGestanteScreen(): React.ReactElement {
         setCurrentStep(1);
         setDniStatus('taken');
         setError('dni', { type: 'manual', message: 'Este DNI ya está registrado' });
-        notify('DNI duplicado', 'Ya existe una usuaria con este DNI. Verifica el número.');
+        toast.warning('DNI duplicado', 'Ya existe una usuaria con este DNI. Verifica el número.');
         return;
       }
-      notify('Error', message || 'No se pudo guardar la paciente. Verifica los datos e intenta de nuevo.');
+      toast.error('No se pudo registrar', message || 'Revisa los datos e inténtalo de nuevo.');
     }
   };
 
@@ -695,29 +696,29 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: borderRadius.xxl,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.md },
-  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', marginRight: spacing.sm },
+  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface, marginRight: spacing.sm },
   headerTitleContainer: { flex: 1 },
   headerTitle: { ...typography.h2, color: commonColors.white },
 
   // Stepper rediseñado: contador + barra de progreso lineal + puntos legibles.
   stepperContainer: { paddingHorizontal: spacing.lg, marginTop: spacing.lg },
   stepperTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  stepperCounter: { ...typography.label, color: 'rgba(255,255,255,0.9)', fontWeight: '700' },
+  stepperCounter: { ...typography.label, color: commonColors.onColorTextStrong, fontWeight: '700' },
   stepperCurrent: { ...typography.label, color: commonColors.white, fontWeight: '700' },
-  progressTrack: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)', overflow: 'hidden' },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: commonColors.onColorTrack, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 3, backgroundColor: commonColors.white },
   stepDotsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
   stepDotWrap: { alignItems: 'center', flex: 1 },
   stepDot: {
     width: 26, height: 26, borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: commonColors.onColorTrack,
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
   stepDotActive: { backgroundColor: commonColors.white },
   stepDotCompleted: { backgroundColor: semanticColors.successMid },
   stepDotNum: { ...typography.caption, color: commonColors.white, fontWeight: '700' },
   stepDotNumActive: { color: BRAND },
-  stepDotLabel: { ...typography.caption, fontSize: 11, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
+  stepDotLabel: { ...typography.caption, fontSize: 11, color: commonColors.onColorTextFaint, textAlign: 'center' },
   stepDotLabelActive: { color: commonColors.white, fontWeight: '600' },
 
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 40 },

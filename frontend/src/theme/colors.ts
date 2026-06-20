@@ -46,9 +46,12 @@ export const commonColors = {
   // Texto y superficies SOBRE color (headers con gradiente de rol). Centraliza
   // los blancos translúcidos que antes se escribían a mano en cada pantalla.
   onColorText: '#FFFFFF', // título sobre gradiente
+  onColorTextStrong: 'rgba(255,255,255,0.90)', // dato/contador sobre gradiente
   onColorTextSoft: 'rgba(255,255,255,0.85)', // subtítulo sobre gradiente
+  onColorTextFaint: 'rgba(255,255,255,0.75)', // etiqueta tenue sobre gradiente
   onColorSurface: 'rgba(255,255,255,0.18)', // fondo de botón sobre gradiente
   onColorSurfaceStrong: 'rgba(255,255,255,0.20)', // fondo de botón (énfasis)
+  onColorTrack: 'rgba(255,255,255,0.25)', // pista de progreso sobre gradiente
 } as const;
 
 /**

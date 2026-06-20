@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  TextInput, Alert, Switch, StatusBar,
+  TextInput, Switch, StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale, Activity, Smile,
 } from 'lucide-react-native';
-import { AppModal, AppButton } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast } from '../../../src/components/ui';
 import {
   useCreatePathology,
   useCreateMentalHealthScreening,
@@ -45,6 +45,7 @@ const FORM_FLAG: Record<FormKey, FeatureModule> = {
 
 export default function TamizajesScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const { webShell } = useResponsive();
   const { id, nombre } = useLocalSearchParams<{ id: string; nombre?: string }>();
   const gestanteId = id || '';
@@ -110,11 +111,11 @@ export default function TamizajesScreen(): React.ReactElement {
     setDentEstado(''); setDentCaries(''); setDentTratamientos('');
   };
 
-  const ok = (msg: string) => { Alert.alert('Registrado', msg); closeAndReset(); };
-  const fail = () => Alert.alert('Error', 'No se pudo guardar el registro. Inténtalo de nuevo.');
+  const ok = (msg: string) => { toast.success('Registro guardado', msg); closeAndReset(); };
+  const fail = () => toast.error('No se pudo guardar', 'Inténtalo de nuevo en unos momentos.');
 
   const guardarPatologia = () => {
-    if (!cie10.trim()) return Alert.alert('Error', 'El código CIE-10 es requerido.');
+    if (!cie10.trim()) return toast.warning('Falta el CIE-10', 'Ingresa el código CIE-10 para continuar.');
     pathology.mutate(
       { gestanteId, codigoCie10: cie10.trim(), descripcion: patDesc || undefined, fechaDiagnostico: hoy(), estado: 'activa' },
       { onSuccess: () => ok('Patología registrada.'), onError: fail }
@@ -180,8 +181,8 @@ export default function TamizajesScreen(): React.ReactElement {
   const guardarPeso = () => {
     const semana = parseInt(pesoSemana, 10);
     const kg = parseFloat(pesoKg);
-    if (!semana || semana < 0) return Alert.alert('Error', 'Ingresa una semana gestacional válida.');
-    if (!kg || kg <= 0) return Alert.alert('Error', 'Ingresa un peso válido.');
+    if (!semana || semana < 0) return toast.warning('Semana inválida', 'Ingresa una semana gestacional válida.');
+    if (!kg || kg <= 0) return toast.warning('Peso inválido', 'Ingresa un peso válido en kilogramos.');
     weight.mutate(
       { gestanteId, egSemanas: semana, peso: kg, fecha: hoy() },
       { onSuccess: () => ok('Registro de peso guardado.'), onError: fail }
@@ -207,7 +208,7 @@ export default function TamizajesScreen(): React.ReactElement {
 
   const guardarOdontograma = () => {
     if (!dentEstado.trim() && !dentCaries.trim() && !dentTratamientos.trim()) {
-      return Alert.alert('Error', 'Completa al menos un campo del odontograma.');
+      return toast.warning('Odontograma vacío', 'Completa al menos un campo para guardar.');
     }
     dental.mutate(
       {
@@ -471,7 +472,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: { paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm2 },
-  iconBtnGlass: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
+  iconBtnGlass: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.onColorSurface },
   headerTitle: { ...typography.h3, color: commonColors.white },
   headerPatient: { ...typography.h2, color: commonColors.white, paddingHorizontal: spacing.lg, marginTop: spacing.xs },
   scroll: { flex: 1 },

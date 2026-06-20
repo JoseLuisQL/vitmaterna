@@ -3,7 +3,7 @@
  * Fetch and edit system-wide parameters.
  */
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, Alert, Switch, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Settings, Save, ArrowLeft } from 'lucide-react-native';
@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { useResponsive } from '../../../src/theme/responsive';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
+import { useToast } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -34,6 +35,7 @@ type ConfigFormValues = z.infer<typeof schema>;
 
 export default function ConfigScreen(): React.ReactElement {
   const router = useRouter();
+  const toast = useToast();
   const { webShell } = useResponsive();
   const { data: config, isLoading } = useSystemConfig();
   const updateConfigMutation = useUpdateSystemConfig();
@@ -71,10 +73,10 @@ export default function ConfigScreen(): React.ReactElement {
     };
     updateConfigMutation.mutate(payload, {
       onSuccess: () => {
-        Alert.alert('Éxito', 'Configuración actualizada correctamente');
+        toast.success('Configuración guardada', 'Los cambios se aplicaron correctamente.');
       },
       onError: (error: any) => {
-        Alert.alert('Error', error.response?.data?.message || 'Error al actualizar configuración');
+        toast.error('No se pudo guardar', error.response?.data?.message || 'Inténtalo de nuevo en unos momentos.');
       },
     });
   };
