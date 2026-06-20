@@ -22,6 +22,7 @@ import {
   StatusBar,
   RefreshControl,
   TouchableOpacity,
+  Platform,
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -289,8 +290,8 @@ function HeaderRow({ title, subtitle, showBack, onBack, actions, onLight }: Head
   const subtitleStyle = StyleSheet.flatten([styles.subtitle, { color: subColor }]) as any;
 
   if (webShell) {
-    delete titleStyle.lineHeight;
-    delete subtitleStyle.lineHeight;
+    titleStyle.lineHeight = 'normal';
+    subtitleStyle.lineHeight = 'normal';
   }
 
   return (
@@ -339,8 +340,19 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerTexts: { flex: 1, minWidth: 0 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
-  title: { ...typography.h1 },
-  subtitle: { ...typography.bodySm, marginTop: 2 },
+  title: {
+    ...typography.h1,
+    ...Platform.select({
+      web: { lineHeight: 'normal' as any },
+    }),
+  },
+  subtitle: {
+    ...typography.bodySm,
+    marginTop: 2,
+    ...Platform.select({
+      web: { lineHeight: 'normal' as any },
+    }),
+  },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
   backBtnLight: { backgroundColor: 'rgba(255,255,255,0.18)' },
   backBtnDark: { backgroundColor: commonColors.surfaceAlt },
