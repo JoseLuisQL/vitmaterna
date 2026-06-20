@@ -26,6 +26,8 @@ import {
 } from 'lucide-react-native';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
+import { LinkButton } from '../../src/components/ui/LinkButton';
+import { useToast } from '../../src/components/ui';
 import { useAuthStore } from '../../src/store/authStore';
 import type { UserRole, RegisterRequest } from '../../src/types/user';
 import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/colors';
@@ -33,7 +35,6 @@ import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { useResponsive } from '../../src/theme/responsive';
 import { shadows } from '../../src/theme/shadows';
-import { notify } from '../../src/utils/confirm';
 
 const registerSchema = z
   .object({
@@ -74,6 +75,7 @@ export default function RegisterScreen(): React.ReactElement {
   const router = useRouter();
   const { register: registerUser, isLoading } = useAuthStore();
   const { isWeb } = useResponsive();
+  const toast = useToast();
   const [selectedRole, setSelectedRole] = useState<UserRole>('gestante');
   const [consentAccepted, setConsentAccepted] = useState(false);
 
@@ -100,7 +102,7 @@ export default function RegisterScreen(): React.ReactElement {
         return;
       }
       if (!consentAccepted) {
-        notify('Consentimiento requerido', 'Debes aceptar los términos y condiciones para continuar.');
+        toast.warning('Falta tu consentimiento', 'Acepta los términos y la política de privacidad para continuar.');
         return;
       }
       try {
@@ -116,9 +118,9 @@ export default function RegisterScreen(): React.ReactElement {
 
         // Obstetra: queda pendiente de aprobación del administrador (no entra).
         if (!isAuthenticated || !user) {
-          notify(
-            'Cuenta pendiente de aprobación',
-            'Tu cuenta fue creada y está pendiente de aprobación por el administrador. Te avisaremos cuando puedas ingresar.',
+          toast.success(
+            'Cuenta creada',
+            'Tu cuenta quedó pendiente de aprobación del administrador. Te avisaremos cuando puedas ingresar.',
           );
           router.replace('/(auth)/login');
           return;
@@ -128,11 +130,11 @@ export default function RegisterScreen(): React.ReactElement {
         else if (user.role === 'admin') router.replace('/(admin)/(tabs)' as any);
         else router.replace('/(obstetra)/(tabs)');
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Error al registrarse';
-        notify('Error', message);
+        const message = error instanceof Error ? error.message : 'Revisa tus datos e inténtalo de nuevo.';
+        toast.error('No se pudo crear la cuenta', message);
       }
     },
-    [consentAccepted, selectedRole, registerUser, setError, router],
+    [consentAccepted, selectedRole, registerUser, setError, router, toast],
   );
 
   return (
@@ -239,9 +241,7 @@ export default function RegisterScreen(): React.ReactElement {
 
             <View style={styles.loginSection}>
               <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
-              <Pressable onPress={() => router.replace('/(auth)/login')} hitSlop={12}>
-                <Text style={[styles.loginLink, { color: themeColor }]}>Inicia Sesión</Text>
-              </Pressable>
+              <LinkButton label="Inicia sesión" onPress={() => router.replace('/(auth)/login')} color={themeColor} size="md" />
             </View>
             </View>
           </ScrollView>
@@ -357,10 +357,5 @@ const styles = StyleSheet.create({
   loginText: {
     ...typography.bodySmall,
     color: commonColors.textSecondary,
-  },
-  loginLink: {
-    ...typography.bodySmall,
-    fontFamily: typography.label.fontFamily,
-    fontWeight: typography.label.fontWeight,
   },
 });

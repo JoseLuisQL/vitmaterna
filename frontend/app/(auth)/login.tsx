@@ -6,7 +6,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,13 +16,14 @@ import { CreditCard, Lock } from 'lucide-react-native';
 
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
+import { LinkButton } from '../../src/components/ui/LinkButton';
+import { useToast } from '../../src/components/ui';
 import { VitMaternaLogo } from '../../src/components/ui/VitMaternaLogo';
 import { useAuthStore } from '../../src/store/authStore';
-import { obstetraColors, commonColors } from '../../src/theme/colors';
+import { gestanteColors, obstetraColors, commonColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing, borderRadius } from '../../src/theme/spacing';
 import { shadows } from '../../src/theme/shadows';
-import { notify } from '../../src/utils/confirm';
 import { useResponsive } from '../../src/theme/responsive';
 
 const BRAND = obstetraColors.primary;
@@ -46,6 +46,7 @@ export default function LoginScreen(): React.ReactElement {
   const router = useRouter();
   const { login, isLoading } = useAuthStore();
   const { isWeb } = useResponsive();
+  const toast = useToast();
 
   const {
     control,
@@ -69,11 +70,11 @@ export default function LoginScreen(): React.ReactElement {
           else router.replace('/(obstetra)/(tabs)');
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Error al iniciar sesión';
-        notify('Error', message);
+        const message = error instanceof Error ? error.message : 'Revisa tu DNI y contraseña e inténtalo de nuevo.';
+        toast.error('No se pudo iniciar sesión', message);
       }
     },
-    [login, router],
+    [login, router, toast],
   );
 
   return (
@@ -132,13 +133,13 @@ export default function LoginScreen(): React.ReactElement {
                 autoCapitalize="none"
               />
 
-              <Pressable
+              <LinkButton
+                label="¿Olvidaste tu contraseña?"
                 onPress={() => router.push('/(auth)/forgot-password')}
+                color={BRAND}
+                size="md"
                 style={styles.forgotButton}
-                hitSlop={12}
-              >
-                <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-              </Pressable>
+              />
 
               <AppButton
                 title="Iniciar Sesión"
@@ -155,9 +156,7 @@ export default function LoginScreen(): React.ReactElement {
 
             <View style={styles.registerSection}>
               <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
-              <Pressable onPress={() => router.push('/(auth)/register')} hitSlop={12}>
-                <Text style={styles.registerLink}>Regístrate</Text>
-              </Pressable>
+              <LinkButton label="Regístrate" onPress={() => router.push('/(auth)/register')} color={BRAND} size="md" />
             </View>
             </View>
           </ScrollView>
@@ -188,7 +187,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#F3EEFF',
+    backgroundColor: gestanteColors.primaryLight,
     opacity: 0.8,
   },
   scrollContent: {
@@ -234,11 +233,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     marginTop: -spacing.sm,
   },
-  forgotText: {
-    ...typography.label,
-    color: BRAND,
-    fontWeight: '600',
-  },
   registerSection: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -247,10 +241,5 @@ const styles = StyleSheet.create({
   registerText: {
     ...typography.body,
     color: commonColors.textSecondary,
-  },
-  registerLink: {
-    ...typography.body,
-    color: BRAND,
-    fontWeight: '600',
   },
 });

@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { CreditCard, Lock, KeyRound, CheckCircle, ArrowLeft } from 'lucide-react-native';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
+import { LinkButton } from '../../src/components/ui/LinkButton';
 import { useToast } from '../../src/components/ui';
 import api from '../../src/services/api';
 import { getApiErrorMessage } from '../../src/utils/apiError';
@@ -206,9 +207,9 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                   gradient
                   themeGradient={obstetraColors.gradient}
                 />
-                <Pressable onPress={dniForm.handleSubmit(onRequest)} hitSlop={8} style={{ marginTop: spacing.md, alignItems: 'center' }}>
-                  <Text style={styles.resendText}>Reenviar código</Text>
-                </Pressable>
+                <View style={styles.resendRow}>
+                  <LinkButton label="Reenviar código" onPress={dniForm.handleSubmit(onRequest)} color={BRAND} size="md" />
+                </View>
               </View>
             )}
 
@@ -306,9 +307,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
-  resendText: {
-    ...typography.bodySmall,
-    color: BRAND,
-    fontFamily: typography.label.fontFamily,
+  resendRow: {
+    marginTop: spacing.md,
+    alignItems: 'center',
   },
 });
