@@ -27,7 +27,7 @@ export function ThemeToggle({ accentColor = '#4A90D9' }: { accentColor?: string 
           <Pressable
             key={opt.mode}
             onPress={() => setMode(opt.mode)}
-            style={[styles.seg, active && { backgroundColor: accentColor }]}
+            style={[styles.seg, active && { backgroundColor: accentColor }, { cursor: 'pointer', outlineStyle: 'none' } as any]}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             accessibilityLabel={`Apariencia ${opt.label}`}

@@ -114,7 +114,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
       <TouchableOpacity
         style={[
           styles.collapseBtn,
-          { backgroundColor: colors.surface, borderColor: colors.border, cursor: 'pointer' } as any
+          { backgroundColor: colors.surface, borderColor: colors.border, cursor: 'pointer', outlineStyle: 'none' } as any
         ]}
         onPress={onToggleCollapsed}
         hitSlop={8}
@@ -154,7 +154,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
 
         <Pressable
           onPress={handleLogout}
-          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed, IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any)]}
+          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed, IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s', outlineStyle: 'none' } as any)]}
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
         >
@@ -181,20 +181,24 @@ function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): Reac
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }: any) => [
         styles.navRow,
         collapsed && styles.navRowCollapsed,
-        active && { backgroundColor: accent + '14' },
-        pressed && !active && { backgroundColor: colors.surfaceAlt },
-        IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
+        active && { backgroundColor: accent + '10' },
+        hovered && !active && { backgroundColor: colors.surfaceAlt },
+        pressed && !active && { backgroundColor: colors.borderLight },
+        IS_WEB && ({ cursor: 'pointer', transition: 'all 0.15s ease-in-out', outlineStyle: 'none' } as any),
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       accessibilityLabel={item.label}
     >
-      <Icon size={20} color={color} />
+      {active && !collapsed && (
+        <View style={[styles.activeIndicator, { backgroundColor: accent }]} />
+      )}
+      <Icon size={18} color={color} />
       {!collapsed && (
-        <Text style={[styles.navLabel, { color: active ? accent : colors.text }, active && styles.navLabelActive]} numberOfLines={1}>
+        <Text style={[styles.navLabel, { color: active ? accent : colors.textSecondary }, active && styles.navLabelActive]} numberOfLines={1}>
           {item.label}
         </Text>
       )}
@@ -252,6 +256,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm2,
     paddingHorizontal: spacing.sm2, paddingVertical: spacing.sm + 2,
     borderRadius: borderRadius.md,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3.5,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
   },
   navRowCollapsed: { justifyContent: 'center', paddingHorizontal: 0 },
   navRowPressed: { },
