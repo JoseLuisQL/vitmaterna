@@ -14,8 +14,10 @@ import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from
 import { ChevronUp, ChevronDown, type LucideIcon } from 'lucide-react-native';
 import { EmptyState } from '../ui/EmptyState';
 import { commonColors } from '../../theme/colors';
+import { useThemedColors } from '../../theme/ThemeContext';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { IS_WEB } from '../../theme/responsive';
 
 export interface DataTableColumn<T> {
   /** Clave única de la columna (también se usa para ordenar). */
@@ -61,6 +63,7 @@ export function DataTable<T>({
   emptyMessage,
   emptyAccent = commonColors.textSecondary,
 }: DataTableProps<T>): React.ReactElement {
+  const colors = useThemedColors();
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -95,9 +98,13 @@ export function DataTable<T>({
     col.width ? { width: col.width } : { flex: col.flex ?? 1, minWidth: 0 };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Cabecera */}
-      <View style={styles.headerRow}>
+      <View style={[
+        styles.headerRow,
+        { backgroundColor: colors.surfaceAlt, borderBottomColor: colors.border },
+        IS_WEB && ({ position: 'sticky', top: 0, zIndex: 1 } as any)
+      ]}>
         {columns.map((col) => {
           const active = sortKey === col.key;
           return (
@@ -105,13 +112,18 @@ export function DataTable<T>({
               key={col.key}
               onPress={() => toggleSort(col)}
               disabled={!col.sortValue}
-              style={[styles.headerCell, colStyle(col), { justifyContent: cellAlign(col.align) }]}
+              style={[
+                styles.headerCell,
+                colStyle(col),
+                { justifyContent: cellAlign(col.align) },
+                col.sortValue && IS_WEB && ({ cursor: 'pointer' } as any),
+              ]}
             >
-              <Text style={styles.headerText} numberOfLines={1}>{col.header}</Text>
+              <Text style={[styles.headerText, { color: colors.textSecondary }]} numberOfLines={1}>{col.header}</Text>
               {col.sortValue && active ? (
                 sortDir === 'asc'
-                  ? <ChevronUp size={14} color={commonColors.textSecondary} />
-                  : <ChevronDown size={14} color={commonColors.textSecondary} />
+                  ? <ChevronUp size={14} color={colors.textSecondary} />
+                  : <ChevronDown size={14} color={colors.textSecondary} />
               ) : null}
             </Pressable>
           );
@@ -137,14 +149,15 @@ export function DataTable<T>({
                 onPress={onRowPress ? () => onRowPress(row) : undefined}
                 style={({ pressed }: { pressed?: boolean }) => [
                   styles.row,
-                  i > 0 && styles.rowBorder,
-                  pressed && styles.rowPressed,
+                  i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
+                  pressed && { backgroundColor: colors.surfaceAlt },
+                  onRowPress && IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
                 ]}
               >
                 {columns.map((col) => (
                   <View key={col.key} style={[styles.cell, colStyle(col), { alignItems: cellAlign(col.align) }]}>
                     {typeof col.render(row) === 'string' || typeof col.render(row) === 'number' ? (
-                      <Text style={styles.cellText} numberOfLines={2}>{col.render(row) as React.ReactNode}</Text>
+                      <Text style={[styles.cellText, { color: colors.text }]} numberOfLines={2}>{col.render(row) as React.ReactNode}</Text>
                     ) : (
                       col.render(row)
                     )}
@@ -162,18 +175,14 @@ export function DataTable<T>({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: commonColors.border,
     overflow: 'hidden',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: commonColors.surfaceAlt,
     borderBottomWidth: 1,
-    borderBottomColor: commonColors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm2,
     gap: spacing.md,
@@ -181,7 +190,6 @@ const styles = StyleSheet.create({
   headerCell: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerText: {
     ...typography.overline,
-    color: commonColors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -192,10 +200,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm2,
     gap: spacing.md,
   },
-  rowBorder: { borderTopWidth: 1, borderTopColor: commonColors.borderLight },
-  rowPressed: { backgroundColor: commonColors.surfaceAlt },
+  rowBorder: { borderTopWidth: 1 },
+  rowPressed: { },
   cell: { justifyContent: 'center' },
-  cellText: { ...typography.bodySm, color: commonColors.text },
+  cellText: { ...typography.bodySm },
   stateWrap: { padding: spacing.xl, alignItems: 'center', justifyContent: 'center', minHeight: 160 },
 });
 

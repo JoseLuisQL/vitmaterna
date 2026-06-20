@@ -14,20 +14,35 @@
  * El sidebar/topbar solo se muestran cuando hay un usuario autenticado con rol
  * (las pantallas de login/registro/splash se ven a pantalla completa).
  */
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useResponsive } from '../../theme/responsive';
 import { useAuthStore } from '../../store/authStore';
 import { commonColors } from '../../theme/colors';
+import { useThemedColors } from '../../theme/ThemeContext';
 import { WebSidebar } from './WebSidebar';
 import { WebTopBar } from './WebTopBar';
 import type { UserRole } from '../../types/user';
+
+const SIDEBAR_COLLAPSED_KEY = 'vitmaterna_sidebar_collapsed';
 
 export function WebShell({ children }: { children: React.ReactNode }): React.ReactElement {
   const { webShell } = useResponsive();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [collapsed, setCollapsed] = useState(false);
+  const colors = useThemedColors();
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof localStorage === 'undefined') return false;
+    try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'; } catch { return false; }
+  });
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   const role = user?.role as UserRole | undefined;
 
@@ -44,11 +59,11 @@ export function WebShell({ children }: { children: React.ReactNode }): React.Rea
 
   // Portal web completo.
   return (
-    <View style={styles.shell}>
-      <WebSidebar role={role} collapsed={collapsed} onToggleCollapsed={() => setCollapsed((c) => !c)} />
+    <View style={[styles.shell, { backgroundColor: colors.background }]}>
+      <WebSidebar role={role} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       <View style={styles.main}>
         <WebTopBar role={role} />
-        <View style={styles.content}>{children}</View>
+        <View style={[styles.content, { backgroundColor: colors.background }]}>{children}</View>
       </View>
     </View>
   );
@@ -56,9 +71,9 @@ export function WebShell({ children }: { children: React.ReactNode }): React.Rea
 
 const styles = StyleSheet.create({
   full: { flex: 1 },
-  shell: { flex: 1, flexDirection: 'row', backgroundColor: commonColors.background },
+  shell: { flex: 1, flexDirection: 'row' },
   main: { flex: 1, minWidth: 0 },
-  content: { flex: 1, backgroundColor: commonColors.background },
+  content: { flex: 1 },
 });
 
 export default WebShell;

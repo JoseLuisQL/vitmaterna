@@ -15,6 +15,7 @@ import { LucideIcon, ChevronRight } from 'lucide-react-native';
 import { commonColors, gestanteColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
+import { IS_WEB } from '../../theme/responsive';
 
 interface ListItemProps {
   title: string;
@@ -91,6 +92,7 @@ export function ListItem({
         style={({ pressed }) => [
           containerStyle,
           pressed && { backgroundColor: commonColors.surfaceHover },
+          IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
         ]}
         accessibilityRole="button"
         accessibilityLabel={title}

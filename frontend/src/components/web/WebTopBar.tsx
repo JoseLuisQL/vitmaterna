@@ -10,9 +10,12 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { usePathname } from 'expo-router';
 import { NotificationBell } from '../shared/NotificationBell';
+import { Breadcrumb } from './Breadcrumb';
 import { useAuthStore } from '../../store/authStore';
 import { NAVIGATION, ROLE_LABEL } from '../../navigation/menu';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { gestanteColors, obstetraColors, adminColors, commonColors } from '../../theme/colors';
+import { useThemedColors } from '../../theme/ThemeContext';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius, webLayout } from '../../theme/spacing';
 import type { UserRole } from '../../types/user';
@@ -58,27 +61,29 @@ interface WebTopBarProps {
 
 export function WebTopBar({ role }: WebTopBarProps): React.ReactElement {
   const user = useAuthStore((s) => s.user);
+  const colors = useThemedColors();
   const accent = ACCENT[role];
   const title = useSectionTitle(role);
+  useDocumentTitle(role);
   const roleLabel = ROLE_LABEL[role];
   const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || roleLabel : roleLabel;
   const initial = (userName || 'U').trim().charAt(0).toUpperCase();
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       <View style={styles.left}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <Breadcrumb role={role} />
       </View>
 
       <View style={styles.right}>
-        <NotificationBell href={NOTIF_HREF[role]} color={commonColors.text} />
-        <View style={styles.userChip}>
+        <NotificationBell href={NOTIF_HREF[role]} color={colors.text} />
+        <View style={[styles.userChip, { backgroundColor: colors.surfaceAlt }]}>
           <View style={[styles.avatar, { backgroundColor: accent }]}>
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
           <View style={styles.userTexts}>
-            <Text style={styles.userName} numberOfLines={1}>{userName}</Text>
-            <Text style={styles.userSub} numberOfLines={1}>{roleLabel}</Text>
+            <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>{userName}</Text>
+            <Text style={[styles.userSub, { color: colors.textSecondary }]} numberOfLines={1}>{roleLabel}</Text>
           </View>
         </View>
       </View>
@@ -93,23 +98,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    backgroundColor: commonColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: commonColors.border,
   },
   left: { flex: 1, minWidth: 0 },
-  title: { ...typography.h2, color: commonColors.text },
+  title: { ...typography.h2 },
   right: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   userChip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     paddingLeft: spacing.sm, paddingRight: spacing.sm2, paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.full,
   },
   avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   avatarText: { ...typography.bodyMedium, color: commonColors.white, fontWeight: '700' },
   userTexts: { minWidth: 0 },
-  userName: { ...typography.bodySm, color: commonColors.text, fontWeight: '600' },
-  userSub: { ...typography.micro, color: commonColors.textSecondary },
+  userName: { ...typography.bodySm, fontWeight: '600' },
+  userSub: { ...typography.micro },
 });
 
 export default WebTopBar;

@@ -3,6 +3,7 @@
  * Provides SafeAreaProvider, QueryClientProvider, DatabaseProvider, auth state initialization.
  */
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -33,6 +34,23 @@ import { initOutbox } from '../src/services/outbox';
 initNetwork();
 startQueryPersistence();
 initOutbox(queryClient);
+
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    * { scrollbar-width: thin; scrollbar-color: #C5CDD9 transparent; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background-color: #C5CDD9; border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background-color: #9AA6B4; }
+    @media (prefers-color-scheme: dark) {
+      * { scrollbar-color: #3A4659 transparent; }
+      ::-webkit-scrollbar-thumb { background-color: #3A4659; }
+      ::-webkit-scrollbar-thumb:hover { background-color: #6C7C99; }
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 export default function RootLayout(): React.ReactElement | null {
   const loadStoredAuth = useAuthStore((s) => s.loadStoredAuth);

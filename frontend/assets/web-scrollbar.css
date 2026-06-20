@@ -1,0 +1,41 @@
+/* VITMATERNA — Custom Scrollbars para el portal web */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #C5CDD9 transparent;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #C5CDD9;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9AA6B4;
+}
+
+/* Modo Oscuro (se asume que el contenedor padre o html tendrá la clase dark o similar, pero por ahora lo dejamos genérico o manejado por css media query si prefieres, aunque nuestro theme es controlado por JS. Para simplificar, lo dejamos semitransparente) */
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: #3A4659 transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #3A4659;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #6C7C99;
+  }
+}

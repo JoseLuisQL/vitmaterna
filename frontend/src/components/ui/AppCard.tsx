@@ -14,6 +14,7 @@ import { commonColors, gestanteColors } from '../../theme/colors';
 import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows, coloredGlow } from '../../theme/shadows';
 import { animations } from '../../theme/animations';
+import { IS_WEB } from '../../theme/responsive';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -73,7 +74,7 @@ export const AppCard: React.FC<AppCardProps> = ({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[animatedStyle, cardStyle]}
+        style={[animatedStyle, IS_WEB && ({ cursor: 'pointer' } as any), cardStyle]}
         accessibilityRole="button"
       >
         {children}

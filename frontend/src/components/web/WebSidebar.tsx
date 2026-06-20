@@ -25,8 +25,10 @@ import { useToast } from '../ui/ToastProvider';
 import { confirmAction } from '../../utils/confirm';
 import { NAVIGATION, ROLE_LABEL, type NavItem } from '../../navigation/menu';
 import { gestanteColors, obstetraColors, adminColors, commonColors, semanticColors } from '../../theme/colors';
+import { useThemedColors } from '../../theme/ThemeContext';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius, webLayout } from '../../theme/spacing';
+import { IS_WEB } from '../../theme/responsive';
 import type { UserRole } from '../../types/user';
 
 const ACCENT: Record<UserRole, string> = {
@@ -72,6 +74,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
   const { logout } = useAuthStore();
+  const colors = useThemedColors();
 
   const accent = ACCENT[role];
   const nav = NAVIGATION[role];
@@ -95,26 +98,26 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
   const width = collapsed ? webLayout.sidebarCollapsedWidth : webLayout.sidebarWidth;
 
   return (
-    <View style={[styles.container, { width }]}>
+    <View style={[styles.container, { width, backgroundColor: colors.surface, borderRightColor: colors.border }]}>
       {/* Cabecera: marca + colapsar */}
-      <View style={[styles.brandRow, collapsed && styles.brandRowCollapsed]}>
+      <View style={[styles.brandRow, collapsed && styles.brandRowCollapsed, { borderBottomColor: colors.borderLight }]}>
         <VitMaternaLogo size={collapsed ? 36 : 40} />
         {!collapsed && (
           <View style={styles.brandTexts}>
-            <Text style={styles.brandName} numberOfLines={1}>VITMATERNA</Text>
-            <Text style={styles.brandRole} numberOfLines={1}>{roleLabel}</Text>
+            <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>VITMATERNA</Text>
+            <Text style={[styles.brandRole, { color: colors.textSecondary }]} numberOfLines={1}>{roleLabel}</Text>
           </View>
         )}
         <Pressable
           onPress={onToggleCollapsed}
-          style={styles.collapseBtn}
+          style={[styles.collapseBtn, { backgroundColor: colors.surfaceAlt }, IS_WEB && ({ cursor: 'pointer' } as any)]}
           accessibilityRole="button"
           accessibilityLabel={collapsed ? 'Expandir menú' : 'Colapsar menú'}
         >
           {collapsed ? (
-            <PanelLeftOpen size={18} color={commonColors.textSecondary} />
+            <PanelLeftOpen size={18} color={colors.textSecondary} />
           ) : (
-            <PanelLeftClose size={18} color={commonColors.textSecondary} />
+            <PanelLeftClose size={18} color={colors.textSecondary} />
           )}
         </Pressable>
       </View>
@@ -130,8 +133,8 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
         {/* Secciones */}
         {nav.sections.map((section, si) => (
           <View key={si} style={styles.group}>
-            {!collapsed && section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
-            {collapsed && section.title ? <View style={styles.collapsedDivider} /> : null}
+            {!collapsed && section.title ? <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>{section.title}</Text> : null}
+            {collapsed && section.title ? <View style={[styles.collapsedDivider, { backgroundColor: colors.borderLight }]} /> : null}
             {section.items.map((item, ii) => (
               <NavRow key={ii} item={item} accent={accent} collapsed={collapsed} active={isActive(item.href, pathname)} onPress={() => router.push(item.href)} />
             ))}
@@ -140,15 +143,15 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
       </ScrollView>
 
       {/* Pie: identidad + tema + logout */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
         {!collapsed && (
           <View style={styles.userRow}>
             <View style={[styles.avatar, { backgroundColor: accent }]}>
               <Text style={styles.avatarText}>{initial}</Text>
             </View>
             <View style={styles.userTexts}>
-              <Text style={styles.userName} numberOfLines={1}>{userName}</Text>
-              <Text style={styles.userSub} numberOfLines={1}>{roleLabel}</Text>
+              <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>{userName}</Text>
+              <Text style={[styles.userSub, { color: colors.textSecondary }]} numberOfLines={1}>{roleLabel}</Text>
             </View>
           </View>
         )}
@@ -161,7 +164,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
 
         <Pressable
           onPress={handleLogout}
-          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed]}
+          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed, IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any)]}
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
         >
@@ -182,8 +185,9 @@ interface NavRowProps {
 }
 
 function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): React.ReactElement {
+  const colors = useThemedColors();
   const Icon: LucideIcon = item.icon;
-  const color = active ? accent : commonColors.textSecondary;
+  const color = active ? accent : colors.textSecondary;
   return (
     <Pressable
       onPress={onPress}
@@ -191,7 +195,8 @@ function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): Reac
         styles.navRow,
         collapsed && styles.navRowCollapsed,
         active && { backgroundColor: accent + '14' },
-        pressed && !active && styles.navRowPressed,
+        pressed && !active && { backgroundColor: colors.surfaceAlt },
+        IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any),
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
@@ -200,7 +205,7 @@ function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): Reac
       {active ? <View style={[styles.activeBar, { backgroundColor: accent }]} /> : null}
       <Icon size={20} color={color} />
       {!collapsed && (
-        <Text style={[styles.navLabel, { color: active ? accent : commonColors.text }, active && styles.navLabelActive]} numberOfLines={1}>
+        <Text style={[styles.navLabel, { color: active ? accent : colors.text }, active && styles.navLabelActive]} numberOfLines={1}>
           {item.label}
         </Text>
       )}
@@ -212,9 +217,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     height: '100%',
-    backgroundColor: commonColors.surface,
     borderRightWidth: 1,
-    borderRightColor: commonColors.border,
   },
   brandRow: {
     flexDirection: 'row',
@@ -223,25 +226,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: webLayout.topbarHeight,
     borderBottomWidth: 1,
-    borderBottomColor: commonColors.borderLight,
   },
   brandRowCollapsed: { paddingHorizontal: spacing.sm, justifyContent: 'center' },
   brandTexts: { flex: 1, minWidth: 0 },
-  brandName: { ...typography.h3, color: commonColors.text, letterSpacing: 0.5 },
-  brandRole: { ...typography.caption, color: commonColors.textSecondary },
+  brandName: { ...typography.h3, letterSpacing: 0.5 },
+  brandRole: { ...typography.caption },
   collapseBtn: {
     width: 32, height: 32, borderRadius: borderRadius.sm,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center',
   },
 
   scroll: { paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
   group: { marginBottom: spacing.md, gap: 2 },
   sectionTitle: {
-    ...typography.overline, color: commonColors.textTertiary,
+    ...typography.overline,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: spacing.xs, marginLeft: spacing.sm, marginTop: spacing.xs,
   },
-  collapsedDivider: { height: 1, backgroundColor: commonColors.borderLight, marginVertical: spacing.xs, marginHorizontal: spacing.xs },
+  collapsedDivider: { height: 1, marginVertical: spacing.xs, marginHorizontal: spacing.xs },
 
   navRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm2,
@@ -249,18 +251,18 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   navRowCollapsed: { justifyContent: 'center', paddingHorizontal: 0 },
-  navRowPressed: { backgroundColor: commonColors.surfaceAlt },
+  navRowPressed: { },
   activeBar: { position: 'absolute', left: 0, top: 8, bottom: 8, width: 3, borderRadius: borderRadius.full },
   navLabel: { ...typography.bodyMedium, flex: 1 },
   navLabelActive: { ...typography.bodyMedium, fontWeight: '600' },
 
-  footer: { borderTopWidth: 1, borderTopColor: commonColors.borderLight, padding: spacing.sm, gap: spacing.sm },
+  footer: { borderTopWidth: 1, padding: spacing.sm, gap: spacing.sm },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   avatarText: { ...typography.h3, color: commonColors.white },
   userTexts: { flex: 1, minWidth: 0 },
-  userName: { ...typography.bodyMedium, color: commonColors.text },
-  userSub: { ...typography.caption, color: commonColors.textSecondary },
+  userName: { ...typography.bodyMedium },
+  userSub: { ...typography.caption },
   themeWrap: { paddingHorizontal: spacing.xs },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm2,

@@ -28,6 +28,7 @@ import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows, coloredGlow } from '../../theme/shadows';
 import { animations } from '../../theme/animations';
 import { haptics } from '../../utils/haptics';
+import { IS_WEB } from '../../theme/responsive';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -214,7 +215,11 @@ export const AppButton: React.FC<AppButtonProps> = ({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={isDisabled}
-      style={[animatedStyle, ...containerStyle]}
+      style={[
+        animatedStyle,
+        ...containerStyle,
+        !isDisabled && IS_WEB && ({ cursor: 'pointer' } as any),
+      ]}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled, busy: loading }}

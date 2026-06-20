@@ -10,6 +10,7 @@ import React from 'react';
 import { Pressable, StyleProp, ViewStyle, PressableProps } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { animations } from '../../theme/animations';
+import { IS_WEB } from '../../theme/responsive';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -56,7 +57,11 @@ export const PressableScale: React.FC<PressableScaleProps> = ({
         opacity.value = withTiming(1, { duration: animations.duration.fast });
         onPressOut?.(e);
       }}
-      style={[animatedStyle, style]}
+      style={[
+        animatedStyle,
+        !disabled && IS_WEB && ({ cursor: 'pointer' } as any),
+        style,
+      ]}
     >
       {children}
     </AnimatedPressable>
