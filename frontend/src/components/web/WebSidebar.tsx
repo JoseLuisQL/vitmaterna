@@ -28,6 +28,7 @@ import { gestanteColors, obstetraColors, adminColors, commonColors, semanticColo
 import { useThemedColors } from '../../theme/ThemeContext';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius, webLayout } from '../../theme/spacing';
+import { zIndex } from '../../theme/zIndex';
 import { IS_WEB } from '../../theme/responsive';
 import type { UserRole } from '../../types/user';
 
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
+    zIndex: zIndex.nav,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

@@ -6,6 +6,7 @@
 import { zIndex, motion, stack, prefersReducedMotionSync } from '../src/theme';
 import { zIndex as zIndexDirect } from '../src/theme/zIndex';
 import { stack as stackDirect } from '../src/theme/spacing';
+import { commonColors, accentColors, chatColors } from '../src/theme/colors';
 
 describe('Fase 0 — Tokens de diseño', () => {
   describe('Escala de z-index', () => {
@@ -53,6 +54,23 @@ describe('Fase 0 — Tokens de diseño', () => {
 
     it('expone una consulta síncrona de reduce-motion', () => {
       expect(typeof prefersReducedMotionSync()).toBe('boolean');
+    });
+  });
+
+  describe('Tokens "sobre color" y de marca', () => {
+    it('define los blancos translúcidos centralizados', () => {
+      expect(commonColors.onColorText).toBeTruthy();
+      expect(commonColors.onColorTextSoft).toBeTruthy();
+      expect(commonColors.onColorSurface).toBeTruthy();
+      expect(commonColors.onColorSurfaceStrong).toBeTruthy();
+      expect(commonColors.onColorTrack).toBeTruthy();
+      expect(commonColors.bannerBackground).toBeTruthy();
+    });
+    it('define los colores funcionales de WhatsApp y del chat', () => {
+      expect(accentColors.whatsapp).toBe('#25D366');
+      expect(accentColors.whatsappLight).toBeTruthy();
+      expect(chatColors.readReceipt).toBeTruthy();
+      expect(chatColors.tickOnBubble).toBeTruthy();
     });
   });
 });

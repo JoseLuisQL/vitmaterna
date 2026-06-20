@@ -10,6 +10,7 @@
  * decora. Un gesto memorable (el indicador activo de navegación) + micro-
  * interacciones discretas. Nada de animación gratuita.
  */
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 import { animations } from './animations';
 
@@ -54,6 +55,33 @@ export async function prefersReducedMotion(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Hook reactivo: indica si el usuario pidió reducir el movimiento y se
+ * actualiza si cambia la preferencia del sistema. Las animaciones deben
+ * volverse instantáneas cuando devuelve true.
+ */
+export function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState<boolean>(() => prefersReducedMotionSync());
+
+  useEffect(() => {
+    let mounted = true;
+    prefersReducedMotion().then((v) => {
+      if (mounted) setReduced(v);
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => {
+      if (mounted) setReduced(Boolean(v));
+    });
+    return () => {
+      mounted = false;
+      // RN >= 0.65 devuelve un objeto con remove(); guardas por compatibilidad.
+      // @ts-ignore
+      sub?.remove?.();
+    };
+  }, []);
+
+  return reduced;
 }
 
 export type Motion = typeof motion;

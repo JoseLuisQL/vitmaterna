@@ -12,6 +12,7 @@ import { isOnline, subscribeOnline } from '../../services/network';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { zIndex } from '../../theme/zIndex';
 
 export function OfflineBanner(): React.ReactElement | null {
   const insets = useSafeAreaInsets();
@@ -49,8 +50,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 9999,
-    backgroundColor: '#1E2A3A',
+    zIndex: zIndex.banner,
+    backgroundColor: commonColors.bannerBackground,
     paddingBottom: spacing.sm,
     alignItems: 'center',
   },

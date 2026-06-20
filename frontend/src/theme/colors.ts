@@ -53,6 +53,9 @@ export const commonColors = {
   onColorSurfaceStrong: 'rgba(255,255,255,0.20)', // fondo de botón (énfasis)
   onColorSurfaceFaint: 'rgba(255,255,255,0.10)', // halo muy tenue sobre gradiente
   onColorTrack: 'rgba(255,255,255,0.25)', // pista de progreso sobre gradiente
+
+  // Banner global "sin conexión": grafito azulado, legible sobre cualquier vista.
+  bannerBackground: '#1E2A3A',
 } as const;
 
 /**

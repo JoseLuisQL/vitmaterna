@@ -27,6 +27,7 @@ import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows, coloredGlow } from '../../theme/shadows';
 import { animations } from '../../theme/animations';
+import { useReducedMotion } from '../../theme/motion';
 import { haptics } from '../../utils/haptics';
 import { IS_WEB } from '../../theme/responsive';
 
@@ -128,6 +129,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   themeColor,
 }) => {
   const scale = useSharedValue(1);
+  const reducedMotion = useReducedMotion();
 
   const variantStyle: VariantStyle = { ...VARIANT_STYLES[variant] };
   if (themeColor && variant === 'primary') {
@@ -153,12 +155,14 @@ export const AppButton: React.FC<AppButtonProps> = ({
   }));
 
   const handlePressIn = useCallback(() => {
+    if (reducedMotion) return;
     scale.value = withSpring(0.96, animations.springFast);
-  }, [scale]);
+  }, [scale, reducedMotion]);
 
   const handlePressOut = useCallback(() => {
+    if (reducedMotion) return;
     scale.value = withSpring(1, animations.springFast);
-  }, [scale]);
+  }, [scale, reducedMotion]);
 
   const handlePress = useCallback(() => {
     if (hapticOn) haptics.light();
