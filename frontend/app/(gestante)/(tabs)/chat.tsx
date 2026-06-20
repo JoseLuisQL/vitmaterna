@@ -19,7 +19,7 @@ import { categoryMeta, typeMeta } from '../../../src/utils/educationMeta';
 import { useAuthStore } from '../../../src/store/authStore';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
-import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
+import { gestanteColors, commonColors, semanticColors, accentColors, chatColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -201,11 +201,11 @@ export default function GestanteChatScreen() {
           {/* Estado de envío / visto (solo en mis mensajes) */}
           {isMe && (
             item.pending ? (
-              <Check size={13} color="rgba(255,255,255,0.6)" />
+              <Check size={13} color={chatColors.tickOnBubble} />
             ) : item.leido ? (
-              <CheckCheck size={14} color="#9BE7FF" />
+              <CheckCheck size={14} color={chatColors.readReceipt} />
             ) : (
-              <CheckCheck size={14} color="rgba(255,255,255,0.6)" />
+              <CheckCheck size={14} color={chatColors.tickOnBubble} />
             )
           )}
         </View>
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: commonColors.onColorSurfaceStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -383,15 +383,15 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h3, color: commonColors.white },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
-  headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
+  headerSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft },
   typingText: { fontStyle: 'italic', color: commonColors.white },
-  waBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
+  waBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: accentColors.whatsapp, alignItems: 'center', justifyContent: 'center' },
   botBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: commonColors.onColorSurface,
     borderRadius: borderRadius.full,
     paddingHorizontal: 14,
     paddingVertical: 9,
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   messageTextOther: { color: commonColors.text },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
   timeText: { ...typography.caption, fontSize: 11 },
-  timeTextMe: { color: 'rgba(255,255,255,0.75)' },
+  timeTextMe: { color: chatColors.timeOnBubble },
   timeTextOther: { color: commonColors.textTertiary },
   inputContainer: { flexDirection: 'row', padding: spacing.sm2, backgroundColor: commonColors.surface, borderTopWidth: 1, borderColor: commonColors.borderLight, alignItems: 'flex-end', paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.sm2 },
   attachButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: gestanteColors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },

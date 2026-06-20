@@ -11,6 +11,7 @@ export {
   semanticColors,
   riskColors,
   dentalColors,
+  chatColors,
 } from './colors';
 export { typography, fontFamilies } from './typography';
 export type { TypographyStyle } from './typography';

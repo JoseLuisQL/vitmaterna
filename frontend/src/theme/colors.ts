@@ -123,6 +123,19 @@ export const accentColors = {
   teal: '#06B6D4',
   tealDark: '#0891B2',
   tealLight: '#CFFAFE',
+  /** Verde de marca WhatsApp (botón de contacto). */
+  whatsapp: '#25D366',
+} as const;
+
+/**
+ * Colores del CHAT. Los "vistos" (read receipts) usan un azul reconocible
+ * (estilo mensajería) y los checks sobre la burbuja propia usan blancos
+ * translúcidos. Centralizados para no repetirlos en cada pantalla de chat.
+ */
+export const chatColors = {
+  readReceipt: '#9BE7FF', // doble check "visto" (azul claro)
+  tickOnBubble: 'rgba(255,255,255,0.6)', // check sencillo sobre burbuja propia
+  timeOnBubble: 'rgba(255,255,255,0.75)', // hora sobre burbuja propia
 } as const;
 
 /** Colores semánticos (suavizados; mantienen significado inequívoco) */
@@ -174,4 +187,5 @@ export const colors = {
   semantic: semanticColors,
   risk: riskColors,
   dental: dentalColors,
+  chat: chatColors,
 } as const;

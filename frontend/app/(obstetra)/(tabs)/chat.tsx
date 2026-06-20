@@ -20,7 +20,7 @@ import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { categoryMeta } from '../../../src/utils/educationMeta';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { useAuthStore } from '../../../src/store/authStore';
-import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, semanticColors, chatColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
@@ -186,7 +186,7 @@ export default function ObstetraChatScreen() {
             {isMe && (item.pending
               ? <Check size={13} color={obstetraColors.primaryLight} />
               : item.leido
-                ? <CheckCheck size={14} color="#9BE7FF" />
+                ? <CheckCheck size={14} color={chatColors.readReceipt} />
                 : <CheckCheck size={14} color={obstetraColors.primaryLight} />)}
           </View>
         </View>
@@ -217,7 +217,7 @@ export default function ObstetraChatScreen() {
             item.pending ? (
               <Check size={13} color={obstetraColors.primaryLight} />
             ) : item.leido ? (
-              <CheckCheck size={14} color="#9BE7FF" />
+              <CheckCheck size={14} color={chatColors.readReceipt} />
             ) : (
               <CheckCheck size={14} color={obstetraColors.primaryLight} />
             )
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: borderRadius.xxl,
   },
   bandejaTitle: { ...typography.h1, color: commonColors.white },
-  bandejaSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  bandejaSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
   convItem: {
     flexDirection: 'row',
     backgroundColor: commonColors.surface,
@@ -634,12 +634,12 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: commonColors.onColorSurface,
     marginRight: spacing.sm,
   },
   activeHeaderAvatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: commonColors.onColorSurfaceStrong,
     alignItems: 'center', justifyContent: 'center',
     marginRight: spacing.sm2,
   },
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   activeHeaderSubtitle: {
     ...typography.bodySm,
-    color: 'rgba(255,255,255,0.85)',
+    color: commonColors.onColorTextSoft,
   },
   messageBubble: {
     maxWidth: '78%',
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
   broadcastFabText: { color: commonColors.white, ...typography.button, fontSize: 15 },
   newChatBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.18)', marginTop: spacing.md,
+    backgroundColor: commonColors.onColorSurface, marginTop: spacing.md,
     paddingVertical: 12, borderRadius: borderRadius.full,
   },
   newChatBtnText: { color: commonColors.white, ...typography.button, fontSize: 15 },
