@@ -1,15 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Download, Users, TrendingUp, CheckCircle, AlertTriangle, ArrowLeft, Sheet } from 'lucide-react-native';
+import { Download, Users, TrendingUp, CheckCircle, AlertTriangle, Sheet } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
-import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useToast, AutoGrid } from '../../../src/components/ui';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../../src/theme/responsive';
 import { useAuthStore } from '../../../src/store/authStore';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
 import { exportPdf } from '../../../src/utils/exportPdf';
@@ -55,6 +54,7 @@ const semaforoStyles = StyleSheet.create({
 export default function ReportesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const { user } = useAuthStore();
   const [exporting, setExporting] = React.useState(false);
   const [exportingXlsx, setExportingXlsx] = React.useState(false);
@@ -143,46 +143,6 @@ export default function ReportesScreen(): React.ReactElement {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-          <SafeAreaView edges={['top']}>
-            <Text style={styles.title}>Reportes</Text>
-            <Text style={styles.subtitle}>Estadísticas y KPIs</Text>
-          </SafeAreaView>
-        </LinearGradient>
-        <View style={{ padding: spacing.lg }}>
-          <DashboardSkeleton count={2} />
-        </View>
-      </View>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-          <SafeAreaView edges={['top']}>
-            <Text style={styles.title}>Reportes</Text>
-            <Text style={styles.subtitle}>Estadísticas y KPIs</Text>
-          </SafeAreaView>
-        </LinearGradient>
-        <View style={styles.errorWrap}>
-          <AlertTriangle size={48} color={semanticColors.danger} />
-          <Text style={styles.errorTitle}>No se pudieron cargar los reportes</Text>
-          <Text style={styles.errorText}>
-            Ocurrió un problema al obtener las estadísticas del servidor.
-            Verifica tu conexión e inténtalo de nuevo.
-          </Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.7}>
-            <Text style={styles.retryBtnText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
   const attendanceData: ChartBarDatum[] =
     data?.attendanceStats.map((s) => ({ label: s.month, value: s.attended })) || [];
 
@@ -195,41 +155,32 @@ export default function ReportesScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
-              style={styles.backBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Volver"
-              accessibilityRole="button"
-            >
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.title} numberOfLines={1}>Reportes</Text>
-              <Text style={styles.subtitle} numberOfLines={1}>Estadísticas y KPIs</Text>
+      <ScreenLayout
+        role="obstetra"
+        title="Reportes"
+        subtitle="Estadísticas y KPIs"
+        showBack={router.canGoBack()}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)'))}
+        loading={isLoading}
+        error={isError || !data}
+        onRetry={() => refetch()}
+        width="full"
+        actions={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[styles.exportRow, { marginTop: 0 }]}>
+              <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+                {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
+                <Text style={styles.expBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.expBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+                {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
+                <Text style={styles.expBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
+              </TouchableOpacity>
             </View>
             <NotificationBell href="/(obstetra)/notificaciones" />
           </View>
-
-          {/* Exportación en su propia fila (responsive, sin cortes). */}
-          <View style={styles.exportRow}>
-            <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
-              {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
-              <Text style={styles.expBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.expBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
-              {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
-              <Text style={styles.expBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
-        <WebMaxWidth width="wide">
+        }
+      >
         {/* KPIs principales */}
         <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.xs }}>
           {[
@@ -246,58 +197,63 @@ export default function ReportesScreen(): React.ReactElement {
           ))}
         </AutoGrid>
 
-        {/* Indicadores MINSA */}
-        <Text style={styles.sectionTitle}>Indicadores MINSA / ENDES</Text>
-        <View style={styles.card}>
-          {data?.kpisMinsa.map((kpi, idx) => {
-            const ok = kpi.pct >= kpi.meta;
-            return (
-              <View key={kpi.label} style={[styles.minsaRow, idx === (data.kpisMinsa.length - 1) && { marginBottom: 0 }]}>
-                <View style={styles.minsaHead}>
-                  <Text style={styles.minsaLabel} numberOfLines={1}>{kpi.label}</Text>
-                  <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{kpi.pct}% <Text style={styles.minsaMeta}>/ {kpi.meta}%</Text></Text>
-                </View>
-                <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, kpi.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
-              </View>
-            );
-          })}
+        <View style={webShell ? styles.twoCol : undefined}>
+          <View style={webShell ? styles.col : undefined}>
+            {/* Indicadores MINSA */}
+            <Text style={styles.sectionTitle}>Indicadores MINSA / ENDES</Text>
+            <View style={styles.card}>
+              {data?.kpisMinsa.map((kpi, idx) => {
+                const ok = kpi.pct >= kpi.meta;
+                return (
+                  <View key={kpi.label} style={[styles.minsaRow, idx === (data.kpisMinsa.length - 1) && { marginBottom: 0 }]}>
+                    <View style={styles.minsaHead}>
+                      <Text style={styles.minsaLabel} numberOfLines={1}>{kpi.label}</Text>
+                      <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{kpi.pct}% <Text style={styles.minsaMeta}>/ {kpi.meta}%</Text></Text>
+                    </View>
+                    <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, kpi.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Tabla de menor adherencia */}
+            <Text style={styles.sectionTitle}>Atención prioritaria</Text>
+            <View style={styles.card}>
+              {(data?.gestantesMenorAdherencia?.length ?? 0) === 0 ? (
+                <Text style={styles.emptyInline}>Sin pacientes prioritarias por ahora.</Text>
+              ) : (
+                data?.gestantesMenorAdherencia.map((g, i) => (
+                  <View key={i} style={[styles.adherenciaRow, i < (data.gestantesMenorAdherencia.length - 1) && styles.adherenciaRowBorder]}>
+                    <RiesgoSemaforo nivel={g.riesgo} />
+                    <Text style={styles.adherenciaNombre} numberOfLines={1}>{g.nombre}</Text>
+                    <View style={[styles.adherenciaPctWrap, { backgroundColor: g.pct >= 80 ? riskColors.riskGreenLight : g.pct >= 50 ? riskColors.riskYellowLight : riskColors.riskRedLight }]}>
+                      <Text style={[styles.adherenciaPct, { color: g.pct >= 80 ? riskColors.riskGreen : g.pct >= 50 ? riskColors.riskYellow : riskColors.riskRed }]}>{g.pct}%</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          <View style={webShell ? styles.col : undefined}>
+            {/* Gráfica distribución por riesgo */}
+            {riskBars.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Distribución por Riesgo</Text>
+                <View style={styles.card}><ChartBar data={riskBars} height={150} showValues /></View>
+              </>
+            )}
+
+            {/* Gráfica asistencia */}
+            {attendanceData.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Asistencia a Citas (2026)</Text>
+                <View style={styles.card}><ChartBar data={attendanceData} color={BRAND} height={150} showValues /></View>
+              </>
+            )}
+          </View>
         </View>
-
-        {/* Gráfica distribución por riesgo */}
-        {riskBars.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Distribución por Riesgo</Text>
-            <View style={styles.card}><ChartBar data={riskBars} height={150} showValues /></View>
-          </>
-        )}
-
-        {/* Gráfica asistencia */}
-        {attendanceData.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Asistencia a Citas (2026)</Text>
-            <View style={styles.card}><ChartBar data={attendanceData} color={BRAND} height={150} showValues /></View>
-          </>
-        )}
-
-        {/* Tabla de menor adherencia */}
-        <Text style={styles.sectionTitle}>Atención prioritaria</Text>
-        <View style={styles.card}>
-          {(data?.gestantesMenorAdherencia?.length ?? 0) === 0 ? (
-            <Text style={styles.emptyInline}>Sin pacientes prioritarias por ahora.</Text>
-          ) : (
-            data?.gestantesMenorAdherencia.map((g, i) => (
-              <View key={i} style={[styles.adherenciaRow, i < (data.gestantesMenorAdherencia.length - 1) && styles.adherenciaRowBorder]}>
-                <RiesgoSemaforo nivel={g.riesgo} />
-                <Text style={styles.adherenciaNombre} numberOfLines={1}>{g.nombre}</Text>
-                <View style={[styles.adherenciaPctWrap, { backgroundColor: g.pct >= 80 ? riskColors.riskGreenLight : g.pct >= 50 ? riskColors.riskYellowLight : riskColors.riskRedLight }]}>
-                  <Text style={[styles.adherenciaPct, { color: g.pct >= 80 ? riskColors.riskGreen : g.pct >= 50 ? riskColors.riskYellow : riskColors.riskRed }]}>{g.pct}%</Text>
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-        </WebMaxWidth>
-      </ScrollView>
+      </ScreenLayout>
     </View>
   );
 }
@@ -342,4 +298,13 @@ const styles = StyleSheet.create({
   errorText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22 },
   retryBtn: { backgroundColor: BRAND, borderRadius: 99, paddingHorizontal: 32, paddingVertical: 14, marginTop: 8 },
   retryBtnText: { ...typography.button, color: obstetraColors.onPrimary },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });

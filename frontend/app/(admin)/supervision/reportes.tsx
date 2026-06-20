@@ -11,7 +11,8 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Download, Sheet, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { AutoGrid, useToast } from '../../../src/components/ui';
-import { WebMaxWidth } from '../../../src/components/web';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useResponsive } from '../../../src/theme/responsive';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
@@ -36,6 +37,7 @@ interface ReportData {
 export default function AdminReportesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
+  const { webShell } = useResponsive();
   const [exporting, setExporting] = React.useState(false);
   const [exportingXlsx, setExportingXlsx] = React.useState(false);
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -111,39 +113,31 @@ export default function AdminReportesScreen(): React.ReactElement {
   const riskBars: ChartBarDatum[] = (data?.riskDistribution || []).map((r) => ({ label: r.name, value: r.population, color: r.color }));
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Volver" accessibilityRole="button">
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.title} numberOfLines={1}>Reportes</Text>
-              <Text style={styles.subtitle} numberOfLines={1}>Indicadores globales</Text>
-            </View>
-          </View>
-
-          {/* Exportación en su propia fila (responsive, sin cortes). */}
-          <View style={styles.exportRow}>
-            <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
-              {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
-              <Text style={styles.expBtnText}>Excel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
-              {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
-              <Text style={styles.expBtnText}>PDF</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
+    <ScreenLayout
+      role="admin"
+      title="Reportes"
+      subtitle="Indicadores globales"
+      showBack={router.canGoBack()}
+      onBack={() => router.back()}
+      width="full"
+      scroll={false} // Custom scroll handling inside since we use loading skeleton
+      actions={
+        <View style={styles.exportRow}>
+          <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+            {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
+            <Text style={styles.expBtnText}>Excel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+            {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
+            <Text style={styles.expBtnText}>PDF</Text>
+          </TouchableOpacity>
+        </View>
+      }
+    >
       {isLoading ? (
-        <View style={{ padding: spacing.lg }}><DashboardSkeleton count={2} /></View>
+        <View style={{ paddingTop: spacing.lg }}><DashboardSkeleton count={2} /></View>
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}>
-          <WebMaxWidth width="wide">
           <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.lg }}>
             {[
               { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: adminColors.primaryLight },
@@ -159,47 +153,45 @@ export default function AdminReportesScreen(): React.ReactElement {
             ))}
           </AutoGrid>
 
-          <Text style={styles.sectionTitle}>Indicadores MINSA</Text>
-          <View style={styles.card}>
-            {(data?.kpisMinsa || []).map((k) => {
-              const ok = k.pct >= k.meta;
-              return (
-                <View key={k.label} style={styles.minsaRow}>
-                  <View style={styles.minsaHead}>
-                    <Text style={styles.minsaLabel}>{k.label}</Text>
-                    <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{k.pct}% <Text style={styles.minsaMeta}>/ {k.meta}%</Text></Text>
-                  </View>
-                  <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, k.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
-                </View>
-              );
-            })}
-          </View>
+          <View style={webShell ? styles.twoCol : undefined}>
+            <View style={webShell ? styles.col : undefined}>
+              <Text style={styles.sectionTitle}>Indicadores MINSA</Text>
+              <View style={styles.card}>
+                {(data?.kpisMinsa || []).map((k) => {
+                  const ok = k.pct >= k.meta;
+                  return (
+                    <View key={k.label} style={styles.minsaRow}>
+                      <View style={styles.minsaHead}>
+                        <Text style={styles.minsaLabel}>{k.label}</Text>
+                        <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{k.pct}% <Text style={styles.minsaMeta}>/ {k.meta}%</Text></Text>
+                      </View>
+                      <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, k.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
 
-          {riskBars.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
-              <View style={styles.card}><ChartBar data={riskBars} height={160} showValues /></View>
-            </>
-          )}
-          </WebMaxWidth>
+            <View style={webShell ? styles.col : undefined}>
+              {riskBars.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
+                  <View style={styles.card}><ChartBar data={riskBars} height={160} showValues /></View>
+                </>
+              )}
+            </View>
+          </View>
         </ScrollView>
       )}
-    </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
-  title: { ...typography.h1, color: commonColors.white },
-  subtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  headerActions: { flexDirection: 'row', gap: spacing.sm },
-  exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  exportRow: { flexDirection: 'row', gap: spacing.sm },
   expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  content: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
   kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   kpiValue: { ...typography.h2 },
@@ -213,4 +205,13 @@ const styles = StyleSheet.create({
   minsaMeta: { ...typography.caption, color: commonColors.textTertiary, fontWeight: '500' },
   bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4 },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 });
