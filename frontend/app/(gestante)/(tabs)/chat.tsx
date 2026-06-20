@@ -271,6 +271,7 @@ export default function GestanteChatScreen() {
           style={[styles.sendButton, !inputText.trim() && !uploading && styles.sendButtonDisabled]}
           onPress={handleSend}
           disabled={!inputText.trim() || uploading}
+          accessibilityRole="button"
           accessibilityLabel="Enviar mensaje"
         >
           <Send size={18} color={(!inputText.trim() && !uploading) ? commonColors.textTertiary : commonColors.white} />

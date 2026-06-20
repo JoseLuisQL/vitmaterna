@@ -45,7 +45,15 @@ corrigió antes **no reapareció**.
 
 ## Hallazgos
 
-### 🟡 A11y-1 · Filas de lista y botón de envío de chat sin rol/label de botón
+### 🟡 A11y-1 · Filas de chat y botón de envío sin rol/label de botón — ✅ CORREGIDO
+> Corregido: se añadió `accessibilityRole="button"` + `accessibilityLabel` a las
+> filas de la bandeja de chat ("Abrir conversación con {nombre}") y a los botones
+> de enviar mensaje (obstetra y gestante). Verificado en navegador: las filas
+> ahora se anuncian como botones con nombre, **y el envío de mensaje funciona de
+> extremo a extremo por la UI** (mensaje persistido en el backend).
+> Pendiente (mismo patrón, menor): filas de `DataTable` (gestantes/cronograma).
+
+_Descripción original:_
 Las filas de la **DataTable** (gestantes, cronograma) y de la **bandeja de chat**,
 y el **botón de enviar mensaje**, se renderizan como `View`/`Pressable` sin
 `accessibilityRole="button"` ni `accessibilityLabel`. En el árbol de

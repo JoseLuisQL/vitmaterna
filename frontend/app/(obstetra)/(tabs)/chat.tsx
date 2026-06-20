@@ -241,6 +241,8 @@ export default function ObstetraChatScreen() {
       <TouchableOpacity 
         style={styles.convItem} 
         onPress={() => openConversation(item)}
+        accessibilityRole="button"
+        accessibilityLabel={`Abrir conversación con ${patientName}`}
       >
         <View style={styles.convAvatar}>
           <User size={22} color={BRAND} />
@@ -532,6 +534,8 @@ export default function ObstetraChatScreen() {
           style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
           onPress={handleSend}
           disabled={!inputText.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar mensaje"
         >
           <Send size={20} color={obstetraColors.onPrimary} />
         </TouchableOpacity>
