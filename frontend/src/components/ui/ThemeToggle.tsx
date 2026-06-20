@@ -22,15 +22,24 @@ export function ThemeToggle({ accentColor = '#4A90D9' }: { accentColor?: string 
     <View style={[styles.row, { backgroundColor: colors.surfaceAlt }]}>
       {OPTIONS.map((opt) => {
         const active = mode === opt.mode;
+        const disabled = opt.mode !== 'light';
         const Icon = opt.icon;
         return (
           <Pressable
             key={opt.mode}
-            onPress={() => setMode(opt.mode)}
-            style={[styles.seg, active && { backgroundColor: accentColor }, { cursor: 'pointer', outlineStyle: 'none' } as any]}
+            onPress={() => {
+              if (!disabled) setMode(opt.mode);
+            }}
+            disabled={disabled}
+            style={[
+              styles.seg,
+              active && { backgroundColor: accentColor },
+              disabled && { opacity: 0.4 },
+              { cursor: disabled ? 'not-allowed' : 'pointer', outlineStyle: 'none' } as any
+            ]}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`Apariencia ${opt.label}`}
+            accessibilityState={{ selected: active, disabled }}
+            accessibilityLabel={`Apariencia ${opt.label}${disabled ? ' (No disponible)' : ''}`}
           >
             <Icon size={16} color={active ? commonColors.white : colors.textSecondary} />
             <Text style={[styles.label, { color: active ? commonColors.white : colors.textSecondary }]}>{opt.label}</Text>

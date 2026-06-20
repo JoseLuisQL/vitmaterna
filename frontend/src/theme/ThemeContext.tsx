@@ -39,28 +39,26 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const system = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [mode, setModeState] = useState<ThemeMode>('light');
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((v) => {
-        if (v === 'light' || v === 'dark' || v === 'system') setModeState(v);
-      })
-      .catch(() => {});
+    // Forzado a modo claro porque el modo oscuro/sistema está en desarrollo
+    setModeState('light');
   }, []);
 
   const setMode = useCallback((m: ThemeMode) => {
-    setModeState(m);
-    AsyncStorage.setItem(STORAGE_KEY, m).catch(() => {});
+    if (m === 'light') {
+      setModeState('light');
+      AsyncStorage.setItem(STORAGE_KEY, 'light').catch(() => {});
+    }
   }, []);
 
-  const scheme: 'light' | 'dark' = mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
-  const isDark = scheme === 'dark';
+  const scheme: 'light' | 'dark' = 'light';
+  const isDark = false;
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ mode, scheme, isDark, colors: isDark ? commonColorsDark : commonColors, setMode }),
-    [mode, scheme, isDark, setMode],
+    () => ({ mode, scheme, isDark, colors: commonColors, setMode }),
+    [mode, setMode],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
