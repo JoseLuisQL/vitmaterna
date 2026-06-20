@@ -87,7 +87,11 @@ function statusMeta(estado: string) {
 
 export default function AppointmentsScreen() {
   const toast = useToast();
-  const { webShell } = useResponsive();
+  const { webShell, select } = useResponsive();
+  // Ancho máximo del cuerpo en web, escalado por breakpoint (igual que el header
+  // de ScreenLayout width="wide"): así el contenido acompaña al ancho disponible
+  // en vez de quedar fijo a 1024 centrado.
+  const webBodyMax = select({ base: 9999, lg: webLayout.contentMaxWidth.lg, xl: webLayout.contentMaxWidth.xl, xxl: webLayout.contentMaxWidth.xxl });
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
 
   // Datos vía React Query + actualización en tiempo real (Fase 2).
@@ -501,9 +505,10 @@ export default function AppointmentsScreen() {
       accentColor={BRAND}
       loading={loading && !refreshing}
       scroll={false}
+      width="wide"
       actions={<NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />}
     >
-      <View style={[styles.tabContainer, webShell && styles.webCenter]}>
+      <View style={[styles.tabContainer, webShell && styles.webCenter, webShell && { maxWidth: webBodyMax }]}>
         <ToggleTabs
           tabs={[
             { key: 'upcoming', label: 'Próximas', badge: upcoming.length },
@@ -526,7 +531,7 @@ export default function AppointmentsScreen() {
           </View>
         )}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={[styles.listContainer, webShell && styles.webCenter]}
+        contentContainerStyle={[styles.listContainer, webShell && styles.webCenter, webShell && { maxWidth: webBodyMax }]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ProgressHeader}
         ListEmptyComponent={renderEmpty}
@@ -730,7 +735,7 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft },
   tabContainer: { paddingBottom: spacing.sm },
   listContainer: { paddingBottom: layout.tabBarSpace },
-  webCenter: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center' },
+  webCenter: { width: '100%', alignSelf: 'center' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: spacing.sm, marginTop: spacing.xs },
   sectionHeaderText: { ...typography.label, fontWeight: '700', color: commonColors.text },
   sectionHeaderSub: { ...typography.caption, color: commonColors.textSecondary, textTransform: 'capitalize' },

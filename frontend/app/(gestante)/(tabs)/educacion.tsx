@@ -303,7 +303,8 @@ type Seccion = 'recomendados' | 'parati' | 'biblioteca' | 'favoritos';
 
 export default function EducacionScreen(): React.ReactElement {
   const router = useRouter();
-  const { webShell } = useResponsive();
+  const { webShell, select } = useResponsive();
+  const webBodyMax = select({ base: 9999, lg: webLayout.contentMaxWidth.lg, xl: webLayout.contentMaxWidth.xl, xxl: webLayout.contentMaxWidth.xxl });
   const [query, setQuery] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [toolsVisible, setToolsVisible] = useState(false);
@@ -451,7 +452,7 @@ export default function EducacionScreen(): React.ReactElement {
       )}
       ListHeaderComponent={renderHeader}
       ListEmptyComponent={isLoading ? <View style={{ paddingTop: spacing.md }}><ListSkeleton count={5} /></View> : renderEmpty}
-      contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
+      contentContainerStyle={[styles.listContent, webShell && styles.listWeb, webShell && { maxWidth: webBodyMax }]}
       showsVerticalScrollIndicator={false}
     />
   );
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
   toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: commonColors.onColorSurface, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 8 },
   toolBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
+  listWeb: { width: '100%', alignSelf: 'center', paddingBottom: spacing.xl },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.full,

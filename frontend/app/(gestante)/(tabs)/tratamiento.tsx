@@ -269,7 +269,8 @@ const calStyles = StyleSheet.create({
 });
 
 export default function TratamientoScreen(): React.ReactElement {
-  const { webShell } = useResponsive();
+  const { webShell, select } = useResponsive();
+  const webBodyMax = select({ base: 9999, lg: webLayout.contentMaxWidth.lg, xl: webLayout.contentMaxWidth.xl, xxl: webLayout.contentMaxWidth.xxl });
   const { data: treatments, isLoading, refetch, isRefetching } = useTreatments();
   const { mutate: logTreatment } = useLogTreatment();
   const toast = useToast();
@@ -414,6 +415,7 @@ export default function TratamientoScreen(): React.ReactElement {
       loading={isLoading}
       accentColor={BRAND}
       scroll={false}
+      width="wide"
       actions={<NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />}
     >
       <FlatList
@@ -422,7 +424,7 @@ export default function TratamientoScreen(): React.ReactElement {
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={[styles.listContent, webShell && styles.listWeb]}
+        contentContainerStyle={[styles.listContent, webShell && styles.listWeb, webShell && { maxWidth: webBodyMax }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={BRAND} />}
       />
@@ -432,7 +434,7 @@ export default function TratamientoScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   listContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
-  listWeb: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center', paddingBottom: spacing.xl },
+  listWeb: { width: '100%', alignSelf: 'center', paddingBottom: spacing.xl },
 
   card: {
     backgroundColor: commonColors.surface,
