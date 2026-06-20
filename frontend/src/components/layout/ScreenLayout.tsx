@@ -174,7 +174,7 @@ export function ScreenLayout({
           </SafeAreaView>
         </LinearGradient>
       ) : webShell ? (
-        <View style={[styles.headerFlatSafe, { backgroundColor: commonColors.surface, paddingHorizontal: hPad, paddingVertical: spacing.md }]}>
+        <View style={[styles.headerFlatSafe, { backgroundColor: commonColors.surface, paddingHorizontal: hPad, paddingTop: spacing.md, paddingBottom: spacing.md }]}>
           <View style={isWide ? [styles.centered, { maxWidth }] : undefined}>
             <HeaderRow
               title={title}
@@ -284,6 +284,15 @@ function HeaderRow({ title, subtitle, showBack, onBack, actions, onLight }: Head
   const { webShell } = useResponsive();
   const titleColor = onLight ? commonColors.white : commonColors.text;
   const subColor = onLight ? 'rgba(255,255,255,0.85)' : commonColors.textSecondary;
+
+  const titleStyle = StyleSheet.flatten([styles.title, { color: titleColor }]) as any;
+  const subtitleStyle = StyleSheet.flatten([styles.subtitle, { color: subColor }]) as any;
+
+  if (webShell) {
+    delete titleStyle.lineHeight;
+    delete subtitleStyle.lineHeight;
+  }
+
   return (
     <View style={styles.headerRow}>
       {showBack && (
@@ -299,12 +308,12 @@ function HeaderRow({ title, subtitle, showBack, onBack, actions, onLight }: Head
       )}
       <View style={styles.headerTexts}>
         {title ? (
-          <Text style={[styles.title, { color: titleColor }]} numberOfLines={webShell ? undefined : 1}>
+          <Text style={titleStyle} numberOfLines={webShell ? undefined : 1}>
             {title}
           </Text>
         ) : null}
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: subColor }]} numberOfLines={webShell ? undefined : 1}>
+          <Text style={subtitleStyle} numberOfLines={webShell ? undefined : 1}>
             {subtitle}
           </Text>
         ) : null}
@@ -330,8 +339,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerTexts: { flex: 1, minWidth: 0 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
-  title: { ...typography.h1, lineHeight: undefined },
-  subtitle: { ...typography.bodySm, marginTop: 2, lineHeight: undefined },
+  title: { ...typography.h1 },
+  subtitle: { ...typography.bodySm, marginTop: 2 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
   backBtnLight: { backgroundColor: 'rgba(255,255,255,0.18)' },
   backBtnDark: { backgroundColor: commonColors.surfaceAlt },
