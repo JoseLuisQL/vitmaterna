@@ -3,7 +3,7 @@
  * Fetch and display all users with options to view detail and activate/deactivate.
  */
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, RefreshControl, TextInput, ActivityIndicator, Alert, TouchableOpacity, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, RefreshControl, TextInput, ActivityIndicator, TouchableOpacity, StatusBar } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +20,7 @@ import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
 import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser } from '../../../src/services/admin-queries';
-import { confirmAction, notify } from '../../../src/utils/confirm';
+import { confirmAction } from '../../../src/utils/confirm';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { useResponsive } from '../../../src/theme/responsive';
 import { DataTable, type DataTableColumn } from '../../../src/components/web';
@@ -183,29 +183,29 @@ export default function UsuariosScreen(): React.ReactElement {
     toggleUserActiveMutation.mutate(user.id, {
       onSuccess: (updatedRes) => {
         const newActive = updatedRes.data?.isActive ?? !user.isActive;
-        notify('Éxito', `Usuario ${newActive ? 'activado' : 'desactivado'} correctamente.`);
+        toast.success(newActive ? 'Usuario activado' : 'Usuario desactivado', `${user.firstName} ${user.lastName} ya está ${newActive ? 'activo' : 'inactivo'}.`);
         if (selectedUser && selectedUser.id === user.id) {
           setSelectedUser({ ...selectedUser, isActive: newActive });
         }
       },
       onError: (err: any) => {
-        notify('Error', err.response?.data?.message || 'No se pudo cambiar el estado del usuario.');
+        toast.error('No se pudo cambiar el estado', err.response?.data?.message || 'Inténtalo de nuevo en unos momentos.');
       },
     });
   };
 
   const handleCreateSubmit = () => {
     if (!dni || !firstName || !lastName || !password) {
-      return Alert.alert('Error', 'Los campos marcados con (*) son obligatorios.');
+      return toast.warning('Faltan datos', 'Completa los campos marcados con (*).');
     }
     if (dni.length !== 8 || !/^\d{8}$/.test(dni)) {
-      return Alert.alert('Error', 'El DNI debe tener exactamente 8 dígitos numéricos.');
+      return toast.warning('DNI inválido', 'El DNI debe tener exactamente 8 dígitos.');
     }
     if (role === 'obstetra' && !cop) {
-      return Alert.alert('Error', 'El número de COP es obligatorio para obstetras.');
+      return toast.warning('Falta el COP', 'El número de colegiatura es obligatorio para obstetras.');
     }
     if (password.length < 8) {
-      return Alert.alert('Error', 'La contraseña debe tener al menos 8 caracteres.');
+      return toast.warning('Contraseña muy corta', 'Usa al menos 8 caracteres.');
     }
 
     createUserMutation.mutate({
@@ -219,7 +219,7 @@ export default function UsuariosScreen(): React.ReactElement {
       cop: role === 'obstetra' ? cop : undefined,
     }, {
       onSuccess: () => {
-        Alert.alert('Éxito', 'Usuario creado correctamente.');
+        toast.success('Usuario creado', `${firstName} ${lastName} ya puede ingresar.`);
         setIsCreateModalVisible(false);
         // Reset form
         setDni('');
@@ -232,7 +232,7 @@ export default function UsuariosScreen(): React.ReactElement {
         setRole('obstetra');
       },
       onError: (err: any) => {
-        Alert.alert('Error', err.response?.data?.message || 'No se pudo crear el usuario.');
+        toast.error('No se pudo crear el usuario', err.response?.data?.message || 'Revisa los datos e inténtalo de nuevo.');
       }
     });
   };
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     ...typography.bodySm,
-    color: 'rgba(255,255,255,0.85)',
+    color: commonColors.onColorTextSoft,
   },
   searchContainer: {
     paddingHorizontal: spacing.lg,
@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: commonColors.onColorSurfaceStrong,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,

@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   },
   headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)' },
+  headerSubtitle: { ...typography.body, color: commonColors.onColorTextSoft },
   searchContainer: {
     paddingHorizontal: spacing.lg,
     marginTop: -spacing.lg,

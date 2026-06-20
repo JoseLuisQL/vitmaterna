@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   },
   headerTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 2 },
-  headerSubtitle: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)' },
+  headerSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft },
   tabContainer: { paddingBottom: spacing.sm },
   listContainer: { paddingBottom: layout.tabBarSpace },
   webCenter: { width: '100%', maxWidth: webLayout.contentMaxWidth.lg, alignSelf: 'center' },
