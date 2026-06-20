@@ -1695,7 +1695,7 @@ const styles = StyleSheet.create({
   iconBtnGlass: {
     width: 40, height: 40,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: commonColors.onColorSurface,
     borderRadius: 20,
   },
   headerTitle: {
@@ -1709,7 +1709,7 @@ const styles = StyleSheet.create({
   avatarWrap: {
     width: 56, height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: commonColors.onColorSurfaceStrong,
     justifyContent: 'center', alignItems: 'center',
     marginRight: spacing.md,
   },
@@ -1728,7 +1728,7 @@ const styles = StyleSheet.create({
   },
   patientSub: {
     ...typography.caption,
-    color: 'rgba(255,255,255,0.85)',
+    color: commonColors.onColorTextSoft,
   },
   riskPill: {
     flexDirection: 'row',
