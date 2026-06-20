@@ -241,7 +241,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
           </View>
 
           {/* Resumen de la cita (confirmación rápida antes de programar) */}
-          {gestanteId && dateStr && timeStr && (
+          {Boolean(gestanteId && dateStr && timeStr) && (
             <View style={styles.summaryCard}>
               <Text style={styles.summaryTitle}>Resumen de la cita</Text>
               <View style={styles.summaryRow}>
