@@ -280,7 +280,7 @@ export default function ObstetraChatScreen() {
             role="obstetra"
             title="Bandeja de Consultas"
             subtitle="Mensajes con tus gestantes"
-            width="full"
+            width={webShell ? 'readable' : 'full'}
             accentColor={BRAND}
             scroll={false}
           >

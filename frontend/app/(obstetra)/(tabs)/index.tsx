@@ -9,7 +9,7 @@
  * Evita la sobrecarga visual y de color; los textos se ajustan sin cortarse.
  */
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { ChevronRight, Activity, Calendar, Users, AlertTriangle, Menu } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
@@ -141,7 +141,7 @@ export default function ObstetraDashboard(): React.ReactElement {
       subtitle="Panel de trabajo"
       loading={isStatsLoading || isApptsLoading}
       accentColor={BRAND}
-      width="full"
+      width={webShell ? 'wide' : 'full'}
       scroll={false}
       actions={
         webShell ? undefined : (
@@ -160,40 +160,139 @@ export default function ObstetraDashboard(): React.ReactElement {
         )
       }
     >
-      <FlatList
-        data={appointments}
-        keyExtractor={(item) => item.id || item._id}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={[styles.flatListContent, webShell && styles.flatListWeb]}
-        showsVerticalScrollIndicator={false}
-        refreshing={isRefetching}
-        onRefresh={onRefresh}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.appointmentCard}
-            activeOpacity={0.7}
-            onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
-          >
-            <View style={styles.timeLine}>
-              <Text style={styles.timeText} numberOfLines={1}>
-                {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-              </Text>
-              <Text style={styles.timeAmPm}>
-                {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
-              </Text>
-            </View>
-            <View style={styles.appointmentContent}>
-              <View style={styles.appointmentHeader}>
-                <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
-                <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
+      {webShell ? (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.flatListContent} showsVerticalScrollIndicator={false}>
+          {/* Saludo discreto */}
+          <Text style={styles.greeting} numberOfLines={1}>Hola, {displayName}</Text>
+          <Text style={styles.todayDate} numberOfLines={1}>{fecha}</Text>
+
+          {/* 3 KPIs accionables, sobrios */}
+          <View style={styles.kpiRow}>
+            <Kpi icon={Calendar} value={appointmentsToday} label="Citas hoy" onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} />
+            <Kpi icon={Users} value={totalPatients} label="Pacientes" onPress={() => router.push('/(obstetra)/(tabs)/gestantes')} />
+            <Kpi icon={AlertTriangle} value={alerts} label="Alertas" alert onPress={() => router.push('/(obstetra)/notificaciones')} />
+          </View>
+
+          {/* Distribución de riesgo y Citas de hoy side-by-side */}
+          <View style={styles.twoCol}>
+            <View style={styles.col}>
+              <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+                <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
+                <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/reportes')} accessibilityRole="button">
+                  <Text style={styles.sectionLink}>Ver reportes</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.appointmentType} numberOfLines={1}>{item.type || 'Control Prenatal'}</Text>
+              <View style={[styles.riskCard, { flex: 1, marginBottom: 0 }]}>
+                <View style={styles.riskRow}>
+                  <View style={styles.riskItem}>
+                    <Text style={styles.riskCount}>{riskDistribution.low || 0}</Text>
+                    <View style={styles.riskLabelRow}>
+                      <View style={[styles.riskDot, { backgroundColor: riskColors.riskGreen }]} />
+                      <Text style={styles.riskLabel}>Bajo</Text>
+                    </View>
+                  </View>
+                  <View style={styles.riskItem}>
+                    <Text style={styles.riskCount}>{riskDistribution.medium || 0}</Text>
+                    <View style={styles.riskLabelRow}>
+                      <View style={[styles.riskDot, { backgroundColor: riskColors.riskYellow }]} />
+                      <Text style={styles.riskLabel}>Medio</Text>
+                    </View>
+                  </View>
+                  <View style={styles.riskItem}>
+                    <Text style={styles.riskCount}>{riskDistribution.high || 0}</Text>
+                    <View style={styles.riskLabelRow}>
+                      <View style={[styles.riskDot, { backgroundColor: riskColors.riskRed }]} />
+                      <Text style={styles.riskLabel}>Alto</Text>
+                    </View>
+                  </View>
+                </View>
+                {totalRisk > 0 && (
+                  <View style={styles.riskBarContainer}>
+                    <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.low, 0.001), backgroundColor: riskColors.riskGreen }]} />
+                    <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.medium, 0.001), backgroundColor: riskColors.riskYellow }]} />
+                    <View style={[styles.riskBarSegment, { flex: Math.max(riskDistribution.high, 0.001), backgroundColor: riskColors.riskRed }]} />
+                  </View>
+                )}
+              </View>
             </View>
-            <ChevronRight size={20} color={commonColors.textTertiary} />
-          </TouchableOpacity>
-        )}
-      />
+
+            <View style={styles.col}>
+              <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+                <Text style={styles.sectionTitle}>Citas de hoy</Text>
+                <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} accessibilityRole="button">
+                  <Text style={styles.sectionLink}>Ver todas</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ gap: spacing.sm, flex: 1 }}>
+                {appointments && appointments.length > 0 ? (
+                  appointments.map((item: any) => (
+                    <TouchableOpacity
+                      key={item.id || item._id}
+                      style={[styles.appointmentCard, { marginBottom: 0 }]}
+                      activeOpacity={0.7}
+                      onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
+                    >
+                      <View style={styles.timeLine}>
+                        <Text style={styles.timeText} numberOfLines={1}>
+                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
+                        </Text>
+                        <Text style={styles.timeAmPm}>
+                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
+                        </Text>
+                      </View>
+                      <View style={styles.appointmentContent}>
+                        <View style={styles.appointmentHeader}>
+                          <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
+                          <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
+                        </View>
+                        <Text style={styles.appointmentType} numberOfLines={1}>{item.type || 'Control Prenatal'}</Text>
+                      </View>
+                      <ChevronRight size={20} color={commonColors.textTertiary} />
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  renderEmpty()
+                )}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={appointments}
+          keyExtractor={(item) => item.id || item._id}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmpty}
+          contentContainerStyle={[styles.flatListContent, webShell && styles.flatListWeb]}
+          showsVerticalScrollIndicator={false}
+          refreshing={isRefetching}
+          onRefresh={onRefresh}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.appointmentCard}
+              activeOpacity={0.7}
+              onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
+            >
+              <View style={styles.timeLine}>
+                <Text style={styles.timeText} numberOfLines={1}>
+                  {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
+                </Text>
+                <Text style={styles.timeAmPm}>
+                  {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
+                </Text>
+              </View>
+              <View style={styles.appointmentContent}>
+                <View style={styles.appointmentHeader}>
+                  <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
+                  <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
+                </View>
+                <Text style={styles.appointmentType} numberOfLines={1}>{item.type || 'Control Prenatal'}</Text>
+              </View>
+              <ChevronRight size={20} color={commonColors.textTertiary} />
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </ScreenLayout>
   );
 }
@@ -202,6 +301,15 @@ const styles = StyleSheet.create({
   flatListContent: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   flatListWeb: { width: '100%', paddingBottom: spacing.xl },
   menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)' },
+  twoCol: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignItems: 'stretch',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 
   greeting: { ...typography.h3, color: commonColors.text },
   todayDate: { ...typography.bodySm, color: commonColors.textSecondary, textTransform: 'capitalize', marginTop: 2, marginBottom: spacing.lg },
