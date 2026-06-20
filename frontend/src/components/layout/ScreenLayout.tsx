@@ -173,13 +173,25 @@ export function ScreenLayout({
             />
           </SafeAreaView>
         </LinearGradient>
-      ) : (
-        <SafeAreaView edges={['top']} style={[styles.headerFlatSafe, webShell && { backgroundColor: commonColors.surface, paddingHorizontal: hPad }]}>
+      ) : webShell ? (
+        <View style={[styles.headerFlatSafe, { backgroundColor: commonColors.surface, paddingHorizontal: hPad, paddingVertical: spacing.md }]}>
           <View style={isWide ? [styles.centered, { maxWidth }] : undefined}>
             <HeaderRow
               title={title}
               subtitle={subtitle}
-              showBack={webShell ? false : showBack}
+              showBack={false}
+              onBack={handleBack}
+              actions={actions}
+            />
+          </View>
+        </View>
+      ) : (
+        <SafeAreaView edges={['top']} style={styles.headerFlatSafe}>
+          <View style={isWide ? [styles.centered, { maxWidth }] : undefined}>
+            <HeaderRow
+              title={title}
+              subtitle={subtitle}
+              showBack={showBack}
               onBack={handleBack}
               actions={actions}
             />
@@ -269,6 +281,7 @@ interface HeaderRowProps {
 }
 
 function HeaderRow({ title, subtitle, showBack, onBack, actions, onLight }: HeaderRowProps): React.ReactElement {
+  const { webShell } = useResponsive();
   const titleColor = onLight ? commonColors.white : commonColors.text;
   const subColor = onLight ? 'rgba(255,255,255,0.85)' : commonColors.textSecondary;
   return (
@@ -286,12 +299,12 @@ function HeaderRow({ title, subtitle, showBack, onBack, actions, onLight }: Head
       )}
       <View style={styles.headerTexts}>
         {title ? (
-          <Text style={[styles.title, { color: titleColor }]} numberOfLines={1}>
+          <Text style={[styles.title, { color: titleColor }]} numberOfLines={webShell ? undefined : 1}>
             {title}
           </Text>
         ) : null}
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: subColor }]} numberOfLines={1}>
+          <Text style={[styles.subtitle, { color: subColor }]} numberOfLines={webShell ? undefined : 1}>
             {subtitle}
           </Text>
         ) : null}
