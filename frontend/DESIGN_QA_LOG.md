@@ -47,10 +47,26 @@ bash scripts/qa-visual.sh            # captura rutas públicas en /tmp/vitmatern
 Consola: solo warnings esperados de react-native-web en dev
 (`shadow*` deprecado, `useNativeDriver` JS-fallback). Sin errores.
 
-### Pendiente de QA visual (requiere sesión / backend de prueba)
-Recorrido autenticado por rol (gestante / obstetra / admin): dashboards,
-listas (tabla web ↔ tarjetas móvil), overlays, formularios y detalle. Ejecutar
-`scripts/qa-visual.sh` con credenciales de prueba o manualmente.
+### QA visual autenticado — verificado en navegador (web, escritorio)
+Con backend levantado (Postgres + Redis + seed) y sesión por rol:
+
+| Rol | Pantalla | Estado | Datos reales |
+|---|---|---|---|
+| Obstetra | Dashboard (Inicio) | OK | 4 pacientes · 1 alerta · distribución de riesgo · citas de hoy |
+| Obstetra | Gestantes | OK | DataTable web con las 4 gestantes (Ana, Lucía, Sofía, María Elena) |
+| Admin | Dashboard | OK | Resumen (usuarios, gestantes activas, alto riesgo), estado del sistema |
+| Gestante | Dashboard | OK | "Tu Embarazo", próxima cita, tratamiento del día (0/1), acciones rápidas |
+
+Portal web completo (sidebar fijo + topbar + contenido) en los 3 roles.
+Consola sin errores (solo warnings dev de RNW). Render dual confirmado:
+en web las listas usan tabla; en móvil, tarjetas.
+
+Credenciales de prueba (seed): admin `99999999`/`Admin@2026`,
+obstetra `11111111`/`Test@1234`, gestante `33333333`/`Test@1234`.
+
+### Pendiente (opcional)
+QA visual de overlays, formularios completos y ficha clínica de detalle, y
+captura en viewport móvil estrecho para regresión visual formal.
 
 ## Convenciones que vigilan las pruebas
 - Color y medida siempre por token (lo fuerza `audit:design`).
