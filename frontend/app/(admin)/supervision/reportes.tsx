@@ -41,7 +41,7 @@ export default function AdminReportesScreen(): React.ReactElement {
   const { webShell } = useResponsive();
   const [exporting, setExporting] = React.useState(false);
   const [exportingXlsx, setExportingXlsx] = React.useState(false);
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['clinic-reports'],
     queryFn: async (): Promise<ReportData> => (await api.get('/reports/clinic')).data.data as ReportData,
   });
@@ -122,6 +122,11 @@ export default function AdminReportesScreen(): React.ReactElement {
       onBack={() => goBack(router, '/(admin)/(tabs)' as any)}
       width="full"
       scroll={false} // Custom scroll handling inside since we use loading skeleton
+      error={isError || (!isLoading && !data)}
+      onRetry={() => refetch()}
+      errorTitle="No se pudieron cargar los reportes"
+      errorMessage="Revisa tu conexión y vuelve a intentar."
+      accentColor={BRAND}
       actions={
         <View style={styles.exportRow}>
           <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">

@@ -96,7 +96,7 @@ export default function AppointmentsScreen() {
 
   // Datos vía React Query + actualización en tiempo real (Fase 2).
   useAppointmentRealtime();
-  const { data: rawAppointments = [], isLoading: loading, refetch, isRefetching: refreshing } = useGestanteAppointments();
+  const { data: rawAppointments = [], isLoading: loading, isError, refetch, isRefetching: refreshing } = useGestanteAppointments();
 
   // Modales
   const [detailVisible, setDetailVisible] = useState(false);
@@ -389,6 +389,10 @@ export default function AppointmentsScreen() {
           subtitle="Control de tu embarazo"
           accentColor={BRAND}
           loading={loading && !refreshing}
+          error={isError}
+          onRetry={() => refetch()}
+          errorTitle="No se pudieron cargar tus citas"
+          errorMessage="Revisa tu conexión y vuelve a intentar."
           scroll={false}
         >
           <View style={styles.webToolbar}>
@@ -509,6 +513,10 @@ export default function AppointmentsScreen() {
       subtitle="Control de tu embarazo"
       accentColor={BRAND}
       loading={loading && !refreshing}
+      error={isError}
+      onRetry={() => refetch()}
+      errorTitle="No se pudieron cargar tus citas"
+      errorMessage="Revisa tu conexión y vuelve a intentar."
       scroll={false}
       width="wide"
       actions={<NotificationBell href="/(gestante)/notificaciones" color={commonColors.white} />}
