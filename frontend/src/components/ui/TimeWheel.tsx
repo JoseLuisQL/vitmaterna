@@ -176,7 +176,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   col: {
+    // Altura fija = altura del contenedor; sin esto el ScrollView crece a la
+    // altura de su contenido (24×44px) y descuadra todo el modal.
     width: 76,
+    height: ROW_HEIGHT * 4,
+    flexGrow: 0,
+    flexShrink: 0,
     backgroundColor: commonColors.surfaceAlt,
     borderRadius: borderRadius.md,
   },
