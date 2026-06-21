@@ -78,14 +78,21 @@ export default function ObstetraChatScreen() {
     otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId });
 
+  // Solo filas con el formato nuevo (la caché persistida puede traer registros
+  // antiguos sin `nombre`; los descartamos para no romper el render).
+  const rows = useMemo<ConversationRow[]>(
+    () => (conversations as ConversationRow[]).filter((c) => c && (c.nombre || c.gestanteId)),
+    [conversations],
+  );
+
   // Filtrado por búsqueda (nombre o DNI).
   const filtered = useMemo<ConversationRow[]>(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    if (!q) return conversations;
-    return (conversations as ConversationRow[]).filter(
-      (c) => c.nombre.toLowerCase().includes(q) || String(c.dni || '').includes(q),
+    if (!q) return rows;
+    return rows.filter(
+      (c) => (c.nombre || '').toLowerCase().includes(q) || String(c.dni || '').includes(q),
     );
-  }, [conversations, debouncedSearch]);
+  }, [rows, debouncedSearch]);
 
   // Abrir una conversación: si no existe (id null), la crea vía targetId.
   const openConversation = async (row: ConversationRow) => {

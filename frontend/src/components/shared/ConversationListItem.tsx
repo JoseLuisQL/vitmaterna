@@ -56,8 +56,9 @@ const RISK_AVATAR: Record<0 | 1 | 2, string> = {
   2: riskColors.riskRed,
 };
 
-function initials(name: string): string {
-  const parts = name.replace(/^obst\.?\s*/i, '').trim().split(/\s+/).filter(Boolean);
+function initials(name?: string | null): string {
+  const safe = (name ?? '').toString();
+  const parts = safe.replace(/^obst\.?\s*/i, '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
@@ -71,6 +72,7 @@ export function ConversationListItem({
   useRiskColor = false,
   online = false,
 }: Props): React.ReactElement {
+  const nombre = item.nombre || 'Gestante';
   const unread = item.unreadCount ?? 0;
   const hasUnread = unread > 0;
   const avatarColor = useRiskColor ? RISK_AVATAR[normalizeRisk(item.nivelRiesgo as any)] : accent;
@@ -88,7 +90,7 @@ export function ConversationListItem({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Abrir conversación con ${item.nombre}${hasUnread ? `, ${unread} sin leer` : ''}`}
+      accessibilityLabel={`Abrir conversación con ${nombre}${hasUnread ? `, ${unread} sin leer` : ''}`}
       style={({ pressed, hovered }: any) => [
         styles.row,
         selected && { backgroundColor: accent + '12' },
@@ -98,14 +100,14 @@ export function ConversationListItem({
       ]}
     >
       <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-        <Text style={styles.avatarText}>{initials(item.nombre)}</Text>
+        <Text style={styles.avatarText}>{initials(nombre)}</Text>
         {online && <View style={styles.onlineDot} />}
       </View>
 
       <View style={styles.info}>
         <View style={styles.topRow}>
           <Text style={[styles.name, hasUnread && styles.nameUnread]} numberOfLines={1}>
-            {item.nombre}
+            {nombre}
           </Text>
           {!!time && (
             <Text style={[styles.time, hasUnread && { color: accent }]}>{time}</Text>
