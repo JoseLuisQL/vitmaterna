@@ -138,9 +138,9 @@ function LabRow({
         {hint ? <Text style={labRowStyles.hint}>{hint}</Text> : null}
       </View>
       <View style={labRowStyles.right}>
-        {value ? <Text style={labRowStyles.value}>{value}</Text> : null}
+        {value ? <Text style={labRowStyles.value} numberOfLines={2}>{value}</Text> : null}
         <View style={[labRowStyles.pill, { backgroundColor: meta.bg }]}>
-          <Text style={[labRowStyles.pillText, { color: meta.color }]}>{stateLabel}</Text>
+          <Text style={[labRowStyles.pillText, { color: meta.color }]} numberOfLines={1}>{stateLabel}</Text>
         </View>
       </View>
     </View>
@@ -148,14 +148,16 @@ function LabRow({
 }
 
 const labRowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 10 },
   border: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  left: { flex: 1, minWidth: 0 },
+  // Etiqueta (izquierda) y estado (derecha) comparten el ancho sin encimarse:
+  // ambas pueden encoger y su texto se ajusta en varias líneas.
+  left: { flex: 1.2, minWidth: 0 },
   label: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
   hint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 1 },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  value: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text },
-  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full },
+  right: { flexShrink: 1, alignItems: 'flex-end', gap: 4, minWidth: 0 },
+  value: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, textAlign: 'right' },
+  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full, alignSelf: 'flex-end' },
   pillText: { ...typography.overline, fontSize: 10, fontWeight: '700' },
 });
 
