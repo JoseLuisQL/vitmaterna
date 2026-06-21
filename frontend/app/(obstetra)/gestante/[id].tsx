@@ -1296,9 +1296,18 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── SECCIÓN: TRATAMIENTO (medicinas/suplementos + vacunas) ── */}
           {activeTab === 'tratamiento' && (
             <View style={styles.section}>
+              {/* Encabezado explicativo de la sección */}
+              <View style={[styles.card, designTokens.cardShadow]}>
+                <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Tratamiento y vacunas</Text>
+                <Text style={styles.clinicoIntro}>
+                  Medicamentos y suplementos recetados con su adherencia (qué tanto los toma la gestante)
+                  y el esquema de vacunación del embarazo.
+                </Text>
+              </View>
+
               <View style={[styles.card, designTokens.cardShadow]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Esquema de Tratamiento</Text>
+                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Medicamentos y suplementos</Text>
                   <TouchableOpacity 
                     style={styles.primaryActionBtn}
                     onPress={() => setIsTreatModalVisible(true)}
@@ -1312,8 +1321,10 @@ export default function PatientProfileScreen(): React.ReactElement {
                   const tomados = sup.diasTomados?.length || 0;
                   const total = sup.totalDias || 30;
                   const pct = total > 0 ? Math.round((tomados / total) * 100) : 0;
-                  const isGood = pct >= 80;
-                  
+                  // Interpretación de la adherencia en lenguaje claro.
+                  const adColor = pct >= 80 ? semanticColors.success : pct >= 50 ? semanticColors.warning : semanticColors.danger;
+                  const adLabel = pct >= 80 ? 'Buena adherencia' : pct >= 50 ? 'Adherencia regular' : 'Adherencia baja';
+
                   const suspendido = sup.estado === 'suspendido';
                   return (
                     <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.glassShadow, suspendido && { opacity: 0.6 }]}>
@@ -1329,11 +1340,18 @@ export default function PatientProfileScreen(): React.ReactElement {
                         
                         <View style={styles.progressWrap}>
                           <View style={styles.progressTrack}>
-                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: isGood ? semanticColors.success : semanticColors.warning }]} />
+                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: adColor }]} />
                           </View>
-                          <Text style={[styles.progressPct, { color: isGood ? semanticColors.success : semanticColors.warning }]}>{pct}%</Text>
+                          <Text style={[styles.progressPct, { color: adColor }]}>{pct}%</Text>
                         </View>
-                        <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
+                        <View style={styles.adherenceRow}>
+                          {!suspendido && (
+                            <View style={[styles.adherencePill, { backgroundColor: adColor + '1A' }]}>
+                              <Text style={[styles.adherencePillText, { color: adColor }]}>{adLabel}</Text>
+                            </View>
+                          )}
+                          <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
+                        </View>
 
                         {!suspendido && (
                           <View style={styles.treatActionsRow}>
@@ -1361,7 +1379,14 @@ export default function PatientProfileScreen(): React.ReactElement {
               {/* Vacunas prenatales (indicador de adherencia, Objetivo 2) */}
               <View style={[styles.card, designTokens.cardShadow, { marginTop: spacing.md }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Esquema de Vacunación</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Vacunas del embarazo</Text>
+                    {vacunas.length > 0 && (
+                      <Text style={styles.sectionCount}>
+                        {vacunas.filter((v: any) => v.aplicada).length} de {vacunas.length} aplicadas
+                      </Text>
+                    )}
+                  </View>
                   <TouchableOpacity
                     style={styles.primaryActionBtn}
                     onPress={() => setIsVaxModalVisible(true)}
@@ -2560,8 +2585,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.1,
     color: commonColors.textTertiary,
-    marginTop: 6,
   },
+  adherenceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  adherencePill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full },
+  adherencePillText: { ...typography.overline, fontSize: 10, fontWeight: '700' },
 
   // Lab specific
   alertBanner: {
