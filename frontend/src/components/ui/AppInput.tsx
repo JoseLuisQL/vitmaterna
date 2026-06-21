@@ -58,6 +58,11 @@ export function AppInput<T extends FieldValues>({
   onBlur: externalOnBlur,
   ...textInputProps
 }: AppInputProps<T>): React.ReactElement {
+  // Campo multilínea (textarea): el contenedor debe crecer en alto y alinear el
+  // texto arriba; sin esto, el TextInput de varias líneas queda aplastado dentro
+  // de la fila de altura fija (distorsión en móvil).
+  const isMultiline = textInputProps.multiline === true;
+  const numberOfLines = textInputProps.numberOfLines ?? 4;
   const [showPassword, setShowPassword] = useState(false);
   const focusAnim = useSharedValue(0);
 
@@ -99,7 +104,7 @@ export function AppInput<T extends FieldValues>({
           </Text>
 
           {/* Input Container */}
-          <AnimatedView style={[styles.inputContainer, animatedBorderStyle]}>
+          <AnimatedView style={[styles.inputContainer, isMultiline && styles.inputContainerMultiline, animatedBorderStyle]}>
             {/* Left Icon */}
             {LeftIcon && (
               <LeftIcon
@@ -116,6 +121,7 @@ export function AppInput<T extends FieldValues>({
                 LeftIcon && styles.inputWithLeftIcon,
                 (secureTextEntry || RightIcon) && styles.inputWithRightIcon,
                 disabled && styles.inputDisabled,
+                isMultiline && { minHeight: 22 * numberOfLines, textAlignVertical: 'top', paddingTop: spacing.sm + 2 },
               ]}
               value={typeof value === 'string' ? value : ''}
               onChangeText={onChange}
@@ -194,6 +200,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: commonColors.border, // visible border for contrast
     minHeight: 52, // increased height for better touch target
+  },
+  // Multilínea: alinear arriba y dejar que el alto lo defina el TextInput.
+  inputContainerMultiline: {
+    alignItems: 'stretch',
+    minHeight: undefined,
   },
   input: {
     flex: 1,
