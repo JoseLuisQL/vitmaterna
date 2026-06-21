@@ -1,32 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+/**
+ * VITMATERNA — Chat del obstetra (bandeja + hilo, estilo WhatsApp).
+ *
+ * - Bandeja: TODAS las gestantes asignadas como contactos, ordenadas por último
+ *   mensaje (no leídos arriba), con buscador, avatar por color de riesgo,
+ *   preview profesional y badge de no leídos.
+ * - Web: vista master-detail (lista a la izquierda + hilo a la derecha).
+ * - Móvil: lista → al tocar, abre el hilo a pantalla completa.
+ * - Tiempo real: la lista se reordena/actualiza al recibir mensajes nuevos.
+ */
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api, { resolveMediaUrl } from '../../../src/services/api';
-import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, useToast } from '../../../src/components/ui';
-import { TypingDots } from '../../../src/components/shared/TypingDots';
-import { EmergencyMessageCard } from '../../../src/components/shared/EmergencyMessageCard';
+import api from '../../../src/services/api';
+import { ChatSkeleton, ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { useToast } from '../../../src/components/ui';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
-import { usePatients } from '../../../src/services/api-queries';
-import { Send, ChevronLeft, User, MessageSquare, Megaphone, ImagePlus, Plus, Search, Check, CheckCheck } from 'lucide-react-native';
+import { ConversationListItem, type ConversationRow } from '../../../src/components/shared/ConversationListItem';
+import { MessageThread } from '../../../src/components/shared/MessageThread';
+import { ChatInput } from '../../../src/components/shared/ChatInput';
+import { useChatConversations } from '../../../src/services/api-queries';
+import { ChevronLeft, MessageSquare, Megaphone, Search, Users } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
-import { useChat, type ChatMessage } from '../../../src/hooks/useChat';
+import { useChat } from '../../../src/hooks/useChat';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
-import { categoryMeta } from '../../../src/utils/educationMeta';
 import { formatLastSeen } from '../../../src/utils/lastSeen';
 import { useAuthStore } from '../../../src/store/authStore';
-import { commonColors, obstetraColors, semanticColors, chatColors } from '../../../src/theme/colors';
+import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
+const LIST_WIDTH = 380;
 
 export default function ObstetraChatScreen() {
   const router = useRouter();
@@ -35,55 +46,76 @@ export default function ObstetraChatScreen() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const { socket, isConnected, emit } = useSocket();
-  const [activeConv, setActiveConv] = useState<any>(null);
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeRow, setActiveRow] = useState<ConversationRow | null>(null);
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState('');
-  const [startingChat, setStartingChat] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 250);
 
-  // Gestantes asignadas a esta obstetra (para iniciar una conversación nueva).
-  const { data: patients = [] } = usePatients();
+  const { data: conversations = [], isLoading: isLoadingConvs, refetch: refetchConvs } = useChatConversations();
 
-  const conversationId = activeConv?.id || null;
-  const otherUserId = activeConv?.gestante?.user?.id;
+  // Reordena/actualiza la bandeja al recibir mensajes nuevos en tiempo real.
+  useEffect(() => {
+    if (!socket) return;
+    const onChange = () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['chat', 'unread'] });
+    };
+    socket.on('chat:new_message', onChange);
+    socket.on('chat:unread_changed', onChange);
+    return () => {
+      socket.off('chat:new_message', onChange);
+      socket.off('chat:unread_changed', onChange);
+    };
+  }, [socket, queryClient]);
+
+  const conversationId = activeId;
+  const otherUserId = activeRow?.otherUserId ?? undefined;
   const {
     messages, isLoadingHistory, isLoadingMore, hasMore,
     otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId });
 
-  // Al cambiar de conversación, la próxima medición de contenido debe saltar
-  // al final de forma instantánea (abrir abajo directo, sin scroll manual).
-  const didInitialScroll = useRef(false);
-  useEffect(() => {
-    didInitialScroll.current = false;
-  }, [conversationId]);
+  // Filtrado por búsqueda (nombre o DNI).
+  const filtered = useMemo<ConversationRow[]>(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return conversations;
+    return (conversations as ConversationRow[]).filter(
+      (c) => c.nombre.toLowerCase().includes(q) || String(c.dni || '').includes(q),
+    );
+  }, [conversations, debouncedSearch]);
 
-  const handleContentSizeChange = () => {
-    if (isLoadingMore) return;
-    flatListRef.current?.scrollToEnd({ animated: didInitialScroll.current });
-    didInitialScroll.current = true;
+  // Abrir una conversación: si no existe (id null), la crea vía targetId.
+  const openConversation = async (row: ConversationRow) => {
+    let id = row.id;
+    if (!id && row.gestanteId) {
+      try {
+        const res = await api.get('/chat/conversation', { params: { targetId: row.gestanteId } });
+        id = res.data?.data?.id ?? null;
+      } catch {
+        toast.error('No se pudo abrir el chat', 'Inténtalo nuevamente.');
+        return;
+      }
+    }
+    if (!id) return;
+    setActiveRow({ ...row, id });
+    setActiveId(id);
+    queryClient.invalidateQueries({ queryKey: ['chat', 'unread'] });
   };
 
-  // 1. Fetch active conversations for this obstetra
-  const { data: conversations, isLoading: isLoadingConvs, refetch: refetchConvs } = useQuery({
-    queryKey: ['chat-conversations'],
-    queryFn: async () => {
-      try {
-        const res = await api.get('/chat/conversations');
-        return res.data.data || [];
-      } catch (error) {
-        console.warn('Failed to load conversations:', error);
-        return [];
-      }
-    },
-  });
+  const handleBack = () => {
+    setActiveId(null);
+    setActiveRow(null);
+    refetchConvs();
+  };
 
   const handleSend = () => {
     if (!inputText.trim() || !conversationId) return;
     sendText(inputText);
     setInputText('');
+    setTimeout(() => { refetchConvs(); }, 400);
   };
 
   const handleAttachPhoto = async () => {
@@ -94,739 +126,241 @@ export default function ObstetraChatScreen() {
         toast.info('Permiso requerido', 'Permite el acceso a tus fotos para enviar imágenes.');
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.6,
-        base64: true,
-      });
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6, base64: true });
       if (result.canceled || !result.assets?.[0]?.base64) return;
-
       setUploading(true);
       const asset = result.assets[0];
-      const mimeType = asset.mimeType || 'image/jpeg';
-      const res = await api.post('/chat/upload', { base64: asset.base64, mimeType });
+      const res = await api.post('/chat/upload', { base64: asset.base64, mimeType: asset.mimeType || 'image/jpeg' });
       const mediaUrl = res.data?.data?.mediaUrl;
       if (!mediaUrl) throw new Error('upload failed');
       sendImage(mediaUrl);
-    } catch (e) {
+    } catch {
       toast.error('No se pudo enviar la foto', 'Inténtalo nuevamente.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleBack = () => {
-    setActiveConv(null);
-    refetchConvs();
-  };
-
-  // Inicia (o abre) la conversación con una gestante asignada.
-  const startChatWith = async (gestanteId: string, nombre: string) => {
-    if (startingChat) return;
-    setStartingChat(true);
-    try {
-      const res = await api.get('/chat/conversation', { params: { targetId: gestanteId } });
-      const conv = res.data?.data;
-      if (!conv?.id) throw new Error('sin conversación');
-      setPickerVisible(false);
-      setPickerSearch('');
-      setActiveConv({ ...conv, gestante: { user: { firstName: nombre } } });
-    } catch (e) {
-      toast.error('No se pudo abrir el chat', 'Inténtalo nuevamente.');
-    } finally {
-      setStartingChat(false);
-    }
-  };
-
-  const debouncedPickerSearch = useDebouncedValue(pickerSearch, 400);
-  const filteredPatients = (patients || []).filter((p: any) => {
-    const q = debouncedPickerSearch.toLowerCase();
-    return (
-      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
-      String(p.documentNumber || '').includes(debouncedPickerSearch)
-    );
-  });
-
-  const renderMessage = ({ item }: { item: ChatMessage }) => {
-    const isMe = item.senderId === user?.id || item.senderId === 'me';
-    const isAlert = item.tipo === 'alerta_emergencia';
-
-    if (isAlert) {
-      return (
-        <EmergencyMessageCard
-          text={item.text}
-          time={new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          mapsUrl={item.mediaUrl}
+  // ── Sub-render: lista de conversaciones ──
+  const renderList = (inWeb: boolean) => (
+    <FlatList
+      data={filtered}
+      keyExtractor={(item) => item.id ?? item.gestanteId ?? item.nombre}
+      renderItem={({ item }) => (
+        <ConversationListItem
+          item={item}
+          accent={BRAND}
+          useRiskColor
+          selected={inWeb && activeId === item.id}
+          online={otherUserId === item.otherUserId && otherOnline}
+          onPress={() => openConversation(item)}
         />
-      );
-    }
-
-    // Contenido educativo recomendado (lo que el obstetra envió a la gestante).
-    if (item.tipo === 'educacion' && item.content) {
-      const cm = categoryMeta(item.content.categoria);
-      const CIcon = cm.icon;
-      return (
-        <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther, styles.eduBubble]}>
-          {!!item.text && (
-            <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther, { marginBottom: spacing.sm }]}>{item.text}</Text>
-          )}
-          <View style={styles.eduCard}>
-            <View style={[styles.eduIconBox, { backgroundColor: cm.bg }]}>
-              <CIcon size={20} color={cm.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.eduCategory, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
-              <Text style={styles.eduTitle} numberOfLines={2}>{item.content.titulo}</Text>
-            </View>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
-              {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-            {isMe && (item.pending
-              ? <Check size={13} color={obstetraColors.primaryLight} />
-              : item.leido
-                ? <CheckCheck size={14} color={chatColors.readReceipt} />
-                : <CheckCheck size={14} color={obstetraColors.primaryLight} />)}
-          </View>
-        </View>
-      );
-    }
-
-    const isImage = item.tipo === 'imagen' && item.mediaUrl;
-
-    return (
-      <View style={[styles.messageBubble, isMe ? styles.messageMe : styles.messageOther]}>
-        {isImage ? (
-          <Image
-            source={{ uri: resolveMediaUrl(item.mediaUrl) || undefined }}
-            style={styles.messageImage}
-            resizeMode="cover"
-            accessibilityLabel="Foto enviada en el chat"
+      )}
+      contentContainerStyle={styles.listContent}
+      refreshing={isLoadingConvs}
+      onRefresh={refetchConvs}
+      ListEmptyComponent={
+        <View style={styles.emptyWrap}>
+          <EmptyState
+            icon={search ? Search : Users}
+            title={search ? 'Sin resultados' : 'Aún no tienes gestantes'}
+            description={search ? 'Prueba con otro nombre o DNI.' : 'Cuando registres gestantes aparecerán aquí para conversar.'}
+            themeColor={BRAND}
           />
-        ) : (
-          <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
-            {item.text}
-          </Text>
-        )}
-        <View style={styles.metaRow}>
-          <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
-            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-          {isMe && (
-            item.pending ? (
-              <Check size={13} color={obstetraColors.primaryLight} />
-            ) : item.leido ? (
-              <CheckCheck size={14} color={chatColors.readReceipt} />
-            ) : (
-              <CheckCheck size={14} color={obstetraColors.primaryLight} />
-            )
-          )}
         </View>
-      </View>
-    );
-  };
+      }
+    />
+  );
 
-  const renderConvItem = ({ item }: { item: any }) => {
-    const patientName = `${item.gestante?.user?.firstName || 'Gestante'} ${item.gestante?.user?.lastName || ''}`;
-    const dni = item.gestante?.user?.dni || '';
-    const lastMsg = item.messages?.[0]?.contenido || 'No hay mensajes aún';
-    const lastMsgTime = item.messages?.[0]?.createdAt 
-      ? new Date(item.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      : '';
-    const unread = item.unreadCount || 0;
-    const hasUnread = unread > 0;
+  // ── Sub-render: barra de búsqueda ──
+  const SearchBar = (
+    <View style={styles.searchBox}>
+      <Search size={18} color={commonColors.textTertiary} />
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Buscar gestante por nombre o DNI"
+        placeholderTextColor={commonColors.textTertiary}
+        value={search}
+        onChangeText={setSearch}
+      />
+    </View>
+  );
 
-    return (
-      <TouchableOpacity 
-        style={styles.convItem} 
-        onPress={() => openConversation(item)}
-        accessibilityRole="button"
-        accessibilityLabel={`Abrir conversación con ${patientName}`}
-      >
-        <View style={styles.convAvatar}>
-          <User size={22} color={BRAND} />
-          {hasUnread && <View style={styles.convUnreadDotAvatar} />}
-        </View>
-        <View style={styles.convInfo}>
-          <View style={styles.convHeaderRow}>
-            <Text style={styles.convName} numberOfLines={1}>{patientName}</Text>
-            <Text style={[styles.convTime, hasUnread && styles.convTimeUnread]}>{lastMsgTime}</Text>
-          </View>
-          <Text style={styles.convDni}>DNI: {dni}</Text>
-          <View style={styles.convLastRow}>
-            <Text style={[styles.convLastMsg, hasUnread && styles.convLastMsgUnread]} numberOfLines={1}>{lastMsg}</Text>
-            {hasUnread && (
-              <View style={styles.convUnreadBadge}>
-                <Text style={styles.convUnreadBadgeText}>{unread > 99 ? '99+' : unread}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const activeName = activeRow?.nombre || 'Gestante';
+  const statusText = otherTyping
+    ? 'escribiendo…'
+    : otherOnline
+      ? 'En línea'
+      : (otherLastSeen || activeRow?.lastSeenAt)
+        ? formatLastSeen(otherLastSeen || (activeRow?.lastSeenAt ?? null))
+        : isConnected ? 'Desconectada' : 'Conectando…';
 
-  // Abre una conversación y limpia su badge de no leídos (se marcará leído al
-  // entrar; refrescamos contadores para que el badge baje de inmediato).
-  const openConversation = (item: any) => {
-    setActiveConv(item);
-    queryClient.invalidateQueries({ queryKey: ['chat', 'unread'] });
-  };
-
-  if (!activeConv) {
-    if (webShell) {
-      return (
-        <View style={styles.container}>
-          <ScreenLayout
-            role="obstetra"
-            title="Bandeja de Consultas"
-            subtitle="Mensajes con tus gestantes"
-            width={webShell ? 'readable' : 'full'}
-            accentColor={BRAND}
-            scroll={false}
-          >
-            <View style={styles.webToolbar}>
-              <TouchableOpacity
-                style={styles.webCreateBtn}
-                onPress={() => setPickerVisible(true)}
-                activeOpacity={0.85}
-              >
-                <Plus size={18} color={commonColors.white} />
-                <Text style={styles.webCreateText}>Nueva conversación</Text>
-              </TouchableOpacity>
-            </View>
-
-            {isLoadingConvs ? (
-              <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-                <ListSkeleton count={5} />
-              </View>
-            ) : (
-            <FlatList
-              data={conversations}
-              keyExtractor={(item) => item.id}
-              renderItem={renderConvItem}
-              contentContainerStyle={styles.listContent}
-              refreshing={isLoadingConvs}
-              onRefresh={refetchConvs}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <MessageSquare size={48} color={commonColors.textTertiary} style={{ marginBottom: 16 }} />
-                  <Text style={styles.emptyText}>Aún no tienes chats activos. Pulsa "Nueva conversación" para escribir a una gestante asignada.</Text>
-                </View>
-              }
-            />
-            )}
-            <AppModal
-              visible={pickerVisible}
-              onClose={() => setPickerVisible(false)}
-              title="Nueva conversación"
-              subtitle="Selecciona una gestante para iniciar el chat."
-            >
-              <View style={styles.searchBox}>
-                <Search size={18} color={commonColors.textTertiary} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Buscar por nombre o DNI..."
-                  placeholderTextColor={commonColors.textTertiary}
-                  value={pickerSearch}
-                  onChangeText={setPickerSearch}
-                />
-              </View>
-              <View style={{ maxHeight: 360 }}>
-                {filteredPatients.length === 0 ? (
-                  <Text style={styles.pickerEmpty}>No se encontraron gestantes.</Text>
-                ) : (
-                  filteredPatients.map((p: any) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={styles.pickerRow}
-                      onPress={() => startChatWith(p.id, `${p.firstName} ${p.lastName}`)}
-                      disabled={startingChat}
-                    >
-                      <View style={styles.pickerAvatar}>
-                        <Text style={styles.pickerAvatarText}>{(p.firstName || '?')[0]}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.pickerName}>{p.firstName} {p.lastName}</Text>
-                        <Text style={styles.pickerDni}>DNI: {p.documentNumber}</Text>
-                      </View>
-                      <ChevronLeft size={20} color={commonColors.border} style={{ transform: [{ rotate: '180deg' }] }} />
-                    </TouchableOpacity>
-                  ))
-                )}
-              </View>
-            </AppModal>
-          </ScreenLayout>
-        </View>
-      );
-    }
-
-    return (
-      <View style={[styles.container, webShell && styles.containerWeb]}>
-        <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bandejaHeader}>
-          <SafeAreaView edges={['top']}>
-            <Text style={styles.bandejaTitle}>Bandeja de Consultas</Text>
-            <Text style={styles.bandejaSubtitle}>Mensajes con tus gestantes</Text>
-            <TouchableOpacity style={styles.newChatBtn} onPress={() => setPickerVisible(true)} activeOpacity={0.85}>
-              <Plus size={18} color={commonColors.white} />
-              <Text style={styles.newChatBtnText}>Nueva conversación</Text>
+  // ── Sub-render: panel del hilo (cabecera + mensajes + input) ──
+  const renderThread = (showBackButton: boolean) => (
+    <>
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.threadHeader}>
+        <SafeAreaView edges={['top']} style={styles.threadHeaderRow}>
+          {showBackButton && (
+            <TouchableOpacity onPress={handleBack} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Volver a la lista">
+              <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
-          </SafeAreaView>
-        </LinearGradient>
-
-        {isLoadingConvs ? (
-          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-            <ListSkeleton count={5} />
+          )}
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>{(activeName[0] || 'G').toUpperCase()}</Text>
           </View>
-        ) : (
-        <FlatList
-          data={conversations}
-          keyExtractor={(item) => item.id}
-          renderItem={renderConvItem}
-          contentContainerStyle={styles.listContent}
-          refreshing={isLoadingConvs}
-          onRefresh={refetchConvs}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <MessageSquare size={48} color={commonColors.textTertiary} style={{ marginBottom: 16 }} />
-              <Text style={styles.emptyText}>Aún no tienes chats activos. Pulsa "Nueva conversación" para escribir a una gestante asignada.</Text>
-            </View>
-          }
-        />
-        )}
-        <TouchableOpacity
-          style={styles.broadcastFab}
-          onPress={() => router.push('/(obstetra)/mensaje-masivo')}
-          activeOpacity={0.85}
-        >
-          <Megaphone size={20} color={obstetraColors.onPrimary} />
-          <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
-        </TouchableOpacity>
-
-        {/* Selector de gestante para iniciar chat */}
-        <AppModal
-          visible={pickerVisible}
-          onClose={() => setPickerVisible(false)}
-          title="Nueva conversación"
-          subtitle="Selecciona una gestante para iniciar el chat."
-        >
-          <View style={styles.searchBox}>
-            <Search size={18} color={commonColors.textTertiary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar por nombre o DNI..."
-              placeholderTextColor={commonColors.textTertiary}
-              value={pickerSearch}
-              onChangeText={setPickerSearch}
-            />
-          </View>
-          <View style={{ maxHeight: 360 }}>
-            {filteredPatients.length === 0 ? (
-              <Text style={styles.pickerEmpty}>No se encontraron gestantes.</Text>
-            ) : (
-              filteredPatients.map((p: any) => (
-                <TouchableOpacity
-                  key={p.id}
-                  style={styles.pickerRow}
-                  onPress={() => startChatWith(p.id, `${p.firstName} ${p.lastName}`)}
-                  disabled={startingChat}
-                >
-                  <View style={styles.pickerAvatar}>
-                    <Text style={styles.pickerAvatarText}>{(p.firstName || '?')[0]}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pickerName}>{p.firstName} {p.lastName}</Text>
-                    <Text style={styles.pickerDni}>DNI: {p.documentNumber}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        </AppModal>
-      </View>
-    );
-  }
-
-  if (isLoadingHistory && messages.length === 0) return <View style={[styles.container, webShell && styles.containerWeb]}><ChatSkeleton count={7} /></View>;
-
-  const activePatientName = `${activeConv.gestante?.user?.firstName || 'Gestante'} ${activeConv.gestante?.user?.lastName || ''}`;
-
-  return (
-    <KeyboardAvoidingView 
-      style={[styles.container, webShell && styles.containerWeb]} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
-      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.activeChatHeader}>
-        <SafeAreaView edges={['top']} style={styles.activeChatHeaderRow}>
-          <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-            <ChevronLeft size={24} color={commonColors.white} />
-          </TouchableOpacity>
-          <View style={styles.activeHeaderAvatar}>
-            <Text style={styles.activeHeaderAvatarText}>
-              {`${activeConv.gestante?.user?.firstName?.[0] ?? ''}${activeConv.gestante?.user?.lastName?.[0] ?? ''}`}
-            </Text>
-          </View>
-          <View style={styles.activeHeaderTitleWrap}>
-            <Text style={styles.activeHeaderTitle} numberOfLines={1}>{activePatientName}</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{activeName}</Text>
             <View style={styles.statusRow}>
-              {otherTyping ? (
-                <Text style={[styles.activeHeaderSubtitle, { fontStyle: 'italic', color: commonColors.white }]}>escribiendo…</Text>
-              ) : otherOnline ? (
-                <>
-                  <View style={[styles.statusDot, { backgroundColor: semanticColors.successMid }]} />
-                  <Text style={styles.activeHeaderSubtitle}>En línea</Text>
-                </>
-              ) : (
-                <Text style={styles.activeHeaderSubtitle} numberOfLines={1}>
-                  {otherLastSeen || activeConv?.gestante?.user?.lastSeenAt
-                    ? formatLastSeen(otherLastSeen || activeConv?.gestante?.user?.lastSeenAt)
-                    : isConnected ? 'Desconectada' : 'Conectando…'}
-                </Text>
-              )}
+              {otherOnline && !otherTyping && <View style={styles.statusDot} />}
+              <Text style={[styles.headerSubtitle, otherTyping && styles.typingText]} numberOfLines={1}>{statusText}</Text>
             </View>
           </View>
         </SafeAreaView>
       </LinearGradient>
 
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={item => item.id}
-        renderItem={renderMessage}
-        contentContainerStyle={styles.listContent}
-        onContentSizeChange={handleContentSizeChange}
-        onStartReached={hasMore ? loadOlder : undefined}
-        onStartReachedThreshold={0.2}
-        ListHeaderComponent={
-          isLoadingMore ? (
-            <ActivityIndicator size="small" color={BRAND} style={{ marginVertical: spacing.md }} />
-          ) : null
-        }
-        ListFooterComponent={otherTyping ? <TypingDots color={commonColors.textSecondary} /> : null}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No hay mensajes en esta conversación. Envía uno para comenzar.</Text>
-          </View>
-        }
-      />
-
-      <View style={styles.inputContainer}>
-        <TouchableOpacity
-          style={styles.attachButton}
-          onPress={handleAttachPhoto}
-          disabled={uploading}
-          accessibilityLabel="Adjuntar foto"
-        >
-          {uploading ? <ActivityIndicator size="small" color={BRAND} /> : <ImagePlus size={22} color={BRAND} />}
-        </TouchableOpacity>
-        <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={(t) => { setInputText(t); notifyTyping(); }}
-          placeholder="Escribe tu mensaje..."
-          placeholderTextColor={commonColors.textTertiary}
-          multiline
-          maxLength={500}
+      {isLoadingHistory && messages.length === 0 ? (
+        <ChatSkeleton count={7} />
+      ) : (
+        <MessageThread
+          messages={messages}
+          currentUserId={user?.id}
+          accent={BRAND}
+          otherTyping={otherTyping}
+          isLoadingMore={isLoadingMore}
+          hasMore={hasMore}
+          onLoadOlder={loadOlder}
+          emptyText="No hay mensajes en esta conversación. Escribe el primero."
+          bottomSpace={spacing.lg}
         />
-        <TouchableOpacity 
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
-          onPress={handleSend}
-          disabled={!inputText.trim()}
-          accessibilityRole="button"
-          accessibilityLabel="Enviar mensaje"
-        >
-          <Send size={20} color={obstetraColors.onPrimary} />
-        </TouchableOpacity>
+      )}
+
+      <ChatInput
+        value={inputText}
+        onChangeText={(t) => { setInputText(t); notifyTyping(); }}
+        onSend={handleSend}
+        onAttach={handleAttachPhoto}
+        uploading={uploading}
+        accent={BRAND}
+        placeholder="Escribe tu mensaje..."
+      />
+    </>
+  );
+
+  // ════════════════════ WEB: master-detail ════════════════════
+  if (webShell) {
+    return (
+      <View style={styles.webShell}>
+        {/* Columna izquierda: lista */}
+        <View style={styles.webListCol}>
+          <View style={styles.webListHeader}>
+            <View>
+              <Text style={styles.webListTitle}>Bandeja de Consultas</Text>
+              <Text style={styles.webListSubtitle}>Tus gestantes</Text>
+            </View>
+            <TouchableOpacity style={styles.broadcastBtn} onPress={() => router.push('/(obstetra)/mensaje-masivo')} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
+              <Megaphone size={16} color={commonColors.white} />
+              <Text style={styles.broadcastBtnText}>Masivo</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.webSearchWrap}>{SearchBar}</View>
+          {isLoadingConvs ? (
+            <View style={{ padding: spacing.md }}><ListSkeleton count={6} /></View>
+          ) : (
+            renderList(true)
+          )}
+        </View>
+
+        {/* Columna derecha: hilo o estado vacío */}
+        <View style={styles.webThreadCol}>
+          {activeId ? (
+            renderThread(false)
+          ) : (
+            <View style={styles.webPlaceholder}>
+              <MessageSquare size={56} color={commonColors.textTertiary} />
+              <Text style={styles.webPlaceholderTitle}>Selecciona una gestante</Text>
+              <Text style={styles.webPlaceholderText}>Elige una conversación de la izquierda para ver y responder los mensajes.</Text>
+            </View>
+          )}
+        </View>
       </View>
-    </KeyboardAvoidingView>
+    );
+  }
+
+  // ════════════════════ MÓVIL ════════════════════
+  if (activeId) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+        {renderThread(true)}
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bandejaHeader}>
+        <SafeAreaView edges={['top']}>
+          <Text style={styles.bandejaTitle}>Bandeja de Consultas</Text>
+          <Text style={styles.bandejaSubtitle}>Mensajes con tus gestantes</Text>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <View style={styles.mobileSearchWrap}>{SearchBar}</View>
+
+      {isLoadingConvs ? (
+        <View style={{ paddingHorizontal: spacing.md }}><ListSkeleton count={6} /></View>
+      ) : (
+        renderList(false)
+      )}
+
+      <TouchableOpacity style={styles.broadcastFab} onPress={() => router.push('/(obstetra)/mensaje-masivo')} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
+        <Megaphone size={20} color={commonColors.white} />
+        <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: commonColors.background,
-  },
-  containerWeb: { width: '100%', borderLeftWidth: 1, borderRightWidth: 1, borderColor: commonColors.border },
-  listContent: {
-    padding: 16,
-    paddingBottom: layout.tabBarSpace,
-  },
-  bandejaHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
+  container: { flex: 1, backgroundColor: commonColors.background },
+
+  // Web master-detail
+  webShell: { flex: 1, flexDirection: 'row', backgroundColor: commonColors.background },
+  webListCol: { width: LIST_WIDTH, borderRightWidth: 1, borderRightColor: commonColors.border, backgroundColor: commonColors.surface },
+  webListHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  webListTitle: { ...typography.h3, color: commonColors.text },
+  webListSubtitle: { ...typography.caption, color: commonColors.textSecondary },
+  webSearchWrap: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+  webThreadCol: { flex: 1, minWidth: 0 },
+  webPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.sm },
+  webPlaceholderTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.sm },
+  webPlaceholderText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', maxWidth: 360 },
+
+  // Headers móviles
+  bandejaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
   bandejaTitle: { ...typography.h1, color: commonColors.white },
   bandejaSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
-  convItem: {
-    flexDirection: 'row',
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
-    marginBottom: spacing.sm2,
-    alignItems: 'center',
-    ...shadows.card,
-  },
-  convAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: obstetraColors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  convUnreadDotAvatar: {
-    position: 'absolute', top: -1, right: -1,
-    width: 13, height: 13, borderRadius: 7,
-    backgroundColor: semanticColors.danger,
-    borderWidth: 2, borderColor: commonColors.surface,
-  },
-  convInfo: {
-    flex: 1,
-  },
-  convHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  convName: {
-    ...typography.bodyMedium,
-    color: commonColors.text,
-    flex: 1,
-    marginRight: 8,
-  },
-  convTime: {
-    ...typography.overline,
-    letterSpacing: 0.1,
-    color: commonColors.textTertiary,
-  },
-  convTimeUnread: { color: BRAND, fontWeight: '700' },
-  convDni: {
-    ...typography.overline,
-    letterSpacing: 0.1,
-    color: commonColors.textSecondary,
-    marginBottom: 4,
-  },
-  convLastRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  convLastMsg: {
-    ...typography.bodySmall,
-    color: commonColors.textSecondary,
-    flex: 1,
-  },
-  convLastMsgUnread: { color: commonColors.text, fontWeight: '700' },
-  convUnreadBadge: {
-    minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 6,
-    backgroundColor: semanticColors.danger,
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  convUnreadBadgeText: { ...typography.caption, fontSize: 11, fontWeight: '800', color: commonColors.white },
-  activeChatHeader: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  activeChatHeaderRow: { flexDirection: 'row', alignItems: 'center' },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: commonColors.onColorSurface,
-    marginRight: spacing.sm,
-  },
-  activeHeaderAvatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: commonColors.onColorSurfaceStrong,
-    alignItems: 'center', justifyContent: 'center',
-    marginRight: spacing.sm2,
-  },
-  activeHeaderAvatarText: { ...typography.h4, color: commonColors.white },
-  activeHeaderTitleWrap: {
-    flex: 1,
-  },
-  activeHeaderTitle: {
-    ...typography.h3,
-    color: commonColors.white,
-  },
+
+  mobileSearchWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.md },
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44 },
+  searchInput: { flex: 1, ...typography.body, color: commonColors.text, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}) },
+
+  listContent: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
+  emptyWrap: { paddingTop: spacing.xxl },
+
+  // Hilo
+  threadHeader: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  threadHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.onColorSurface },
+  headerAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: commonColors.onColorSurfaceStrong, alignItems: 'center', justifyContent: 'center' },
+  headerAvatarText: { ...typography.h4, color: commonColors.white },
+  headerTitle: { ...typography.h3, color: commonColors.white },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  statusDot: { width: 7, height: 7, borderRadius: 4 },
-  activeHeaderSubtitle: {
-    ...typography.bodySm,
-    color: commonColors.onColorTextSoft,
-  },
-  messageBubble: {
-    maxWidth: '78%',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm2,
-    borderRadius: borderRadius.xl,
-    marginBottom: spacing.sm2,
-  },
-  messageMe: {
-    alignSelf: 'flex-end',
-    backgroundColor: BRAND,
-    borderBottomRightRadius: borderRadius.xs,
-    ...shadows.card,
-  },
-  messageOther: {
-    alignSelf: 'flex-start',
-    backgroundColor: commonColors.surface,
-    borderBottomLeftRadius: borderRadius.xs,
-    ...shadows.card,
-  },
-  messageImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 6,
-    backgroundColor: commonColors.surfaceAlt,
-  },
-  // Tarjeta de contenido educativo recomendado
-  eduBubble: { maxWidth: '86%', paddingHorizontal: spacing.sm2, paddingVertical: spacing.sm2 },
-  eduCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
-  eduIconBox: { width: 42, height: 42, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
-  eduCategory: { ...typography.overline, fontSize: 10, marginBottom: 2 },
-  eduTitle: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, lineHeight: 18 },
-  messageText: {
-    ...typography.bodySmall,
-    fontSize: 15,
-    marginBottom: 4,
-  },
-  messageTextMe: {
-    color: obstetraColors.onPrimary,
-  },
-  messageTextOther: {
-    color: commonColors.text,
-  },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
-  timeText: {
-    fontSize: 12,
-  },
-  timeTextMe: {
-    color: obstetraColors.primaryLight,
-  },
-  timeTextOther: {
-    color: commonColors.textTertiary,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: spacing.sm2,
-    backgroundColor: commonColors.surface,
-    borderTopWidth: 1,
-    borderColor: commonColors.borderLight,
-    alignItems: 'flex-end',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-  },
-  attachButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: obstetraColors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.xxl,
-    paddingHorizontal: spacing.md,
-    paddingTop: 12,
-    paddingBottom: 12,
-    minHeight: 44,
-    maxHeight: 120,
-    ...typography.body,
-    color: commonColors.text,
-  },
-  sendButton: {
-    backgroundColor: BRAND,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: spacing.sm,
-    ...shadows.card,
-  },
-  sendButtonDisabled: {
-    backgroundColor: commonColors.disabled,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 80,
-    paddingHorizontal: 32,
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    fontSize: 15,
-    color: commonColors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  broadcastFab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: BRAND,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: borderRadius.full,
-    ...coloredGlow(BRAND),
-  },
+  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: semanticColors.successMid },
+  headerSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft },
+  typingText: { fontStyle: 'italic', color: commonColors.white },
+
+  broadcastBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, paddingHorizontal: spacing.sm2, height: 36, borderRadius: borderRadius.full },
+  broadcastBtnText: { ...typography.bodySm, fontWeight: '600', color: commonColors.white },
+  broadcastFab: { position: 'absolute', right: 20, bottom: 24, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BRAND, paddingHorizontal: 20, paddingVertical: 14, borderRadius: borderRadius.full, ...coloredGlow(BRAND) },
   broadcastFabText: { color: commonColors.white, ...typography.button, fontSize: 15 },
-  newChatBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: commonColors.onColorSurface, marginTop: spacing.md,
-    paddingVertical: 12, borderRadius: borderRadius.full,
-  },
-  newChatBtnText: { color: commonColors.white, ...typography.button, fontSize: 15 },
-  searchBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: commonColors.surfaceAlt,
-    borderWidth: 1, borderColor: commonColors.border, borderRadius: 14, paddingHorizontal: 14, height: 48, marginBottom: 12,
-  },
-  searchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
-  pickerEmpty: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: 24 },
-  pickerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  pickerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-  pickerAvatarText: { ...typography.bodyMedium, color: commonColors.textSecondary, fontWeight: '700' },
-  pickerName: { ...typography.bodyMedium, color: commonColors.text },
-  pickerDni: { ...typography.caption, color: commonColors.textTertiary },
-  emergencyMessageBubble: {
-    alignSelf: 'center',
-    backgroundColor: semanticColors.dangerLight,
-    borderWidth: 1.5,
-    borderColor: semanticColors.danger,
-    borderRadius: 16,
-    padding: 14,
-    marginVertical: 8,
-    width: '95%',
-  },
-  emergencyMessageText: {
-    ...typography.bodySmall,
-    fontSize: 15,
-    fontWeight: '700',
-    color: semanticColors.danger,
-    lineHeight: 22,
-  },
-  emergencyTimeText: {
-    color: semanticColors.danger,
-    ...typography.overline,
-    letterSpacing: 0.1,
-    alignSelf: 'flex-end',
-    marginTop: 6,
-  },
-  webToolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
-  webCreateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND, paddingHorizontal: spacing.md, height: 40, borderRadius: borderRadius.full, gap: spacing.sm },
-  webCreateText: { ...typography.bodySm, fontWeight: '600', color: commonColors.white },
 });

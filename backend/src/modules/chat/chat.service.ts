@@ -177,16 +177,16 @@ export const getOrCreateConversation = async (
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Obstetra profile not found');
     }
 
-    let gestanteId = targetId;
+    const gestanteId = targetId;
     if (!gestanteId) {
+      // Sin gestante objetivo: devolver la conversación más reciente del obstetra
+      // (si existe) en vez de fallar. La bandeja (listConversations) es la fuente
+      // principal; este atajo solo sirve para "abrir el último chat".
       const firstConv = await prisma.conversation.findFirst({
         where: { obstetraId: obstetra.id },
         orderBy: { ultimoMensaje: 'desc' },
       });
-      if (!firstConv) {
-        throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Gestante ID is required for obstetra to start/load a chat');
-      }
-      return firstConv;
+      return firstConv ?? null;
     }
 
     let conversation = await prisma.conversation.findFirst({
@@ -211,44 +211,103 @@ export const getOrCreateConversation = async (
   }
 };
 
-export const listConversations = async (userId: string, userRole: string) => {
+/**
+ * Resumen profesional y corto del último mensaje para la bandeja de chats
+ * (estilo WhatsApp). Nunca expone URLs crudas ni el texto completo de una alerta.
+ */
+const buildPreview = (msg?: { contenido: string; tipo: string } | null): string => {
+  if (!msg) return '';
+  switch (msg.tipo) {
+    case 'imagen':
+      return 'Foto';
+    case 'educacion':
+      return 'Contenido educativo recomendado';
+    case 'alerta_emergencia':
+      return 'Alerta de emergencia';
+    default: {
+      const t = (msg.contenido || '').replace(/\s+/g, ' ').trim();
+      return t.length > 80 ? `${t.slice(0, 80)}…` : t;
+    }
+  }
+};
+
+/** Fila ligera de la bandeja de chats: solo lo que la lista necesita pintar. */
+export interface ConversationListItem {
+  id: string | null;
+  gestanteId: string;
+  obstetraId: string;
+  nombre: string;
+  dni: string | null;
+  nivelRiesgo: string | null;
+  lastSeenAt: Date | null;
+  /** userId del otro participante (para presencia en tiempo real). */
+  otherUserId: string | null;
+  lastMessage: string;
+  lastMessageType: string | null;
+  lastMessageAt: Date | null;
+  /** true si el último mensaje lo envió el usuario actual (prefijo "Tú:"). */
+  lastMessageMine: boolean;
+  unreadCount: number;
+}
+
+export const listConversations = async (
+  userId: string,
+  userRole: string,
+): Promise<ConversationListItem[]> => {
   if (userRole === 'obstetra') {
     const obstetra = await prisma.obstetra.findUnique({ where: { userId } });
     if (!obstetra) {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Obstetra profile not found');
     }
 
-    const conversations = await prisma.conversation.findMany({
-      where: { obstetraId: obstetra.id },
-      include: {
-        gestante: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                dni: true,
-                lastSeenAt: true,
-              }
-            }
-          }
-        },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-        // Mensajes sin leer enviados por la OTRA parte (la gestante).
-        _count: {
-          select: {
-            messages: { where: { leido: false, senderId: { not: userId } } },
-          },
-        },
+    // CHAT-01: la bandeja muestra TODAS las gestantes asignadas a esta obstetra
+    // (por cita o control prenatal) además de las que ya tienen conversación,
+    // como una agenda de contactos. Las que no han escrito aparecen como
+    // conversación vacía (sin último mensaje) y caen al final del orden.
+    const gestantes = await prisma.gestante.findMany({
+      where: {
+        OR: [
+          { appointments: { some: { obstetraId: obstetra.id } } },
+          { prenatalControls: { some: { obstetraId: obstetra.id } } },
+          { conversations: { some: { obstetraId: obstetra.id } } },
+        ],
       },
-      orderBy: { ultimoMensaje: 'desc' },
+      select: {
+        id: true,
+        nivelRiesgo: true,
+        user: { select: { id: true, firstName: true, lastName: true, dni: true, lastSeenAt: true } },
+      },
     });
-    // Normaliza el contador a `unreadCount` para el frontend.
-    return conversations.map((c) => ({ ...c, unreadCount: c._count?.messages ?? 0 }));
+
+    const rows = await Promise.all(
+      gestantes.map(async (g): Promise<ConversationListItem> => {
+        const conversation = await prisma.conversation.findFirst({
+          where: { gestanteId: g.id, obstetraId: obstetra.id },
+          include: {
+            messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+            _count: { select: { messages: { where: { leido: false, senderId: { not: userId } } } } },
+          },
+        });
+        const last = conversation?.messages?.[0] ?? null;
+        return {
+          id: conversation?.id ?? null,
+          gestanteId: g.id,
+          obstetraId: obstetra.id,
+          nombre: `${g.user.firstName ?? ''} ${g.user.lastName ?? ''}`.trim() || 'Gestante',
+          dni: g.user.dni ?? null,
+          nivelRiesgo: g.nivelRiesgo ?? null,
+          lastSeenAt: g.user.lastSeenAt ?? null,
+          otherUserId: g.user.id,
+          lastMessage: buildPreview(last),
+          lastMessageType: last?.tipo ?? null,
+          lastMessageAt: last?.createdAt ?? conversation?.ultimoMensaje ?? null,
+          lastMessageMine: last ? last.senderId === userId : false,
+          unreadCount: conversation?._count?.messages ?? 0,
+        };
+      }),
+    );
+
+    return sortInbox(rows);
   } else if (userRole === 'gestante') {
     const gestante = await prisma.gestante.findUnique({ where: { userId } });
     if (!gestante) {
@@ -258,33 +317,49 @@ export const listConversations = async (userId: string, userRole: string) => {
     const conversations = await prisma.conversation.findMany({
       where: { gestanteId: gestante.id },
       include: {
-        obstetra: {
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-              }
-            }
-          }
-        },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-        _count: {
-          select: {
-            messages: { where: { leido: false, senderId: { not: userId } } },
-          },
-        },
+        obstetra: { include: { user: { select: { id: true, firstName: true, lastName: true, lastSeenAt: true } } } },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        _count: { select: { messages: { where: { leido: false, senderId: { not: userId } } } } },
       },
-      orderBy: { ultimoMensaje: 'desc' },
     });
-    return conversations.map((c) => ({ ...c, unreadCount: c._count?.messages ?? 0 }));
+
+    const rows = conversations.map((c): ConversationListItem => {
+      const last = c.messages?.[0] ?? null;
+      return {
+        id: c.id,
+        gestanteId: c.gestanteId,
+        obstetraId: c.obstetraId,
+        nombre: `Obst. ${c.obstetra.user.firstName ?? ''} ${c.obstetra.user.lastName ?? ''}`.trim(),
+        dni: null,
+        nivelRiesgo: null,
+        lastSeenAt: c.obstetra.user.lastSeenAt ?? null,
+        otherUserId: c.obstetra.user.id,
+        lastMessage: buildPreview(last),
+        lastMessageType: last?.tipo ?? null,
+        lastMessageAt: last?.createdAt ?? c.ultimoMensaje ?? null,
+        lastMessageMine: last ? last.senderId === userId : false,
+        unreadCount: c._count?.messages ?? 0,
+      };
+    });
+
+    return sortInbox(rows);
   } else {
     return [];
   }
 };
+
+/**
+ * Orden de la bandeja (estilo WhatsApp): primero las que tienen mensajes, por
+ * fecha del último mensaje descendente; las conversaciones vacías al final,
+ * alfabéticas. Resuelve el bug de orden indefinido con `ultimoMensaje = null`.
+ */
+const sortInbox = (rows: ConversationListItem[]): ConversationListItem[] =>
+  rows.sort((a, b) => {
+    const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+    const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+    if (tb !== ta) return tb - ta;
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
 
 /**
  * Total de mensajes de chat sin leer para un usuario (suma de todas sus
@@ -325,6 +400,10 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
   }
 
   const conversation = await getOrCreateConversation(userId, 'gestante');
+  // Para una gestante, getOrCreateConversation siempre crea/retorna conversación.
+  if (!conversation) {
+    throw new AppError(500, ErrorCodes.INTERNAL_ERROR, 'No se pudo crear la conversación de emergencia');
+  }
   const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
 
   // Edad gestacional aproximada (si hay FUM) para dar contexto clínico.
@@ -496,6 +575,13 @@ export const recommendContent = async (
       // Avisa a la gestante para que su módulo de educación se refresque al instante.
       if (gestante.userId) {
         io.to(`user:${gestante.userId}`).emit('education:new_recommendation', { contentId: content.id });
+        // CHAT-07: reordenar/actualizar la bandeja de la gestante en vivo.
+        io.to(`user:${gestante.userId}`).emit('chat:new_message', {
+          conversationId: conversation.id,
+          senderId: userId,
+          senderName: 'Tu obstetra',
+          preview: 'Contenido educativo recomendado',
+        });
       }
     }
   } catch {
@@ -573,18 +659,39 @@ export const sendBroadcast = async (
       });
     }
 
-    await prisma.message.create({
+    const msg = await prisma.message.create({
       data: {
         conversationId: conversation.id,
         senderId: userId,
         contenido,
         tipo: 'texto',
       },
+      include: { sender: { select: { id: true, firstName: true, lastName: true, role: true } } },
     });
     await prisma.conversation.update({
       where: { id: conversation.id },
       data: { ultimoMensaje: new Date() },
     });
+
+    // CHAT-07: tiempo real — entregar el mensaje a la sala y reordenar la
+    // bandeja de la gestante aunque no tenga el chat abierto.
+    try {
+      const { getIO } = await import('../../config/socketRegistry.js');
+      const io = getIO();
+      if (io) {
+        io.to(`conversation:${conversation.id}`).emit('receive_message', msg);
+        if (gestante.userId) {
+          io.to(`user:${gestante.userId}`).emit('chat:new_message', {
+            conversationId: conversation.id,
+            senderId: userId,
+            senderName: 'Tu obstetra',
+            preview: contenido.slice(0, 80),
+          });
+        }
+      }
+    } catch {
+      /* best-effort */
+    }
 
     const prefs = gestante.user?.notificationPreferences as Record<string, any> | null;
     if (prefs?.expoPushToken) pushTokens.push(prefs.expoPushToken);
