@@ -5,6 +5,7 @@ import { DiagnosisPill } from '../src/components/ui/DiagnosisPill';
 import { KpiCard } from '../src/components/ui/KpiCard';
 import { CircularProgress } from '../src/components/ui/CircularProgress';
 import { AppModal } from '../src/components/ui/AppModal';
+import { PrenatalRibbon } from '../src/components/ui/PrenatalRibbon';
 import { Text } from 'react-native';
 
 describe('ToggleTabs', () => {
@@ -86,5 +87,24 @@ describe('AppModal', () => {
     );
     fireEvent.press(screen.getByLabelText('Cerrar'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('PrenatalRibbon (componente insignia)', () => {
+  it('describe la semana y el trimestre para lectores de pantalla', () => {
+    render(<PrenatalRibbon week={24} />);
+    expect(screen.getByLabelText(/Semana 24 de 40/)).toBeTruthy();
+    expect(screen.getByText('Segundo trimestre')).toBeTruthy();
+  });
+
+  it('invita a registrar la FUM cuando no hay semana', () => {
+    render(<PrenatalRibbon week={0} />);
+    expect(screen.getByText('Sin fecha registrada')).toBeTruthy();
+    expect(screen.getByText('Registra tu FUM')).toBeTruthy();
+  });
+
+  it('marca el embarazo a término en la semana 40', () => {
+    render(<PrenatalRibbon week={40} />);
+    expect(screen.getByText('A término')).toBeTruthy();
   });
 });

@@ -20,7 +20,7 @@ import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { StatusChip } from '../../../src/components/ui/StatusChip';
 import { ProgressRing } from '../../../src/components/ui/ProgressRing';
-import { useToast, AutoGrid, IconButton } from '../../../src/components/ui';
+import { useToast, AutoGrid, IconButton, PrenatalRibbon } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
@@ -84,15 +84,7 @@ export default function GestanteDashboard(): React.ReactElement {
   // Sin FUM registrada no podemos calcular semanas: ofrecemos onboarding (issue #12).
   const hasFum = !!profile?.fum && !isNaN(new Date(profile.fum).getTime());
   const gestationalWeekText = weeks > 0 ? `Semana ${weeks}` : 'Semana --';
-  const progressText = weeks > 0 ? `Sem. ${weeks} de 40` : 'Sem. -- de 40';
-  const progressPercent = weeks > 0 ? Math.min(100, Math.round((weeks / 40) * 100)) : 0;
-
-  function getTrimesterText(w: number) {
-    if (w <= 13) return 'Primer Trimestre';
-    if (w <= 26) return 'Segundo Trimestre';
-    return 'Tercer Trimestre';
-  }
-  const trimesterText = weeks > 0 ? getTrimesterText(weeks) : 'Gestación';
+  const progressText = weeks > 0 ? `Semana ${weeks} de 40` : 'Aún sin semana';
 
   // Datos de la próxima cita normalizados.
   const nextStatus: string = nextAppointment?.status || 'programada';
@@ -160,25 +152,17 @@ export default function GestanteDashboard(): React.ReactElement {
             </AppCard>
           )}
 
-          {/* Pregnancy Progress Card */}
+          {/* Tu embarazo — la cinta prenatal es la firma de la app: muestra el
+              avance real semana a semana, los trimestres y el "hoy" que late. */}
           <AppCard style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <View>
-                <Text style={styles.progressTitle}>Tu Embarazo</Text>
-                <Text style={styles.progressSubtitle}>{trimesterText}</Text>
+                <Text style={styles.progressTitle}>Tu embarazo</Text>
+                <Text style={styles.progressSubtitle}>{progressText}</Text>
               </View>
               <AppBadge label={getRiskLabel(riskLevel)} variant={getRiskVariant(riskLevel) as any} />
             </View>
-            <View style={styles.progressBarContainer}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: BRAND }]} />
-              </View>
-              <View style={styles.progressLabels}>
-                <Text style={styles.progressLabel}>Sem. 1</Text>
-                <Text style={styles.progressLabelBold}>{progressText}</Text>
-                <Text style={styles.progressLabel}>Sem. 40</Text>
-              </View>
-            </View>
+            <PrenatalRibbon week={weeks} colors={gestanteColors.gradient} />
           </AppCard>
 
           {/* Next Appointment — sin onPress en la tarjeta para evitar botón
@@ -342,17 +326,6 @@ const styles = StyleSheet.create({
     color: commonColors.textSecondary,
     marginTop: 4,
   },
-  progressBarContainer: { gap: spacing.sm + 4 },
-  progressTrack: {
-    height: 12,
-    backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: borderRadius.full },
-  progressLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  progressLabel: { ...typography.overline, color: commonColors.textTertiary },
-  progressLabelBold: { ...typography.overline, color: BRAND },
   sectionCard: { marginBottom: spacing.lg, padding: spacing.lg },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   cardIconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surfaceAlt },
