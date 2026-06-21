@@ -49,19 +49,17 @@ export default function GestanteChatScreen() {
     otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId: obstetra?.userId });
 
-  const { isLoading: isResolvingConv } = useQuery({
+  const { isLoading: isResolvingConv, isError: convError, refetch: refetchConv } = useQuery({
     queryKey: ['chat-conversation'],
     queryFn: async () => {
-      try {
-        const res = await api.get('/chat/conversation');
-        setConversationId(res.data.data.id);
-        setObstetra(res.data.data.obstetra || null);
-        return res.data.data;
-      } catch (error) {
-        console.warn('Failed to resolve conversation:', error);
-        return null;
-      }
+      // Si falla, se deja propagar el error para que la pantalla muestre el
+      // estado de error con reintento (antes se tragaba con console.warn).
+      const res = await api.get('/chat/conversation');
+      setConversationId(res.data.data.id);
+      setObstetra(res.data.data.obstetra || null);
+      return res.data.data;
     },
+    retry: 1,
   });
 
   const handleWhatsApp = async () => {
@@ -105,6 +103,24 @@ export default function GestanteChatScreen() {
 
   if (isResolvingConv || (isLoadingHistory && messages.length === 0)) {
     return <View style={styles.container}><ChatSkeleton count={7} /></View>;
+  }
+
+  // No se pudo abrir la conversación: error claro + reintento (no silencioso).
+  if (convError) {
+    return (
+      <View style={styles.container}>
+        <ScreenLayout
+          role="gestante"
+          title="Chat"
+          subtitle="Mensajes con tu obstetra"
+          accentColor={BRAND}
+          error
+          onRetry={() => refetchConv()}
+          errorTitle="No se pudo abrir el chat"
+          errorMessage="Revisa tu conexión y vuelve a intentar. Si es urgente, usa el botón de WhatsApp o llama al centro de salud."
+        />
+      </View>
+    );
   }
 
   const statusText = otherTyping
