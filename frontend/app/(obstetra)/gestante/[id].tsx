@@ -936,37 +936,43 @@ export default function PatientProfileScreen(): React.ReactElement {
                     </View>
                   )}
                 </View>
-                <View style={styles.statusMetricsRow}>
-                  <View style={styles.statusMetric}>
-                    <Baby size={15} color={obstetraColors.primary} />
-                    <Text style={styles.statusMetricVal}>
-                      {patient.currentWeek ? `${patient.currentWeek} sem` : '—'}
-                    </Text>
-                    <Text style={styles.statusMetricLbl}>
-                      {patient.currentTrimester ? `Edad gest. · ${patient.currentTrimester}° trim.` : 'Edad gest.'}
-                    </Text>
+                {/* Métricas en rejilla 2×2 (cada celda al 50%): en móvil ya no
+                    se aprietan ni se desordenan como en la fila de 4 columnas. */}
+                <View style={styles.statusMetricsGrid}>
+                  <View style={styles.statusMetricCell}>
+                    <Baby size={16} color={obstetraColors.primary} />
+                    <View style={styles.statusMetricTexts}>
+                      <Text style={styles.statusMetricVal} numberOfLines={1}>
+                        {patient.currentWeek ? `${patient.currentWeek} sem` : '—'}
+                        {patient.currentTrimester ? ` · ${patient.currentTrimester}° trim.` : ''}
+                      </Text>
+                      <Text style={styles.statusMetricLbl} numberOfLines={1}>Edad gestacional</Text>
+                    </View>
                   </View>
-                  <View style={styles.statusDivider} />
-                  <View style={styles.statusMetric}>
-                    <CalendarHeart size={15} color={obstetraColors.primary} />
-                    <Text style={styles.statusMetricVal}>
-                      {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                    </Text>
-                    <Text style={styles.statusMetricLbl}>FPP</Text>
+                  <View style={styles.statusMetricCell}>
+                    <CalendarHeart size={16} color={obstetraColors.primary} />
+                    <View style={styles.statusMetricTexts}>
+                      <Text style={styles.statusMetricVal} numberOfLines={1}>
+                        {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </Text>
+                      <Text style={styles.statusMetricLbl} numberOfLines={1}>Fecha prob. de parto</Text>
+                    </View>
                   </View>
-                  <View style={styles.statusDivider} />
-                  <View style={styles.statusMetric}>
-                    <CalendarClock size={15} color={obstetraColors.primary} />
-                    <Text style={styles.statusMetricVal}>
-                      {nextAppointment ? new Date(nextAppointment.fecha).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '—'}
-                    </Text>
-                    <Text style={styles.statusMetricLbl}>Próx. cita</Text>
+                  <View style={styles.statusMetricCell}>
+                    <CalendarClock size={16} color={obstetraColors.primary} />
+                    <View style={styles.statusMetricTexts}>
+                      <Text style={styles.statusMetricVal} numberOfLines={1}>
+                        {nextAppointment ? new Date(nextAppointment.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '—'}
+                      </Text>
+                      <Text style={styles.statusMetricLbl} numberOfLines={1}>Próxima cita</Text>
+                    </View>
                   </View>
-                  <View style={styles.statusDivider} />
-                  <View style={styles.statusMetric}>
-                    <Activity size={15} color={obstetraColors.primary} />
-                    <Text style={styles.statusMetricVal}>{displayImc}</Text>
-                    <Text style={styles.statusMetricLbl}>IMC</Text>
+                  <View style={styles.statusMetricCell}>
+                    <Activity size={16} color={obstetraColors.primary} />
+                    <View style={styles.statusMetricTexts}>
+                      <Text style={styles.statusMetricVal} numberOfLines={1}>{displayImc}</Text>
+                      <Text style={styles.statusMetricLbl} numberOfLines={1}>IMC</Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -2279,17 +2285,24 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surface,
   },
   statusAlertText: { ...typography.caption, fontWeight: '700', color: semanticColors.danger },
-  statusMetricsRow: {
+  statusMetricsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm2,
+    paddingVertical: spacing.xs,
   },
-  statusMetric: { flex: 1, alignItems: 'center', gap: 3 },
+  statusMetricCell: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm2,
+  },
+  statusMetricTexts: { flex: 1, minWidth: 0 },
   statusMetricVal: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
-  statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary },
-  statusDivider: { width: 1, height: 34, backgroundColor: commonColors.borderLight },
+  statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary, marginTop: 1 },
 
   resumenAlertaRow: {
     flexDirection: 'row',
