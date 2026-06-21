@@ -1,19 +1,26 @@
 /**
- * DateTimeField — selector profesional de fecha/hora compatible móvil + web.
+ * DateTimeField — selector profesional de fecha/hora, idéntico en web y móvil.
  *
- * - Móvil (iOS/Android): usa @react-native-community/datetimepicker (rueda/calendario
- *   nativo del sistema), abierto desde un campo con estilo consistente.
- * - Web: usa <input type="date|time"> nativo del navegador (calendario/reloj real),
- *   estilizado para integrarse con el design system.
+ * En vez del <input type="date|time"> del navegador (inconsistente entre
+ * navegadores) y del picker nativo del SO, usa componentes de marca dentro de
+ * un Overlay (BottomSheet en móvil · modal centrado en web):
+ *   - mode="date" → CalendarPicker (calendario mensual).
+ *   - mode="time" → TimeWheel (columnas hora/minuto).
  *
  * Trabaja con valores string ISO: 'YYYY-MM-DD' (date) o 'HH:mm' (time).
+ * Mantiene la misma API que la versión anterior (cero cambios en las pantallas).
  */
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, ViewStyle } from 'react-native';
-import { Calendar, Clock } from 'lucide-react-native';
+import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { Calendar, Clock, ChevronDown } from 'lucide-react-native';
 import { commonColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
+import { IS_WEB } from '../../theme/responsive';
+import { Overlay } from '../patterns/Overlay';
+import { AppButton } from './AppButton';
+import { CalendarPicker } from './CalendarPicker';
+import { TimeWheel } from './TimeWheel';
 
 type Mode = 'date' | 'time';
 
@@ -26,37 +33,32 @@ interface DateTimeFieldProps {
   placeholder?: string;
   error?: string;
   helperText?: string;
+  required?: boolean;
   themeColor?: string;
   minimumDate?: Date;
   maximumDate?: Date;
+  /** Para mode="time": límites 'HH:mm'. */
+  minTime?: string;
+  maxTime?: string;
+  minuteStep?: number;
   disabled?: boolean;
   containerStyle?: ViewStyle;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-const toDate = (value: string, mode: Mode): Date => {
-  if (mode === 'date') {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
-    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  } else {
-    const m = /^(\d{2}):(\d{2})$/.exec(value || '');
-    const d = new Date();
-    if (m) { d.setHours(Number(m[1]), Number(m[2]), 0, 0); return d; }
-  }
-  return new Date();
+const parseDate = (value: string): Date | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 };
 
-const fromDate = (d: Date, mode: Mode): string =>
-  mode === 'date'
-    ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-    : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const fromDate = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 const displayValue = (value: string, mode: Mode): string => {
   if (!value) return '';
   if (mode === 'date') {
-    const d = toDate(value, mode);
-    return d.toLocaleDateString('es-PE', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+    const d = parseDate(value);
+    return d ? d.toLocaleDateString('es-PE', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' }) : value;
   }
   return value; // HH:mm ya es legible
 };
@@ -69,92 +71,97 @@ export function DateTimeField({
   placeholder = 'Seleccionar…',
   error,
   helperText,
+  required,
   themeColor = commonColors.borderStrong,
   minimumDate,
   maximumDate,
+  minTime,
+  maxTime,
+  minuteStep = 5,
   disabled,
   containerStyle,
 }: DateTimeFieldProps): React.ReactElement {
-  const [showPicker, setShowPicker] = useState(false);
+  const [open, setOpen] = useState(false);
+  // Borrador: el usuario confirma antes de aplicar (evita cierres accidentales).
+  const [draftDate, setDraftDate] = useState<Date | null>(null);
+  const [draftTime, setDraftTime] = useState<string | null>(null);
   const Icon = mode === 'date' ? Calendar : Clock;
+  const accent = themeColor === commonColors.borderStrong ? commonColors.text : themeColor;
 
-  // ── WEB: input nativo del navegador ──
-  if (Platform.OS === 'web') {
-    const minStr = minimumDate ? fromDate(minimumDate, 'date') : undefined;
-    const maxStr = maximumDate ? fromDate(maximumDate, 'date') : undefined;
-    return (
-      <View style={[styles.container, containerStyle]}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={[styles.field, !!error && styles.fieldError, disabled && styles.fieldDisabled]}>
-          <Icon size={18} color={error ? semanticColors.danger : commonColors.textSecondary} />
-          <input
-            type={mode}
-            value={value}
-            min={mode === 'date' ? minStr : undefined}
-            max={mode === 'date' ? maxStr : undefined}
-            disabled={disabled}
-            onChange={(e: any) => onChange(e.target.value)}
-            style={webInputStyle}
-          />
-        </View>
-        {error ? <Text style={styles.errorText}>{error}</Text> : helperText ? <Text style={styles.helperText}>{helperText}</Text> : null}
-      </View>
-    );
-  }
+  const openPicker = () => {
+    if (disabled) return;
+    setDraftDate(mode === 'date' ? parseDate(value) : null);
+    setDraftTime(mode === 'time' ? (value || null) : null);
+    setOpen(true);
+  };
 
-  // ── MÓVIL: picker nativo del sistema ──
-  // Import diferido para que la web nunca cargue el módulo nativo.
-  const DateTimePicker = require('@react-native-community/datetimepicker').default;
+  const confirm = () => {
+    if (mode === 'date' && draftDate) onChange(fromDate(draftDate));
+    if (mode === 'time' && draftTime) onChange(draftTime);
+    setOpen(false);
+  };
+
+  const canConfirm = mode === 'date' ? !!draftDate : !!draftTime;
 
   return (
     <View style={[styles.container, containerStyle]}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, !!error && { color: semanticColors.danger }]}>
+        {label}{required ? <Text style={{ color: semanticColors.danger }}> *</Text> : null}
+      </Text>
       <Pressable
-        onPress={() => !disabled && setShowPicker(true)}
-        style={[styles.field, !!error && styles.fieldError, disabled && styles.fieldDisabled]}
+        onPress={openPicker}
+        disabled={disabled}
+        style={[styles.field, !!error && styles.fieldError, disabled && styles.fieldDisabled, IS_WEB && !disabled && ({ cursor: 'pointer' } as any)]}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value ? displayValue(value, mode) : placeholder}`}
+        accessibilityState={{ disabled: !!disabled }}
       >
         <Icon size={18} color={error ? semanticColors.danger : commonColors.textSecondary} />
-        <Text style={[styles.valueText, !value && styles.placeholderText]}>
+        <Text style={[styles.valueText, !value && styles.placeholderText]} numberOfLines={1}>
           {value ? displayValue(value, mode) : placeholder}
         </Text>
+        <ChevronDown size={18} color={commonColors.textTertiary} />
       </Pressable>
-      {showPicker && (
-        <DateTimePicker
-          value={toDate(value, mode)}
-          mode={mode}
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          // API moderna (datetimepicker v9): onValueChange + onDismiss en lugar
-          // del onChange deprecado.
-          onValueChange={(_event: any, selected: Date) => {
-            // En iOS el spinner permanece abierto; en Android se cierra al elegir.
-            if (selected) onChange(fromDate(selected, mode));
-            if (Platform.OS !== 'ios') setShowPicker(false);
-          }}
-          onDismiss={() => setShowPicker(false)}
-        />
-      )}
       {error ? <Text style={styles.errorText}>{error}</Text> : helperText ? <Text style={styles.helperText}>{helperText}</Text> : null}
+
+      <Overlay
+        visible={open}
+        onClose={() => setOpen(false)}
+        title={mode === 'date' ? 'Selecciona la fecha' : 'Selecciona la hora'}
+        scroll={false}
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="ghost" onPress={() => setOpen(false)} style={{ flex: 1 }} />
+            <AppButton title="Confirmar" onPress={confirm} disabled={!canConfirm} themeColor={accent} style={{ flex: 1 }} />
+          </>
+        }
+      >
+        {mode === 'date' ? (
+          <CalendarPicker
+            value={draftDate}
+            onSelect={setDraftDate}
+            accentColor={accent}
+            minimumDate={minimumDate}
+            maximumDate={maximumDate}
+          />
+        ) : (
+          <TimeWheel
+            value={draftTime}
+            onChange={setDraftTime}
+            accentColor={accent}
+            minuteStep={minuteStep}
+            minTime={minTime}
+            maxTime={maxTime}
+          />
+        )}
+      </Overlay>
     </View>
   );
 }
 
-const webInputStyle: any = {
-  flex: 1,
-  border: 'none',
-  outline: 'none',
-  background: 'transparent',
-  fontSize: 15,
-  fontFamily: 'Inter_400Regular, system-ui, sans-serif',
-  color: commonColors.text,
-};
-
 const styles = StyleSheet.create({
-  container: { gap: 6 },
-  label: { ...typography.caption, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.textSecondary },
+  container: { marginBottom: spacing.md },
+  label: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.xs },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,17 +169,16 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
     borderColor: commonColors.border,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.sm,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 4,
-    minHeight: 48,
+    minHeight: 52,
   },
   fieldError: { borderColor: semanticColors.danger },
-  fieldDisabled: { opacity: 0.6 },
-  valueText: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, textTransform: 'capitalize' },
+  fieldDisabled: { backgroundColor: commonColors.borderLight, opacity: 0.7 },
+  valueText: { flex: 1, ...typography.body, color: commonColors.text, textTransform: 'capitalize' },
   placeholderText: { color: commonColors.textTertiary, textTransform: 'none' },
-  errorText: { ...typography.caption, color: semanticColors.danger },
-  helperText: { ...typography.caption, color: commonColors.textSecondary },
+  errorText: { ...typography.caption, color: semanticColors.danger, marginTop: spacing.xs },
+  helperText: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.xs },
 });
 
 export default DateTimeField;
