@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   webCreateText: { ...typography.button, color: commonColors.white, fontSize: 14 },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
   listWeb: { width: '100%', paddingBottom: spacing.xl },
-  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md },
   webSearchBox: { flex: 1 },
   webFilterRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.md },
   tableTitleCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

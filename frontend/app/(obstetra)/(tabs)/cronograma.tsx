@@ -496,8 +496,9 @@ function useAppointmentScopeCounts(): Record<Scope, number | null> {
 }
 
 const styles = StyleSheet.create({
-  // Solo el margen inferior: la apariencia (pill, fondo, borde) la define SearchField.
-  searchBar: { marginBottom: spacing.md },
+  // Espacio superior (el cuerpo sin scroll no lo añade) + margen inferior.
+  // La apariencia (pill, fondo, borde) la define SearchField.
+  searchBar: { marginTop: spacing.md, marginBottom: spacing.md },
 
   segments: { flexDirection: 'row', gap: spacing.xs2, marginBottom: spacing.sm },
   segment: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, alignItems: 'center' },
@@ -552,7 +553,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
 
-  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
   webSearchBox: { flex: 1, minWidth: 220 },
   webFilterRow: { flexDirection: 'row', gap: spacing.sm },
   webChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },

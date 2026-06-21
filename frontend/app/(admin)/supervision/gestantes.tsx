@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
   // ── Portal web ──
-  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
   webSearchBox: { flex: 1, minWidth: 220 },
   tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },

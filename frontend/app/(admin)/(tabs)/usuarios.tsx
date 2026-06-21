@@ -814,7 +814,7 @@ export default function UsuariosScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   // ── Portal web ──
-  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md },
   webSearchBox: { flex: 1 },
   webCreateBtn: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

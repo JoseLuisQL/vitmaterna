@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
 
   // ── Portal web ──
-  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
+  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
   webSearchBox: { flex: 1, minWidth: 220 },
   webFilterRow: { flexDirection: 'row', gap: spacing.sm },
   webChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
