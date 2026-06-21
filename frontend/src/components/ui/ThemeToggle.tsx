@@ -6,7 +6,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Smartphone, Sun, Moon, type LucideIcon } from 'lucide-react-native';
 import { useTheme, type ThemeMode } from '../../theme/ThemeContext';
-import { commonColors } from '../../theme/colors';
+import { commonColors, obstetraColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 
@@ -26,7 +26,7 @@ const AVAILABLE_MODES: ThemeMode[] = ['light'];
 /** ¿Tiene sentido mostrar el selector de tema? (≥2 modos disponibles). */
 export const isThemeToggleAvailable = AVAILABLE_MODES.length >= 2;
 
-export function ThemeToggle({ accentColor = '#4A90D9' }: { accentColor?: string }): React.ReactElement | null {
+export function ThemeToggle({ accentColor = obstetraColors.primary }: { accentColor?: string }): React.ReactElement | null {
   const { mode, setMode, colors } = useTheme();
   const options = OPTIONS.filter((o) => AVAILABLE_MODES.includes(o.mode));
 

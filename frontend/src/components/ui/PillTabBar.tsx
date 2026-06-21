@@ -15,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '../../theme/responsive';
-import { commonColors, gestanteColors } from '../../theme/colors';
+import { commonColors, gestanteColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: borderRadius.full,
-    backgroundColor: '#E05656',
+    backgroundColor: semanticColors.danger,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',

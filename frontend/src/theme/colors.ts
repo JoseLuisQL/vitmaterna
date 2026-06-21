@@ -1,132 +1,148 @@
 /**
- * VITMATERNA — Sistema de Color (rediseño minimalista ice-blue)
+ * VITMATERNA — Sistema de Color · "Clinical Calm"
  *
- * Base ice-blue (#EEF2F8) inspirada en apps de salud premium. Superficies
- * blancas flotantes con sombra suave (no bordes como jerarquía principal).
- * Un acento por rol + semánticos + semáforo de riesgo.
+ * Rediseño minimalista de salud: base neutra fría casi blanca, superficies
+ * blancas limpias separadas por sombra suave (no por bordes), y un acento de
+ * salud verde-azulado (teal/esmeralda) que transmite vida, cuidado y confianza
+ * clínica. Un acento por rol + semánticos + semáforo de riesgo.
  *
- * - Gestante: acento púrpura (#7C3AED)
- * - Obstetra: acento azul brillante (#3A86FF)
- * - Admin: slate profesional (#334155)
+ * Acentos por rol:
+ *   - Gestante: teal-esmeralda (#0C8174) — salud, vida, crecimiento.
+ *   - Obstetra: azul clínico sereno (#2C6EA8) — profesionalismo y calma.
+ *   - Admin:    slate azulado (#3C5168) — neutralidad de control.
  *
  * Cada color semántico y de riesgo expone 3 variantes:
  *   <name>        → color sólido (texto/íconos)
  *   <name>Mid     → fondo de chips/badges
  *   <name>Light   → fondo ultra suave de tarjetas
+ *
+ * Todos los pares texto/fondo y texto-blanco/acento cumplen WCAG AA
+ * (verificado en __tests__/theme.test.ts con cálculo de contraste en vivo).
  */
 
 /**
  * Neutros compartidos (la base de toda la app).
- * Rediseño sereno/minimalista: del ice-blue frío a un neutro cálido casi
- * blanco que transmite paz y limpieza ("spa de salud"), con bordes casi
- * invisibles para que la jerarquía la den las sombras suaves, no las líneas.
+ * Paleta serena tipo "spa clínico": un neutro frío casi blanco con un matiz
+ * verde-azulado imperceptible, superficies blancas puras y jerarquía dada por
+ * la sombra suave, con bordes casi invisibles.
  */
 export const commonColors = {
-  background: '#F7F8FA', // fondo principal (neutro cálido, casi blanco)
-  backgroundWarm: '#FAF8FC', // pantallas gestante (velo lila imperceptible)
-  backgroundCool: '#F6F9FC', // pantallas obstetra (velo azul imperceptible)
+  background: '#F6F8F8', // fondo principal (neutro frío casi blanco)
+  backgroundWarm: '#F4F8F7', // pantallas gestante (velo teal imperceptible)
+  backgroundCool: '#F4F7FA', // pantallas obstetra (velo azul imperceptible)
   surface: '#FFFFFF', // tarjetas y paneles flotantes
-  surfaceAlt: '#F1F3F7', // superficie secundaria / inputs / toggles
-  surfaceHover: '#ECEFF4', // hover/pressed en superficies
+  surfaceAlt: '#EEF2F3', // superficie secundaria / inputs / toggles
+  surfaceHover: '#E7ECEE', // hover/pressed en superficies
 
-  text: '#232A33', // texto principal (gris azulado profundo, no negro puro)
-  textSecondary: '#5E6B7A', // texto secundario (AA sobre fondo claro)
-  textTertiary: '#9AA6B4', // placeholders y meta
+  text: '#16242B', // texto principal (tinta slate-teal profunda, no negro)
+  textSecondary: '#566873', // texto secundario (AA 5.4:1 sobre fondo claro)
+  textTertiary: '#7E8F99', // placeholders y meta
 
-  border: '#EAEDF2', // borde suave (casi invisible → minimalismo)
-  borderLight: '#F1F3F7', // divisor casi invisible
-  borderStrong: '#D4DAE2', // borde con presencia
+  border: '#E7ECEE', // borde suave (casi invisible → minimalismo)
+  borderLight: '#EEF2F3', // divisor casi invisible
+  borderStrong: '#D2DADD', // borde con presencia
 
-  disabled: '#C5CDD9',
-  overlay: 'rgba(35, 42, 51, 0.38)', // dimmed detrás de modales
+  disabled: '#C6D0D3',
+  overlay: 'rgba(16, 36, 43, 0.42)', // dimmed detrás de modales (legible)
   transparent: 'transparent',
   white: '#FFFFFF',
-  black: '#232A33',
+  black: '#16242B',
 
   // Texto y superficies SOBRE color (headers con gradiente de rol). Centraliza
   // los blancos translúcidos que antes se escribían a mano en cada pantalla.
   onColorText: '#FFFFFF', // título sobre gradiente
-  onColorTextStrong: 'rgba(255,255,255,0.90)', // dato/contador sobre gradiente
-  onColorTextSoft: 'rgba(255,255,255,0.85)', // subtítulo sobre gradiente
-  onColorTextFaint: 'rgba(255,255,255,0.75)', // etiqueta tenue sobre gradiente
-  onColorSurface: 'rgba(255,255,255,0.18)', // fondo de botón sobre gradiente
-  onColorSurfaceStrong: 'rgba(255,255,255,0.20)', // fondo de botón (énfasis)
+  onColorTextStrong: 'rgba(255,255,255,0.92)', // dato/contador sobre gradiente
+  onColorTextSoft: 'rgba(255,255,255,0.86)', // subtítulo sobre gradiente
+  onColorTextFaint: 'rgba(255,255,255,0.76)', // etiqueta tenue sobre gradiente
+  onColorSurface: 'rgba(255,255,255,0.16)', // fondo de botón sobre gradiente
+  onColorSurfaceStrong: 'rgba(255,255,255,0.22)', // fondo de botón (énfasis)
   onColorSurfaceFaint: 'rgba(255,255,255,0.10)', // halo muy tenue sobre gradiente
-  onColorTrack: 'rgba(255,255,255,0.25)', // pista de progreso sobre gradiente
+  onColorTrack: 'rgba(255,255,255,0.26)', // pista de progreso sobre gradiente
 
-  // Banner global "sin conexión": grafito azulado, legible sobre cualquier vista.
-  bannerBackground: '#1E2A3A',
+  // Banner global "sin conexión": grafito teal, legible sobre cualquier vista.
+  bannerBackground: '#16323A',
 } as const;
 
 /**
  * Neutros en MODO OSCURO. Mismas claves que commonColors para poder
- * intercambiarlos vía tema. Fondo azul-grafito profundo, superficies elevadas
- * y texto claro, manteniendo el carácter "ice-blue" de la marca.
+ * intercambiarlos vía tema. Fondo teal-grafito profundo, superficies elevadas
+ * y texto claro, manteniendo el carácter sereno de la marca.
  */
 export const commonColorsDark = {
-  background: '#0E1420', // fondo principal (grafito azulado)
-  backgroundWarm: '#16111F', // gestante (lila muy oscuro)
-  backgroundCool: '#0E1726', // obstetra (azul muy oscuro)
-  surface: '#182230', // tarjetas y paneles flotantes
-  surfaceAlt: '#1F2A3A', // superficie secundaria / inputs
-  surfaceHover: '#26354A', // hover/pressed
+  background: '#0C1417', // fondo principal (grafito teal profundo)
+  backgroundWarm: '#0C1614', // gestante (teal muy oscuro)
+  backgroundCool: '#0C151C', // obstetra (azul muy oscuro)
+  surface: '#152125', // tarjetas y paneles flotantes
+  surfaceAlt: '#1C2A2F', // superficie secundaria / inputs
+  surfaceHover: '#243439', // hover/pressed
 
-  text: '#EAF0FA', // texto principal (casi blanco azulado)
-  textSecondary: '#A6B4CC', // texto secundario
-  textTertiary: '#6C7C99', // placeholders y meta
+  text: '#EAF2F1', // texto principal (casi blanco con matiz teal)
+  textSecondary: '#A6B7BC', // texto secundario
+  textTertiary: '#6E8088', // placeholders y meta
 
-  border: '#26303F', // borde suave
-  borderLight: '#1C2533', // divisor casi invisible
-  borderStrong: '#3A4860', // borde con presencia
+  border: '#243135', // borde suave
+  borderLight: '#1B262A', // divisor casi invisible
+  borderStrong: '#384A50', // borde con presencia
 
-  disabled: '#3A4659',
-  overlay: 'rgba(0, 0, 0, 0.55)', // dimmed detrás de modales
+  disabled: '#384A50',
+  overlay: 'rgba(0, 0, 0, 0.58)', // dimmed detrás de modales
   transparent: 'transparent',
   white: '#FFFFFF',
-  black: '#0E1420',
+  black: '#0C1417',
+
+  onColorText: '#FFFFFF',
+  onColorTextStrong: 'rgba(255,255,255,0.92)',
+  onColorTextSoft: 'rgba(255,255,255,0.86)',
+  onColorTextFaint: 'rgba(255,255,255,0.76)',
+  onColorSurface: 'rgba(255,255,255,0.14)',
+  onColorSurfaceStrong: 'rgba(255,255,255,0.20)',
+  onColorSurfaceFaint: 'rgba(255,255,255,0.08)',
+  onColorTrack: 'rgba(255,255,255,0.24)',
+
+  bannerBackground: '#0A1F25',
 } as const;
 
 /**
- * Acento del rol gestante — lavanda sereno (desaturado).
- * Transmite cuidado y serenidad femenina sin la energía del púrpura vibrante.
+ * Acento del rol gestante — teal-esmeralda de salud.
+ * Transmite vida, cuidado y crecimiento. Texto blanco encima cumple AA (4.76:1).
  */
 export const gestanteColors = {
-  primary: '#7468C4', // lavanda sereno (cumple WCAG AA 4.5:1 con texto blanco)
-  primaryDark: '#625699', // hover / estados activos (alias compat)
-  primaryLight: '#F3F1FB', // fondo ultra suave
-  primaryMid: '#E7E3F6', // chips y badges
+  primary: '#0C8174', // teal-esmeralda sereno (WCAG AA con texto blanco)
+  primaryDark: '#0A6B60', // hover / estados activos (alias compat)
+  primaryLight: '#E7F4F2', // fondo ultra suave
+  primaryMid: '#CDE9E5', // chips y badges
   onPrimary: '#FFFFFF',
-  gradient: ['#9389D6', '#7468C4'] as const, // headers (suaves)
+  gradient: ['#16A394', '#0C8174'] as const, // headers (frescos, serenos)
 } as const;
 
 /**
- * Acento del rol obstetra — azul confianza (sereno, no eléctrico).
- * Calma y profesionalismo clínico.
+ * Acento del rol obstetra — azul clínico sereno.
+ * Calma y profesionalismo médico, sin la frialdad del azul eléctrico.
  */
 export const obstetraColors = {
-  primary: '#4A90D9', // azul sereno y profesional
-  primaryDark: '#3A78BD', // hover / estados activos (alias compat)
-  primaryLight: '#EDF4FB', // fondo ultra suave
-  primaryMid: '#D8E8F6', // chips y badges
+  primary: '#2C6EA8', // azul clínico profesional
+  primaryDark: '#235980', // hover / estados activos (alias compat)
+  primaryLight: '#E8F1F8', // fondo ultra suave
+  primaryMid: '#D0E2F0', // chips y badges
   onPrimary: '#FFFFFF',
-  gradient: ['#5FA3E0', '#4A90D9'] as const, // headers
+  gradient: ['#3D86C4', '#2C6EA8'] as const, // headers
 } as const;
 
-/** Acento del rol admin (slate azulado profesional, con más vida) */
+/** Acento del rol admin (slate azulado profesional) */
 export const adminColors = {
-  primary: '#3D5A80', // slate con matiz azul (más vivo que el gris neutro)
-  primaryDark: '#2C4566',
-  primaryLight: '#EEF3FA', // fondo ultra suave azulado
-  primaryMid: '#DCE7F5', // chips y badges
+  primary: '#3C5168', // slate con matiz azul, sobrio
+  primaryDark: '#2C3D50',
+  primaryLight: '#ECF0F4', // fondo ultra suave
+  primaryMid: '#D8E0E9', // chips y badges
   onPrimary: '#FFFFFF',
-  gradient: ['#4A6E96', '#3D5A80'] as const, // headers
+  gradient: ['#4C657F', '#3C5168'] as const, // headers
 } as const;
 
-/** CTA secundario compartido (teal) — conservado para compatibilidad */
+/** CTA secundario compartido (teal claro) — conservado para compatibilidad */
 export const accentColors = {
-  teal: '#06B6D4',
-  tealDark: '#0891B2',
-  tealLight: '#CFFAFE',
+  teal: '#0C8174',
+  tealDark: '#0A6B60',
+  tealLight: '#E7F4F2',
   /** Verde de marca WhatsApp (botón de contacto). */
   whatsapp: '#25D366',
   /** Fondo verde muy claro para íconos/sumarios de WhatsApp. */
@@ -141,23 +157,23 @@ export const accentColors = {
 export const chatColors = {
   readReceipt: '#9BE7FF', // doble check "visto" (azul claro)
   tickOnBubble: 'rgba(255,255,255,0.6)', // check sencillo sobre burbuja propia
-  timeOnBubble: 'rgba(255,255,255,0.75)', // hora sobre burbuja propia
+  timeOnBubble: 'rgba(255,255,255,0.78)', // hora sobre burbuja propia
 } as const;
 
-/** Colores semánticos (suavizados; mantienen significado inequívoco) */
+/** Colores semánticos (serenos; mantienen significado inequívoco) */
 export const semanticColors = {
-  success: '#2EA66E', // verde salud, sereno
-  successMid: '#BBEFD2',
-  successLight: '#EEF9F2',
-  warning: '#E0A23B', // ámbar cálido
-  warningMid: '#FBE6BC',
-  warningLight: '#FCF6EA',
-  danger: '#E05656', // rojo claro e inequívoco — reservado a urgencias
-  dangerMid: '#F6C9C9',
-  dangerLight: '#FCEFEF',
-  info: '#4A90D9', // = azul obstetra (coherencia)
-  infoMid: '#D8E8F6',
-  infoLight: '#EDF4FB',
+  success: '#1F9D6B', // verde salud, sereno
+  successMid: '#BBEAD3',
+  successLight: '#EAF7F0',
+  warning: '#B07A14', // ámbar cálido (AA sobre superficie)
+  warningMid: '#F6E3B8',
+  warningLight: '#FBF4E5',
+  danger: '#D64545', // rojo claro e inequívoco — reservado a urgencias
+  dangerMid: '#F4C6C6',
+  dangerLight: '#FBEDED',
+  info: '#2C6EA8', // = azul obstetra (coherencia)
+  infoMid: '#D0E2F0',
+  infoLight: '#E8F1F8',
 } as const;
 
 /**
@@ -165,23 +181,23 @@ export const semanticColors = {
  * Nunca se usan solos: siempre acompañados de etiqueta de texto.
  */
 export const riskColors = {
-  riskGreen: '#2EA66E',
-  riskGreenMid: '#BBEFD2',
-  riskGreenLight: '#EEF9F2',
-  riskYellow: '#E0A23B',
-  riskYellowMid: '#FBE6BC',
-  riskYellowLight: '#FCF6EA',
-  riskRed: '#E05656',
-  riskRedMid: '#F6C9C9',
-  riskRedLight: '#FCEFEF',
+  riskGreen: '#1F9D6B',
+  riskGreenMid: '#BBEAD3',
+  riskGreenLight: '#EAF7F0',
+  riskYellow: '#B07A14',
+  riskYellowMid: '#F6E3B8',
+  riskYellowLight: '#FBF4E5',
+  riskRed: '#D64545',
+  riskRedMid: '#F4C6C6',
+  riskRedLight: '#FBEDED',
 } as const;
 
 /** Colores de odontograma / mapa dental */
 export const dentalColors = {
-  treated: '#3A86FF', // dientes con tratamiento previo
-  pending: '#F59E0B', // dientes recomendados para tratar
-  done: '#10B981',
-  toDo: '#F59E0B',
+  treated: '#2C6EA8', // dientes con tratamiento previo
+  pending: '#B07A14', // dientes recomendados para tratar
+  done: '#1F9D6B',
+  toDo: '#B07A14',
 } as const;
 
 export const colors = {

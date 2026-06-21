@@ -84,7 +84,7 @@ export function AppInput<T extends FieldValues>({
         );
     return {
       borderColor,
-      borderWidth: focusAnim.value > 0.5 ? 2 : 1,
+      borderWidth: focusAnim.value > 0.5 ? 1.5 : 1,
     };
   });
 
@@ -196,10 +196,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: commonColors.surfaceAlt,
-    borderRadius: 16,
+    borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: commonColors.border, // visible border for contrast
-    minHeight: 52, // increased height for better touch target
+    minHeight: 52, // touch target ≥48
   },
   // Multilínea: alinear arriba y dejar que el alto lo defina el TextInput.
   inputContainerMultiline: {

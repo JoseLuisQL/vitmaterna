@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, LucideIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { commonColors } from '../../theme/colors';
+import { commonColors, obstetraColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 
@@ -129,7 +129,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   if (isGradient) {
     return (
       <LinearGradient
-        colors={gradientColors ?? ['#5FA3E0', '#4A90D9']}
+        colors={gradientColors ?? obstetraColors.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradientContainer, { paddingTop: insets.top + spacing.sm }, style]}

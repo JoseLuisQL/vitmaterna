@@ -169,7 +169,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
     onPress();
   }, [hapticOn, onPress]);
 
-  const radius = rounded ? borderRadius.full : borderRadius.lg;
+  const radius = rounded ? borderRadius.full : borderRadius.md;
 
   const containerStyle: ViewStyle[] = [
     styles.base,
@@ -183,7 +183,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
           ? commonColors.transparent
           : variantStyle.bg,
       borderColor: isDisabled ? commonColors.disabled : variantStyle.border,
-      borderWidth: variant === 'outline' ? 1.5 : 0,
+      borderWidth: variant === 'outline' ? 1.25 : 0,
     },
     variant === 'primary' && !isDisabled && !useGradient && shadows.card,
     useGradient && coloredGlow(gradientColors[gradientColors.length - 1]),

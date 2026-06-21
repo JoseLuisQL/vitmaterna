@@ -41,11 +41,11 @@ export interface ClinicReportData {
   priority: ReportPriorityRow[];
 }
 
-const BRAND = '#4A90D9';
-const BRAND_DARK = '#3A78BD';
-const INK = '#232A33';
-const MUTED = '#5E6B7A';
-const LINE = '#EAEDF2';
+const BRAND = '#2C6EA8';
+const BRAND_DARK = '#235980';
+const INK = '#16242B';
+const MUTED = '#566873';
+const LINE = '#E7ECEE';
 
 const esc = (s: unknown): string =>
   String(s ?? '')

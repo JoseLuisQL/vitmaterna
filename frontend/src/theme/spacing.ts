@@ -52,20 +52,20 @@ export const stack = {
 } as const;
 
 export const borderRadius = {
-  /** 4px - Minimal rounding */
-  xs: 4,
-  /** 8px - Subtle rounding */
-  sm: 8,
-  /** 12px - Default rounding */
-  md: 12,
-  /** 16px - Card rounding */
-  lg: 16,
-  /** 20px - Large card rounding (default for AppCard) */
-  xl: 20,
-  /** 24px - Extra large rounding */
-  xxl: 24,
-  /** 32px - Hero rounding */
-  xxxl: 32,
+  /** 6px - Minimal rounding (chips, small controls) */
+  xs: 6,
+  /** 10px - Subtle rounding (inputs, badges) */
+  sm: 10,
+  /** 14px - Default rounding (buttons, list rows) */
+  md: 14,
+  /** 18px - Card rounding */
+  lg: 18,
+  /** 22px - Large card rounding (default for AppCard) */
+  xl: 22,
+  /** 28px - Extra large rounding (sheets, hero cards) */
+  xxl: 28,
+  /** 34px - Hero rounding */
+  xxxl: 34,
   /** 9999px - Full circle / pill */
   full: 9999,
 } as const;

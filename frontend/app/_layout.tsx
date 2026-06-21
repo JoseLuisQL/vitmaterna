@@ -38,15 +38,15 @@ initOutbox(queryClient);
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.textContent = `
-    * { scrollbar-width: thin; scrollbar-color: #C5CDD9 transparent; }
+    * { scrollbar-width: thin; scrollbar-color: #C6D0D3 transparent; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background-color: #C5CDD9; border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
-    ::-webkit-scrollbar-thumb:hover { background-color: #9AA6B4; }
+    ::-webkit-scrollbar-thumb { background-color: #C6D0D3; border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background-color: #7E8F99; }
     @media (prefers-color-scheme: dark) {
-      * { scrollbar-color: #3A4659 transparent; }
-      ::-webkit-scrollbar-thumb { background-color: #3A4659; }
-      ::-webkit-scrollbar-thumb:hover { background-color: #6C7C99; }
+      * { scrollbar-color: #384A50 transparent; }
+      ::-webkit-scrollbar-thumb { background-color: #384A50; }
+      ::-webkit-scrollbar-thumb:hover { background-color: #6E8088; }
     }
   `;
   document.head.appendChild(style);

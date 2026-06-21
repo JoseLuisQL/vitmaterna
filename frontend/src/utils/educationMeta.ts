@@ -7,7 +7,7 @@ import {
   BookOpen, Apple, Pill, Baby, HeartPulse, Brain, Sparkles, ShieldAlert,
   FileText, Image as ImageIcon, Video, Headphones, HelpCircle, type LucideIcon,
 } from 'lucide-react-native';
-import { semanticColors, gestanteColors } from '../theme/colors';
+import { semanticColors, gestanteColors, obstetraColors, accentColors } from '../theme/colors';
 
 export interface CategoryMeta {
   key: string;
@@ -18,13 +18,13 @@ export interface CategoryMeta {
 }
 
 export const CATEGORY_META: Record<string, CategoryMeta> = {
-  nutricion: { key: 'nutricion', label: 'Nutrición', icon: Apple, color: '#30A46C', bg: '#E7F6EE' },
-  suplementos: { key: 'suplementos', label: 'Suplementos', icon: Pill, color: '#8B7FD4', bg: '#F3F1FB' },
-  signos_alarma: { key: 'signos_alarma', label: 'Signos de alarma', icon: ShieldAlert, color: '#E5484D', bg: '#FDECEC' },
-  parto: { key: 'parto', label: 'Parto', icon: HeartPulse, color: '#E5484D', bg: '#FDECEC' },
-  lactancia: { key: 'lactancia', label: 'Lactancia', icon: Baby, color: '#F5A623', bg: '#FEF4E6' },
-  cuidado_bebe: { key: 'cuidado_bebe', label: 'Cuidado del bebé', icon: Sparkles, color: '#4A90D9', bg: '#EDF4FB' },
-  salud_mental: { key: 'salud_mental', label: 'Salud mental', icon: Brain, color: '#0EA5B7', bg: '#E4F7F9' },
+  nutricion: { key: 'nutricion', label: 'Nutrición', icon: Apple, color: semanticColors.success, bg: semanticColors.successLight },
+  suplementos: { key: 'suplementos', label: 'Suplementos', icon: Pill, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
+  signos_alarma: { key: 'signos_alarma', label: 'Signos de alarma', icon: ShieldAlert, color: semanticColors.danger, bg: semanticColors.dangerLight },
+  parto: { key: 'parto', label: 'Parto', icon: HeartPulse, color: semanticColors.danger, bg: semanticColors.dangerLight },
+  lactancia: { key: 'lactancia', label: 'Lactancia', icon: Baby, color: semanticColors.warning, bg: semanticColors.warningLight },
+  cuidado_bebe: { key: 'cuidado_bebe', label: 'Cuidado del bebé', icon: Sparkles, color: obstetraColors.primary, bg: obstetraColors.primaryLight },
+  salud_mental: { key: 'salud_mental', label: 'Salud mental', icon: Brain, color: accentColors.teal, bg: accentColors.tealLight },
   general: { key: 'general', label: 'General', icon: BookOpen, color: gestanteColors.primary, bg: gestanteColors.primaryLight },
 };
 

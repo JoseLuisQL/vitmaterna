@@ -61,10 +61,10 @@ export const AppCard: React.FC<AppCardProps> = ({
   const cardStyle: StyleProp<ViewStyle> = [
     styles.card,
     elevated ? shadows.float : shadows.card,
-    highlighted && { borderWidth: 1.5, borderColor: accentColor },
+    highlighted && { borderWidth: 1, borderColor: accentColor },
     highlighted && coloredGlow(accentColor),
     bordered && !highlighted && styles.bordered,
-    noPadding ? undefined : { padding: padding ?? spacing.md },
+    noPadding ? undefined : { padding: padding ?? spacing.md2 },
     style,
   ];
 
