@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Search, X, Baby } from 'lucide-react-native';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
+import { PrenatalRibbon } from '../../../src/components/ui/PrenatalRibbon';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
@@ -17,7 +18,7 @@ import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { usePatients } from '../../../src/services/api-queries';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { useResponsive } from '../../../src/theme/responsive';
-import { commonColors, adminColors, semanticColors } from '../../../src/theme/colors';
+import { commonColors, adminColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
@@ -65,7 +66,20 @@ export default function AdminGestantesScreen(): React.ReactElement {
         ),
       },
       { key: 'dni', header: 'DNI', width: 120, sortValue: (p) => p.documentNumber || '', render: (p) => p.documentNumber || '—' },
-      { key: 'sem', header: 'Semanas', width: 110, align: 'center', sortValue: (p) => p.currentWeek || 0, render: (p) => (p.currentWeek ? `${p.currentWeek} sem` : '—') },
+      {
+        key: 'sem', header: 'Avance', width: 200, sortValue: (p) => Number(p.currentWeek) || 0,
+        render: (p) =>
+          p.currentWeek ? (
+            <View style={styles.tableRibbonCell}>
+              <Text style={styles.tableRibbonLabel} numberOfLines={1}>
+                Sem {p.currentWeek}{p.currentTrimester ? ` · ${p.currentTrimester}° trim` : ''}
+              </Text>
+              <PrenatalRibbon week={Number(p.currentWeek)} colors={adminColors.gradient} showCaption={false} animated={false} />
+            </View>
+          ) : (
+            '—'
+          ),
+      },
       { key: 'riesgo', header: 'Riesgo', width: 120, align: 'center', sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => riskBadge(p.riskLevel) },
     ];
 
@@ -149,12 +163,17 @@ export default function AdminGestantesScreen(): React.ReactElement {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.avatar}><Text style={styles.avatarText}>{(item.firstName?.[0] || '') + (item.lastName?.[0] || '')}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
-              <Text style={styles.meta}>DNI: {item.documentNumber || '—'}{item.currentWeek ? ` · ${item.currentWeek} sem` : ''}</Text>
+            <View style={styles.cardRow}>
+              <View style={styles.avatar}><Text style={styles.avatarText}>{(item.firstName?.[0] || '') + (item.lastName?.[0] || '')}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
+                <Text style={styles.meta}>DNI: {item.documentNumber || '—'}{item.currentWeek ? ` · ${item.currentWeek} sem` : ''}</Text>
+              </View>
+              <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
             </View>
-            <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
+            {item.currentWeek ? (
+              <PrenatalRibbon week={Number(item.currentWeek)} colors={adminColors.gradient} showCaption={false} animated={false} style={styles.cardRibbon} />
+            ) : null}
           </View>
         )}
         contentContainerStyle={styles.list}
@@ -184,7 +203,9 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   filterChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
   filterChipTextActive: { color: commonColors.white },
-  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  cardRibbon: { marginTop: spacing.sm2 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   avatarText: { ...typography.bodyMedium, fontWeight: '700', color: BRAND },
   name: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
@@ -197,4 +218,6 @@ const styles = StyleSheet.create({
   tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
+  tableRibbonCell: { width: '100%', gap: 4 },
+  tableRibbonLabel: { ...typography.caption, color: commonColors.textSecondary },
 });

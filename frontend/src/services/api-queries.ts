@@ -37,11 +37,28 @@ const mapAppointment = (appt: any) => ({
   modalidad: appt.modalidad || 'establecimiento',
 });
 
+/**
+ * Edad gestacional derivada de la FPP (por FUM o por eco). Fuente única para que
+ * la cinta prenatal muestre el mismo avance en el dashboard, la lista y la ficha.
+ * Devuelve la semana (1–42) y el trimestre, o null si no hay FPP válida.
+ */
+const gestationalAge = (fppRef?: string | Date | null): { week: number | null; trimester: number | null } => {
+  if (!fppRef) return { week: null, trimester: null };
+  const fpp = new Date(fppRef);
+  if (isNaN(fpp.getTime())) return { week: null, trimester: null };
+  const diffWeeks = Math.ceil((fpp.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 7));
+  const week = 40 - diffWeeks;
+  if (week <= 0 || week > 42) return { week: null, trimester: null };
+  return { week, trimester: week <= 13 ? 1 : week <= 27 ? 2 : 3 };
+};
+
 const mapPatient = (gestante: any) => {
   const age = gestante.user?.fechaNacimiento 
     ? new Date().getFullYear() - new Date(gestante.user.fechaNacimiento).getFullYear()
     : gestante.ageAtRegistration || 28;
-    
+
+  const { week, trimester } = gestationalAge(gestante.fppFum || gestante.fppEco);
+
   return {
     id: gestante.id || gestante._id,
     firstName: gestante.user?.firstName || '',
@@ -49,6 +66,11 @@ const mapPatient = (gestante: any) => {
     documentNumber: gestante.dni || gestante.user?.dni || '',
     age,
     riskLevel: gestante.nivelRiesgo === 'rojo' ? 'Alto' : gestante.nivelRiesgo === 'amarillo' ? 'Medio' : 'Bajo',
+    // Avance del embarazo para la cinta prenatal en listas (obstetra y admin).
+    currentWeek: week != null ? String(week) : null,
+    currentTrimester: trimester,
+    estimatedDueDate: gestante.fppFum || gestante.fppEco || null,
+    historiaClinica: gestante.historiaClinica || null,
     // Predicción de inasistencia calculada por el servidor (utils/noShowPrediction).
     noShowRisk: gestante.riesgoInasistencia
       ? {
@@ -69,21 +91,10 @@ const mapPatientProfile = (g: any) => {
     ? new Date().getFullYear() - new Date(fechaNac).getFullYear()
     : (g.ageAtRegistration ?? null);
 
-  // Edad gestacional / trimestre: se calcula desde la FPP (por FUM o por eco).
-  let currentWeek: string | null = null;
-  let currentTrimester: number | null = null;
-  const fppRef = g.fppFum || g.fppEco;
-  if (fppRef) {
-    const today = new Date();
-    const fpp = new Date(fppRef);
-    const diffTime = fpp.getTime() - today.getTime();
-    const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
-    const calculated = 40 - diffWeeks;
-    if (calculated > 0 && calculated <= 42) {
-      currentWeek = calculated.toString();
-      currentTrimester = calculated <= 13 ? 1 : calculated <= 27 ? 2 : 3;
-    }
-  }
+  // Edad gestacional / trimestre: misma fuente que las listas (gestationalAge).
+  const { week: egWeek, trimester: egTrimester } = gestationalAge(g.fppFum || g.fppEco);
+  const currentWeek: string | null = egWeek != null ? String(egWeek) : null;
+  const currentTrimester: number | null = egTrimester;
 
   // Calcular IMC si hay datos
   let imc: string | null = null;
