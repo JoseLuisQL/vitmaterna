@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import {
   ChevronLeft, Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale, Activity, Smile,
 } from 'lucide-react-native';
@@ -260,7 +261,7 @@ export default function TamizajesScreen(): React.ReactElement {
       >
         <SafeAreaView edges={['top']}>
           <View style={styles.headerNav}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.iconBtnGlass}>
+            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} style={styles.iconBtnGlass}>
               <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Tamizajes y registros</Text>

@@ -5,6 +5,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain, ArrowLeft } from 'lucide-react-native';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
@@ -214,7 +215,7 @@ export default function SedesScreen(): React.ReactElement {
       title="Establecimientos"
       subtitle="Sedes del centro de salud"
       showBack={router.canGoBack()}
-      onBack={() => router.back()}
+      onBack={() => goBack(router, '/(admin)/(tabs)' as any)}
       width="full"
       scroll={webShell}
       actions={

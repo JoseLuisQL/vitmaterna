@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../src/utils/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { ChevronLeft, Megaphone, Users } from 'lucide-react-native';
 import api from '../../src/services/api';
@@ -39,7 +40,7 @@ export default function MensajeMasivoScreen(): React.ReactElement {
     },
     onSuccess: (data) => {
       toast.success('Mensaje enviado', `Llegó a ${data?.enviados ?? 0} gestante(s).`);
-      router.back();
+      goBack(router, '/(obstetra)/(tabs)' as any);
     },
     onError: () => {
       toast.error('No se pudo enviar', 'Inténtalo de nuevo en unos momentos.');

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../src/utils/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -118,7 +119,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={isWeb ? styles.webAuthCard : undefined}>
-            <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
+            <Pressable onPress={() => goBack(router, '/(auth)/login' as any)} style={styles.backButton} hitSlop={12}>
               <ArrowLeft size={24} color={commonColors.text} />
               <Text style={styles.backText}>Volver</Text>
             </Pressable>

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { AppButton } from '../../../src/components/ui/AppButton';
@@ -138,7 +139,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
       title="Canales de notificación"
       subtitle="SMS y WhatsApp para mensajes reales"
       showBack={router.canGoBack()}
-      onBack={() => router.back()}
+      onBack={() => goBack(router, '/(admin)/(tabs)' as any)}
       width="full"
       scroll={false}
     >

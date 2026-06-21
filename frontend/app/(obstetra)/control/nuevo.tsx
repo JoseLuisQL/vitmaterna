@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
@@ -105,7 +106,7 @@ export default function NuevoControlScreen(): React.ReactElement {
       {
         onSuccess: () => {
           toast.success('Control registrado', 'El control prenatal se guardó correctamente.');
-          router.back();
+          goBack(router, '/(obstetra)/(tabs)/gestantes' as any);
         },
         onError: () => toast.error('No se pudo registrar', 'Revisa los datos e inténtalo de nuevo.'),
       },
@@ -122,7 +123,7 @@ export default function NuevoControlScreen(): React.ReactElement {
       >
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} style={styles.backButton}>
               <ChevronLeft size={28} color={commonColors.white} />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>

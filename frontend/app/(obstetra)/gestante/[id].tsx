@@ -37,6 +37,7 @@ import { useFeatureFlags } from '../../../src/hooks/useFeatureFlags';
 import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterinaChart';
 import { confirmAction } from '../../../src/utils/confirm';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
+import { goBack } from '../../../src/utils/navigation';
 
 const BRAND = obstetraColors.primary;
 
@@ -715,7 +716,7 @@ export default function PatientProfileScreen(): React.ReactElement {
         >
           <SafeAreaView edges={['top']}>
             <View style={styles.headerNav}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.iconBtnGlass}>
+              <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes')} style={styles.iconBtnGlass}>
                 <ChevronLeft size={24} color={commonColors.white} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Historia Clínica</Text>
@@ -738,7 +739,7 @@ export default function PatientProfileScreen(): React.ReactElement {
           title="Paciente No Encontrada"
           description="No se pudo localizar el perfil de la paciente."
           actionTitle="Volver"
-          onAction={() => router.back()}
+          onAction={() => goBack(router, '/(obstetra)/(tabs)/gestantes')}
           themeColor={obstetraColors.primary}
         />
       </View>
@@ -813,7 +814,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       >
         <SafeAreaView edges={['top']}>
           <View style={styles.headerNav}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.iconBtnGlass}>
+            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes')} style={styles.iconBtnGlass}>
               <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Historia Clínica</Text>

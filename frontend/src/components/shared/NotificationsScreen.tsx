@@ -25,6 +25,7 @@ import {
   type AppNotification,
 } from '../../services/api-queries';
 import { confirmAction } from '../../utils/confirm';
+import { goBack } from '../../utils/navigation';
 import { useToast } from '../ui';
 import { BellOff } from 'lucide-react-native';
 import { EmptyState } from '../ui/EmptyState';
@@ -320,8 +321,8 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
         role={role}
         title="Notificaciones"
         subtitle={unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día'}
-        showBack={router.canGoBack()}
-        onBack={() => router.back()}
+        showBack
+        onBack={() => goBack(router, (role === 'neutral' ? '/' : `/(${role})/(tabs)`) as any)}
         scroll={false}
         width={webShell ? 'readable' : 'full'}
         actions={

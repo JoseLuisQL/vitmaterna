@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../src/utils/navigation';
 import {
   AlertTriangle, Send, CheckCircle, Phone,
   Frown, Thermometer, Activity, Droplets, Droplet,
@@ -138,7 +139,7 @@ export default function AlarmScreen(): React.ReactElement {
         <Text style={styles.resetBtnText}>Reportar otro síntoma</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.resetBtn} onPress={() => router.back()}>
+      <TouchableOpacity style={styles.resetBtn} onPress={() => goBack(router, '/(gestante)/(tabs)' as any)}>
         <Text style={styles.resetBtnText}>Volver al inicio</Text>
       </TouchableOpacity>
     </View>
@@ -272,7 +273,7 @@ export default function AlarmScreen(): React.ReactElement {
       <LinearGradient colors={gradients.danger.colors} start={gradients.danger.start} end={gradients.danger.end} style={styles.headerGradient}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => goBack(router, '/(gestante)/(tabs)' as any)}
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >

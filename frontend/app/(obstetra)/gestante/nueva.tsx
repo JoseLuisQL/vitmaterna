@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -199,7 +200,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
         'Gestante registrada',
         'Su cronograma de controles se generó a partir de la FUM. El usuario inicial es su propio DNI.',
       );
-      router.back();
+      goBack(router, '/(obstetra)/(tabs)/gestantes' as any);
     } catch (err: any) {
       // Si el backend devuelve conflicto de DNI, volvemos al paso 1 y lo marcamos.
       const code = err?.response?.data?.error?.code;
@@ -257,7 +258,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
           title="Registrar nueva gestante"
           subtitle="Formulario clínico de ingreso"
           showBack
-          onBack={() => router.back()}
+          onBack={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)}
           width="full"
           scroll={true}
         >
@@ -491,7 +492,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerContainer}>
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Volver">
+            <TouchableOpacity style={styles.backButton} onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} accessibilityLabel="Volver">
               <ArrowLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>

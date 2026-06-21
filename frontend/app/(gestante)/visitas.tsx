@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin, CheckCircle2, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../src/utils/navigation';
 import { useMyProfile, useHomeVisits, useUpdateUbicacion } from '../../src/services/api-queries';
 import { useToast } from '../../src/components/ui';
 import { CardSkeleton } from '../../src/components/ui/SkeletonLoader';
@@ -171,7 +172,7 @@ export default function VisitasGestante(): React.ReactElement {
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']} style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => goBack(router, '/(gestante)/(tabs)' as any)} hitSlop={10} style={styles.backBtn}>
             <ChevronLeft size={24} color={commonColors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Visitas domiciliarias</Text>

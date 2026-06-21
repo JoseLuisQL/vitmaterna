@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../src/utils/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -183,7 +184,7 @@ export default function RegisterScreen(): React.ReactElement {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
+            <Pressable onPress={() => goBack(router, '/(auth)/login' as any)} style={styles.backButton} hitSlop={12}>
               <ChevronLeft size={28} color={commonColors.text} />
             </Pressable>
             <Text style={styles.headerTitle}>Crear Cuenta</Text>

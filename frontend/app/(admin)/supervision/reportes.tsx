@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import { ArrowLeft, Download, Sheet, Users, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { AutoGrid, useToast } from '../../../src/components/ui';
@@ -118,7 +119,7 @@ export default function AdminReportesScreen(): React.ReactElement {
       title="Reportes"
       subtitle="Indicadores globales"
       showBack={router.canGoBack()}
-      onBack={() => router.back()}
+      onBack={() => goBack(router, '/(admin)/(tabs)' as any)}
       width="full"
       scroll={false} // Custom scroll handling inside since we use loading skeleton
       actions={

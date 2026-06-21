@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, StatusBa
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { goBack } from '../../../src/utils/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Heart, Clock, ExternalLink, PlayCircle, CheckCircle2 } from 'lucide-react-native';
 import { RichText } from '../../../src/components/ui';
@@ -59,7 +60,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
     return (
       <View style={styles.container}>
         <SafeAreaView edges={['top']} style={{ padding: spacing.lg }}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtnPlain} accessibilityLabel="Volver" accessibilityRole="button">
+          <TouchableOpacity onPress={() => goBack(router, '/(gestante)/(tabs)/educacion' as any)} style={styles.backBtnPlain} accessibilityLabel="Volver" accessibilityRole="button">
             <ArrowLeft size={24} color={commonColors.text} />
           </TouchableOpacity>
           <Text style={styles.notFound}>
