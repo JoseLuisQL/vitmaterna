@@ -1,21 +1,19 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ChevronLeft, Activity, Baby, Stethoscope } from 'lucide-react-native';
+import { Activity, Baby, Stethoscope } from 'lucide-react-native';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useCreateControl } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
-import { WebMaxWidth } from '../../../src/components/web';
 import { useResponsive } from '../../../src/theme/responsive';
 import { shadows } from '../../../src/theme/shadows';
 
@@ -114,28 +112,16 @@ export default function NuevoControlScreen(): React.ReactElement {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={obstetraColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerContainer}
-      >
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} style={styles.backButton}>
-              <ChevronLeft size={28} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>Nuevo Control</Text>
-              <Text style={styles.headerSubtitle}>Registro de control prenatal</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <WebMaxWidth width="full">
+    <ScreenLayout
+      role="obstetra"
+      title="Nuevo control"
+      subtitle="Registro de control prenatal"
+      showBack
+      onBack={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)}
+      accentColor={BRAND}
+      width="full"
+      contentStyle={styles.scrollContent}
+    >
         <View style={styles.noteCard}>
           <Text style={styles.noteText}>
             Registro rápido del control. Solo la semana gestacional es obligatoria
@@ -187,25 +173,13 @@ export default function NuevoControlScreen(): React.ReactElement {
             </View>
           </View>
         </View>
-        </WebMaxWidth>
-      </ScrollView>
-    </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerContainer: { 
-    paddingBottom: spacing.md,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, marginTop: spacing.sm },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.onColorSurface, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm2 },
-  headerTitleContainer: { flex: 1 },
-  headerTitle: { ...typography.h3, color: commonColors.white },
-  headerSubtitle: { ...typography.caption, color: commonColors.onColorTextSoft },
-  scrollContent: { paddingHorizontal: spacing.md, paddingTop: spacing.md2, paddingBottom: 40 },
+  scrollContent: { paddingTop: spacing.md2 },
   noteCard: { backgroundColor: obstetraColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md },
   noteText: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18 },
   sectionCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md, ...shadows.card },
