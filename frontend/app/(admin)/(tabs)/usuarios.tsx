@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: spacing.lg,
-    marginTop: -spacing.lg,
+    paddingTop: spacing.md,
     marginBottom: spacing.sm,
   },
 

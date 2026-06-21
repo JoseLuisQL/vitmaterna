@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...typography.body, color: commonColors.onColorTextSoft },
   searchContainer: {
     paddingHorizontal: spacing.lg,
-    marginTop: -spacing.lg,
+    paddingTop: spacing.md,
     marginBottom: spacing.sm,
   },
   filtersScrollWrapper: {
