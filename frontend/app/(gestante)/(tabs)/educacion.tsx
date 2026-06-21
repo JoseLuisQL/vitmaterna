@@ -309,7 +309,7 @@ export default function EducacionScreen(): React.ReactElement {
   const [categoria, setCategoria] = useState<string | null>(null);
   const [toolsVisible, setToolsVisible] = useState(false);
 
-  const { data: eduData, isLoading } = useEducation();
+  const { data: eduData, isLoading, isError, refetch } = useEducation();
   const { markRead, toggleFavorite, isRead, isFavorite } = useEducationProgress();
 
   const allContents = eduData?.contents || [];
@@ -421,21 +421,36 @@ export default function EducacionScreen(): React.ReactElement {
     </View>
   );
 
-  const renderEmpty = () => (
-    <View style={styles.emptyWrap}>
-      <BookOpen size={42} color={commonColors.textTertiary} />
-      <Text style={styles.emptyTitle}>
-        {seccion === 'favoritos' ? 'Aún no tienes favoritos' : 'Sin contenido por ahora'}
-      </Text>
-      <Text style={styles.emptyText}>
-        {seccion === 'favoritos'
-          ? 'Toca el corazón en un artículo para guardarlo aquí.'
-          : query || categoria
-          ? 'No encontramos contenido con ese filtro. Prueba con otra búsqueda.'
-          : 'Tu obstetra publicará contenido educativo pronto.'}
-      </Text>
-    </View>
-  );
+  const renderEmpty = () =>
+    isError ? (
+      <View style={styles.emptyWrap}>
+        <BookOpen size={42} color={commonColors.textTertiary} />
+        <Text style={styles.emptyTitle}>No se pudo cargar la educación</Text>
+        <Text style={styles.emptyText}>Revisa tu conexión y vuelve a intentar.</Text>
+        <AppButton
+          title="Reintentar"
+          onPress={() => refetch()}
+          variant="outline"
+          size="sm"
+          themeColor={BRAND}
+          style={{ marginTop: spacing.md }}
+        />
+      </View>
+    ) : (
+      <View style={styles.emptyWrap}>
+        <BookOpen size={42} color={commonColors.textTertiary} />
+        <Text style={styles.emptyTitle}>
+          {seccion === 'favoritos' ? 'Aún no tienes favoritos' : 'Sin contenido por ahora'}
+        </Text>
+        <Text style={styles.emptyText}>
+          {seccion === 'favoritos'
+            ? 'Toca el corazón en un artículo para guardarlo aquí.'
+            : query || categoria
+            ? 'No encontramos contenido con ese filtro. Prueba con otra búsqueda.'
+            : 'Tu obstetra publicará contenido educativo pronto.'}
+        </Text>
+      </View>
+    );
 
   const mainList = (
     <FlashList
