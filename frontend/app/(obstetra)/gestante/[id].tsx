@@ -18,7 +18,7 @@ import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs, PrenatalRibbon } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, webLayout } from '../../../src/theme/spacing';
@@ -966,6 +966,17 @@ export default function PatientProfileScreen(): React.ReactElement {
                     </View>
                   </View>
                 </View>
+                {/* Cinta prenatal: continuidad del embarazo a la vista, con el
+                    acento del obstetra. Es la misma firma que ve la gestante. */}
+                {Number(patient.currentWeek) > 0 ? (
+                  <View style={styles.statusRibbon}>
+                    <PrenatalRibbon
+                      week={Number(patient.currentWeek)}
+                      colors={obstetraColors.gradient}
+                      showCaption={false}
+                    />
+                  </View>
+                ) : null}
               </View>
 
               {/* 2. ALERTAS ACCIONABLES — lo único que requiere atención.
@@ -2292,6 +2303,13 @@ const styles = StyleSheet.create({
   statusMetricTexts: { flex: 1, minWidth: 0 },
   statusMetricVal: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
   statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary, marginTop: 1 },
+  statusRibbon: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+  },
 
   resumenAlertaRow: {
     flexDirection: 'row',
