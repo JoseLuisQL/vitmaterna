@@ -202,9 +202,10 @@ export default function ConfigScreen(): React.ReactElement {
       </View>
 
       <AppButton
-        title="Guardar Cambios"
+        title="Guardar cambios"
         onPress={handleSubmit(onSubmit)}
         variant="primary"
+        themeColor={BRAND}
         style={StyleSheet.flatten([styles.submitBtn, webShell && styles.submitBtnWeb])}
         icon={Save}
         loading={updateConfigMutation.isPending}
@@ -247,7 +248,6 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: spacing.md,
-    backgroundColor: BRAND,
   },
   submitBtnWeb: {
     maxWidth: 320,
