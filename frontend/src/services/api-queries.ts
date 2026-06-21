@@ -181,10 +181,22 @@ const mapPatientProfile = (g: any) => {
       const hb1 = findLab('hemoglobina', 1);
       const hb2 = findLab('hemoglobina', 2);
       const hb3 = findLab('hemoglobina', 3);
+      const hbVal = (l: any) => (l?.valorNumerico != null ? Number(l.valorNumerico) : null);
+      // Hb corregida por altitud (clave en Apurímac ~2926 m): es el valor con el
+      // que se debe juzgar la anemia, no la Hb observada.
+      const hbCorr = (l: any) => (l?.valorCorregido != null ? Number(l.valorCorregido) : null);
+      const fecha = (l: any) => (l?.fechaExamen || l?.createdAt || null);
       return {
-        hemoglobina1: hb1?.valorNumerico || null,
-        hemoglobina2: hb2?.valorNumerico || null,
-        hemoglobina3: hb3?.valorNumerico || null,
+        hemoglobina1: hbVal(hb1),
+        hemoglobina2: hbVal(hb2),
+        hemoglobina3: hbVal(hb3),
+        // Valor corregido por altitud y fecha de cada toma (para interpretación).
+        hb1Corregida: hbCorr(hb1),
+        hb2Corregida: hbCorr(hb2),
+        hb3Corregida: hbCorr(hb3),
+        hb1Fecha: fecha(hb1),
+        hb2Fecha: fecha(hb2),
+        hb3Fecha: fecha(hb3),
         glucemia: findLab('glucemia')?.valor || null,
         vdrl: findLab('vdrl')?.resultado || null,
         vih: findLab('vih')?.resultado || null,

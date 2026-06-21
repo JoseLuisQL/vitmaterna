@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronDown, ChevronUp, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
   Phone, MessageCircle, Sparkles, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
-  Eye, Clock, ExternalLink, PlayCircle,
+  Eye, Clock, ExternalLink, PlayCircle, CheckCircle2, Droplet, Beaker, ShieldCheck,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
@@ -109,6 +109,56 @@ const filaStyles = StyleSheet.create({
   },
 });
 
+/**
+ * Fila de resultado de laboratorio con interpretación clínica visible:
+ * nombre del examen + qué mide (subtítulo), valor medido y una etiqueta de
+ * estado con color (Normal / Alerta / Pendiente). Hace que la sección Clínico
+ * se entienda de un vistazo, sin conocer los rangos de memoria.
+ */
+function LabRow({
+  label, hint, value, state, stateLabel, isLast = false,
+}: {
+  label: string;
+  hint?: string;
+  value?: string | null;
+  state: 'normal' | 'alerta' | 'pendiente' | 'info';
+  stateLabel: string;
+  isLast?: boolean;
+}) {
+  const meta = {
+    normal: { color: semanticColors.success, bg: semanticColors.successLight },
+    alerta: { color: semanticColors.danger, bg: semanticColors.dangerLight },
+    pendiente: { color: commonColors.textTertiary, bg: commonColors.surfaceAlt },
+    info: { color: semanticColors.info, bg: semanticColors.infoLight },
+  }[state];
+  return (
+    <View style={[labRowStyles.row, !isLast && labRowStyles.border]}>
+      <View style={labRowStyles.left}>
+        <Text style={labRowStyles.label}>{label}</Text>
+        {hint ? <Text style={labRowStyles.hint}>{hint}</Text> : null}
+      </View>
+      <View style={labRowStyles.right}>
+        {value ? <Text style={labRowStyles.value}>{value}</Text> : null}
+        <View style={[labRowStyles.pill, { backgroundColor: meta.bg }]}>
+          <Text style={[labRowStyles.pillText, { color: meta.color }]}>{stateLabel}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const labRowStyles = StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
+  border: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  left: { flex: 1, minWidth: 0 },
+  label: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
+  hint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 1 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  value: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text },
+  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full },
+  pillText: { ...typography.overline, fontSize: 10, fontWeight: '700' },
+});
+
 function Seccion({ titulo }: { titulo: string }) {
   return (
     <View style={seccionStyles.container}>
@@ -183,6 +233,55 @@ function vitalStatus(
   }
   return 'ok';
 }
+
+/** Estado de interpretación de un resultado de laboratorio. */
+type LabState = 'normal' | 'alerta' | 'pendiente' | 'info';
+
+/** Clasifica la hemoglobina (corregida por altitud) según umbrales OMS/MINSA. */
+function classifyHb(corrected: number | null): { state: LabState; label: string } {
+  if (corrected == null) return { state: 'pendiente', label: 'Pendiente' };
+  if (corrected < 7) return { state: 'alerta', label: 'Anemia severa' };
+  if (corrected < 10) return { state: 'alerta', label: 'Anemia moderada' };
+  if (corrected < 11) return { state: 'alerta', label: 'Anemia leve' };
+  return { state: 'normal', label: 'Normal' };
+}
+
+/**
+ * Interpreta un resultado cualitativo (VIH, VDRL, Hepatitis B, orina, PAP).
+ * Reconoce reactivo/positivo/anormal como alerta; no reactivo/negativo/normal
+ * como normal. Sin dato → pendiente.
+ */
+function classifyQualitative(value?: string | null): { state: LabState; label: string } {
+  if (!value || !String(value).trim()) return { state: 'pendiente', label: 'Pendiente' };
+  const v = String(value).toLowerCase();
+  if (/(no reactivo|negativo|normal|no reactiv)/.test(v)) return { state: 'normal', label: value };
+  if (/(reactivo|positivo|anormal|alterad|patolog)/.test(v)) return { state: 'alerta', label: value };
+  return { state: 'info', label: value };
+}
+
+/**
+ * Catálogo de exámenes de laboratorio del control prenatal (MINSA). Define para
+ * cada uno cómo se captura: 'numeric' (un valor + unidad) o 'qualitative'
+ * (opciones reactivo/no reactivo, normal/anormal). Simplifica el formulario:
+ * la obstetra ya no decide entre 4 campos de valor.
+ */
+const LAB_EXAM_TYPES: {
+  tipo: string;
+  label: string;
+  kind: 'numeric' | 'qualitative';
+  unidad?: string;
+  placeholder?: string;
+  options?: string[];
+  hint?: string;
+}[] = [
+  { tipo: 'hemoglobina', label: 'Hemoglobina', kind: 'numeric', unidad: 'g/dL', placeholder: 'Ej. 11.5', hint: 'Se corrige por la altitud automáticamente para evaluar anemia.' },
+  { tipo: 'glucemia', label: 'Glucemia', kind: 'numeric', unidad: 'mg/dL', placeholder: 'Ej. 85' },
+  { tipo: 'vih', label: 'VIH', kind: 'qualitative', options: ['No reactivo', 'Reactivo'] },
+  { tipo: 'vdrl', label: 'Sífilis (VDRL/RPR)', kind: 'qualitative', options: ['No reactivo', 'Reactivo'] },
+  { tipo: 'hepatitis_b', label: 'Hepatitis B', kind: 'qualitative', options: ['No reactivo', 'Reactivo'] },
+  { tipo: 'orina', label: 'Orina', kind: 'qualitative', options: ['Normal', 'Anormal'], hint: 'Anormal puede indicar infección urinaria.' },
+  { tipo: 'pap', label: 'Papanicolaou', kind: 'qualitative', options: ['Normal', 'Anormal'] },
+];
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function PatientProfileScreen(): React.ReactElement {
@@ -1213,46 +1312,90 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── SECCIÓN: CLÍNICO (laboratorio + signos de alarma) ── */}
           {activeTab === 'clinico' && (
             <View style={{ gap: spacing.sm2 }}>
-              {/* Laboratorio (hemoglobina ↔ anemia/hierro) */}
+              {/* ENCABEZADO + EXPLICACIÓN de qué es esta sección */}
               <View style={[styles.card, designTokens.cardShadow]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Resultados Analíticos</Text>
-                  <TouchableOpacity
-                    style={styles.primaryActionBtn}
-                    onPress={() => setIsLabModalVisible(true)}
-                  >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 12 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Exámenes de laboratorio</Text>
+                    <Text style={styles.clinicoIntro}>
+                      Resultados de los análisis de la gestante con su interpretación. El color indica si está
+                      {' '}<Text style={{ color: semanticColors.success, fontWeight: '700' }}>normal</Text>,
+                      {' '}requiere <Text style={{ color: semanticColors.danger, fontWeight: '700' }}>atención</Text> o está
+                      {' '}<Text style={{ color: commonColors.textTertiary, fontWeight: '700' }}>pendiente</Text>.
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.primaryActionBtn} onPress={() => setIsLabModalVisible(true)}>
                     <Plus size={16} color={obstetraColors.onPrimary} />
                     <Text style={styles.primaryActionText}>Registrar</Text>
                   </TouchableOpacity>
                 </View>
+              </View>
 
-                {lab.hemoglobina1 && lab.hemoglobina1 < 11 && (
-                  <View style={styles.alertBanner}>
-                    <AlertTriangle size={20} color={semanticColors.danger} />
-                    <View style={styles.alertBannerTextWrap}>
-                      <Text style={styles.alertBannerTitle}>Alerta de Anemia</Text>
-                      <Text style={styles.alertBannerDesc}>Hemoglobina baja ({lab.hemoglobina1} g/dL). Monitorear suplementación.</Text>
-                    </View>
-                  </View>
-                )}
+              {/* GRUPO 1: HEMOGLOBINA Y ANEMIA */}
+              <View style={[styles.card, designTokens.cardShadow]}>
+                <View style={styles.labGroupHeader}>
+                  <Droplet size={16} color={BRAND} />
+                  <Text style={styles.labGroupTitle}>Hemoglobina y anemia</Text>
+                </View>
+                <Text style={styles.labGroupNote}>
+                  Valor corregido por la altitud de la zona. La anemia se evalúa con este valor corregido (no el observado).
+                </Text>
+                {(() => {
+                  const rows = [
+                    { n: 'I', val: lab.hemoglobina1, corr: lab.hb1Corregida, show: true },
+                    { n: 'II', val: lab.hemoglobina2, corr: lab.hb2Corregida, show: lab.hemoglobina2 != null || Number(patient.currentWeek) >= 25 },
+                    { n: 'III', val: lab.hemoglobina3, corr: lab.hb3Corregida, show: lab.hemoglobina3 != null || Number(patient.currentWeek) >= 33 },
+                  ].filter((r) => r.show);
+                  return rows.map((r, i) => {
+                    const cls = classifyHb(r.corr ?? r.val ?? null);
+                    const valueText = r.val != null
+                      ? `${r.val} g/dL${r.corr != null && r.corr !== r.val ? ` (corr. ${r.corr})` : ''}`
+                      : null;
+                    return (
+                      <LabRow
+                        key={r.n}
+                        label={`Hemoglobina ${r.n}`}
+                        hint={r.n === 'I' ? '1er control' : r.n === 'II' ? 'aprox. sem. 25' : 'aprox. sem. 33'}
+                        value={valueText}
+                        state={cls.state}
+                        stateLabel={cls.label}
+                        isLast={i === rows.length - 1}
+                      />
+                    );
+                  });
+                })()}
+              </View>
 
-                <Fila label="Hemoglobina I" value={lab.hemoglobina1 ? `${lab.hemoglobina1} g/dL` : undefined} />
-                {/* Hb II/III solo muestran "Pendiente" cuando ya corresponde por EG
-                    (≥ sem. 25 para la II, ≥ sem. 33 para la III) para no meter ruido. */}
-                <Fila
-                  label="Hemoglobina II"
-                  value={lab.hemoglobina2 ? `${lab.hemoglobina2} g/dL` : (Number(patient.currentWeek) >= 25 ? 'Pendiente' : undefined)}
-                />
-                <Fila
-                  label="Hemoglobina III"
-                  value={lab.hemoglobina3 ? `${lab.hemoglobina3} g/dL` : (Number(patient.currentWeek) >= 33 ? 'Pendiente' : undefined)}
-                />
-                <Fila label="Glucemia" value={lab.glucemia} />
-                <Fila label="VDRL/RPR" value={lab.vdrl} />
-                <Fila label="VIH" value={lab.vih} />
-                <Fila label="Hepatitis B" value={lab.hepatitisB} />
-                <Fila label="Examen de orina" value={lab.examenOrina} />
-                <Fila label="Prueba PAP" value={lab.pap} isLast />
+              {/* GRUPO 2: TAMIZAJE / SEROLOGÍA */}
+              <View style={[styles.card, designTokens.cardShadow]}>
+                <View style={styles.labGroupHeader}>
+                  <ShieldCheck size={16} color={BRAND} />
+                  <Text style={styles.labGroupTitle}>Tamizaje y serología</Text>
+                </View>
+                {(() => {
+                  const items = [
+                    { label: 'VIH', hint: 'Tamizaje VIH', value: lab.vih },
+                    { label: 'Sífilis (VDRL/RPR)', hint: 'Tamizaje de sífilis', value: lab.vdrl },
+                    { label: 'Hepatitis B', hint: 'Antígeno de superficie', value: lab.hepatitisB },
+                    { label: 'Glucemia', hint: 'Azúcar en sangre', value: lab.glucemia },
+                    { label: 'Examen de orina', hint: 'Descarta infección urinaria', value: lab.examenOrina },
+                    { label: 'Papanicolaou (PAP)', hint: 'Tamizaje de cáncer de cuello uterino', value: lab.pap },
+                  ];
+                  return items.map((it, i) => {
+                    const cls = classifyQualitative(it.value);
+                    return (
+                      <LabRow
+                        key={it.label}
+                        label={it.label}
+                        hint={it.hint}
+                        value={cls.state === 'pendiente' ? null : (it.value || null)}
+                        state={cls.state}
+                        stateLabel={cls.state === 'pendiente' ? 'Pendiente' : cls.label}
+                        isLast={i === items.length - 1}
+                      />
+                    );
+                  });
+                })()}
               </View>
 
               <Seccion titulo="Signos de alarma reportados" />
@@ -1345,38 +1488,89 @@ export default function PatientProfileScreen(): React.ReactElement {
           </>
         }
       >
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: 12 }}>
+          {/* 1) Elegir el examen */}
           <View>
-            <Text style={styles.inputLabel}>Tipo de examen</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 8 }}>
-              {['Hemoglobina', 'Glucemia', 'VIH', 'VDRL', 'Orina'].map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={{
-                    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14,
-                    backgroundColor: labTipo === t ? obstetraColors.primaryLight : commonColors.surfaceAlt,
-                    borderWidth: 1, borderColor: labTipo === t ? BRAND : commonColors.border,
-                  }}
-                  onPress={() => setLabTipo(t)}
-                >
-                  <Text style={{ ...typography.caption, color: labTipo === t ? BRAND : commonColors.textSecondary, fontWeight: labTipo === t ? '700' : '500' }}>{t}</Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.inputLabel}>¿Qué examen vas a registrar?</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+              {LAB_EXAM_TYPES.map((ex) => {
+                const active = labTipo === ex.tipo;
+                return (
+                  <TouchableOpacity
+                    key={ex.tipo}
+                    style={{
+                      paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14,
+                      backgroundColor: active ? obstetraColors.primaryLight : commonColors.surfaceAlt,
+                      borderWidth: 1, borderColor: active ? BRAND : commonColors.border,
+                    }}
+                    onPress={() => { setLabTipo(ex.tipo); setLabUnidad(ex.unidad || ''); setLabResultado(''); setLabValorText(''); }}
+                  >
+                    <Text style={{ ...typography.caption, color: active ? BRAND : commonColors.textSecondary, fontWeight: active ? '700' : '500' }}>{ex.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <PlainInput
-              placeholder="O escribe otro tipo de examen…"
-              value={labTipo}
-              onChangeText={setLabTipo}
-              themeColor={BRAND}
-            />
           </View>
 
-          <PlainInput label="Número de toma" placeholder="Ej. 1, 2, 3" keyboardType="numeric" value={labToma} onChangeText={setLabToma} themeColor={BRAND} />
-          <PlainInput label="Valor numérico (opcional)" placeholder="Ej. 11.5" keyboardType="numeric" value={labValorNum} onChangeText={setLabValorNum} themeColor={BRAND} />
-          <PlainInput label="Valor texto (opcional)" placeholder="Ej. Normal, Reactivo…" value={labValorText} onChangeText={setLabValorText} themeColor={BRAND} />
-          <PlainInput label="Unidad (opcional)" placeholder="Ej. g/dL, mg/dL" value={labUnidad} onChangeText={setLabUnidad} themeColor={BRAND} />
-          <PlainInput label="Resultado (opcional)" placeholder="Ej. Normal, Anemia leve…" value={labResultado} onChangeText={setLabResultado} themeColor={BRAND} />
-          <PlainInput label="Observaciones" placeholder="Notas adicionales…" multiline value={labObs} onChangeText={setLabObs} themeColor={BRAND} />
+          {(() => {
+            const exam = LAB_EXAM_TYPES.find((e) => e.tipo === labTipo);
+            const isNumeric = exam?.kind === 'numeric';
+            const isQual = exam?.kind === 'qualitative';
+            // Examen no listado → entrada libre como antes.
+            const isCustom = !exam;
+            return (
+              <>
+                {isCustom && (
+                  <PlainInput label="Tipo de examen" placeholder="Escribe el nombre del examen…" value={labTipo} onChangeText={setLabTipo} themeColor={BRAND} />
+                )}
+
+                {/* Hemoglobina lleva número de toma (I, II, III) */}
+                {exam?.tipo === 'hemoglobina' && (
+                  <PlainInput label="Número de toma (1, 2 o 3)" placeholder="Ej. 1" keyboardType="numeric" value={labToma} onChangeText={setLabToma} themeColor={BRAND} />
+                )}
+
+                {(isNumeric || isCustom) && (
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 2 }}>
+                      <PlainInput label="Valor medido" placeholder={exam?.placeholder || 'Ej. 11.5'} keyboardType="numeric" value={labValorNum} onChangeText={setLabValorNum} themeColor={BRAND} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <PlainInput label="Unidad" placeholder="g/dL" value={labUnidad} onChangeText={setLabUnidad} themeColor={BRAND} />
+                    </View>
+                  </View>
+                )}
+
+                {isQual && (
+                  <View>
+                    <Text style={styles.inputLabel}>Resultado</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                      {exam!.options!.map((opt) => {
+                        const active = labResultado === opt;
+                        const isBad = /(reactivo|positivo|anormal)/i.test(opt);
+                        return (
+                          <TouchableOpacity
+                            key={opt}
+                            style={{
+                              paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12,
+                              backgroundColor: active ? (isBad ? semanticColors.dangerLight : semanticColors.successLight) : commonColors.surfaceAlt,
+                              borderWidth: 1, borderColor: active ? (isBad ? semanticColors.danger : semanticColors.success) : commonColors.border,
+                            }}
+                            onPress={() => setLabResultado(opt)}
+                          >
+                            <Text style={{ ...typography.bodySmall, fontWeight: '700', color: active ? (isBad ? semanticColors.danger : semanticColors.success) : commonColors.textSecondary }}>{opt}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+
+                {exam?.hint ? <Text style={styles.labModalHint}>{exam.hint}</Text> : null}
+
+                <PlainInput label="Observaciones (opcional)" placeholder="Notas adicionales…" multiline value={labObs} onChangeText={setLabObs} themeColor={BRAND} />
+              </>
+            );
+          })()}
         </View>
       </AppModal>
 
@@ -2068,6 +2262,15 @@ const styles = StyleSheet.create({
     color: commonColors.textSecondary,
     marginTop: -4,
   },
+  clinicoIntro: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
+    lineHeight: 18,
+  },
+  labGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  labGroupTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  labGroupNote: { ...typography.caption, color: commonColors.textTertiary, marginBottom: spacing.sm, lineHeight: 18 },
+  labModalHint: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 17, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: spacing.sm },
 
   // Controls specific
   actionHeader: {
