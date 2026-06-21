@@ -184,7 +184,7 @@ export default function RegisterScreen(): React.ReactElement {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           
           <View style={styles.header}>
-            <Pressable onPress={() => goBack(router, '/(auth)/login' as any)} style={styles.backButton} hitSlop={12}>
+            <Pressable onPress={() => goBack(router, '/(auth)/login' as any)} style={styles.backButton} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
               <ChevronLeft size={28} color={commonColors.text} />
             </Pressable>
             <Text style={styles.headerTitle}>Crear Cuenta</Text>

@@ -172,7 +172,7 @@ export default function VisitasGestante(): React.ReactElement {
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']} style={styles.headerRow}>
-          <TouchableOpacity onPress={() => goBack(router, '/(gestante)/(tabs)' as any)} hitSlop={10} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => goBack(router, '/(gestante)/(tabs)' as any)} hitSlop={10} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Volver">
             <ChevronLeft size={24} color={commonColors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Visitas domiciliarias</Text>

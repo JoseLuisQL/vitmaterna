@@ -712,7 +712,7 @@ export default function PatientProfileScreen(): React.ReactElement {
         >
           <SafeAreaView edges={['top']}>
             <View style={styles.headerNav}>
-              <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes')} style={styles.iconBtnGlass}>
+              <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes')} style={styles.iconBtnGlass} accessibilityRole="button" accessibilityLabel="Volver">
                 <ChevronLeft size={24} color={commonColors.white} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Historia Clínica</Text>
@@ -821,7 +821,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       >
         <SafeAreaView edges={['top']}>
           <View style={styles.headerNav}>
-            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes')} style={styles.iconBtnGlass}>
+            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes')} style={styles.iconBtnGlass} accessibilityRole="button" accessibilityLabel="Volver">
               <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Historia Clínica</Text>
@@ -859,6 +859,8 @@ export default function PatientProfileScreen(): React.ReactElement {
                     pathname: '/(obstetra)/gestante/tamizajes',
                     params: { id: patient.id, nombre: `${patient.firstName} ${patient.lastName}` },
                   } as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Tamizajes y registros"
                 >
                   <ClipboardList size={22} color={commonColors.white} />
                 </TouchableOpacity>
@@ -1062,7 +1064,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                           {ant.tipo === 'familiar' ? 'Familiar' : 'Personal'}{ant.detalle ? ` · ${ant.detalle}` : ''}
                         </Text>
                       </View>
-                      <TouchableOpacity onPress={() => confirmDeleteAntecedente(ant)} hitSlop={10} style={styles.antDeleteBtn}>
+                      <TouchableOpacity onPress={() => confirmDeleteAntecedente(ant)} hitSlop={10} style={styles.antDeleteBtn} accessibilityRole="button" accessibilityLabel={`Eliminar antecedente: ${ant.condicion}`}>
                         <Trash2 size={18} color={semanticColors.danger} />
                       </TouchableOpacity>
                     </View>
@@ -1943,7 +1945,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                 placeholderTextColor={commonColors.textTertiary}
               />
               {recSearch ? (
-                <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda"><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
               ) : null}
             </View>
             <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>

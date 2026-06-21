@@ -250,10 +250,10 @@ export default function ContenidoScreen(): React.ReactElement {
           {!item.activo ? <View style={[styles.tag, styles.tagInactive]}><Text style={styles.tagInactiveText}>Inactivo</Text></View> : null}
         </View>
       </View>
-      <TouchableOpacity onPress={() => openEdit(item)} hitSlop={8} style={styles.iconBtn}>
+      <TouchableOpacity onPress={() => openEdit(item)} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={`Editar ${item.titulo}`}>
         <Pencil size={18} color={commonColors.textSecondary} />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={styles.iconBtn}>
+      <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={`Eliminar ${item.titulo}`}>
         <Trash2 size={18} color={semanticColors.danger} />
       </TouchableOpacity>
     </View>
@@ -409,10 +409,10 @@ export default function ContenidoScreen(): React.ReactElement {
       align: 'right',
       render: (u) => (
         <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any}>
+          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any} accessibilityRole="button" accessibilityLabel={`Editar ${u.titulo}`}>
             <Pencil size={18} color={commonColors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any}>
+          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any} accessibilityRole="button" accessibilityLabel={`Eliminar ${u.titulo}`}>
             <Trash2 size={18} color={semanticColors.danger} />
           </TouchableOpacity>
         </View>
@@ -485,7 +485,7 @@ export default function ContenidoScreen(): React.ReactElement {
                   <Text style={styles.title}>Contenido educativo</Text>
                   <Text style={styles.subtitle}>{items.length} recurso(s) · {items.filter((i) => i.activo).length} activos</Text>
                 </View>
-                <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.addBtn} onPress={openCreate} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Crear contenido educativo">
                   <Plus size={22} color={commonColors.white} />
                 </TouchableOpacity>
               </View>

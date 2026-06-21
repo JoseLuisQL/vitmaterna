@@ -25,7 +25,7 @@ export function ProfileInfoModal({ visible, title, description, rows = [], onClo
         <View style={styles.card}>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+            <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Cerrar">
               <X size={20} color={commonColors.textSecondary} />
             </Pressable>
           </View>

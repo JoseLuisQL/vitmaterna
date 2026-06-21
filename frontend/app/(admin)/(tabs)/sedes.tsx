@@ -113,10 +113,10 @@ export default function SedesScreen(): React.ReactElement {
         <View style={styles.metaRow}><Mountain size={13} color={commonColors.textSecondary} /><Text style={styles.cardMeta}>{item.altitudMsnm} msnm</Text></View>
       </View>
       <View style={styles.cardActions}>
-        <TouchableOpacity onPress={() => openEdit(item)} hitSlop={8} style={styles.actionBtn}>
+        <TouchableOpacity onPress={() => openEdit(item)} hitSlop={8} style={styles.actionBtn} accessibilityRole="button" accessibilityLabel={`Editar ${item.nombre}`}>
           <Pencil size={18} color={BRAND} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn]}>
+        <TouchableOpacity onPress={() => confirmDelete(item)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn]} accessibilityRole="button" accessibilityLabel={`Eliminar ${item.nombre}`}>
           <Trash2 size={18} color={semanticColors.danger} />
         </TouchableOpacity>
       </View>
@@ -164,10 +164,10 @@ export default function SedesScreen(): React.ReactElement {
       align: 'right' as const,
       render: (row: any) => (
         <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
-          <TouchableOpacity onPress={() => openEdit(row)} hitSlop={8} style={[styles.actionBtn, { width: 32, height: 32, cursor: 'pointer', outlineStyle: 'none' } as any]} accessibilityRole="button">
+          <TouchableOpacity onPress={() => openEdit(row)} hitSlop={8} style={[styles.actionBtn, { width: 32, height: 32, cursor: 'pointer', outlineStyle: 'none' } as any]} accessibilityRole="button" accessibilityLabel={`Editar ${row.nombre}`}>
             <Pencil size={16} color={BRAND} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => confirmDelete(row)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn, { width: 32, height: 32, cursor: 'pointer', outlineStyle: 'none' } as any]} accessibilityRole="button">
+          <TouchableOpacity onPress={() => confirmDelete(row)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn, { width: 32, height: 32, cursor: 'pointer', outlineStyle: 'none' } as any]} accessibilityRole="button" accessibilityLabel={`Eliminar ${row.nombre}`}>
             <Trash2 size={16} color={semanticColors.danger} />
           </TouchableOpacity>
         </View>
@@ -219,7 +219,7 @@ export default function SedesScreen(): React.ReactElement {
       width="full"
       scroll={webShell}
       actions={
-        <TouchableOpacity style={[styles.addBtn, webShell && ({ cursor: 'pointer', outlineStyle: 'none' } as any)]} onPress={openCreate}>
+        <TouchableOpacity style={[styles.addBtn, webShell && ({ cursor: 'pointer', outlineStyle: 'none' } as any)]} onPress={openCreate} accessibilityRole="button" accessibilityLabel="Crear establecimiento">
           <Plus size={18} color={commonColors.white} />
         </TouchableOpacity>
       }

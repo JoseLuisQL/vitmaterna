@@ -50,6 +50,8 @@ export interface FieldBaseProps extends Omit<TextInputProps, 'style'> {
   rightIcon?: LucideIcon;
   /** Acción del icono derecho (p. ej. limpiar). */
   onRightIconPress?: () => void;
+  /** Nombre accesible del botón del icono derecho (lector de pantalla). */
+  rightIconLabel?: string;
   containerStyle?: ViewStyle;
   /** testID para pruebas. */
   testID?: string;
@@ -101,6 +103,7 @@ export function TextField({
   leftIcon: LeftIcon,
   rightIcon: RightIcon,
   onRightIconPress,
+  rightIconLabel,
   containerStyle,
   secureTextEntry = false,
   testID,
@@ -152,7 +155,7 @@ export function TextField({
             {showSecret ? <EyeOff size={20} color={commonColors.textSecondary} /> : <Eye size={20} color={commonColors.textSecondary} />}
           </Pressable>
         ) : RightIcon ? (
-          <Pressable onPress={onRightIconPress} hitSlop={12} style={styles.iconBtn} disabled={!onRightIconPress} accessibilityRole={onRightIconPress ? 'button' : undefined}>
+          <Pressable onPress={onRightIconPress} hitSlop={12} style={styles.iconBtn} disabled={!onRightIconPress} accessibilityRole={onRightIconPress ? 'button' : undefined} accessibilityLabel={onRightIconPress ? (rightIconLabel ?? (label ? `Acción de ${label}` : 'Acción del campo')) : undefined}>
             <RightIcon size={20} color={commonColors.textSecondary} />
           </Pressable>
         ) : null}

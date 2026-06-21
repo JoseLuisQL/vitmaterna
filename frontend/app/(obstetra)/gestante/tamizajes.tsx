@@ -261,7 +261,7 @@ export default function TamizajesScreen(): React.ReactElement {
       >
         <SafeAreaView edges={['top']}>
           <View style={styles.headerNav}>
-            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} style={styles.iconBtnGlass}>
+            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} style={styles.iconBtnGlass} accessibilityRole="button" accessibilityLabel="Volver">
               <ChevronLeft size={24} color={commonColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Tamizajes y registros</Text>

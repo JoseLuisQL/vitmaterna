@@ -276,6 +276,8 @@ export default function AlarmScreen(): React.ReactElement {
             onPress={() => goBack(router, '/(gestante)/(tabs)' as any)}
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
           >
             <ArrowLeft size={24} color={commonColors.white} />
           </TouchableOpacity>

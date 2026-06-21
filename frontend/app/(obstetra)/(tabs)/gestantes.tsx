@@ -341,7 +341,7 @@ export default function GestantesScreen(): React.ReactElement {
         }
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)}>
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)} accessibilityRole="button" accessibilityLabel="Registrar nueva gestante">
         <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
     </View>

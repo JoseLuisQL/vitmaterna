@@ -681,6 +681,8 @@ export default function UsuariosScreen(): React.ReactElement {
         style={styles.fab} 
         onPress={() => setIsCreateModalVisible(true)}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Crear usuario"
       >
         <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>

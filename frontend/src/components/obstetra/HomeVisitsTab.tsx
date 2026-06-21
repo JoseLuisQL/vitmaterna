@@ -151,7 +151,7 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
               <View style={styles.numBadge}><Text style={styles.numText}>N°{v.numeroVisita}</Text></View>
               <Text style={styles.visitDate}>{fmtFecha(v.fecha)}</Text>
               <View style={styles.visitTime}><Clock size={12} color={commonColors.textTertiary} /><Text style={styles.visitTimeText}>{fmtHora(v.horaLlegada)} · {v.duracionMin || 30} min</Text></View>
-              <TouchableOpacity onPress={() => confirmDelete(v.id, v.numeroVisita)} hitSlop={8}>
+              <TouchableOpacity onPress={() => confirmDelete(v.id, v.numeroVisita)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Eliminar visita N°${v.numeroVisita}`}>
                 <Trash2 size={16} color={semanticColors.danger} />
               </TouchableOpacity>
             </View>
