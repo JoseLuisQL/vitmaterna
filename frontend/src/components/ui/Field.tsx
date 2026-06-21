@@ -330,9 +330,11 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surface,
     borderWidth: 1,
     borderColor: commonColors.border,
-    borderRadius: borderRadius.lg,
+    // Pill (radio completo) y altura 46: mismo lenguaje que el buscador de la
+    // gestante (educación/citas), para que TODO buscador del sistema sea igual.
+    borderRadius: borderRadius.full,
     paddingHorizontal: spacing.md,
-    height: 44,
+    height: 46,
   },
   searchInput: {
     flex: 1,

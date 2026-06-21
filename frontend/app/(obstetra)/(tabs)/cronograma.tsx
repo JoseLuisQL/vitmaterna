@@ -496,11 +496,8 @@ function useAppointmentScopeCounts(): Record<Scope, number | null> {
 }
 
 const styles = StyleSheet.create({
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, marginBottom: spacing.md,
-  },
+  // Solo el margen inferior: la apariencia (pill, fondo, borde) la define SearchField.
+  searchBar: { marginBottom: spacing.md },
 
   segments: { flexDirection: 'row', gap: spacing.xs2, marginBottom: spacing.sm },
   segment: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, alignItems: 'center' },
