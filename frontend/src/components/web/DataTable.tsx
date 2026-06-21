@@ -34,6 +34,12 @@ export interface DataTableColumn<T> {
   align?: 'left' | 'center' | 'right';
   /** Si la columna permite ordenar, función que devuelve el valor comparable. */
   sortValue?: (row: T) => string | number;
+  /**
+   * Marca la celda como interactiva (contiene sus propios botones). En ese caso
+   * la celda NO dispara `onRowPress` y no se envuelve en un Pressable, evitando
+   * botones anidados (warning de React Native Web).
+   */
+  interactive?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -94,7 +100,7 @@ export function DataTable<T>({
     }
   };
 
-  const cellAlign = (align?: 'left' | 'center' | 'right') =>
+  const cellAlign = (align?: 'left' | 'center' | 'right'): 'flex-end' | 'center' | 'flex-start' =>
     align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start';
 
   const colStyle = (col: DataTableColumn<T>) =>
@@ -147,37 +153,49 @@ export function DataTable<T>({
             })}
           </View>
 
-          {/* Filas de datos */}
-          {sorted.map((row, i) => {
-            const RowComp: any = onRowPress ? Pressable : View;
-            return (
-              <RowComp
-                key={keyExtractor(row)}
-                onPress={onRowPress ? () => onRowPress(row) : undefined}
-                accessibilityRole={onRowPress ? 'button' : undefined}
-                accessibilityLabel={onRowPress ? (rowLabel ? rowLabel(row) : undefined) : undefined}
-                style={onRowPress ? ({ pressed }: { pressed?: boolean }) => [
-                  styles.row,
-                  i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
-                  pressed && { backgroundColor: colors.surfaceAlt },
-                  IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s', outlineStyle: 'none' } as any),
-                ] : [
-                  styles.row,
-                  i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
-                ]}
-              >
-                {columns.map((col) => (
-                  <View key={col.key} style={[styles.cell, colStyle(col), { alignItems: cellAlign(col.align) }]}>
-                    {typeof col.render(row) === 'string' || typeof col.render(row) === 'number' ? (
-                      <Text style={[styles.cellText, { color: colors.text }]} numberOfLines={2}>{col.render(row) as React.ReactNode}</Text>
-                    ) : (
-                      col.render(row)
-                    )}
-                  </View>
-                ))}
-              </RowComp>
-            );
-          })}
+          {/* Filas de datos. La fila es un View; cada celda NO interactiva se
+              hace Pressable individualmente para disparar onRowPress. Así las
+              celdas con botones (interactive) no quedan anidadas dentro de otro
+              botón (evita el warning "button cannot contain a nested button"). */}
+          {sorted.map((row, i) => (
+            <View
+              key={keyExtractor(row)}
+              style={[
+                styles.row,
+                i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
+              ]}
+            >
+              {columns.map((col) => {
+                const content =
+                  typeof col.render(row) === 'string' || typeof col.render(row) === 'number' ? (
+                    <Text style={[styles.cellText, { color: colors.text }]} numberOfLines={2}>{col.render(row) as React.ReactNode}</Text>
+                  ) : (
+                    col.render(row)
+                  );
+                const cellStyle = [styles.cell, colStyle(col), { alignItems: cellAlign(col.align) }];
+                // Celda interactiva o sin onRowPress → View simple.
+                if (col.interactive || !onRowPress) {
+                  return <View key={col.key} style={cellStyle}>{content}</View>;
+                }
+                // Celda normal → Pressable que abre la fila.
+                return (
+                  <Pressable
+                    key={col.key}
+                    onPress={() => onRowPress(row)}
+                    accessibilityRole="button"
+                    accessibilityLabel={rowLabel ? rowLabel(row) : undefined}
+                    style={({ pressed }: { pressed?: boolean }) => [
+                      ...cellStyle,
+                      pressed && { backgroundColor: colors.surfaceAlt },
+                      IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+                    ]}
+                  >
+                    {content}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </ScrollView>
       )}
     </View>

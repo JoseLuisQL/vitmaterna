@@ -315,7 +315,7 @@ export default function CronogramaScreen(): React.ReactElement {
       },
       {
         // Acciones contextuales de la cita en escritorio (issue #5).
-        key: 'acciones', header: 'Acciones', width: 230,
+        key: 'acciones', header: 'Acciones', width: 230, interactive: true,
         render: (p: any) => {
           const estado = p.estado || 'programada';
           if (estado === 'solicitud_reprogramacion') {
