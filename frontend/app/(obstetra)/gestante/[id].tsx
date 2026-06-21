@@ -18,7 +18,7 @@ import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs } from '../../../src/components/ui';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -28,7 +28,7 @@ import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
   useEducationCatalog, useRecommendContent,
-  usePatientDangerSigns, useUpdateDangerSign,
+  usePatientDangerSigns, useUpdateDangerSign, useHomeVisits,
 } from '../../../src/services/api-queries';
 import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
 import { RichText } from '../../../src/components/ui/RichText';
@@ -304,8 +304,15 @@ export default function PatientProfileScreen(): React.ReactElement {
   const VALID_TABS = visibleTabs.map((t) => t.id);
   const resolvedInitial = tab ? (TAB_ALIASES[tab] ?? tab) : 'resumen';
   const [activeTab, setActiveTab] = useState(VALID_TABS.includes(resolvedInitial) ? resolvedInitial : 'resumen');
+  // Sub-vista dentro de "Seguimiento": evita que las visitas domiciliarias
+  // queden enterradas tras una lista larga de controles.
+  const [seguimientoView, setSeguimientoView] = useState<'controles' | 'visitas'>('controles');
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
+  // Conteo de visitas domiciliarias para el badge de la sub-pestaña (React Query
+  // deduplica con el que usa HomeVisitsTab, no genera petición extra).
+  const { data: homeVisitsData } = useHomeVisits(id || '');
+  const homeVisitsCount = Array.isArray(homeVisitsData) ? homeVisitsData.length : 0;
 
   // Modal and Form States
   const [isLabModalVisible, setIsLabModalVisible] = useState(false);
@@ -1120,6 +1127,20 @@ export default function PatientProfileScreen(): React.ReactElement {
                 </Text>
               </View>
 
+              {/* Sub-pestañas: separa Controles de Visitas domiciliarias para que
+                  las visitas no queden enterradas tras una lista larga de controles. */}
+              <ToggleTabs
+                tabs={[
+                  { key: 'controles', label: 'Controles', badge: controls.length || undefined },
+                  { key: 'visitas', label: 'Visitas a domicilio', badge: homeVisitsCount || undefined },
+                ]}
+                value={seguimientoView}
+                onChange={(k) => setSeguimientoView(k as 'controles' | 'visitas')}
+                activeColor={BRAND}
+                style={{ marginBottom: spacing.md }}
+              />
+
+              {seguimientoView === 'controles' && (<>
               {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
               <AlturaUterinaChart controls={controls} themeColor={BRAND} />
 
@@ -1258,17 +1279,17 @@ export default function PatientProfileScreen(): React.ReactElement {
                   themeColor={BRAND}
                 />
               )}
+              </>)}
 
               {/* Visitas domiciliarias (continuidad del cuidado, Objetivo 1) */}
-              <View style={{ marginTop: spacing.lg }}>
-                <Seccion titulo="Visitas domiciliarias" />
+              {seguimientoView === 'visitas' && (
                 <HomeVisitsTab
                   gestanteId={patient.id}
                   domicilioLat={patient.domicilioLat}
                   domicilioLng={patient.domicilioLng}
                   referenciaDom={patient.referenciaDom}
                 />
-              </View>
+              )}
             </View>
           )}
 
