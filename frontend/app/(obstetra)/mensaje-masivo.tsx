@@ -9,9 +9,9 @@ import { confirmAction } from '../../src/utils/confirm';
 import { useToast, AppButton } from '../../src/components/ui';
 import { TextAreaField } from '../../src/components/ui/Field';
 import { useResponsive } from '../../src/theme/responsive';
-import { commonColors, obstetraColors } from '../../src/theme/colors';
+import { commonColors, obstetraColors, riskColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
-import { spacing } from '../../src/theme/spacing';
+import { spacing, borderRadius } from '../../src/theme/spacing';
 import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
 
 const BRAND = obstetraColors.primary;
@@ -61,15 +61,24 @@ export default function MensajeMasivoScreen(): React.ReactElement {
     mutation.mutate();
   };
 
-  const Chip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
+  const Chip = ({ label, active, onPress, dot }: { label: string; active: boolean; onPress: () => void; dot?: string }) => (
     <TouchableOpacity
       style={[styles.chip, active && styles.chipActive]}
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
     >
+      {dot ? <View style={[styles.chipDot, { backgroundColor: dot }]} /> : null}
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
+
+  // Resumen del público objetivo (claridad antes de enviar).
+  const filtros: string[] = [];
+  if (trimestre !== 0) filtros.push(`${trimestre}° trimestre`);
+  if (riesgo) filtros.push(`riesgo ${riesgo}`);
+  const destino = filtros.length ? filtros.join(' · ') : 'Todas las gestantes activas';
 
   return (
     <ScreenLayout
@@ -99,9 +108,18 @@ export default function MensajeMasivoScreen(): React.ReactElement {
           <Text style={styles.label}>Filtrar por riesgo</Text>
           <View style={styles.chipRow}>
             <Chip label="Todos" active={riesgo === ''} onPress={() => setRiesgo('')} />
-            <Chip label="Verde" active={riesgo === 'verde'} onPress={() => setRiesgo('verde')} />
-            <Chip label="Amarillo" active={riesgo === 'amarillo'} onPress={() => setRiesgo('amarillo')} />
-            <Chip label="Rojo" active={riesgo === 'rojo'} onPress={() => setRiesgo('rojo')} />
+            <Chip label="Bajo" active={riesgo === 'verde'} onPress={() => setRiesgo('verde')} dot={riskColors.riskGreen} />
+            <Chip label="Medio" active={riesgo === 'amarillo'} onPress={() => setRiesgo('amarillo')} dot={riskColors.riskYellow} />
+            <Chip label="Alto" active={riesgo === 'rojo'} onPress={() => setRiesgo('rojo')} dot={riskColors.riskRed} />
+          </View>
+
+          {/* Público objetivo: claridad de a quién llega el aviso. */}
+          <View style={styles.audienceCard}>
+            <Users size={16} color={BRAND} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.audienceLabel}>Se enviará a</Text>
+              <Text style={styles.audienceValue} numberOfLines={2}>{destino}</Text>
+            </View>
           </View>
         </View>
 
@@ -136,11 +154,15 @@ const styles = StyleSheet.create({
   iconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
   intro: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   label: { ...typography.label, fontWeight: '700', color: commonColors.textSecondary, marginBottom: 10, marginTop: 8 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  chip: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 99, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm2 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
   chipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  chipDot: { width: 8, height: 8, borderRadius: 4 },
   chipText: { ...typography.label, fontWeight: '600', color: commonColors.textSecondary },
   chipTextActive: { color: obstetraColors.onPrimary },
+  audienceCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: obstetraColors.primaryLight, borderRadius: borderRadius.md, padding: spacing.md, marginTop: spacing.xs },
+  audienceLabel: { ...typography.overline, color: BRAND, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700' },
+  audienceValue: { ...typography.bodySm, color: commonColors.text, fontWeight: '600', textTransform: 'capitalize', marginTop: 1 },
   sendBtn: { marginTop: spacing.lg },
   sendBtnWeb: {
     maxWidth: 320,

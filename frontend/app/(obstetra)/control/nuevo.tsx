@@ -146,7 +146,7 @@ export default function NuevoControlScreen(): React.ReactElement {
               </View>
             </View>
 
-            <AppButton title="Guardar Control" onPress={handleSubmit(onSubmit)} loading={isPending} disabled={isPending} style={StyleSheet.flatten([styles.submitBtn, webShell && styles.submitBtnWeb])} />
+            <AppButton title="Guardar control" onPress={handleSubmit(onSubmit)} loading={isPending} disabled={isPending} themeColor={BRAND} style={StyleSheet.flatten([styles.submitBtn, webShell && styles.submitBtnWeb])} />
           </View>
 
           <View style={webShell ? styles.col : undefined}>
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
   sectionCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md, ...shadows.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
   sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { ...typography.bodyMd, color: commonColors.text },
-  formGroup: { gap: 16 },
-  submitBtn: { backgroundColor: BRAND, borderRadius: 99, paddingVertical: 16, marginTop: 12 },
+  sectionTitle: { ...typography.h4, color: commonColors.text },
+  formGroup: { gap: spacing.md },
+  submitBtn: { marginTop: spacing.md },
   submitBtnWeb: {
     maxWidth: 320,
     alignSelf: 'flex-end',
