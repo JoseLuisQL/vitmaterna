@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.label.fontFamily,
     fontSize: typography.label.fontSize,
     fontWeight: typography.label.fontWeight,
-    color: commonColors.text,
+    color: commonColors.textSecondary,
     marginBottom: spacing.xs,
   },
   labelError: {

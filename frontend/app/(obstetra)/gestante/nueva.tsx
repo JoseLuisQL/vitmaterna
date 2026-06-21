@@ -693,8 +693,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerContainer: {
     paddingBottom: spacing.lg,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
+    borderBottomLeftRadius: borderRadius.lg,
+    borderBottomRightRadius: borderRadius.lg,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.md },
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface, marginRight: spacing.sm },
@@ -740,23 +740,23 @@ const styles = StyleSheet.create({
   checkboxActive: { backgroundColor: BRAND, borderColor: BRAND },
   checkboxText: { ...typography.bodySm, color: commonColors.textSecondary, flex: 1 },
 
-  footerActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, gap: 12 },
+  footerActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl, gap: spacing.sm },
   btnSecondary: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingVertical: 14, paddingHorizontal: 18,
-    borderRadius: borderRadius.full,
-    borderWidth: 1, borderColor: commonColors.border,
+    paddingVertical: 14, paddingHorizontal: spacing.md2,
+    borderRadius: borderRadius.md,
+    borderWidth: 1, borderColor: commonColors.borderStrong,
     backgroundColor: commonColors.surface,
   },
   btnSecondaryText: { color: commonColors.textSecondary, ...typography.button, fontSize: 15 },
   btnPrimary: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-    paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: BRAND,
+    paddingVertical: 14, borderRadius: borderRadius.md, backgroundColor: BRAND,
   },
   btnPrimaryText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
   btnSuccess: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: BRAND,
+    paddingVertical: 14, borderRadius: borderRadius.md, backgroundColor: BRAND,
   },
   btnSuccessText: { color: obstetraColors.onPrimary, ...typography.button, fontSize: 15 },
   twoCol: {

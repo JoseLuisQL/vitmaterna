@@ -217,10 +217,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.xxl,
+    borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...shadows.modal,
+    ...shadows.card,
   },
   formTitle: {
     ...typography.h2,

@@ -39,6 +39,8 @@ import { IS_WEB } from '../../theme/responsive';
 
 export interface FieldBaseProps extends Omit<TextInputProps, 'style'> {
   label?: string;
+  /** Marca el campo como obligatorio (añade asterisco rojo al label). */
+  required?: boolean;
   value: string;
   onChangeText: (v: string) => void;
   error?: string;
@@ -59,12 +61,14 @@ export interface FieldBaseProps extends Omit<TextInputProps, 'style'> {
 
 function FieldShell({
   label,
+  required,
   error,
   helperText,
   children,
   containerStyle,
 }: {
   label?: string;
+  required?: boolean;
   error?: string;
   helperText?: string;
   children: React.ReactNode;
@@ -73,8 +77,9 @@ function FieldShell({
   return (
     <View style={[styles.container, containerStyle]}>
       {label ? (
-        <AppText variant="label" color={error ? semanticColors.danger : commonColors.text} style={styles.label}>
+        <AppText variant="label" color={error ? semanticColors.danger : commonColors.textSecondary} style={styles.label}>
           {label}
+          {required ? <AppText variant="label" color={semanticColors.danger}> *</AppText> : null}
         </AppText>
       ) : null}
       {children}
@@ -83,7 +88,7 @@ function FieldShell({
           {error}
         </AppText>
       ) : helperText ? (
-        <AppText variant="caption" color={commonColors.textSecondary} style={styles.helper}>
+        <AppText variant="caption" color={commonColors.textTertiary} style={styles.helper}>
           {helperText}
         </AppText>
       ) : null}
@@ -94,6 +99,7 @@ function FieldShell({
 /** Campo de texto de una línea. */
 export function TextField({
   label,
+  required,
   value,
   onChangeText,
   error,
@@ -119,11 +125,11 @@ export function TextField({
       : commonColors.border;
 
   return (
-    <FieldShell label={label} error={error} helperText={helperText} containerStyle={containerStyle}>
+    <FieldShell label={label} required={required} error={error} helperText={helperText} containerStyle={containerStyle}>
       <View
         style={[
           styles.control,
-          { borderColor, borderWidth: focused && !error ? 2 : 1 },
+          { borderColor, borderWidth: focused && !error ? 1.5 : 1 },
           disabled && styles.controlDisabled,
         ]}
       >
@@ -169,12 +175,12 @@ export function TextAreaField({
   numberOfLines = 4,
   ...props
 }: FieldBaseProps): React.ReactElement {
-  const { label, value, onChangeText, error, helperText, disabled, themeColor = commonColors.borderStrong, containerStyle, testID, ...rest } = props;
+  const { label, required, value, onChangeText, error, helperText, disabled, themeColor = commonColors.borderStrong, containerStyle, testID, ...rest } = props;
   const [focused, setFocused] = useState(false);
   const borderColor = error ? semanticColors.danger : focused ? themeColor : commonColors.border;
   return (
-    <FieldShell label={label} error={error} helperText={helperText} containerStyle={containerStyle}>
-      <View style={[styles.control, styles.controlMultiline, { borderColor, borderWidth: focused && !error ? 2 : 1 }, disabled && styles.controlDisabled]}>
+    <FieldShell label={label} required={required} error={error} helperText={helperText} containerStyle={containerStyle}>
+      <View style={[styles.control, styles.controlMultiline, { borderColor, borderWidth: focused && !error ? 1.5 : 1 }, disabled && styles.controlDisabled]}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -233,6 +239,7 @@ export function SearchField({
 
 interface SelectFieldProps {
   label?: string;
+  required?: boolean;
   /** Texto visible del valor seleccionado (vacío = placeholder). */
   valueLabel?: string;
   placeholder?: string;
@@ -253,6 +260,7 @@ interface SelectFieldProps {
  */
 export function SelectField({
   label,
+  required,
   valueLabel,
   placeholder = 'Selecciona…',
   onPress,
@@ -266,7 +274,7 @@ export function SelectField({
 }: SelectFieldProps): React.ReactElement {
   const isPlaceholder = !valueLabel;
   return (
-    <FieldShell label={label} error={error} helperText={helperText} containerStyle={containerStyle}>
+    <FieldShell label={label} required={required} error={error} helperText={helperText} containerStyle={containerStyle}>
       <Pressable
         onPress={onPress}
         disabled={disabled}
@@ -305,7 +313,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: commonColors.border,
     minHeight: 52,
