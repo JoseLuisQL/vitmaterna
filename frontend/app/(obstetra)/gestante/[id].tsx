@@ -10,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, ChevronDown, ChevronUp, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
-  Phone, MessageCircle, Sparkles, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
+  Phone, MessageCircle, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
   Eye, Clock, ExternalLink, PlayCircle, CheckCircle2, Droplet, Beaker, ShieldCheck,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
@@ -405,8 +405,6 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { data: dangerSigns = [] } = usePatientDangerSigns(id || '');
   const { mutate: updateDangerSign, isPending: isUpdatingDanger } = useUpdateDangerSign();
 
-  // Resumen clínico: el relato detallado está colapsado por defecto.
-  const [resumenExpanded, setResumenExpanded] = useState(false);
 
   // Recomendar contenido educativo a esta gestante
   const [recommendVisible, setRecommendVisible] = useState(false);
@@ -973,68 +971,23 @@ export default function PatientProfileScreen(): React.ReactElement {
                 </View>
               </View>
 
-              {/* 2. RESUMEN CLÍNICO INTELIGENTE — alertas accionables + destacados + relato */}
-              {patient.resumenClinico ? (
-                <View style={[styles.resumenCard, designTokens.cardShadow]}>
-                  <View style={styles.resumenHeader}>
-                    <View style={styles.resumenIconWrap}>
-                      <Sparkles size={15} color={obstetraColors.primary} />
+              {/* 2. ALERTAS ACCIONABLES — lo único que requiere atención.
+                  Se quitó la tarjeta "destacados" y el párrafo auto-generado, que
+                  repetían estos mismos datos (anemia/riesgo/adherencia). */}
+              {(patient.resumenClinico?.alertas?.length ?? 0) > 0 && (
+                <View style={[styles.alertasCard, designTokens.cardShadow]}>
+                  <Text style={styles.alertasTitle}>Requiere atención</Text>
+                  {patient.resumenClinico!.alertas!.map((a: string, i: number) => (
+                    <View key={i} style={styles.resumenAlertaRow}>
+                      <AlertTriangle size={14} color={riskColors.riskRed} />
+                      <Text style={styles.resumenAlertaText}>{a}</Text>
                     </View>
-                    <Text style={styles.resumenTitle}>Resumen clínico</Text>
-                  </View>
-
-                  {/* a) Alertas accionables primero (lo que requiere atención) */}
-                  {patient.resumenClinico.alertas?.length > 0 && (
-                    <View style={styles.resumenAlertas}>
-                      {patient.resumenClinico.alertas.map((a: string, i: number) => (
-                        <View key={i} style={styles.resumenAlertaRow}>
-                          <AlertTriangle size={14} color={riskColors.riskRed} />
-                          <Text style={styles.resumenAlertaText}>{a}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* b) Destacados clínicos en una rejilla legible */}
-                  {patient.resumenClinico.destacados && (
-                    <View style={styles.resumenDestacados}>
-                      {patient.resumenClinico.destacados.anemia ? (
-                        <View style={styles.resumenChip}>
-                          <Text style={styles.resumenChipLabel}>Anemia</Text>
-                          <Text style={[styles.resumenChipValue, { color: patient.resumenClinico.destacados.anemia === 'normal' ? semanticColors.success : riskColors.riskYellow }]}>
-                            {patient.resumenClinico.destacados.anemia === 'normal' ? 'Sin anemia' : patient.resumenClinico.destacados.anemia}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {patient.resumenClinico.destacados.adherencia != null ? (
-                        <View style={styles.resumenChip}>
-                          <Text style={styles.resumenChipLabel}>Adherencia</Text>
-                          <Text style={[styles.resumenChipValue, { color: patient.resumenClinico.destacados.adherencia >= 80 ? semanticColors.success : patient.resumenClinico.destacados.adherencia >= 50 ? riskColors.riskYellow : riskColors.riskRed }]}>
-                            {patient.resumenClinico.destacados.adherencia}%
-                          </Text>
-                        </View>
-                      ) : null}
-                      <View style={styles.resumenChip}>
-                        <Text style={styles.resumenChipLabel}>Controles</Text>
-                        <Text style={styles.resumenChipValue}>{(patient.controls || []).length}</Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* c) Relato detallado (secundario, expandible) */}
-                  {patient.resumenClinico.texto ? (
-                    <>
-                      <TouchableOpacity style={styles.resumenToggle} onPress={() => setResumenExpanded((v) => !v)} activeOpacity={0.7}>
-                        <Text style={styles.resumenToggleText}>{resumenExpanded ? 'Ocultar detalle' : 'Ver detalle completo'}</Text>
-                        <ChevronDown size={15} color={obstetraColors.primary} style={resumenExpanded ? { transform: [{ rotate: '180deg' }] } : undefined} />
-                      </TouchableOpacity>
-                      {resumenExpanded && <Text style={styles.resumenTexto}>{patient.resumenClinico.texto}</Text>}
-                    </>
-                  ) : null}
+                  ))}
                 </View>
-              ) : null}
+              )}
 
-              {/* 3. DETALLE EN ACORDEONES — Embarazo abierto, el resto plegado */}
+              {/* 3. DETALLE CLÍNICO — agrupado y secundario respecto al estado */}
+              <Text style={styles.groupLabel}>Información clínica</Text>
               <Accordion title="Datos del embarazo" icon={CalendarHeart} accentColor={BRAND} defaultOpen
                 headerAction={(
                   <TouchableOpacity style={styles.addChip} onPress={openEmbModal} hitSlop={6}>
@@ -1099,6 +1052,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                 )}
               </Accordion>
 
+              <Text style={styles.groupLabel}>Datos administrativos</Text>
               <Accordion title="Datos personales" icon={User} accentColor={BRAND}>
                 <Fila label="Nombre completo" value={`${patient.firstName} ${patient.lastName}`} />
                 <Fila label="DNI" value={patient.documentNumber} />
@@ -2337,28 +2291,6 @@ const styles = StyleSheet.create({
   statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary },
   statusDivider: { width: 1, height: 34, backgroundColor: commonColors.borderLight },
 
-  resumenCard: {
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  resumenHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  resumenIconWrap: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: obstetraColors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  resumenTitle: {
-    ...typography.bodyMedium,
-    fontWeight: '700',
-    color: commonColors.text,
-  },
-  resumenTexto: { ...typography.bodySm, color: commonColors.textSecondary, lineHeight: 21, marginTop: spacing.sm },
-  resumenAlertas: {
-    gap: 8,
-    marginBottom: spacing.sm,
-  },
   resumenAlertaRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -2369,18 +2301,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm2,
   },
   resumenAlertaText: { ...typography.bodySm, color: commonColors.text, flex: 1, lineHeight: 19 },
-  resumenDestacados: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  resumenChip: {
-    backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm2,
-    minWidth: 92,
+  // Tarjeta única de alertas accionables (reemplaza destacados + párrafo).
+  alertasCard: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: 8,
   },
-  resumenChipLabel: { ...typography.overline, fontSize: 10, color: commonColors.textTertiary, marginBottom: 2 },
-  resumenChipValue: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
-  resumenToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, alignSelf: 'flex-start' },
-  resumenToggleText: { ...typography.caption, fontWeight: '700', color: obstetraColors.primary },
+  alertasTitle: { ...typography.label, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4 },
+  // Subtítulo de grupo para separar lo clínico de lo administrativo.
+  groupLabel: {
+    ...typography.overline,
+    color: commonColors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+  },
   section: {
     gap: 16,
   },
