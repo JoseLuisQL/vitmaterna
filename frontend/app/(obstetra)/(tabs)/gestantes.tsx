@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
+import { PrenatalRibbon } from '../../../src/components/ui/PrenatalRibbon';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { DataTable, type DataTableColumn } from '../../../src/components/web';
@@ -199,9 +200,14 @@ export default function GestantesScreen(): React.ReactElement {
           </View>
           <ChevronRight size={20} color={commonColors.textTertiary} />
         </View>
-        <View style={styles.riskBarContainer}>
-          <View
-            style={[styles.riskBar, { width: `${Math.min(((item.currentWeek || 0) / 40) * 100, 100)}%` }]}
+        {/* Cinta prenatal: avance del embarazo con trimestres, en vez de la
+            barra plana. Misma firma visual que la gestante ve en su inicio. */}
+        <View style={styles.cardRibbon}>
+          <PrenatalRibbon
+            week={Number(item.currentWeek) || 0}
+            colors={obstetraColors.gradient}
+            showCaption={false}
+            animated={false}
           />
         </View>
       </TouchableOpacity>
@@ -251,7 +257,25 @@ export default function GestantesScreen(): React.ReactElement {
         ),
       },
       { key: 'dni', header: 'DNI / HC', width: 140, sortValue: (p) => p.documentNumber || '', render: (p) => `${p.documentNumber || '—'}${p.historiaClinica ? ` · HC-${p.historiaClinica}` : ''}` },
-      { key: 'sem', header: 'Semanas', width: 120, align: 'center', sortValue: (p) => p.currentWeek || 0, render: (p) => (p.currentWeek ? `Sem ${p.currentWeek}${p.currentTrimester ? ` · ${p.currentTrimester}°` : ''}` : '—') },
+      {
+        key: 'sem', header: 'Avance', width: 200, sortValue: (p) => p.currentWeek || 0,
+        render: (p) =>
+          p.currentWeek ? (
+            <View style={styles.tableRibbonCell}>
+              <Text style={styles.tableRibbonLabel} numberOfLines={1}>
+                Sem {p.currentWeek}{p.currentTrimester ? ` · ${p.currentTrimester}° trim` : ''}
+              </Text>
+              <PrenatalRibbon
+                week={Number(p.currentWeek)}
+                colors={obstetraColors.gradient}
+                showCaption={false}
+                animated={false}
+              />
+            </View>
+          ) : (
+            '—'
+          ),
+      },
       { key: 'riesgo', header: 'Riesgo', width: 150, align: 'center', sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => { const m = riskMeta(p.riskLevel); return <AppBadge label={m.label} variant={m.variant} size="sm" />; } },
       { key: 'fpp', header: 'FPP', width: 120, align: 'center', sortValue: (p) => p.estimatedDueDate || '', render: (p) => (p.estimatedDueDate ? new Date(p.estimatedDueDate).toISOString().split('T')[0] : '—') },
     ];
@@ -344,6 +368,8 @@ const styles = StyleSheet.create({
   tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   tableAvatarText: { ...typography.caption, fontWeight: '700', color: BRAND },
   tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
+  tableRibbonCell: { width: '100%', gap: 4 },
+  tableRibbonLabel: { ...typography.caption, color: commonColors.textSecondary },
 
   headerWrapper: {
     paddingBottom: spacing.xl,
@@ -481,15 +507,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
     color: commonColors.textSecondary,
   },
-  riskBarContainer: {
-    height: 4,
-    backgroundColor: commonColors.surfaceAlt,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  riskBar: {
-    height: '100%',
-    backgroundColor: BRAND,
+  cardRibbon: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
   },
   loadingText: { ...typography.bodyMedium, color: commonColors.textTertiary, textAlign: 'center' },
   fab: {
