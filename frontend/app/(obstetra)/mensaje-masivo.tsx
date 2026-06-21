@@ -134,7 +134,7 @@ export default function MensajeMasivoScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   iconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
-  intro: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  intro: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   label: { ...typography.label, fontWeight: '700', color: commonColors.textSecondary, marginBottom: 10, marginTop: 8 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 99, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },

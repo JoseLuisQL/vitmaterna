@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tagline: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.textSecondary,
   },
   card: {
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   roleNoticeText: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
     flex: 1,
   },
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginText: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
   },
 });

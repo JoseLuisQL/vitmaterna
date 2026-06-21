@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   title: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     fontWeight: '600',
     color: commonColors.text,
     flexShrink: 1,

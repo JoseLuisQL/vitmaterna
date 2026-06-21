@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   itemBorder: { borderTopWidth: 1, borderTopColor: commonColors.borderLight },
   itemPressed: { backgroundColor: commonColors.surfaceAlt },
   itemIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  itemLabel: { ...typography.bodyMedium, color: commonColors.text },
+  itemLabel: { ...typography.bodyMd, color: commonColors.text },
   itemDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 1 },
 });
 

@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   rows: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, overflow: 'hidden' },
   row: { padding: spacing.md, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   rowLabel: { ...typography.caption, color: commonColors.textSecondary, marginBottom: 2 },
-  rowValue: { ...typography.bodyMedium, color: commonColors.text },
+  rowValue: { ...typography.bodyMd, color: commonColors.text },
   actionBtn: { backgroundColor: semanticColors.info, borderRadius: borderRadius.md, paddingVertical: 13, alignItems: 'center' },
-  actionText: { ...typography.buttonSmall, color: commonColors.white },
+  actionText: { ...typography.buttonSm, color: commonColors.white },
 });

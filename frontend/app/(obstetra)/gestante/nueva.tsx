@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 40 },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginBottom: spacing.xs },
-  sectionHint: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: spacing.sm, lineHeight: 19 },
+  sectionHint: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.sm, lineHeight: 19 },
   subTitle: { ...typography.label, color: commonColors.textSecondary, fontWeight: '600', marginBottom: 4 },
 
   formGrid: { gap: 14 },
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: commonColors.borderStrong, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   checkboxActive: { backgroundColor: BRAND, borderColor: BRAND },
-  checkboxText: { ...typography.bodySmall, color: commonColors.textSecondary, flex: 1 },
+  checkboxText: { ...typography.bodySm, color: commonColors.textSecondary, flex: 1 },
 
   footerActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, gap: 12 },
   btnSecondary: {
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     color: commonColors.white,
   },
   stepLabelWeb: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontWeight: '600',
     color: commonColors.textSecondary,
   },

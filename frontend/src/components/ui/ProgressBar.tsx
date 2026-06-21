@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   label: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
+    fontFamily: typography.bodySm.fontFamily,
+    fontSize: typography.bodySm.fontSize,
     fontWeight: '500',
     color: commonColors.text,
   },

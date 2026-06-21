@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   bodyText: { ...typography.body, color: commonColors.text, textAlign: 'center', lineHeight: 22 },
 
   gpsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: semanticColors.dangerLight, borderRadius: borderRadius.lg, paddingVertical: spacing.sm2, paddingHorizontal: spacing.md },
-  gpsText: { ...typography.bodySmall, color: EMERGENCY_RED, fontWeight: '600' },
+  gpsText: { ...typography.bodySm, color: EMERGENCY_RED, fontWeight: '600' },
 
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   btn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, height: 52, borderRadius: borderRadius.full },
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   btnGhostText: { ...typography.button, color: commonColors.textSecondary },
 
   progressWrap: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg },
-  progressText: { ...typography.bodyMedium, color: commonColors.textSecondary },
+  progressText: { ...typography.bodyMd, color: commonColors.textSecondary },
 
   successIconWrap: { width: 88, height: 88, borderRadius: 44, backgroundColor: semanticColors.successLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   successTitle: { ...typography.h2, color: commonColors.text, textAlign: 'center' },

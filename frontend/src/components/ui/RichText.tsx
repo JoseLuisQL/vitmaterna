@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   paragraph: { ...typography.body, color: commonColors.text, lineHeight: 23, marginBottom: spacing.sm2 },
   bold: { fontWeight: '700' },
   h2: { ...typography.h3, marginTop: spacing.md, marginBottom: spacing.sm },
-  h3: { ...typography.bodyMedium, fontWeight: '700', marginTop: spacing.sm2, marginBottom: spacing.xs },
+  h3: { ...typography.bodyMd, fontWeight: '700', marginTop: spacing.sm2, marginBottom: spacing.xs },
   quote: {
     borderLeftWidth: 3,
     paddingLeft: spacing.md,

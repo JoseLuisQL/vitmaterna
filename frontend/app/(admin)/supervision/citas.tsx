@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
   dateBox: { alignItems: 'center', gap: 2, minWidth: 64 },
   dateText: { ...typography.caption, fontWeight: '700', color: BRAND },
-  name: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  name: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
   // ── Portal web ──

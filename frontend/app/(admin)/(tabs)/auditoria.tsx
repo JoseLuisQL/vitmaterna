@@ -106,7 +106,7 @@ export default function AuditoriaScreen(): React.ReactElement {
             <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: color + '1A', alignItems: 'center', justifyContent: 'center' }}>
               <Icon size={14} color={color} />
             </View>
-            <Text style={{ ...typography.bodySmall, fontWeight: '600', color: commonColors.text }}>{label}</Text>
+            <Text style={{ ...typography.bodySm, fontWeight: '600', color: commonColors.text }}>{label}</Text>
           </View>
         );
       },
@@ -119,7 +119,7 @@ export default function AuditoriaScreen(): React.ReactElement {
       render: (row: any) => {
         const entidad = ENTIDAD_LABEL[row.entidad as string] || row.entidad || 'Sistema';
         return (
-          <Text style={{ ...typography.bodySmall, color: commonColors.text }}>{entidad}</Text>
+          <Text style={{ ...typography.bodySm, color: commonColors.text }}>{entidad}</Text>
         );
       },
       sortValue: (row: any) => ENTIDAD_LABEL[row.entidad as string] || row.entidad || 'Sistema',
@@ -134,7 +134,7 @@ export default function AuditoriaScreen(): React.ReactElement {
           : 'Sistema';
         return (
           <View style={{ gap: 2 }}>
-            <Text style={{ ...typography.bodySmall, fontWeight: '500', color: commonColors.text }}>{usuario}</Text>
+            <Text style={{ ...typography.bodySm, fontWeight: '500', color: commonColors.text }}>{usuario}</Text>
             {row.user?.role ? (
               <Text style={{ ...typography.caption, color: commonColors.textSecondary, textTransform: 'uppercase' as const, fontSize: 10 }}>{row.user.role}</Text>
             ) : null}
@@ -154,7 +154,7 @@ export default function AuditoriaScreen(): React.ReactElement {
       render: (row: any) => {
         const dateStr = row.createdAt ? new Date(row.createdAt).toLocaleString('es-PE') : 'Fecha desconocida';
         return (
-          <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary }}>{dateStr}</Text>
+          <Text style={{ ...typography.bodySm, color: commonColors.textSecondary }}>{dateStr}</Text>
         );
       },
       sortValue: (row: any) => row.createdAt || '',
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   action: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.text,
   },
   details: {

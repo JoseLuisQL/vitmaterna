@@ -71,7 +71,7 @@ const detailRowStyles = StyleSheet.create({
     borderBottomColor: commonColors.borderLight,
   },
   label: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
     flex: 1,
   },
@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
     marginRight: 12 
   },
   name: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     fontFamily: typography.h3.fontFamily,
     color: commonColors.text,
     marginBottom: 4,
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.text,
   },
   roleTabs: {

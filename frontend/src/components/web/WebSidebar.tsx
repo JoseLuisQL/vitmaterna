@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
   },
   navRowCollapsed: { justifyContent: 'center', paddingHorizontal: 0 },
   navRowPressed: { },
-  navLabel: { ...typography.bodyMedium, flex: 1 },
-  navLabelActive: { ...typography.bodyMedium, fontWeight: '600' },
+  navLabel: { ...typography.bodyMd, flex: 1 },
+  navLabelActive: { ...typography.bodyMd, fontWeight: '600' },
   badge: {
     minWidth: 20,
     height: 20,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   avatarText: { ...typography.h3, color: commonColors.white },
   userTexts: { flex: 1, minWidth: 0 },
-  userName: { ...typography.bodyMedium },
+  userName: { ...typography.bodyMd },
   userSub: { ...typography.caption },
   themeWrap: { paddingHorizontal: spacing.xs },
   logoutBtn: {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md, backgroundColor: semanticColors.dangerLight,
   },
   logoutBtnCollapsed: { justifyContent: 'center', paddingHorizontal: 0 },
-  logoutText: { ...typography.bodyMedium, color: semanticColors.danger, fontWeight: '600' },
+  logoutText: { ...typography.bodyMd, color: semanticColors.danger, fontWeight: '600' },
 });
 
 export default WebSidebar;

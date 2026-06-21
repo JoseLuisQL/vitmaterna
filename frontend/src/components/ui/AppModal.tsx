@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1, gap: 2 },
   title: { ...typography.h3, color: commonColors.text },
-  subtitle: { ...typography.bodySmall, color: commonColors.textSecondary },
+  subtitle: { ...typography.bodySm, color: commonColors.textSecondary },
   closeBtn: {
     width: 34,
     height: 34,

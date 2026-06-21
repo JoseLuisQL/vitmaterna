@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   sectionCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md, ...shadows.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
   sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { ...typography.bodyMedium, color: commonColors.text },
+  sectionTitle: { ...typography.bodyMd, color: commonColors.text },
   formGroup: { gap: 16 },
   submitBtn: { backgroundColor: BRAND, borderRadius: 99, paddingVertical: 16, marginTop: 12 },
   submitBtnWeb: {

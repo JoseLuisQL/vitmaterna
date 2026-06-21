@@ -169,7 +169,7 @@ export default function AdminInicioScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   alertCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: semanticColors.warningLight, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: semanticColors.warning },
   alertIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center' },
-  alertTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  alertTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   alertText: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
   sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.lg, marginLeft: 4 },
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   statusCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   statusRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  statusLabel: { ...typography.bodySmall, color: commonColors.text, flex: 1 },
+  statusLabel: { ...typography.bodySm, color: commonColors.text, flex: 1 },
   statusValue: { ...typography.label, fontWeight: '700', color: commonColors.textSecondary },
 
   twoCol: { flexDirection: 'row', gap: spacing.lg, alignItems: 'flex-start' },

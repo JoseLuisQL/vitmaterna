@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   body: { marginTop: spacing.sm, gap: 4 },
   row: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   label: { ...typography.caption, fontWeight: '700', color: semanticColors.danger, minWidth: 72 },
-  value: { ...typography.bodySmall, color: commonColors.text, flex: 1, fontWeight: '600' },
+  value: { ...typography.bodySm, color: commonColors.text, flex: 1, fontWeight: '600' },
   valueFull: { fontWeight: '500' },
   mapBtn: {
     flexDirection: 'row',

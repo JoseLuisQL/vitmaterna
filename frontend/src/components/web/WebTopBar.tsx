@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { ...typography.bodyMedium, color: commonColors.white, fontWeight: '700' },
+  avatarText: { ...typography.bodyMd, color: commonColors.white, fontWeight: '700' },
   userTexts: { minWidth: 0 },
   userName: { ...typography.bodySm, fontWeight: '600' },
   userSub: { ...typography.micro },

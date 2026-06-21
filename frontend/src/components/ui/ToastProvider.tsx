@@ -145,6 +145,6 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1, gap: 2 },
   title: { ...typography.label, color: commonColors.text },
-  message: { ...typography.bodySmall, color: commonColors.textSecondary },
+  message: { ...typography.bodySm, color: commonColors.textSecondary },
   closeBtn: { paddingTop: 2 },
 });

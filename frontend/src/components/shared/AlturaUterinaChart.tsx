@@ -128,6 +128,6 @@ const styles = StyleSheet.create({
   },
   statusHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 9, height: 9, borderRadius: 5 },
-  statusText: { ...typography.bodySmall, fontWeight: '700' },
+  statusText: { ...typography.bodySm, fontWeight: '700' },
   statusDetail: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18 },
 });

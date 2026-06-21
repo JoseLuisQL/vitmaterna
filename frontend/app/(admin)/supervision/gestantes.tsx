@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardRibbon: { marginTop: spacing.sm2 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { ...typography.bodyMedium, fontWeight: '700', color: BRAND },
-  name: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  avatarText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
+  name: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
   // ── Portal web ──

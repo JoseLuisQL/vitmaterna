@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     borderBottomColor: commonColors.borderLight,
   },
   switchLabel: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.text,
   },
   switchDesc: {

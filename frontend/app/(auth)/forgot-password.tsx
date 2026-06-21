@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   backText: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.text,
   },
   headerSection: {
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   tagline: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.textSecondary,
   },
   card: {
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   successDescription: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,

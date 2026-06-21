@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     borderColor: commonColors.border,
   },
   iconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  selectorText: { ...typography.bodyMedium, color: commonColors.text, flex: 1 },
+  selectorText: { ...typography.bodyMd, color: commonColors.text, flex: 1 },
 
   modalidadRow: { flexDirection: 'row', gap: 8 },
   modalidadBtn: { flex: 1, paddingVertical: 12, borderRadius: 14, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center' },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: BRAND, fontWeight: '700' },
 
   row: { flexDirection: 'row' },
-  helperText: { ...typography.bodySmall, color: commonColors.textTertiary, paddingVertical: 8 },
+  helperText: { ...typography.bodySm, color: commonColors.textTertiary, paddingVertical: 8 },
   dateScroll: { flexDirection: 'row', marginBottom: 4 },
   dateChip: {
     alignItems: 'center',
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   },
   slotChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   slotChipDisabled: { opacity: 0.4 },
-  slotText: { ...typography.bodySmall, color: commonColors.text },
+  slotText: { ...typography.bodySm, color: commonColors.text },
   slotTextActive: { color: obstetraColors.onPrimary, fontWeight: '700' },
   slotTextDisabled: { color: commonColors.textTertiary, textDecorationLine: 'line-through' },
   inputBox: {
@@ -422,8 +422,8 @@ const styles = StyleSheet.create({
     height: 52,
     gap: 8,
   },
-  inputText: { ...typography.bodyMedium, color: commonColors.text },
-  inputTextNative: { flex: 1, ...typography.bodyMedium, fontSize: 15, color: commonColors.text },
+  inputText: { ...typography.bodyMd, color: commonColors.text },
+  inputTextNative: { flex: 1, ...typography.bodyMd, fontSize: 15, color: commonColors.text },
 
   summaryCard: {
     marginTop: 20,
@@ -436,15 +436,15 @@ const styles = StyleSheet.create({
   },
   summaryTitle: { ...typography.overline, color: BRAND, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700', marginBottom: 2 },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  summaryText: { ...typography.bodySmall, color: commonColors.text, fontWeight: '600', flex: 1, textTransform: 'capitalize' },
+  summaryText: { ...typography.bodySm, color: commonColors.text, fontWeight: '600', flex: 1, textTransform: 'capitalize' },
 
   // Patients Step
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: 16, paddingHorizontal: 16, height: 48, marginBottom: 16 },
   searchInput: { flex: 1, marginLeft: 8, ...typography.body, fontSize: 15, color: commonColors.text },
   patientItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarText: { ...typography.bodyMedium, color: commonColors.textSecondary },
-  patientName: { ...typography.bodyMedium, color: commonColors.text },
+  avatarText: { ...typography.bodyMd, color: commonColors.textSecondary },
+  patientName: { ...typography.bodyMd, color: commonColors.text },
   patientDoc: { ...typography.caption, color: commonColors.textTertiary },
-  emptyText: { textAlign: 'center', marginTop: 40, ...typography.bodyMedium, color: commonColors.textTertiary },
+  emptyText: { textAlign: 'center', marginTop: 40, ...typography.bodyMd, color: commonColors.textTertiary },
 });

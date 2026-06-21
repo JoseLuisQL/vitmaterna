@@ -142,5 +142,5 @@ const styles = StyleSheet.create({
   errorList: { gap: spacing.sm, marginBottom: spacing.lg },
   errorItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   errorDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: semanticColors.danger, marginTop: 8 },
-  errorText: { ...typography.bodySmall, color: commonColors.text, flex: 1, lineHeight: 20 },
+  errorText: { ...typography.bodySm, color: commonColors.text, flex: 1, lineHeight: 20 },
 });

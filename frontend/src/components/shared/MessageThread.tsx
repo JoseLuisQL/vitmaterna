@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   eduThumb: { width: 46, height: 46, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceHover },
   eduIcon: { width: 46, height: 46, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
   eduCategory: { ...typography.overline, fontSize: 10, marginBottom: 2 },
-  eduTitle: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, lineHeight: 18 },
+  eduTitle: { ...typography.bodySm, fontWeight: '700', color: commonColors.text, lineHeight: 18 },
   eduMeta: { ...typography.caption, fontSize: 11, color: commonColors.textSecondary, marginTop: 2 },
   text: { ...typography.body },
   textMine: { color: commonColors.white },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   timeOther: { color: commonColors.textTertiary },
   typingWrap: { paddingVertical: spacing.xs },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 80, paddingHorizontal: spacing.xl },
-  emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22 },
 });
 
 export default MessageThread;

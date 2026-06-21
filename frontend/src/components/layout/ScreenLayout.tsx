@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   errorTitle: { ...typography.h3, color: commonColors.text, textAlign: 'center' },
-  errorMessage: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  errorMessage: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22 },
   retryBtn: { borderRadius: borderRadius.full, paddingHorizontal: 32, paddingVertical: 14, marginTop: spacing.sm },
   retryText: { ...typography.button, color: commonColors.white },
 });
