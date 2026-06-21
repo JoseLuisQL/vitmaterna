@@ -19,6 +19,7 @@ import api from '../../../src/services/api';
 import { ChatSkeleton, ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { SearchField } from '../../../src/components/ui/Field';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { ConversationListItem, type ConversationRow } from '../../../src/components/shared/ConversationListItem';
 import { MessageThread } from '../../../src/components/shared/MessageThread';
@@ -193,16 +194,11 @@ export default function ObstetraChatScreen() {
 
   // ── Sub-render: barra de búsqueda ──
   const SearchBar = (
-    <View style={styles.searchBox}>
-      <Search size={18} color={commonColors.textTertiary} />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Buscar gestante por nombre o DNI"
-        placeholderTextColor={commonColors.textTertiary}
-        value={search}
-        onChangeText={setSearch}
-      />
-    </View>
+    <SearchField
+      value={search}
+      onChangeText={setSearch}
+      placeholder="Buscar gestante por nombre o DNI"
+    />
   );
 
   const activeName = activeRow?.nombre || 'Gestante';
@@ -360,8 +356,6 @@ const styles = StyleSheet.create({
   bandejaSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
 
   mobileSearchWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.md },
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44 },
-  searchInput: { flex: 1, ...typography.body, color: commonColors.text, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}) },
 
   listContent: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
   emptyWrap: { paddingTop: spacing.xxl },

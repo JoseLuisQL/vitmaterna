@@ -23,6 +23,7 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast, RichText } from '../../../src/components/ui';
+import { SearchField } from '../../../src/components/ui/Field';
 import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
 import { confirmAction } from '../../../src/utils/confirm';
@@ -307,19 +308,12 @@ export default function ContenidoScreen(): React.ReactElement {
         )}
       </View>
 
-      <View style={styles.searchBox}>
-        <Search size={18} color={commonColors.textTertiary} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar recurso…"
-          placeholderTextColor={commonColors.textTertiary}
-        />
-        {search ? (
-          <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
-        ) : null}
-      </View>
+      <SearchField
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Buscar recurso…"
+        containerStyle={styles.searchBox}
+      />
       {availableCats.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           <TouchableOpacity style={[styles.filterChip, !filterCat && styles.filterChipActive]} onPress={() => setFilterCat(null)}>
@@ -437,19 +431,12 @@ export default function ContenidoScreen(): React.ReactElement {
     >
       <>
         <View style={styles.webToolbar}>
-          <View style={styles.webSearchBox}>
-            <Search size={18} color={commonColors.textTertiary} />
-            <TextInput
-              style={styles.webSearchInput}
-              placeholder="Buscar contenido..."
-              placeholderTextColor={commonColors.textTertiary}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search ? (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
-            ) : null}
-          </View>
+          <SearchField
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar contenido..."
+            containerStyle={styles.webSearchBox}
+          />
           <TouchableOpacity style={styles.webCreateBtn} onPress={openCreate} activeOpacity={0.85}>
             <Plus size={18} color={commonColors.white} />
             <Text style={styles.webCreateText}>Nuevo contenido</Text>
@@ -673,12 +660,7 @@ const styles = StyleSheet.create({
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
   listWeb: { width: '100%', paddingBottom: spacing.xl },
   webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-  webSearchBox: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border,
-    borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44,
-  },
-  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineStyle: 'none' } as any,
+  webSearchBox: { flex: 1 },
   webFilterRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.md },
   tableTitleCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tableIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
@@ -714,13 +696,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: BRAND, borderColor: BRAND },
   chipText: { ...typography.bodySmall, color: commonColors.textSecondary },
   chipTextActive: { color: obstetraColors.onPrimary, fontWeight: '700' },
-  searchBox: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: commonColors.surface, borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, height: 44, marginBottom: spacing.sm,
-    borderWidth: 1, borderColor: commonColors.border,
-  },
-  searchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
+  searchBox: { marginBottom: spacing.sm },
   filterRow: { gap: spacing.sm, paddingBottom: spacing.sm },
   filterChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
   filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },

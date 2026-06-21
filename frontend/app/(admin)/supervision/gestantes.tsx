@@ -3,14 +3,15 @@
  * Lista global de gestantes del sistema con buscador y filtro de riesgo.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Search, X, Baby } from 'lucide-react-native';
+import { ArrowLeft, Baby } from 'lucide-react-native';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { PrenatalRibbon } from '../../../src/components/ui/PrenatalRibbon';
+import { SearchField } from '../../../src/components/ui/Field';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
@@ -96,11 +97,12 @@ export default function AdminGestantesScreen(): React.ReactElement {
           scroll={false}
         >
           <View style={styles.webToolbar}>
-            <View style={styles.webSearchBox}>
-              <Search size={18} color={commonColors.textTertiary} />
-              <TextInput style={styles.webSearchInput} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o DNI…" placeholderTextColor={commonColors.textTertiary} />
-              {search ? <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity> : null}
-            </View>
+            <SearchField
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar por nombre o DNI…"
+              containerStyle={styles.webSearchBox}
+            />
             <View style={styles.filterRow}>
               {RISKS.map((r) => (
                 <TouchableOpacity key={String(r.key)} style={[styles.filterChip, risk === r.key && styles.filterChipActive]} onPress={() => setRisk(r.key)}>
@@ -147,11 +149,12 @@ export default function AdminGestantesScreen(): React.ReactElement {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
-            <View style={styles.searchBox}>
-              <Search size={18} color={commonColors.textTertiary} />
-              <TextInput style={styles.searchInput} value={search} onChangeText={setSearch} placeholder="Buscar por nombre o DNI…" placeholderTextColor={commonColors.textTertiary} />
-              {search ? <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}><X size={16} color={commonColors.textTertiary} /></TouchableOpacity> : null}
-            </View>
+            <SearchField
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar por nombre o DNI…"
+              containerStyle={styles.searchBox}
+            />
             <View style={styles.filterRow}>
               {RISKS.map((r) => (
                 <TouchableOpacity key={String(r.key)} style={[styles.filterChip, risk === r.key && styles.filterChipActive]} onPress={() => setRisk(r.key)}>
@@ -196,8 +199,7 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: commonColors.white },
   subtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: layout.tabBarSpace },
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 46, marginBottom: spacing.md, borderWidth: 1, borderColor: commonColors.border },
-  searchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
+  searchBox: { marginBottom: spacing.md },
   filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   filterChip: { paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
   filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },
@@ -213,8 +215,7 @@ const styles = StyleSheet.create({
 
   // ── Portal web ──
   webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
-  webSearchBox: { flex: 1, minWidth: 220, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44 },
-  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineWidth: 0 } as any,
+  webSearchBox: { flex: 1, minWidth: 220 },
   tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },

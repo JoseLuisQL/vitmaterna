@@ -7,13 +7,14 @@ import { View, StyleSheet, Text, RefreshControl, TextInput, ActivityIndicator, T
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Users, Search, CheckCircle, UserPlus, ChevronRight, Plus, Menu } from 'lucide-react-native';
+import { Users, CheckCircle, UserPlus, ChevronRight, Plus, Menu } from 'lucide-react-native';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { SearchField } from '../../../src/components/ui/Field';
 import { Pencil, KeyRound, Trash2 } from 'lucide-react-native';
 import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -309,16 +310,11 @@ export default function UsuariosScreen(): React.ReactElement {
       </LinearGradient>
 
       <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
-          <Search size={20} color={commonColors.textTertiary} style={{ marginRight: 12 }} />
-          <TextInput
-            placeholder="Buscar por nombre o DNI..."
-            value={search}
-            onChangeText={setSearch}
-            style={styles.searchInput}
-            placeholderTextColor={commonColors.textTertiary}
-          />
-        </View>
+        <SearchField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar por nombre o DNI..."
+        />
       </View>
     </View>
   );
@@ -615,16 +611,12 @@ export default function UsuariosScreen(): React.ReactElement {
       scroll={false}
     >
       <View style={styles.webToolbar}>
-        <View style={styles.webSearchBox}>
-          <Search size={18} color={commonColors.textTertiary} />
-          <TextInput
-            style={styles.webSearchInput}
-            placeholder="Buscar por nombre o DNI..."
-            placeholderTextColor={commonColors.textTertiary}
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
+        <SearchField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar por nombre o DNI..."
+          containerStyle={styles.webSearchBox}
+        />
         <TouchableOpacity style={styles.webCreateBtn} onPress={() => setIsCreateModalVisible(true)} activeOpacity={0.85}>
           <Plus size={18} color={commonColors.white} />
           <Text style={styles.webCreateText}>Nuevo usuario</Text>
@@ -823,12 +815,7 @@ export default function UsuariosScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   // ── Portal web ──
   webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-  webSearchBox: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border,
-    borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44,
-  },
-  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineWidth: 0 } as any,
+  webSearchBox: { flex: 1 },
   webCreateBtn: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: adminColors.primary, borderRadius: borderRadius.lg,
@@ -874,20 +861,7 @@ const styles = StyleSheet.create({
     marginTop: -spacing.lg,
     marginBottom: spacing.sm,
   },
-  searchInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.full,
-    paddingHorizontal: 20,
-    height: 56,
-    ...shadows.card,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.bodyMedium,
-    color: commonColors.text,
-  },
+
   listContent: {
     paddingBottom: layout.tabBarSpace,
   },

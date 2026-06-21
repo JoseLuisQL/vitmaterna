@@ -10,7 +10,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import {
-  View, StyleSheet, Text, ScrollView, TouchableOpacity, TextInput,
+  View, StyleSheet, Text, ScrollView, TouchableOpacity,
   Linking, StatusBar, Image,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -18,8 +18,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  AlertTriangle, Calculator, Phone, ArrowLeft, Search, Heart, Clock,
-  ChevronRight, CheckCircle2, X, BookOpen, Sparkles,
+  AlertTriangle, Calculator, Phone, ArrowLeft, Heart, Clock,
+  ChevronRight, CheckCircle2, BookOpen, Sparkles,
 } from 'lucide-react-native';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -27,6 +27,7 @@ import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spa
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
+import { SearchField } from '../../../src/components/ui/Field';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { resolveMediaUrl } from '../../../src/services/api';
@@ -356,22 +357,13 @@ export default function EducacionScreen(): React.ReactElement {
   const renderHeader = () => (
     <View>
       {/* Buscador */}
-      <View style={styles.searchBox}>
-        <Search size={18} color={commonColors.textTertiary} />
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Buscar en educación…"
-          placeholderTextColor={commonColors.textTertiary}
-          returnKeyType="search"
-        />
-        {query ? (
-          <TouchableOpacity onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Limpiar búsqueda">
-            <X size={16} color={commonColors.textTertiary} />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Buscar en educación…"
+        returnKeyType="search"
+        containerStyle={styles.searchBox}
+      />
 
       {/* Pestañas */}
       <ToggleTabs
@@ -572,13 +564,7 @@ const styles = StyleSheet.create({
   toolBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   listWeb: { width: '100%', alignSelf: 'center', paddingBottom: spacing.xl },
-  searchBox: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: commonColors.surface, borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, height: 46, marginBottom: spacing.md,
-    borderWidth: 1, borderColor: commonColors.border,
-  },
-  searchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
+  searchBox: { marginBottom: spacing.md },
   catRow: { gap: spacing.sm, paddingBottom: spacing.sm },
   catChip: { paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
   catChipActive: { backgroundColor: BRAND, borderColor: BRAND },
