@@ -107,4 +107,15 @@ describe('PrenatalRibbon (componente insignia)', () => {
     render(<PrenatalRibbon week={40} />);
     expect(screen.getByText('A término')).toBeTruthy();
   });
+
+  it('renderiza sin romper cuando recibe hitos (próxima cita)', () => {
+    render(
+      <PrenatalRibbon
+        week={24}
+        milestones={[{ week: 27, label: 'Próxima cita' }]}
+        showCaption={false}
+      />,
+    );
+    expect(screen.getByLabelText(/Semana 24 de 40/)).toBeTruthy();
+  });
 });

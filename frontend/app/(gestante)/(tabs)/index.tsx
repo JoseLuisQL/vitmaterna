@@ -81,6 +81,17 @@ export default function GestanteDashboard(): React.ReactElement {
     return Math.min(42, Math.floor(diffDays / 7));
   }, [profile?.fum]);
 
+  // Semana de gestación en la que cae la próxima cita → hito sobre la cinta.
+  const ribbonMilestones = React.useMemo(() => {
+    if (!profile?.fum || !nextAppointment?.date) return [];
+    const fum = new Date(profile.fum);
+    const cita = new Date(nextAppointment.date);
+    if (isNaN(fum.getTime()) || isNaN(cita.getTime())) return [];
+    const w = Math.floor((cita.getTime() - fum.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    if (w <= 0 || w > 42) return [];
+    return [{ week: w, label: 'Próxima cita' }];
+  }, [profile?.fum, nextAppointment?.date]);
+
   // Sin FUM registrada no podemos calcular semanas: ofrecemos onboarding (issue #12).
   const hasFum = !!profile?.fum && !isNaN(new Date(profile.fum).getTime());
   const gestationalWeekText = weeks > 0 ? `Semana ${weeks}` : 'Semana --';
@@ -162,7 +173,7 @@ export default function GestanteDashboard(): React.ReactElement {
               </View>
               <AppBadge label={getRiskLabel(riskLevel)} variant={getRiskVariant(riskLevel) as any} />
             </View>
-            <PrenatalRibbon week={weeks} colors={gestanteColors.gradient} />
+            <PrenatalRibbon week={weeks} colors={gestanteColors.gradient} milestones={ribbonMilestones} />
           </AppCard>
 
           {/* Next Appointment — sin onPress en la tarjeta para evitar botón

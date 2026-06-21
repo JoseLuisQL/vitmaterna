@@ -797,6 +797,17 @@ export default function PatientProfileScreen(): React.ReactElement {
     .filter((a: any) => ['programada', 'confirmada'].includes(a.estado) && new Date(a.fecha) >= new Date())
     .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0];
 
+  // Semana de gestación de la próxima cita → hito sobre la cinta prenatal.
+  const ribbonMilestones = (() => {
+    if (!patient.fumRaw || !nextAppointment?.fecha) return [];
+    const fum = new Date(patient.fumRaw);
+    const cita = new Date(nextAppointment.fecha);
+    if (isNaN(fum.getTime()) || isNaN(cita.getTime())) return [];
+    const w = Math.floor((cita.getTime() - fum.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    if (w <= 0 || w > 42) return [];
+    return [{ week: w, label: 'Próxima cita' }];
+  })();
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -974,6 +985,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                       week={Number(patient.currentWeek)}
                       colors={obstetraColors.gradient}
                       showCaption={false}
+                      milestones={ribbonMilestones}
                     />
                   </View>
                 ) : null}
