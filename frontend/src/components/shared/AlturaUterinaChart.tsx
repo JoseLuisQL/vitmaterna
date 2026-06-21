@@ -34,47 +34,75 @@ export function AlturaUterinaChart({ controls, themeColor = obstetraColors.prima
 
   if (points.length < 2) return null;
 
-  const labels = points.map((p) => `S${p.semana}`);
+  const labels = points.map((p) => `Sem ${p.semana}`);
   const auData = points.map((p) => p.au);
   const refs = points.map((p) => interpolateAU(p.semana));
   const p10Data = refs.map((r, i) => r?.p10 ?? auData[i]);
   const p90Data = refs.map((r, i) => r?.p90 ?? auData[i]);
 
-  // Estado del último control respecto a la referencia.
+  // Estado del último control respecto a la referencia, con explicación en
+  // lenguaje claro y la acción sugerida (no solo "P90").
   const last = points[points.length - 1];
   const estado = classifyAlturaUterina(last.semana, last.au);
   const estadoMeta = {
-    baja: { label: 'Por debajo de P10', color: semanticColors.warning },
-    alta: { label: 'Por encima de P90', color: semanticColors.warning },
-    normal: { label: 'Dentro de lo normal', color: semanticColors.success },
-    sin_referencia: { label: 'Sin referencia', color: commonColors.textSecondary },
+    baja: {
+      label: 'Crecimiento por debajo de lo esperado',
+      detail: 'La altura uterina es menor a lo normal para las semanas. Descarta restricción del crecimiento (considera ecografía).',
+      color: semanticColors.warning,
+    },
+    alta: {
+      label: 'Crecimiento por encima de lo esperado',
+      detail: 'La altura uterina es mayor a lo normal para las semanas. Puede indicar bebé grande, exceso de líquido o error en las fechas (considera ecografía).',
+      color: semanticColors.warning,
+    },
+    normal: {
+      label: 'El bebé crece dentro de lo normal',
+      detail: 'La altura uterina está dentro del rango esperado para las semanas de embarazo.',
+      color: semanticColors.success,
+    },
+    sin_referencia: {
+      label: 'Sin referencia para estas semanas',
+      detail: 'Aún no hay rango de referencia para esta edad gestacional.',
+      color: commonColors.textSecondary,
+    },
   }[estado];
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Altura Uterina vs Edad Gestacional</Text>
+      <Text style={styles.title}>Crecimiento del bebé (altura uterina)</Text>
+      <Text style={styles.subtitle}>
+        La línea morada es tu paciente. La franja verde es lo normal: mientras el punto esté dentro, el crecimiento va bien.
+      </Text>
 
       <LineChartSvg
         labels={labels}
-        height={200}
+        height={210}
         decimals={1}
+        yAxisLabel="Altura uterina (cm)"
+        xAxisLabel="Semanas de embarazo"
+        band={{ lower: p10Data, upper: p90Data, color: semanticColors.successLight }}
         series={[
-          { data: p10Data, color: commonColors.textTertiary, strokeWidth: 1.5, withDots: false, dashed: true },
-          { data: p90Data, color: commonColors.textTertiary, strokeWidth: 1.5, withDots: false, dashed: true },
-          { data: auData, color: themeColor, strokeWidth: 3 },
+          { data: p10Data, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
+          { data: p90Data, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
+          { data: auData, color: themeColor, strokeWidth: 3, highlightLast: true },
         ]}
         legend={[
-          { label: 'P10', color: commonColors.textTertiary },
-          { label: 'P90', color: commonColors.textTertiary },
-          { label: 'AU (cm)', color: themeColor },
+          { label: 'Zona normal', color: semanticColors.success },
+          { label: 'Altura de tu paciente', color: themeColor },
         ]}
         style={{ marginTop: spacing.sm }}
       />
 
-      <View style={[styles.statusPill, { backgroundColor: estadoMeta.color + '20' }]}>
-        <View style={[styles.dot, { backgroundColor: estadoMeta.color }]} />
-        <Text style={[styles.statusText, { color: estadoMeta.color }]}>
-          Último control (S{last.semana}): {estadoMeta.label}
+      {/* Estado del último control: titular + explicación accionable */}
+      <View style={[styles.statusBox, { backgroundColor: estadoMeta.color + '14', borderColor: estadoMeta.color + '40' }]}>
+        <View style={styles.statusHeader}>
+          <View style={[styles.dot, { backgroundColor: estadoMeta.color }]} />
+          <Text style={[styles.statusText, { color: estadoMeta.color }]}>
+            {estadoMeta.label}
+          </Text>
+        </View>
+        <Text style={styles.statusDetail}>
+          Último control (semana {last.semana}, {last.au} cm): {estadoMeta.detail}
         </Text>
       </View>
     </View>
@@ -89,17 +117,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     ...shadows.card,
   },
-  title: { ...typography.h3, color: commonColors.text, marginBottom: spacing.sm },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+  title: { ...typography.h3, color: commonColors.text, marginBottom: 4 },
+  subtitle: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18, marginBottom: spacing.sm },
+  statusBox: {
+    marginTop: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
     gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    marginTop: spacing.sm,
   },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { ...typography.caption, fontWeight: '700' },
+  statusHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
+  statusText: { ...typography.bodySmall, fontWeight: '700' },
+  statusDetail: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18 },
 });

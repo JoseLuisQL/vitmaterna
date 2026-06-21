@@ -745,7 +745,38 @@ export default function PatientProfileScreen(): React.ReactElement {
     .sort((a: any, b: any) => (Number.isFinite(a.week) ? a.week : 0) - (Number.isFinite(b.week) ? b.week : 0));
   const hasWeightChart = weightPoints.length >= 2;
   const weightData = weightPoints.map((p: any) => p.weight);
-  const weekLabels = weightPoints.map((p: any) => `S${Number.isFinite(p.week) ? p.week : '—'}`);
+  const weekLabels = weightPoints.map((p: any) => `Sem ${Number.isFinite(p.week) ? p.week : '—'}`);
+
+  // Banda de ganancia de peso recomendada (IOM), según el IMC pregestacional.
+  // Ganancia total por categoría → kg/semana en 2º-3er trimestre, partiendo del
+  // peso habitual (pregestacional). Permite ver si la gestante sube lo correcto.
+  const imcInicial = Number(patient.imc);
+  const pesoBase = Number(patient.pesoHabitual);
+  const gainRange = (() => {
+    if (!Number.isFinite(imcInicial) || imcInicial <= 0) return null;
+    if (imcInicial < 18.5) return { totalMin: 12.5, totalMax: 18, label: 'bajo peso' };
+    if (imcInicial < 25) return { totalMin: 11.5, totalMax: 16, label: 'peso normal' };
+    if (imcInicial < 30) return { totalMin: 7, totalMax: 11.5, label: 'sobrepeso' };
+    return { totalMin: 5, totalMax: 9, label: 'obesidad' };
+  })();
+  const hasWeightBand = hasWeightChart && Number.isFinite(pesoBase) && pesoBase > 0 && !!gainRange;
+  // En cada semana medida, peso esperado = peso base + ganancia proporcional a
+  // (semana-13)/(40-13) del total recomendado (la ganancia relevante arranca ~sem 13).
+  const weightLower = hasWeightBand
+    ? weightPoints.map((p: any) => {
+        const frac = Math.max(0, Math.min(1, (p.week - 13) / (40 - 13)));
+        return Number((pesoBase + gainRange!.totalMin * frac).toFixed(1));
+      })
+    : [];
+  const weightUpper = hasWeightBand
+    ? weightPoints.map((p: any) => {
+        const frac = Math.max(0, Math.min(1, (p.week - 13) / (40 - 13)));
+        return Number((pesoBase + gainRange!.totalMax * frac).toFixed(1));
+      })
+    : [];
+  const gananciaActual = hasWeightChart && Number.isFinite(pesoBase) && pesoBase > 0
+    ? Number((weightData[weightData.length - 1] - pesoBase).toFixed(1))
+    : null;
 
   const lab = patient.laboratorio || {};
   const vacunas = patient.vacunas || [];
@@ -1080,21 +1111,52 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── SECCIÓN: SEGUIMIENTO (controles prenatales + visitas) ── */}
           {activeTab === 'seguimiento' && (
             <View style={styles.section}>
+              {/* Encabezado explicativo de la sección (issue #6 de Seguimiento) */}
+              <View style={[styles.card, designTokens.cardShadow]}>
+                <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Seguimiento del embarazo</Text>
+                <Text style={styles.clinicoIntro}>
+                  Aquí ves cómo evoluciona el embarazo control a control: el crecimiento del bebé (altura uterina),
+                  la ganancia de peso y el historial de controles con sus signos vitales.
+                </Text>
+              </View>
+
               {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
               <AlturaUterinaChart controls={controls} themeColor={BRAND} />
 
               {/* La curva de peso solo se muestra si el módulo de peso está activo. */}
               {flags.pesoRegistros && hasWeightChart && (
                 <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
-                  <Text style={styles.cardHeader}>Curva de Ganancia de Peso (kg)</Text>
+                  <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Ganancia de peso</Text>
+                  <Text style={styles.clinicoIntro}>
+                    {hasWeightBand
+                      ? 'La línea morada es el peso de tu paciente. La franja verde es la ganancia recomendada para su contextura: mientras esté dentro, sube lo adecuado.'
+                      : 'Peso de tu paciente por semana. Registra su peso habitual y talla para ver la franja de ganancia recomendada.'}
+                  </Text>
                   <LineChartSvg
                     labels={weekLabels}
-                    height={180}
+                    height={190}
                     decimals={1}
-                    series={[{ data: weightData, color: BRAND, strokeWidth: 3 }]}
-                    legend={[{ label: 'Peso (kg)', color: BRAND }]}
+                    yAxisLabel="Peso (kg)"
+                    xAxisLabel="Semanas de embarazo"
+                    band={hasWeightBand ? { lower: weightLower, upper: weightUpper, color: semanticColors.successLight } : undefined}
+                    series={[
+                      ...(hasWeightBand ? [
+                        { data: weightLower, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
+                        { data: weightUpper, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
+                      ] : []),
+                      { data: weightData, color: BRAND, strokeWidth: 3, highlightLast: true },
+                    ]}
+                    legend={hasWeightBand
+                      ? [{ label: 'Ganancia recomendada', color: semanticColors.success }, { label: 'Peso de tu paciente', color: BRAND }]
+                      : [{ label: 'Peso (kg)', color: BRAND }]}
                     style={{ marginTop: spacing.sm }}
                   />
+                  {gananciaActual != null && (
+                    <Text style={styles.weightSummary}>
+                      Ganancia hasta hoy: <Text style={styles.weightSummaryStrong}>{gananciaActual > 0 ? '+' : ''}{gananciaActual} kg</Text>
+                      {gainRange ? ` · recomendado total para ${gainRange.label}: ${gainRange.totalMin}–${gainRange.totalMax} kg` : ''}
+                    </Text>
+                  )}
                 </View>
               )}
 
@@ -2267,6 +2329,8 @@ const styles = StyleSheet.create({
     color: commonColors.textSecondary,
     lineHeight: 18,
   },
+  weightSummary: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
+  weightSummaryStrong: { color: commonColors.text, fontFamily: typography.label.fontFamily, fontWeight: '700' },
   labGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   labGroupTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
   labGroupNote: { ...typography.caption, color: commonColors.textTertiary, marginBottom: spacing.sm, lineHeight: 18 },
