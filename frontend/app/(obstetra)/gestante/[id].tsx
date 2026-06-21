@@ -2160,7 +2160,7 @@ const styles = StyleSheet.create({
   recExpandBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
   recExpandText: { ...typography.caption, fontWeight: '700' },
   recDivider: { height: 1, backgroundColor: commonColors.borderLight, marginVertical: spacing.xs },
-  recPreviewBubble: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  recPreviewBubble: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, ...shadows.card },
   recPreviewNote: { ...typography.bodySm, color: commonColors.text, marginBottom: spacing.sm, lineHeight: 19 },
   recPreviewCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
   container: {

@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   filterChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
   filterChipTextActive: { color: commonColors.white },
-  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, ...shadows.card },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardRibbon: { marginTop: spacing.sm2 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },

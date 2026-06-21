@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   filterChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
   filterChipTextActive: { color: commonColors.white },
-  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, ...shadows.card },
   dateBox: { alignItems: 'center', gap: 2, minWidth: 64 },
   dateText: { ...typography.caption, fontWeight: '700', color: BRAND },
   name: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },

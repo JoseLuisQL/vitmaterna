@@ -174,12 +174,12 @@ const styles = StyleSheet.create({
 
   sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.lg, marginLeft: 4 },
 
-  kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md2, ...shadows.card },
   kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   kpiValue: { ...typography.h2, color: commonColors.text },
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
-  statusCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  statusCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, ...shadows.card },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   statusRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   statusLabel: { ...typography.bodySm, color: commonColors.text, flex: 1 },
@@ -188,6 +188,6 @@ const styles = StyleSheet.create({
   twoCol: { flexDirection: 'row', gap: spacing.lg, alignItems: 'flex-start' },
   col: { flex: 1, minWidth: 0 },
   quickGrid: { flexDirection: 'row', gap: spacing.sm },
-  quickBtn: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, alignItems: 'center', gap: spacing.sm, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  quickBtn: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, alignItems: 'center', gap: spacing.sm, ...shadows.card },
   quickText: { ...typography.caption, fontWeight: '600', color: commonColors.text },
 });
