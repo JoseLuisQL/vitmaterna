@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { 
+import {
   View, StyleSheet, Text, TouchableOpacity,
-  FlatList, TextInput, ScrollView, ActivityIndicator, Dimensions 
+  FlatList, TextInput, ScrollView, ActivityIndicator, Dimensions,
 } from 'react-native';
-import { User as UserIcon, Search, Check, FileText, Calendar, Clock } from 'lucide-react-native';
-import { commonColors, obstetraColors, semanticColors } from '../../theme/colors';
+import { User as UserIcon, Search, Check, FileText, Calendar, Clock, ChevronRight, X, MapPin, Building2, AlertTriangle } from 'lucide-react-native';
+import { commonColors, obstetraColors, semanticColors, riskColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { shadows } from '../../theme/shadows';
+import { borderRadius, spacing } from '../../theme/spacing';
 import {
   usePatients,
   useCreateAppointment,
@@ -20,6 +20,13 @@ import { es } from 'date-fns/locale';
 const BRAND = obstetraColors.primary;
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+/** Color de fondo/punto del semáforo de riesgo a partir de la etiqueta. */
+function riskMeta(level?: string): { color: string; bg: string; label: string } {
+  if (level === 'Alto') return { color: riskColors.riskRed, bg: riskColors.riskRedLight, label: 'Alto' };
+  if (level === 'Medio') return { color: riskColors.riskYellow, bg: riskColors.riskYellowLight, label: 'Medio' };
+  return { color: riskColors.riskGreen, bg: riskColors.riskGreenLight, label: 'Bajo' };
+}
 
 interface NuevaCitaModalProps {
   visible: boolean;
@@ -56,21 +63,34 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
         dow: format(d, 'EEE', { locale: es }),
         day: format(d, 'd'),
         month: format(d, 'MMM', { locale: es }),
+        isToday: i === 0,
       };
     });
   }, []);
 
   const debouncedSearch = useDebouncedValue(search, 400);
-  const filteredPatients = patients?.filter((p: any) =>
-    p.firstName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    p.lastName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    p.documentNumber?.includes(debouncedSearch)
-  ) || [];
+  const filteredPatients = useMemo(
+    () =>
+      (patients || []).filter((p: any) =>
+        p.firstName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        p.lastName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        p.documentNumber?.includes(debouncedSearch),
+      ),
+    [patients, debouncedSearch],
+  );
+
+  const selectedPatient = useMemo(
+    () => (patients || []).find((p: any) => p.id === gestanteId),
+    [patients, gestanteId],
+  );
+
+  const availableSlots = useMemo(() => slots.filter((s: any) => s.disponible), [slots]);
 
   const handleSelectPatient = (id: string, name: string) => {
     setGestanteId(id);
     setGestanteName(name);
     setStep('form');
+    setSearch('');
   };
 
   const resetForm = () => {
@@ -107,7 +127,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
         hora: timeStr,
         motivo,
         modalidad,
-        observaciones: observaciones || null, // Guardar observaciones en bd
+        observaciones: observaciones || null,
       });
       toast.success('Cita programada', `${gestanteName} fue notificada de su cita.`);
       handleClose();
@@ -121,14 +141,17 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     <AppModal
       visible={visible}
       onClose={handleClose}
-      title={step === 'form' ? 'Programar Cita' : 'Seleccionar Paciente'}
+      title={step === 'form' ? 'Programar cita' : 'Seleccionar paciente'}
+      subtitle={step === 'form' ? 'Agenda una atención para una gestante' : undefined}
       scroll={step === 'form'}
       footer={
         step === 'form' ? (
           <AppButton
-            title="Programar Cita"
+            title="Programar cita"
+            icon={Calendar}
             onPress={handleSave}
             loading={isPending}
+            disabled={!gestanteId || !dateStr || !timeStr}
             themeColor={BRAND}
             style={{ flex: 1 }}
           />
@@ -137,60 +160,113 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     >
       {step === 'form' ? (
         <View>
-          <Text style={styles.label}>Gestante</Text>
-          <TouchableOpacity style={styles.selector} onPress={() => setStep('patients')}>
-            <View style={styles.iconBox}><UserIcon size={20} color={BRAND} /></View>
-            <Text style={[styles.selectorText, !gestanteId && { color: commonColors.textTertiary }]}>
-              {gestanteId ? gestanteName : 'Tocar para seleccionar paciente...'}
-            </Text>
-          </TouchableOpacity>
+          {/* ── PASO 1 · PACIENTE ── */}
+          <Text style={styles.stepLabel}>1 · Paciente</Text>
+          {selectedPatient ? (
+            <TouchableOpacity
+              style={styles.selectedCard}
+              onPress={() => setStep('patients')}
+              accessibilityRole="button"
+              accessibilityLabel={`Paciente seleccionada: ${gestanteName}. Tocar para cambiar`}
+            >
+              <View style={styles.selectedAvatar}>
+                <Text style={styles.selectedAvatarText}>
+                  {(selectedPatient.firstName?.[0] || '') + (selectedPatient.lastName?.[0] || '')}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.selectedName} numberOfLines={1}>{gestanteName}</Text>
+                <View style={styles.selectedMetaRow}>
+                  <Text style={styles.selectedMeta}>DNI {selectedPatient.documentNumber}</Text>
+                  {selectedPatient.currentWeek ? (
+                    <>
+                      <View style={styles.metaDot} />
+                      <Text style={styles.selectedMeta}>Sem. {selectedPatient.currentWeek}</Text>
+                    </>
+                  ) : null}
+                </View>
+              </View>
+              {(() => { const r = riskMeta(selectedPatient.riskLevel); return (
+                <View style={[styles.riskChip, { backgroundColor: r.bg }]}>
+                  <View style={[styles.riskDot, { backgroundColor: r.color }]} />
+                  <Text style={[styles.riskChipText, { color: r.color }]}>{r.label}</Text>
+                </View>
+              ); })()}
+              <Text style={styles.changeLink}>Cambiar</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.selectorEmpty}
+              onPress={() => setStep('patients')}
+              accessibilityRole="button"
+              accessibilityLabel="Seleccionar paciente"
+            >
+              <View style={styles.iconBox}><UserIcon size={20} color={BRAND} /></View>
+              <Text style={styles.selectorEmptyText}>Buscar y seleccionar paciente…</Text>
+              <ChevronRight size={18} color={commonColors.textTertiary} />
+            </TouchableOpacity>
+          )}
 
-          <Text style={styles.label}>Modalidad</Text>
+          {/* ── PASO 2 · DETALLES ── */}
+          <Text style={styles.stepLabel}>2 · Detalles</Text>
+
+          <Text style={styles.fieldLabel}>Modalidad</Text>
           <View style={styles.modalidadRow}>
             <TouchableOpacity
               style={[styles.modalidadBtn, modalidad === 'establecimiento' && styles.modalidadBtnActive]}
               onPress={() => setModalidad('establecimiento')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: modalidad === 'establecimiento' }}
             >
+              <Building2 size={16} color={modalidad === 'establecimiento' ? BRAND : commonColors.textSecondary} />
               <Text style={[styles.modalidadText, modalidad === 'establecimiento' && styles.modalidadTextActive]}>Establecimiento</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalidadBtn, modalidad === 'domiciliaria' && styles.modalidadBtnActive]}
               onPress={() => { setModalidad('domiciliaria'); if (motivo === 'Control Prenatal') setMotivo('Visita domiciliaria'); }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: modalidad === 'domiciliaria' }}
             >
+              <MapPin size={16} color={modalidad === 'domiciliaria' ? BRAND : commonColors.textSecondary} />
               <Text style={[styles.modalidadText, modalidad === 'domiciliaria' && styles.modalidadTextActive]}>Domiciliaria</Text>
             </TouchableOpacity>
           </View>
           {modalidad === 'domiciliaria' && (
-            <Text style={styles.modalidadHint}>El obstetra acudirá al domicilio de la gestante (previa coordinación). No bloquea la agenda del consultorio.</Text>
+            <Text style={styles.hint}>El obstetra acudirá al domicilio de la gestante (previa coordinación). No bloquea la agenda del consultorio.</Text>
           )}
 
-          <Text style={styles.label}>Motivo</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.motivoScroll}>
+          <Text style={styles.fieldLabel}>Motivo</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             {MOTIVOS.map(m => (
-              <TouchableOpacity 
-                key={m} 
+              <TouchableOpacity
+                key={m}
                 style={[styles.chip, motivo === m && styles.chipActive]}
                 onPress={() => setMotivo(m)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: motivo === m }}
               >
                 <Text style={[styles.chipText, motivo === m && styles.chipTextActive]}>{m}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          <Text style={styles.label}>Fecha</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+          {/* ── PASO 3 · FECHA Y HORA ── */}
+          <Text style={styles.stepLabel}>3 · Fecha y hora</Text>
+
+          <Text style={styles.fieldLabel}>Fecha</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
             {dateOptions.map((d) => {
               const active = dateStr === d.value;
               return (
                 <TouchableOpacity
                   key={d.value}
                   style={[styles.dateChip, active && styles.dateChipActive]}
-                  onPress={() => {
-                    setDateStr(d.value);
-                    setTimeStr(null);
-                  }}
+                  onPress={() => { setDateStr(d.value); setTimeStr(null); }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${d.dow} ${d.day} ${d.month}`}
                 >
-                  <Text style={[styles.dateChipDow, active && styles.dateChipTextActive]}>{d.dow}</Text>
+                  <Text style={[styles.dateChipDow, active && styles.dateChipTextActive]}>{d.isToday ? 'Hoy' : d.dow}</Text>
                   <Text style={[styles.dateChipDay, active && styles.dateChipTextActive]}>{d.day}</Text>
                   <Text style={[styles.dateChipMonth, active && styles.dateChipTextActive]}>{d.month}</Text>
                 </TouchableOpacity>
@@ -198,52 +274,62 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
             })}
           </ScrollView>
 
-          <Text style={styles.label}>Horario disponible</Text>
+          <Text style={styles.fieldLabel}>Horario disponible</Text>
           {!dateStr ? (
-            <Text style={styles.helperText}>Primero selecciona una fecha.</Text>
+            <View style={styles.placeholderBox}>
+              <Clock size={18} color={commonColors.textTertiary} />
+              <Text style={styles.placeholderText}>Primero selecciona una fecha.</Text>
+            </View>
           ) : slotsLoading ? (
-            <ActivityIndicator color={BRAND} style={{ marginVertical: 12 }} />
+            <View style={styles.placeholderBox}>
+              <ActivityIndicator color={BRAND} />
+              <Text style={styles.placeholderText}>Buscando horarios…</Text>
+            </View>
+          ) : availableSlots.length === 0 ? (
+            <View style={styles.placeholderBox}>
+              <AlertTriangle size={18} color={semanticColors.warning} />
+              <Text style={styles.placeholderText}>No hay horarios disponibles ese día. Prueba otra fecha.</Text>
+            </View>
           ) : (
             <View style={styles.slotsGrid}>
-              {slots.filter((s: any) => s.disponible).length === 0 ? (
-                <Text style={styles.helperText}>No hay horarios disponibles ese día.</Text>
-              ) : (
-                slots.map((s: any) => {
-                  const active = timeStr === s.hora;
-                  return (
-                    <TouchableOpacity
-                      key={s.hora}
-                      disabled={!s.disponible}
-                      style={[styles.slotChip, !s.disponible && styles.slotChipDisabled, active && styles.slotChipActive]}
-                      onPress={() => setTimeStr(s.hora)}
-                    >
-                      <Text style={[styles.slotText, !s.disponible && styles.slotTextDisabled, active && styles.slotTextActive]}>
-                        {s.hora}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })
-              )}
+              {slots.map((s: any) => {
+                const active = timeStr === s.hora;
+                return (
+                  <TouchableOpacity
+                    key={s.hora}
+                    disabled={!s.disponible}
+                    style={[styles.slotChip, !s.disponible && styles.slotChipDisabled, active && styles.slotChipActive]}
+                    onPress={() => setTimeStr(s.hora)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active, disabled: !s.disponible }}
+                    accessibilityLabel={`${s.hora}${s.disponible ? '' : ', no disponible'}`}
+                  >
+                    <Text style={[styles.slotText, !s.disponible && styles.slotTextDisabled, active && styles.slotTextActive]}>
+                      {s.hora}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
 
-          <Text style={styles.label}>Descripción / Consultorio</Text>
-          <View style={[styles.inputBox, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
-             <FileText size={18} color={commonColors.textSecondary} style={{ marginTop: 2 }} />
-             <TextInput 
-               style={[styles.inputTextNative, { textAlignVertical: 'top' }]} 
-               value={observaciones} 
-               onChangeText={setObservaciones}
-               placeholder="Ej: Traer resultados / Consultorio 103"
-               placeholderTextColor={commonColors.textTertiary}
-               multiline
-             />
+          <Text style={styles.fieldLabel}>Descripción / consultorio</Text>
+          <View style={styles.textArea}>
+            <FileText size={18} color={commonColors.textSecondary} style={{ marginTop: 2 }} />
+            <TextInput
+              style={styles.textAreaInput}
+              value={observaciones}
+              onChangeText={setObservaciones}
+              placeholder="Ej. Traer resultados / Consultorio 103"
+              placeholderTextColor={commonColors.textTertiary}
+              multiline
+            />
           </View>
 
           {/* Resumen de la cita (confirmación rápida antes de programar) */}
           {Boolean(gestanteId && dateStr && timeStr) && (
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Resumen de la cita</Text>
+              <Text style={styles.summaryTitle}>Resumen</Text>
               <View style={styles.summaryRow}>
                 <UserIcon size={15} color={BRAND} />
                 <Text style={styles.summaryText} numberOfLines={1}>{gestanteName}</Text>
@@ -262,46 +348,86 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
           )}
         </View>
       ) : (
-        <View>
+        // ── SELECCIÓN DE PACIENTE ──
+        <View style={styles.patientsPane}>
           <View style={styles.searchBox}>
             <Search size={18} color={commonColors.textTertiary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar por nombre o DNI..."
+              placeholder="Buscar por nombre o DNI…"
               placeholderTextColor={commonColors.textTertiary}
               value={search}
               onChangeText={setSearch}
               autoFocus
             />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda">
+                <X size={16} color={commonColors.textTertiary} />
+              </TouchableOpacity>
+            )}
           </View>
-          
+
+          {!isLoadingPatients && (
+            <Text style={styles.resultCount}>
+              {filteredPatients.length === 0
+                ? 'Sin resultados'
+                : `${filteredPatients.length} ${filteredPatients.length === 1 ? 'paciente' : 'pacientes'}`}
+            </Text>
+          )}
+
           {isLoadingPatients ? (
             <ActivityIndicator color={BRAND} style={{ marginVertical: 24 }} />
           ) : (
-          <FlatList
-            data={filteredPatients}
-            keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: SCREEN_HEIGHT * 0.5 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.patientItem}
-                onPress={() => handleSelectPatient(item.id, `${item.firstName} ${item.lastName}`)}
-              >
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{item.firstName?.[0] || ''}</Text>
+            <FlatList
+              data={filteredPatients}
+              keyExtractor={item => item.id}
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: SCREEN_HEIGHT * 0.5 }}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                const r = riskMeta(item.riskLevel);
+                const selected = gestanteId === item.id;
+                return (
+                  <TouchableOpacity
+                    style={[styles.patientItem, selected && styles.patientItemActive]}
+                    onPress={() => handleSelectPatient(item.id, `${item.firstName} ${item.lastName}`)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>
+                        {(item.firstName?.[0] || '') + (item.lastName?.[0] || '')}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.patientName} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
+                      <View style={styles.selectedMetaRow}>
+                        <Text style={styles.patientDoc}>DNI {item.documentNumber}</Text>
+                        {item.currentWeek ? (
+                          <>
+                            <View style={styles.metaDot} />
+                            <Text style={styles.patientDoc}>Sem. {item.currentWeek}</Text>
+                          </>
+                        ) : null}
+                      </View>
+                    </View>
+                    <View style={[styles.riskChip, { backgroundColor: r.bg }]}>
+                      <View style={[styles.riskDot, { backgroundColor: r.color }]} />
+                      <Text style={[styles.riskChipText, { color: r.color }]}>{r.label}</Text>
+                    </View>
+                    {selected ? <Check size={20} color={BRAND} /> : <ChevronRight size={18} color={commonColors.textTertiary} />}
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={styles.emptyWrap}>
+                  <View style={styles.emptyIcon}><Search size={22} color={commonColors.textTertiary} /></View>
+                  <Text style={styles.emptyTitle}>No se encontraron pacientes</Text>
+                  <Text style={styles.emptyText}>Revisa el nombre o el DNI e inténtalo de nuevo.</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.patientName}>{item.firstName} {item.lastName}</Text>
-                  <Text style={styles.patientDoc}>DNI: {item.documentNumber}</Text>
-                </View>
-                {gestanteId === item.id && <Check size={20} color={BRAND} />}
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No se encontraron pacientes</Text>
-            }
-          />
+              }
+            />
           )}
         </View>
       )}
@@ -310,141 +436,127 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: commonColors.overlay },
-  bottomSheet: {
-    backgroundColor: commonColors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    maxHeight: SCREEN_HEIGHT * 0.9,
-    minHeight: SCREEN_HEIGHT * 0.6,
-    ...shadows.modal,
+  // Encabezados de paso
+  stepLabel: {
+    ...typography.overline,
+    color: BRAND,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontWeight: '700',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  dragPill: {
-    width: 48,
-    height: 4,
-    backgroundColor: commonColors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.borderLight,
-  },
-  title: { ...typography.h3, color: commonColors.text },
-  closeBtn: { padding: 4, backgroundColor: commonColors.surfaceAlt, borderRadius: 20 },
-  content: { padding: 24 },
-  label: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
-  
-  selector: {
+  fieldLabel: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.md },
+
+  // Selector de paciente vacío
+  selectorEmpty: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     backgroundColor: commonColors.surfaceAlt,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 56,
     borderWidth: 1,
     borderColor: commonColors.border,
   },
-  iconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  selectorText: { ...typography.bodyMd, color: commonColors.text, flex: 1 },
+  iconBox: { width: 36, height: 36, borderRadius: borderRadius.sm, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  selectorEmptyText: { ...typography.body, color: commonColors.textTertiary, flex: 1 },
 
-  modalidadRow: { flexDirection: 'row', gap: 8 },
-  modalidadBtn: { flex: 1, paddingVertical: 12, borderRadius: 14, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center' },
+  // Paciente seleccionada
+  selectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: obstetraColors.primaryLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
+  },
+  selectedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center' },
+  selectedAvatarText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
+  selectedName: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
+  selectedMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
+  selectedMeta: { ...typography.caption, color: commonColors.textSecondary },
+  metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: commonColors.textTertiary },
+  changeLink: { ...typography.caption, color: BRAND, fontWeight: '700' },
+
+  // Semáforo de riesgo
+  riskChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: borderRadius.full },
+  riskDot: { width: 7, height: 7, borderRadius: 4 },
+  riskChipText: { ...typography.overline, fontWeight: '700' },
+
+  // Modalidad (segmentos)
+  modalidadRow: { flexDirection: 'row', gap: spacing.sm },
+  modalidadBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: spacing.sm2, borderRadius: borderRadius.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
   modalidadBtnActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
   modalidadText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '600' },
   modalidadTextActive: { color: BRAND, fontWeight: '700' },
-  modalidadHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 6 },
-  motivoScroll: { flexDirection: 'row', marginBottom: 8 },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: commonColors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-    marginRight: 8,
-  },
-  chipActive: {
-    backgroundColor: obstetraColors.primaryLight,
-    borderColor: BRAND,
-  },
+  hint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.sm, lineHeight: 17 },
+
+  // Chips (motivo)
+  chipRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs2 },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  chipActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
   chipText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '500' },
   chipTextActive: { color: BRAND, fontWeight: '700' },
 
-  row: { flexDirection: 'row' },
-  helperText: { ...typography.bodySm, color: commonColors.textTertiary, paddingVertical: 8 },
-  dateScroll: { flexDirection: 'row', marginBottom: 4 },
-  dateChip: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: commonColors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-    marginRight: 8,
-    minWidth: 54,
-  },
+  // Fecha
+  dateRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs2 },
+  dateChip: { alignItems: 'center', paddingVertical: spacing.sm2, paddingHorizontal: spacing.md, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, minWidth: 58, gap: 2 },
   dateChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   dateChipDow: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase' },
   dateChipDay: { ...typography.h3, color: commonColors.text },
   dateChipMonth: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase' },
   dateChipTextActive: { color: obstetraColors.onPrimary },
-  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  slotChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: commonColors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: commonColors.border,
-  },
+
+  // Horarios
+  placeholderBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  placeholderText: { ...typography.bodySm, color: commonColors.textSecondary, flex: 1, lineHeight: 18 },
+  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  slotChip: { minWidth: 64, alignItems: 'center', paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderRadius: borderRadius.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
   slotChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   slotChipDisabled: { opacity: 0.4 },
-  slotText: { ...typography.bodySm, color: commonColors.text },
+  slotText: { ...typography.bodyMd, fontWeight: '600', color: commonColors.text },
   slotTextActive: { color: obstetraColors.onPrimary, fontWeight: '700' },
   slotTextDisabled: { color: commonColors.textTertiary, textDecorationLine: 'line-through' },
-  inputBox: {
+
+  // Descripción
+  textArea: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
     backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
     borderColor: commonColors.border,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 52,
-    gap: 8,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm2,
+    minHeight: 80,
   },
-  inputText: { ...typography.bodyMd, color: commonColors.text },
-  inputTextNative: { flex: 1, ...typography.bodyMd, fontSize: 15, color: commonColors.text },
+  textAreaInput: { flex: 1, ...typography.body, color: commonColors.text, textAlignVertical: 'top', minHeight: 60 },
 
-  summaryCard: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: obstetraColors.primaryLight,
-    borderWidth: 1,
-    borderColor: BRAND,
-    gap: 8,
-  },
+  // Resumen
+  summaryCard: { marginTop: spacing.lg, padding: spacing.md, borderRadius: borderRadius.md, backgroundColor: obstetraColors.primaryLight, gap: spacing.sm },
   summaryTitle: { ...typography.overline, color: BRAND, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700', marginBottom: 2 },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   summaryText: { ...typography.bodySm, color: commonColors.text, fontWeight: '600', flex: 1, textTransform: 'capitalize' },
 
-  // Patients Step
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: 16, paddingHorizontal: 16, height: 48, marginBottom: 16 },
-  searchInput: { flex: 1, marginLeft: 8, ...typography.body, fontSize: 15, color: commonColors.text },
-  patientItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarText: { ...typography.bodyMd, color: commonColors.textSecondary },
-  patientName: { ...typography.bodyMd, color: commonColors.text },
+  // Selección de paciente
+  patientsPane: { minHeight: SCREEN_HEIGHT * 0.4 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 48 },
+  searchInput: { flex: 1, ...typography.body, color: commonColors.text },
+  resultCount: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.sm, marginBottom: spacing.xs, marginLeft: spacing.xs },
+  separator: { height: spacing.sm },
+  patientItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm2, paddingHorizontal: spacing.sm2, borderRadius: borderRadius.md, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.borderLight },
+  patientItemActive: { borderColor: BRAND, backgroundColor: obstetraColors.primaryLight },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { ...typography.bodyMd, fontWeight: '700', color: commonColors.textSecondary },
+  patientName: { ...typography.bodyMd, fontWeight: '600', color: commonColors.text },
   patientDoc: { ...typography.caption, color: commonColors.textTertiary },
-  emptyText: { textAlign: 'center', marginTop: 40, ...typography.bodyMd, color: commonColors.textTertiary },
+
+  // Vacío
+  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
+  emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
+  emptyTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
+  emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center' },
 });
