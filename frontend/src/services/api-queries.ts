@@ -152,14 +152,25 @@ const mapPatientProfile = (g: any) => {
     controls: (g.prenatalControls || []).map((c: any) => ({
       id: c.id,
       date: c.fecha,
+      numeroControl: c.numeroControl ?? null,
       // egSemanas/peso/etc. pueden venir como string (Decimal de Prisma): se
       // convierten a número para las gráficas (chart-kit exige números).
       week: c.egSemanas != null ? Number(c.egSemanas) : null,
-      bloodPressure: `${c.presionSistolica || 120}/${c.presionDiastolica || 80}`,
+      // Presión arterial: solo si HAY datos reales. Antes se fabricaba "120/80"
+      // (riesgo clínico: mostraba un valor inventado como si fuera medido).
+      presionSistolica: c.presionSistolica != null ? Number(c.presionSistolica) : null,
+      presionDiastolica: c.presionDiastolica != null ? Number(c.presionDiastolica) : null,
+      bloodPressure:
+        c.presionSistolica != null && c.presionDiastolica != null
+          ? `${c.presionSistolica}/${c.presionDiastolica}`
+          : null,
       weight: c.peso != null ? Number(c.peso) : null,
       fetalHeartRate: c.fcf != null ? Number(c.fcf) : null,
       alturaUterina: c.alturaUterina != null ? Number(c.alturaUterina) : null,
       temperatura: c.temperatura != null ? Number(c.temperatura) : null,
+      pulsoMaterno: c.pulsoMaterno != null ? Number(c.pulsoMaterno) : null,
+      movimientoFetal: c.movimientoFetal || null,
+      proximaCita: c.proximaCita || null,
       observaciones: c.observaciones || null,
     })),
     // Laboratorio (desde LabResults)

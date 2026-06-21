@@ -152,6 +152,38 @@ function riskLabel(riskLevel?: string): string {
   return 'Sin riesgo';
 }
 
+/**
+ * Clasifica un signo vital de un control prenatal como normal o de alerta, para
+ * que el obstetra detecte de un vistazo lo que requiere atención.
+ * Devuelve 'warn' (fuera de rango) o 'ok'. Rangos de referencia obstétrica.
+ */
+function vitalStatus(
+  type: 'pa' | 'fcf' | 'temp' | 'pulso',
+  c: any,
+): 'ok' | 'warn' {
+  if (type === 'pa') {
+    const s = c.presionSistolica, d = c.presionDiastolica;
+    if (s == null || d == null) return 'ok';
+    return s >= 140 || d >= 90 || s < 90 ? 'warn' : 'ok';
+  }
+  if (type === 'fcf') {
+    const v = c.fetalHeartRate;
+    if (v == null) return 'ok';
+    return v < 110 || v > 160 ? 'warn' : 'ok';
+  }
+  if (type === 'temp') {
+    const v = c.temperatura;
+    if (v == null) return 'ok';
+    return v >= 38 || v < 35 ? 'warn' : 'ok';
+  }
+  if (type === 'pulso') {
+    const v = c.pulsoMaterno;
+    if (v == null) return 'ok';
+    return v < 60 || v > 100 ? 'warn' : 'ok';
+  }
+  return 'ok';
+}
+
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function PatientProfileScreen(): React.ReactElement {
   const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
@@ -968,7 +1000,12 @@ export default function PatientProfileScreen(): React.ReactElement {
               )}
 
               <View style={styles.actionHeader}>
-                <Text style={styles.cardHeader}>Historial de Controles</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.cardHeader}>Controles prenatales</Text>
+                  <Text style={styles.sectionCount}>
+                    {controls.length} de 8 · meta MINSA
+                  </Text>
+                </View>
                 <TouchableOpacity 
                   style={[styles.primaryActionBtn, designTokens.glassShadow]}
                   onPress={() => router.push({ pathname: '/(obstetra)/control/nuevo', params: { patientId: patient.id } } as any)}
@@ -979,36 +1016,79 @@ export default function PatientProfileScreen(): React.ReactElement {
               </View>
 
               {controls.length > 0 ? (
-                [...controls].reverse().map((ctrl: any) => (
-                  <View key={ctrl.id || ctrl._id} style={[styles.controlCard, designTokens.cardShadow]}>
-                    <View style={styles.ctrlHeader}>
-                      <View style={styles.ctrlDateBox}>
-                        <Text style={styles.ctrlDay}>{new Date(ctrl.date || ctrl.fecha).getDate()}</Text>
-                        <Text style={styles.ctrlMonth}>
-                          {new Date(ctrl.date || ctrl.fecha).toLocaleDateString('es-PE', { month: 'short' }).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={styles.ctrlTitleWrap}>
-                        <Text style={styles.ctrlTitle}>Control Prenatal</Text>
-                        <Text style={styles.ctrlSubtitle}>Semana {ctrl.week || '—'}</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.ctrlMetrics}>
-                      {[
-                        { label: 'Peso', value: ctrl.weight ? `${ctrl.weight}kg` : undefined },
-                        { label: 'PA', value: ctrl.bloodPressure },
-                        { label: 'FCF', value: ctrl.fetalHeartRate ? `${ctrl.fetalHeartRate} lpm` : undefined },
-                        { label: 'AU', value: ctrl.alturaUterina ? `${ctrl.alturaUterina}cm` : undefined },
-                      ].map(({ label, value }) => value ? (
-                        <View key={label} style={styles.ctrlMetricBox}>
-                          <Text style={styles.ctrlMetricVal}>{value}</Text>
-                          <Text style={styles.ctrlMetricLbl}>{label}</Text>
+                [...controls].reverse().map((ctrl: any, idx: number) => {
+                  const fecha = new Date(ctrl.date || ctrl.fecha);
+                  const nro = ctrl.numeroControl ?? (controls.length - idx);
+                  // Métricas con clasificación de alerta para escaneo rápido.
+                  const metrics = [
+                    { key: 'pa', label: 'P. arterial', value: ctrl.bloodPressure, unit: '', status: vitalStatus('pa', ctrl) },
+                    { key: 'fcf', label: 'FCF', value: ctrl.fetalHeartRate, unit: ' lpm', status: vitalStatus('fcf', ctrl) },
+                    { key: 'au', label: 'Altura ut.', value: ctrl.alturaUterina, unit: ' cm', status: 'ok' as const },
+                    { key: 'peso', label: 'Peso', value: ctrl.weight, unit: ' kg', status: 'ok' as const },
+                    { key: 'temp', label: 'Temp.', value: ctrl.temperatura, unit: '°', status: vitalStatus('temp', ctrl) },
+                    { key: 'pulso', label: 'Pulso', value: ctrl.pulsoMaterno, unit: ' lpm', status: vitalStatus('pulso', ctrl) },
+                  ].filter((m) => m.value != null && m.value !== '');
+                  const hasWarn = metrics.some((m) => m.status === 'warn');
+
+                  return (
+                    <View key={ctrl.id || ctrl._id} style={[styles.controlCard, designTokens.cardShadow]}>
+                      <View style={styles.ctrlHeader}>
+                        <View style={styles.ctrlDateBox}>
+                          <Text style={styles.ctrlDay}>{fecha.getDate()}</Text>
+                          <Text style={styles.ctrlMonth}>
+                            {fecha.toLocaleDateString('es-PE', { month: 'short' }).toUpperCase()}
+                          </Text>
                         </View>
-                      ) : null)}
+                        <View style={styles.ctrlTitleWrap}>
+                          <Text style={styles.ctrlTitle}>Control N° {nro}</Text>
+                          <Text style={styles.ctrlSubtitle}>
+                            {ctrl.week != null ? `Semana ${ctrl.week}` : 'Semana —'} · {fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </Text>
+                        </View>
+                        {hasWarn && (
+                          <View style={styles.ctrlWarnChip}>
+                            <AlertTriangle size={12} color={semanticColors.warning} />
+                            <Text style={styles.ctrlWarnText}>Revisar</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {metrics.length > 0 ? (
+                        <View style={styles.ctrlMetrics}>
+                          {metrics.map((m) => (
+                            <View key={m.key} style={styles.ctrlMetricBox}>
+                              <Text style={[styles.ctrlMetricVal, m.status === 'warn' && { color: semanticColors.warning }]}>
+                                {m.value}{m.unit}
+                              </Text>
+                              <Text style={styles.ctrlMetricLbl}>{m.label}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={styles.ctrlNoData}>Sin signos vitales registrados en este control.</Text>
+                      )}
+
+                      {ctrl.movimientoFetal ? (
+                        <Text style={styles.ctrlExtra}>Movimiento fetal: <Text style={styles.ctrlExtraStrong}>{ctrl.movimientoFetal}</Text></Text>
+                      ) : null}
+
+                      {ctrl.observaciones ? (
+                        <View style={styles.ctrlObsBox}>
+                          <Text style={styles.ctrlObsText}>{ctrl.observaciones}</Text>
+                        </View>
+                      ) : null}
+
+                      {ctrl.proximaCita ? (
+                        <View style={styles.ctrlNextRow}>
+                          <CalendarClock size={13} color={obstetraColors.primary} />
+                          <Text style={styles.ctrlNextText}>
+                            Próximo control: {new Date(ctrl.proximaCita).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
-                  </View>
-                ))
+                  );
+                })
               ) : (
                 <EmptyState
                   icon={Activity as any}
@@ -1983,6 +2063,11 @@ const styles = StyleSheet.create({
     color: commonColors.text,
     marginBottom: 8,
   },
+  sectionCount: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
+    marginTop: -4,
+  },
 
   // Controls specific
   actionHeader: {
@@ -2075,14 +2160,47 @@ const styles = StyleSheet.create({
   },
   ctrlMetrics: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     backgroundColor: commonColors.surfaceAlt,
     borderRadius: 16,
-    padding: 16,
+    padding: spacing.md,
+    rowGap: spacing.md,
   },
   ctrlMetricBox: {
     alignItems: 'center',
+    width: '33.33%',
   },
+  ctrlWarnChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: semanticColors.warningLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+  },
+  ctrlWarnText: { ...typography.overline, fontSize: 10, color: semanticColors.warning, fontWeight: '700' },
+  ctrlNoData: {
+    ...typography.bodySmall,
+    color: commonColors.textTertiary,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: 12,
+    padding: spacing.md,
+    textAlign: 'center',
+  },
+  ctrlExtra: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: spacing.sm },
+  ctrlExtraStrong: { color: commonColors.text, fontFamily: typography.label.fontFamily, fontWeight: '700' },
+  ctrlObsBox: {
+    marginTop: spacing.sm,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: 12,
+    padding: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: obstetraColors.primary,
+  },
+  ctrlObsText: { ...typography.bodySmall, color: commonColors.text, lineHeight: 20 },
+  ctrlNextRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
+  ctrlNextText: { ...typography.caption, color: commonColors.textSecondary },
   ctrlMetricVal: {
     ...typography.bodySmall,
     fontFamily: typography.label.fontFamily,
