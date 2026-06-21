@@ -23,6 +23,7 @@ import { ThemeToggle, isThemeToggleAvailable } from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../ui/ToastProvider';
 import { confirmAction } from '../../utils/confirm';
+import { useUnreadChatCount } from '../../services/api-queries';
 import { NAVIGATION, ROLE_LABEL, type NavItem } from '../../navigation/menu';
 import { gestanteColors, obstetraColors, adminColors, commonColors, semanticColors } from '../../theme/colors';
 import { useThemedColors } from '../../theme/ThemeContext';
@@ -83,6 +84,18 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
   const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || roleLabel : roleLabel;
   const initial = (userName || 'U').trim().charAt(0).toUpperCase();
 
+  // Badges de pendientes en la navegación web (estilo WhatsApp). El chat solo
+  // aplica a gestante y obstetra; el admin no participa en chats clínicos.
+  const showChatBadge = role === 'gestante' || role === 'obstetra';
+  const { data: unreadChat = 0 } = useUnreadChatCount(showChatBadge);
+
+  /** Resuelve el contador de pendientes para un ítem de navegación. */
+  const badgeFor = (item: NavItem): number => {
+    const path = hrefToPath(item.href);
+    if (showChatBadge && /\/chat$/.test(stripGroups(path))) return unreadChat;
+    return 0;
+  };
+
   const handleLogout = async () => {
     const ok = await confirmAction({
       title: 'Cerrar sesión',
@@ -129,7 +142,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
         {/* Primarios */}
         <View style={styles.group}>
           {nav.primary.map((item, i) => (
-            <NavRow key={i} item={item} accent={accent} collapsed={collapsed} active={isActive(item.href, pathname)} onPress={() => router.push(item.href)} />
+            <NavRow key={i} item={item} accent={accent} collapsed={collapsed} active={isActive(item.href, pathname)} badge={badgeFor(item)} onPress={() => router.push(item.href)} />
           ))}
         </View>
 
@@ -139,7 +152,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
             {!collapsed && section.title ? <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>{section.title}</Text> : null}
             {collapsed && section.title ? <View style={[styles.collapsedDivider, { backgroundColor: colors.borderLight }]} /> : null}
             {section.items.map((item, ii) => (
-              <NavRow key={ii} item={item} accent={accent} collapsed={collapsed} active={isActive(item.href, pathname)} onPress={() => router.push(item.href)} />
+              <NavRow key={ii} item={item} accent={accent} collapsed={collapsed} active={isActive(item.href, pathname)} badge={badgeFor(item)} onPress={() => router.push(item.href)} />
             ))}
           </View>
         ))}
@@ -172,13 +185,17 @@ interface NavRowProps {
   accent: string;
   collapsed: boolean;
   active: boolean;
+  /** Contador de pendientes (no leídos). 0 = sin badge. */
+  badge?: number;
   onPress: () => void;
 }
 
-function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): React.ReactElement {
+function NavRow({ item, accent, collapsed, active, badge = 0, onPress }: NavRowProps): React.ReactElement {
   const colors = useThemedColors();
   const Icon: LucideIcon = item.icon;
   const color = active ? accent : colors.textSecondary;
+  const hasBadge = badge > 0;
+  const badgeLabel = badge > 99 ? '99+' : String(badge);
   return (
     <Pressable
       onPress={onPress}
@@ -192,16 +209,27 @@ function NavRow({ item, accent, collapsed, active, onPress }: NavRowProps): Reac
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={item.label}
+      accessibilityLabel={hasBadge ? `${item.label}, ${badge} sin leer` : item.label}
     >
       {active && !collapsed && (
         <View style={[styles.activeIndicator, { backgroundColor: accent }]} />
       )}
-      <Icon size={18} color={color} />
+      <View>
+        <Icon size={18} color={color} />
+        {/* Colapsado: punto rojo sobre el icono (no cabe el número). */}
+        {hasBadge && collapsed && <View style={[styles.badgeDot, { borderColor: colors.surface }]} />}
+      </View>
       {!collapsed && (
-        <Text style={[styles.navLabel, { color: active ? accent : colors.textSecondary }, active && styles.navLabelActive]} numberOfLines={1}>
-          {item.label}
-        </Text>
+        <>
+          <Text style={[styles.navLabel, { color: active ? accent : colors.textSecondary }, active && styles.navLabelActive]} numberOfLines={1}>
+            {item.label}
+          </Text>
+          {hasBadge && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{badgeLabel}</Text>
+            </View>
+          )}
+        </>
       )}
     </Pressable>
   );
@@ -273,6 +301,27 @@ const styles = StyleSheet.create({
   navRowPressed: { },
   navLabel: { ...typography.bodyMedium, flex: 1 },
   navLabelActive: { ...typography.bodyMedium, fontWeight: '600' },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    backgroundColor: semanticColors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  badgeText: { ...typography.caption, fontSize: 11, fontWeight: '800', color: commonColors.white },
+  badgeDot: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: semanticColors.danger,
+    borderWidth: 1.5,
+  },
 
   footer: { borderTopWidth: 1, padding: spacing.sm, gap: spacing.sm },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },

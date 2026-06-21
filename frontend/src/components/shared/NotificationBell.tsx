@@ -45,7 +45,7 @@ export function NotificationBell({
       <Bell size={size} color={iconColor} />
       {count > 0 && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{count > 9 ? '9+' : count}</Text>
+          <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -57,11 +57,11 @@ const styles = StyleSheet.create({
   glass: { backgroundColor: 'rgba(255,255,255,0.18)' },
   badge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    minWidth: 17,
-    height: 17,
-    paddingHorizontal: 3,
+    top: 1,
+    right: 1,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
     borderRadius: 9,
     backgroundColor: semanticColors.danger,
     borderWidth: 1.5,
@@ -69,5 +69,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { ...typography.overline, color: commonColors.white, fontSize: 9, letterSpacing: 0 },
+  badgeText: { ...typography.caption, color: commonColors.white, fontSize: 10, fontWeight: '800', letterSpacing: 0 },
 });

@@ -920,11 +920,12 @@ export const fetchUnreadChatCount = async (): Promise<number> => {
   }
 };
 
-export const useUnreadChatCount = () =>
+export const useUnreadChatCount = (enabled = true) =>
   useQuery({
     queryKey: ['chat', 'unread'],
     queryFn: fetchUnreadChatCount,
     refetchInterval: 60 * 1000,
+    enabled,
   });
 
 /** Lista de conversaciones del chat (con contador de no leídos por conversación). */
