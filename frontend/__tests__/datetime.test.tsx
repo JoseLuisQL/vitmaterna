@@ -23,10 +23,17 @@ describe('CalendarPicker', () => {
 describe('TimeWheel', () => {
   it('selecciona hora y minuto y emite HH:mm', () => {
     const onChange = jest.fn();
-    render(<TimeWheel value={'08:00'} onChange={onChange} accentColor={obstetraColors.primary} minuteStep={15} />);
+    render(<TimeWheel value={'08:00'} onChange={onChange} accentColor={obstetraColors.primary} minuteStep={15} presets={[]} />);
     // Hay dos "08" (hora) — tomamos el primero de la columna de horas.
     fireEvent.press(screen.getAllByText('09')[0]);
     expect(onChange).toHaveBeenCalledWith('09:00');
+  });
+
+  it('aplica un atajo de hora frecuente (preset)', () => {
+    const onChange = jest.fn();
+    render(<TimeWheel value={null} onChange={onChange} accentColor={obstetraColors.primary} presets={['06:00', '20:00']} />);
+    fireEvent.press(screen.getByText('20:00'));
+    expect(onChange).toHaveBeenCalledWith('20:00');
   });
 });
 

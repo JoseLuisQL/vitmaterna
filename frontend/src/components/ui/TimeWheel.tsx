@@ -22,6 +22,8 @@ interface TimeWheelProps {
   /** Hora mínima/máxima en formato 'HH:mm' (opcional). */
   minTime?: string;
   maxTime?: string;
+  /** Atajos de horas frecuentes (chips). Vacío = sin atajos. */
+  presets?: string[];
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -34,6 +36,7 @@ export function TimeWheel({
   minuteStep = 5,
   minTime,
   maxTime,
+  presets = ['06:00', '08:00', '12:00', '18:00', '20:00'],
 }: TimeWheelProps): React.ReactElement {
   const [selH, selM] = useMemo(() => {
     const m = /^(\d{2}):(\d{2})$/.exec(value || '');
@@ -102,7 +105,36 @@ export function TimeWheel({
 
   return (
     <View style={styles.wrap}>
+      {/* Valor seleccionado, grande y claro */}
+      <View style={styles.preview}>
+        <Text style={[styles.previewText, { color: accentColor }]}>
+          {value || '--:--'}
+        </Text>
+      </View>
+
+      {/* Atajos de horas frecuentes */}
+      {presets.length > 0 ? (
+        <View style={styles.presetsRow}>
+          {presets.map((p) => {
+            const active = value === p;
+            return (
+              <Pressable
+                key={p}
+                onPress={() => onChange(p)}
+                style={[styles.preset, active && { backgroundColor: accentColor, borderColor: accentColor }, IS_WEB && ({ cursor: 'pointer' } as any)]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.presetText, active && styles.presetTextActive]}>{p}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+
       <View style={styles.cols}>
+        {/* Banda central que indica la fila seleccionada */}
+        <View pointerEvents="none" style={styles.centerBand} />
         {renderCol(hours, selH, hourRef, (h) => pick(h, selM ?? 0), true)}
         <Text style={styles.colon}>:</Text>
         {renderCol(minutes, selM, minRef, (m) => pick(selH ?? 8, m), false)}
@@ -116,13 +148,32 @@ export function TimeWheel({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.xs },
+  wrap: { gap: spacing.sm },
+  preview: { alignItems: 'center', paddingVertical: spacing.xs },
+  previewText: { ...typography.numeric, fontVariant: ['tabular-nums'] },
+  presetsRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: spacing.sm },
+  preset: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1, borderColor: commonColors.border,
+  },
+  presetText: { ...typography.caption, fontFamily: typography.label.fontFamily, color: commonColors.textSecondary },
+  presetTextActive: { color: commonColors.white },
   cols: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
     height: ROW_HEIGHT * 4,
+  },
+  centerBand: {
+    position: 'absolute',
+    left: 0, right: 0,
+    top: ROW_HEIGHT * 1.5,
+    height: ROW_HEIGHT,
+    backgroundColor: commonColors.surfaceHover,
+    borderRadius: borderRadius.sm,
   },
   col: {
     width: 76,

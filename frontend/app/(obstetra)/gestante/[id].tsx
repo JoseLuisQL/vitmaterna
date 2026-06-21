@@ -1742,7 +1742,16 @@ export default function PatientProfileScreen(): React.ReactElement {
           <PlainInput label="Medicamento" placeholder="Ej. Sulfato ferroso + ácido fólico" value={treatNombre} onChangeText={setTreatNombre} themeColor={BRAND} />
           <PlainInput label="Dosis" placeholder="Ej. 1 tableta, 60 mg" value={treatDosis} onChangeText={setTreatDosis} themeColor={BRAND} />
           <PlainInput label="Frecuencia" placeholder="Ej. Diario, cada 8 horas" value={treatFrecuencia} onChangeText={setTreatFrecuencia} themeColor={BRAND} />
-          <PlainInput label="Horario de recordatorio" placeholder="Ej. 08:00" value={treatHora} onChangeText={setTreatHora} themeColor={BRAND} />
+          <DateTimeField
+            label="Horario de recordatorio"
+            mode="time"
+            value={treatHora}
+            onChange={setTreatHora}
+            themeColor={BRAND}
+            placeholder="Seleccionar hora"
+            minuteStep={5}
+            helperText="A esta hora la gestante recibirá el aviso para tomar el medicamento."
+          />
           <PlainInput label="Duración (días)" placeholder="Ej. 30" keyboardType="numeric" value={treatDuracion} onChangeText={setTreatDuracion} themeColor={BRAND} />
         </View>
       </AppModal>
