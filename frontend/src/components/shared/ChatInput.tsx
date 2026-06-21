@@ -14,7 +14,6 @@ import { Send, ImagePlus } from 'lucide-react-native';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
-import { shadows } from '../../theme/shadows';
 
 interface Props {
   value: string;
@@ -121,7 +120,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.card,
   },
 });
 

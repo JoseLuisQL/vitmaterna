@@ -20,7 +20,6 @@ import type { ChatMessage } from '../../hooks/useChat';
 import { commonColors, chatColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
-import { shadows } from '../../theme/shadows';
 
 /** Item de la lista: un mensaje o un separador de día. */
 type Row = { kind: 'day'; id: string; label: string } | { kind: 'msg'; id: string; msg: ChatMessage };
@@ -215,14 +214,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bubble: {
-    maxWidth: '80%',
+    maxWidth: '78%',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm2,
-    borderRadius: borderRadius.xl,
-    marginBottom: spacing.sm,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xs,
   },
-  mine: { alignSelf: 'flex-end', borderBottomRightRadius: borderRadius.xs, ...shadows.card },
-  other: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: borderRadius.xs, ...shadows.card },
+  mine: { alignSelf: 'flex-end', borderBottomRightRadius: borderRadius.xs },
+  other: { alignSelf: 'flex-start', backgroundColor: commonColors.surface, borderBottomLeftRadius: borderRadius.xs, borderWidth: 1, borderColor: commonColors.borderLight },
   image: { width: 220, height: 220, borderRadius: borderRadius.lg, marginBottom: 6, backgroundColor: commonColors.surfaceAlt },
   eduBubble: { maxWidth: '86%' },
   eduCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },

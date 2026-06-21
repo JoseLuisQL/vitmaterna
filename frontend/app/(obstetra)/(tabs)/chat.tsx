@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   webPlaceholderText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', maxWidth: 360 },
 
   // Headers móviles
-  bandejaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  bandejaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.lg, borderBottomRightRadius: borderRadius.lg },
   bandejaTitle: { ...typography.h1, color: commonColors.white },
   bandejaSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
 
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   emptyWrap: { paddingTop: spacing.xxl },
 
   // Hilo
-  threadHeader: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  threadHeader: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.lg, borderBottomRightRadius: borderRadius.lg },
   threadHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.onColorSurface },
   headerAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: commonColors.onColorSurfaceStrong, alignItems: 'center', justifyContent: 'center' },

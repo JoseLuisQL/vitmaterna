@@ -2171,10 +2171,10 @@ const styles = StyleSheet.create({
   // Header gradient
   headerContainer: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight : 24) : 0,
-    paddingBottom: 36,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
+    borderBottomLeftRadius: borderRadius.lg,
+    borderBottomRightRadius: borderRadius.lg,
   },
   headerNav: {
     flexDirection: 'row',
@@ -2238,11 +2238,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.sm2,
+    paddingVertical: 9,
+    paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
-    backgroundColor: commonColors.surface,
-    ...shadows.card,
+    backgroundColor: commonColors.surfaceAlt,
   },
   tabPillActive: {
     backgroundColor: BRAND,

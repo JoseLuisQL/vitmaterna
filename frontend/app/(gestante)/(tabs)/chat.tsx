@@ -217,7 +217,7 @@ export default function GestanteChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerGradient: { paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  headerGradient: { paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.lg, borderBottomRightRadius: borderRadius.lg },
   safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2 },
   headerAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.onColorSurfaceStrong, alignItems: 'center', justifyContent: 'center' },
