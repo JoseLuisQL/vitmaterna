@@ -54,7 +54,7 @@ export default function ObstetraChatScreen() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 250);
 
-  const { data: conversations = [], isLoading: isLoadingConvs, refetch: refetchConvs } = useChatConversations();
+  const { data: conversations = [], isLoading: isLoadingConvs, isError: convsError, refetch: refetchConvs } = useChatConversations();
 
   // Reordena/actualiza la bandeja al recibir mensajes nuevos en tiempo real.
   useEffect(() => {
@@ -149,7 +149,19 @@ export default function ObstetraChatScreen() {
   };
 
   // ── Sub-render: lista de conversaciones ──
-  const renderList = (inWeb: boolean) => (
+  const renderList = (inWeb: boolean) =>
+    convsError ? (
+      <View style={styles.emptyWrap}>
+        <EmptyState
+          icon={MessageSquare}
+          title="No se pudo cargar la bandeja"
+          description="Revisa tu conexión y vuelve a intentar."
+          themeColor={BRAND}
+          actionTitle="Reintentar"
+          onAction={() => refetchConvs()}
+        />
+      </View>
+    ) : (
     <FlatList
       data={filtered}
       keyExtractor={(item) => item.id ?? item.gestanteId ?? item.nombre}
