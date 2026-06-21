@@ -10,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, ChevronDown, ChevronUp, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
-  Phone, MessageCircle, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
+  Phone, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
   Eye, Clock, ExternalLink, PlayCircle, CheckCircle2, Droplet, Beaker, ShieldCheck,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
@@ -19,6 +19,7 @@ import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs } from '../../../src/components/ui';
+import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, webLayout } from '../../../src/theme/spacing';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -819,16 +820,8 @@ export default function PatientProfileScreen(): React.ReactElement {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Historia Clínica</Text>
             <View style={{ flexDirection: 'row', gap: spacing.xs2 }}>
-              {/* Acción rápida: registrar control desde la cabecera (issue #10),
-                  el flujo más frecuente del obstetra. */}
-              <TouchableOpacity
-                style={styles.iconBtnGlass}
-                onPress={() => router.push({ pathname: '/(obstetra)/control/nuevo', params: { patientId: patient.id } } as any)}
-                accessibilityLabel="Registrar nuevo control"
-                accessibilityRole="button"
-              >
-                <Stethoscope size={20} color={commonColors.white} />
-              </TouchableOpacity>
+              {/* El botón "Registrar control" se quitó por redundante: la acción
+                  ya está en la pestaña Seguimiento. */}
               <TouchableOpacity
                 style={styles.iconBtnGlass}
                 onPress={handleCall}
@@ -843,7 +836,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                 accessibilityLabel="Escribir por WhatsApp"
                 accessibilityRole="button"
               >
-                <MessageCircle size={20} color={commonColors.white} />
+                <WhatsAppIcon size={20} color={commonColors.white} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconBtnGlass}
