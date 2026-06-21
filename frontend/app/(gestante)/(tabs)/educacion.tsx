@@ -122,18 +122,18 @@ function CalculadoraEG() {
   return (
     <View style={calcStyles.wrapper}>
       <DateTimeField
-        label="Fecha de última menstruación (FUM)"
+        label="Fecha de tu última regla"
         mode="date"
         value={fum}
         onChange={handleChange}
         themeColor={BRAND}
         maximumDate={new Date()}
-        placeholder="Seleccionar fecha"
+        placeholder="Toca para elegir la fecha"
         error={error ?? undefined}
-        helperText={!error && !resultado ? 'Elige el primer día de tu última regla.' : undefined}
+        helperText={!error && !resultado ? 'Elige el primer día de tu última menstruación.' : undefined}
       />
       <AppButton
-        title="Calcular edad gestacional"
+        title="Ver mis semanas de embarazo"
         onPress={() => calcular(fum)}
         themeColor={BRAND}
         disabled={!fum}
@@ -183,7 +183,7 @@ function CalculadoraEG() {
           </View>
 
           <Text style={calcStyles.disclaimer}>
-            Cálculo estimado según tu FUM. Tu obstetra confirma la fecha con la ecografía.
+            Cálculo estimado según la fecha de tu última regla. Tu obstetra confirma la fecha con la ecografía.
           </Text>
         </View>
       )}
@@ -461,8 +461,8 @@ export default function EducacionScreen(): React.ReactElement {
     <AppModal
       visible={toolsVisible}
       onClose={() => setToolsVisible(false)}
-      title="Calculadora de edad gestacional"
-      subtitle="Calcula tus semanas y tu fecha probable de parto."
+      title="¿En qué semana estoy?"
+      subtitle="Calcula tus semanas de embarazo y la fecha probable de parto."
     >
       <CalculadoraEG />
       <TouchableOpacity style={styles.emergencyRow} onPress={() => Linking.openURL('tel:083421800')}>
@@ -487,7 +487,7 @@ export default function EducacionScreen(): React.ReactElement {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity style={[styles.toolBtn, { backgroundColor: commonColors.surfaceAlt }]} onPress={() => setToolsVisible(true)}>
                 <Calculator size={16} color={commonColors.textSecondary} />
-                <Text style={[styles.toolBtnText, { color: commonColors.textSecondary }]}>Calcular EG</Text>
+                <Text style={[styles.toolBtnText, { color: commonColors.textSecondary }]}>Mis semanas</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.toolBtn, { backgroundColor: commonColors.surfaceAlt }]} onPress={() => router.push('/(gestante)/alarmas')}>
                 <AlertTriangle size={16} color={commonColors.textSecondary} />
@@ -529,7 +529,7 @@ export default function EducacionScreen(): React.ReactElement {
           <View style={styles.toolsRow}>
             <TouchableOpacity style={styles.toolBtn} onPress={() => setToolsVisible(true)} activeOpacity={0.85}>
               <Calculator size={16} color={commonColors.white} />
-              <Text style={styles.toolBtnText}>Calcular EG</Text>
+              <Text style={styles.toolBtnText}>Mis semanas</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.toolBtn} onPress={() => router.push('/(gestante)/alarmas')} activeOpacity={0.85}>
               <AlertTriangle size={16} color={commonColors.white} />

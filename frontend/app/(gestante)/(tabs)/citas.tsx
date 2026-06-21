@@ -150,12 +150,17 @@ export default function AppointmentsScreen() {
     [appointments]
   );
 
+  // Próximas: ascendente (la más cercana primero).
   const upcoming = useMemo(
     () => sorted.filter((a) => ['programada', 'confirmada', 'reprogramada', 'solicitud_reprogramacion'].includes(a.estado)),
     [sorted]
   );
+  // Historial: descendente (la más reciente primero, no hay que scrollear al final).
   const history = useMemo(
-    () => sorted.filter((a) => ['asistida', 'cancelada', 'no_asistida'].includes(a.estado)),
+    () => sorted
+      .filter((a) => ['asistida', 'cancelada', 'no_asistida'].includes(a.estado))
+      .slice()
+      .reverse(),
     [sorted]
   );
 
