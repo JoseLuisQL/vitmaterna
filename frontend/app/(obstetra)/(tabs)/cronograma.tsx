@@ -7,13 +7,14 @@
  * tiempo real. Layout limpio con ScreenLayout, sin sobrecarga visual.
  */
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, TextInput, SectionList } from 'react-native';
-import { Clock, MapPin, Plus, Home, Search, X } from 'lucide-react-native';
+import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, SectionList } from 'react-native';
+import { Clock, MapPin, Plus, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { SearchField } from '../../../src/components/ui/Field';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useToast } from '../../../src/components/ui';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
@@ -362,10 +363,12 @@ export default function CronogramaScreen(): React.ReactElement {
           errorMessage="Revisa tu conexión y vuelve a intentar."
         >
           <View style={styles.webToolbar}>
-            <View style={styles.webSearchBox}>
-              <Search size={18} color={commonColors.textTertiary} />
-              <TextInput style={styles.webSearchInput} value={searchInput} onChangeText={setSearchInput} placeholder="Buscar paciente por nombre o DNI..." placeholderTextColor={commonColors.textTertiary} />
-            </View>
+            <SearchField
+              value={searchInput}
+              onChangeText={setSearchInput}
+              placeholder="Buscar paciente por nombre o DNI..."
+              containerStyle={styles.webSearchBox}
+            />
             <View style={styles.webFilterRow}>
               {SEGMENTS.map((s) => (
                 <TouchableOpacity key={s.key} style={[styles.webChip, scope === s.key && styles.webChipActive]} onPress={() => setScope(s.key)}>
@@ -412,22 +415,13 @@ export default function CronogramaScreen(): React.ReactElement {
       actions={<NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />}
     >
       {/* Buscador */}
-      <View style={styles.searchBar}>
-        <Search size={18} color={commonColors.textSecondary} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar paciente por nombre o DNI"
-          placeholderTextColor={commonColors.textTertiary}
-          value={searchInput}
-          onChangeText={setSearchInput}
-          returnKeyType="search"
-        />
-        {searchInput.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchInput('')} hitSlop={8} accessibilityLabel="Limpiar búsqueda">
-            <X size={16} color={commonColors.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchField
+        value={searchInput}
+        onChangeText={setSearchInput}
+        placeholder="Buscar paciente por nombre o DNI"
+        returnKeyType="search"
+        containerStyle={styles.searchBar}
+      />
 
       {/* Segmentos de filtro */}
       <View style={styles.segments}>
@@ -507,7 +501,6 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, marginBottom: spacing.md,
   },
-  searchInput: { flex: 1, ...typography.body, color: commonColors.text, padding: 0 },
 
   segments: { flexDirection: 'row', gap: spacing.xs2, marginBottom: spacing.sm },
   segment: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, alignItems: 'center' },
@@ -563,8 +556,7 @@ const styles = StyleSheet.create({
   },
 
   webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
-  webSearchBox: { flex: 1, minWidth: 220, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, height: 44 },
-  webSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text, outlineStyle: 'none' } as any,
+  webSearchBox: { flex: 1, minWidth: 220 },
   webFilterRow: { flexDirection: 'row', gap: spacing.sm },
   webChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
   webChipActive: { backgroundColor: BRAND, borderColor: BRAND },
