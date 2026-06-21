@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View, StyleSheet, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { goBack } from '../../src/utils/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { ChevronLeft, Megaphone, Users } from 'lucide-react-native';
+import { Megaphone, Users } from 'lucide-react-native';
 import api from '../../src/services/api';
 import { confirmAction } from '../../src/utils/confirm';
-import { useToast } from '../../src/components/ui';
+import { useToast, AppButton } from '../../src/components/ui';
+import { TextAreaField } from '../../src/components/ui/Field';
 import { useResponsive } from '../../src/theme/responsive';
 import { commonColors, obstetraColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
@@ -109,35 +106,26 @@ export default function MensajeMasivoScreen(): React.ReactElement {
         </View>
 
         <View style={webShell ? styles.col : undefined}>
-          <Text style={styles.label}>Mensaje</Text>
-          <TextInput
-            style={styles.textArea}
+          <TextAreaField
+            label="Mensaje"
             value={contenido}
             onChangeText={setContenido}
             placeholder="Escribe el mensaje que recibirán las gestantes..."
-            placeholderTextColor={commonColors.textTertiary}
-            multiline
             numberOfLines={5}
             maxLength={1000}
-            textAlignVertical="top"
+            themeColor={BRAND}
+            helperText={`${contenido.length}/1000`}
           />
-          <Text style={styles.counter}>{contenido.length}/1000</Text>
 
-          <TouchableOpacity
-            style={StyleSheet.flatten([styles.sendBtn, mutation.isPending && styles.sendBtnDisabled, webShell && styles.sendBtnWeb])}
+          <AppButton
+            title="Enviar a gestantes"
             onPress={enviar}
+            loading={mutation.isPending}
             disabled={mutation.isPending}
-            activeOpacity={0.85}
-          >
-            {mutation.isPending ? (
-              <ActivityIndicator color={obstetraColors.onPrimary} size="small" />
-            ) : (
-              <>
-                <Users size={18} color={obstetraColors.onPrimary} />
-                <Text style={styles.sendBtnText}>Enviar a gestantes</Text>
-              </>
-            )}
-          </TouchableOpacity>
+            icon={Users}
+            themeColor={BRAND}
+            style={StyleSheet.flatten([styles.sendBtn, webShell && styles.sendBtnWeb])}
+          />
         </View>
       </View>
     </ScreenLayout>
@@ -145,11 +133,6 @@ export default function MensajeMasivoScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surface },
-  headerTitle: { ...typography.h3, color: commonColors.text },
-  content: { padding: 20, paddingBottom: 48 },
   iconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
   intro: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   label: { ...typography.label, fontWeight: '700', color: commonColors.textSecondary, marginBottom: 10, marginTop: 8 },
@@ -158,11 +141,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: BRAND, borderColor: BRAND },
   chipText: { ...typography.label, fontWeight: '600', color: commonColors.textSecondary },
   chipTextActive: { color: obstetraColors.onPrimary },
-  textArea: { backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: 16, padding: 16, minHeight: 130, ...typography.bodySmall, fontSize: 15, color: commonColors.text },
-  counter: { ...typography.caption, color: commonColors.textTertiary, textAlign: 'right', marginTop: 6 },
-  sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: BRAND, borderRadius: 99, paddingVertical: 16, marginTop: 24 },
-  sendBtnDisabled: { opacity: 0.7 },
-  sendBtnText: { ...typography.button, fontSize: 16, color: obstetraColors.onPrimary },
+  sendBtn: { marginTop: spacing.lg },
   sendBtnWeb: {
     maxWidth: 320,
     alignSelf: 'flex-end',
