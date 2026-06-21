@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { ...typography.h3, color: BRAND },
   info: { flex: 1, marginRight: 12 },
-  name: { ...typography.bodyMedium, color: commonColors.text, marginBottom: 2 },
+  name: { ...typography.bodyMd, color: commonColors.text, marginBottom: 2 },
   details: { ...typography.caption, color: commonColors.textSecondary, marginBottom: 8 },
   cardBadges: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
   riskBadge: {
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
   },
-  loadingText: { ...typography.bodyMedium, color: commonColors.textTertiary, textAlign: 'center' },
+  loadingText: { ...typography.bodyMd, color: commonColors.textTertiary, textAlign: 'center' },
   fab: {
     position: 'absolute',
     bottom: 32,

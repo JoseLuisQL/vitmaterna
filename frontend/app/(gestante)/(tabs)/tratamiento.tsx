@@ -29,6 +29,7 @@ import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 import { useResponsive } from '../../../src/theme/responsive';
 
 const BRAND = gestanteColors.primary;
@@ -441,16 +442,15 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   cardHeaderTitle: { ...typography.label, fontWeight: '700', color: commonColors.text },
 
   // Resumen de hoy
-  todayCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: gestanteColors.primaryLight, borderColor: gestanteColors.primaryLight },
+  todayCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: gestanteColors.primaryLight },
   todayIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center' },
-  todayTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  todayTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   todaySubtitle: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
 
   // Constancia / racha

@@ -37,6 +37,7 @@ import {
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 import { zIndex } from '../../../src/theme/zIndex';
 import { useResponsive } from '../../../src/theme/responsive';
 
@@ -755,13 +756,12 @@ const styles = StyleSheet.create({
   progressCard: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    padding: spacing.md2,
     marginBottom: spacing.sm + 4,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   progressHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  progressTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  progressTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   progressCount: { ...typography.label, color: BRAND, fontWeight: '700' },
   progressTrack: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.full, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: borderRadius.full, backgroundColor: BRAND },
@@ -769,10 +769,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    padding: spacing.md2,
     marginBottom: spacing.sm + 4,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   cardNext: { borderColor: BRAND, borderWidth: 1.5 },
   nextBadge: {
@@ -798,7 +797,7 @@ const styles = StyleSheet.create({
   },
   timeBoxText: { ...typography.label, fontWeight: '700', color: BRAND },
   cardBody: { flex: 1, gap: 5 },
-  cardTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  cardTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { ...typography.caption, color: commonColors.textSecondary },
   statusBadge: {
@@ -815,7 +814,7 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginTop: 2 },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: spacing.lg },
   emptyTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.md, marginBottom: spacing.sm },
-  emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center' },
+  emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center' },
   // Detalle
   detailStatus: {
     flexDirection: 'row',
@@ -838,7 +837,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   detailLabel: { ...typography.caption, color: commonColors.textSecondary },
-  detailValue: { ...typography.bodyMedium, color: commonColors.text, textTransform: 'capitalize' },
+  detailValue: { ...typography.bodyMd, color: commonColors.text, textTransform: 'capitalize' },
   pendingBox: {
     marginTop: spacing.md,
     padding: spacing.md,
@@ -848,14 +847,14 @@ const styles = StyleSheet.create({
     borderLeftColor: semanticColors.warning,
   },
   pendingTitle: { ...typography.label, color: semanticColors.warning, marginBottom: 4 },
-  pendingText: { ...typography.bodySmall, color: commonColors.textSecondary },
+  pendingText: { ...typography.bodySm, color: commonColors.textSecondary },
   pendingHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 6, fontStyle: 'italic' },
   // Reprogramación
   inputLabel: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.md },
   motivoLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   motivoCount: { ...typography.caption, color: commonColors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md },
   motivoCountOk: { color: semanticColors.success },
-  helperText: { ...typography.bodySmall, color: commonColors.textTertiary, paddingVertical: spacing.sm },
+  helperText: { ...typography.bodySm, color: commonColors.textTertiary, paddingVertical: spacing.sm },
   dateScroll: { flexDirection: 'row' },
   dateChip: {
     alignItems: 'center',
@@ -884,7 +883,7 @@ const styles = StyleSheet.create({
   },
   slotChipActive: { backgroundColor: BRAND, borderColor: BRAND },
   slotChipDisabled: { opacity: 0.4 },
-  slotText: { ...typography.bodySmall, color: commonColors.text },
+  slotText: { ...typography.bodySm, color: commonColors.text },
   slotTextActive: { color: commonColors.white, fontWeight: '700' },
   slotTextDisabled: { color: commonColors.textTertiary, textDecorationLine: 'line-through' },
   modalInput: {
@@ -892,7 +891,7 @@ const styles = StyleSheet.create({
     borderColor: commonColors.border,
     borderRadius: borderRadius.md,
     padding: spacing.sm + 4,
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontSize: 15,
     color: commonColors.text,
     backgroundColor: commonColors.background,

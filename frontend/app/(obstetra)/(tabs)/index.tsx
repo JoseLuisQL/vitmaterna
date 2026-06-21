@@ -24,6 +24,7 @@ import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
@@ -312,10 +313,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    padding: spacing.md2,
     gap: spacing.sm,
+    ...shadows.card,
   },
   kpiValue: { ...typography.h1, color: commonColors.text },
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.label, fontWeight: '700', color: commonColors.text },
   sectionLink: { ...typography.caption, color: BRAND, fontWeight: '600' },
 
-  riskCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: commonColors.border },
+  riskCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, ...shadows.card },
   riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },
   riskItem: { alignItems: 'center', flex: 1, gap: 6 },
   riskCount: { ...typography.h2, color: commonColors.text },
@@ -341,17 +341,16 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   timeLine: { alignItems: 'center', justifyContent: 'center', paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, minWidth: 64 },
   timeText: { ...typography.h3, color: commonColors.text },
   timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
   appointmentContent: { flex: 1, paddingLeft: spacing.md, justifyContent: 'center', minWidth: 0 },
   appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: spacing.sm },
-  patientName: { ...typography.bodyMedium, fontWeight: '600', color: commonColors.text, flex: 1 },
-  appointmentType: { ...typography.bodySmall, color: commonColors.textSecondary },
+  patientName: { ...typography.bodyMd, fontWeight: '600', color: commonColors.text, flex: 1 },
+  appointmentType: { ...typography.bodySm, color: commonColors.textSecondary },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  emptyText: { ...typography.bodyMedium, color: commonColors.textSecondary },
+  emptyText: { ...typography.bodyMd, color: commonColors.textSecondary },
 });
