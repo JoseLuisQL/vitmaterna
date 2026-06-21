@@ -416,11 +416,8 @@ export default function PatientProfileScreen(): React.ReactElement {
   // Contenido seleccionado para previsualizar antes de enviar + nota opcional.
   const [recSelected, setRecSelected] = useState<any | null>(null);
   const [recNota, setRecNota] = useState('');
-  // Controla si el cuerpo completo del contenido está expandido en el paso de envío.
+  // Controla si el cuerpo completo del contenido está expandido en el detalle.
   const [recBodyExpanded, setRecBodyExpanded] = useState(false);
-  // Modo de la pantalla de detalle: 'enviar' (con nota + maqueta de chat) o
-  // 'leer' (solo lectura del recurso, abierto desde el botón "Vista previa").
-  const [recMode, setRecMode] = useState<'enviar' | 'leer'>('enviar');
   const { data: catalog = [], isLoading: catalogLoading } = useEducationCatalog();
   const { mutate: recommendContent, isPending: isRecommending } = useRecommendContent();
 
@@ -437,22 +434,20 @@ export default function PatientProfileScreen(): React.ReactElement {
     setRecSelected(null);
     setRecNota('');
     setRecBodyExpanded(false);
-    setRecMode('enviar');
   };
 
-  // Abre el detalle de un recurso: 'leer' = solo lectura (botón Vista previa),
-  // 'enviar' = flujo de recomendación con nota y maqueta del chat.
-  const openRecDetail = (content: any, mode: 'enviar' | 'leer') => {
+  // Abre el detalle del recurso (vista previa completa + envío en un paso).
+  // El cuerpo arranca expandido para ver el contenido completo tal como lo verá
+  // la gestante.
+  const openRecDetail = (content: any) => {
     setRecSelected(content);
-    setRecMode(mode);
-    setRecBodyExpanded(mode === 'leer');
+    setRecBodyExpanded(true);
   };
 
   const backToRecList = () => {
     setRecSelected(null);
     setRecNota('');
     setRecBodyExpanded(false);
-    setRecMode('enviar');
   };
 
   const handleRecommend = () => {
@@ -1895,20 +1890,16 @@ export default function PatientProfileScreen(): React.ReactElement {
       <AppModal
         visible={recommendVisible}
         onClose={closeRecommend}
-        title={!recSelected
-          ? 'Recomendar contenido'
-          : recMode === 'leer' ? 'Vista previa del contenido' : 'Revisar y enviar'}
+        title={!recSelected ? 'Recomendar contenido' : 'Vista previa y envío'}
         subtitle={!recSelected
           ? `Elige un recurso educativo para ${patient.firstName}.`
-          : recMode === 'leer'
-            ? 'Así se lee el recurso. Envíalo cuando estés lista.'
-            : `Revisa el contenido antes de enviarlo a ${patient.firstName}.`}
+          : `Así lo verá ${patient.firstName}. Añade una nota si quieres y envíalo.`}
         footer={recSelected ? (
           <>
             <AppButton title="Volver" variant="outline" onPress={backToRecList} style={{ flex: 1 }} />
             <AppButton
-              title={recMode === 'leer' ? 'Recomendar' : 'Enviar al chat'}
-              onPress={recMode === 'leer' ? () => setRecMode('enviar') : handleRecommend}
+              title="Enviar a la gestante"
+              onPress={handleRecommend}
               style={{ flex: 1 }}
               themeColor={BRAND}
               loading={isRecommending}
@@ -1947,7 +1938,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                     <View key={c.id} style={styles.recRow}>
                       <TouchableOpacity
                         style={styles.recRowMain}
-                        onPress={() => openRecDetail(c, 'enviar')}
+                        onPress={() => openRecDetail(c)}
                         activeOpacity={0.7}
                       >
                         {thumb ? (
@@ -1963,10 +1954,10 @@ export default function PatientProfileScreen(): React.ReactElement {
                           <Text style={styles.recMeta}>{tm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''} · {readingTime(c.contenido, c.duracionMin)}</Text>
                         </View>
                       </TouchableOpacity>
-                      {/* Botón rápido para LEER el recurso sin entrar al flujo de envío */}
+                      {/* Botón rápido de vista previa (lleva al mismo detalle) */}
                       <TouchableOpacity
                         style={styles.recPreviewIconBtn}
-                        onPress={() => openRecDetail(c, 'leer')}
+                        onPress={() => openRecDetail(c)}
                         accessibilityLabel={`Vista previa de ${c.titulo}`}
                         accessibilityRole="button"
                         hitSlop={8}
@@ -2064,39 +2055,41 @@ export default function PatientProfileScreen(): React.ReactElement {
                     )}
                   </View>
 
-                  {/* Paso de ENVÍO: nota opcional + maqueta de cómo lo verá en el chat */}
-                  {recMode === 'enviar' ? (
-                    <>
-                      <View style={styles.recDivider} />
-                      <PlainInput
-                        label="Nota para la gestante (opcional)"
-                        placeholder="Ej. Léelo antes de tu próxima cita."
-                        multiline
-                        value={recNota}
-                        onChangeText={setRecNota}
-                        themeColor={BRAND}
-                      />
-                      <View>
-                        <Text style={styles.recSectionLabel}>Así lo verá en su chat</Text>
-                        <View style={styles.recPreviewBubble}>
-                          <Text style={styles.recPreviewNote}>
-                            📘 Tu obstetra te recomienda{recNota.trim() ? ': ' : ' leer: '}"{recSelected.titulo}"{recNota.trim() ? `\n\n${recNota.trim()}` : ''}
-                          </Text>
-                          <View style={styles.recPreviewCard}>
-                            <View style={[styles.recIcon, { backgroundColor: cm.bg, borderRadius: borderRadius.md }]}>
-                              <CIcon size={20} color={cm.color} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={[styles.recMeta, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
-                              <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
-                              <Text style={styles.recMeta}>{tm.label} · {readingTime(body, recSelected.duracionMin)} · Toca para leer</Text>
-                            </View>
-                            <ChevronRight size={18} color={commonColors.textTertiary} />
+                  {/* ENVÍO: nota opcional + maqueta fiel de cómo lo verá en el chat */}
+                  <View style={styles.recDivider} />
+                  <PlainInput
+                    label="Nota para la gestante (opcional)"
+                    placeholder="Ej. Léelo antes de tu próxima cita."
+                    multiline
+                    value={recNota}
+                    onChangeText={setRecNota}
+                    themeColor={BRAND}
+                  />
+                  <View>
+                    <Text style={styles.recSectionLabel}>Así lo verá en su chat</Text>
+                    <View style={styles.recPreviewBubble}>
+                      <Text style={styles.recPreviewNote}>
+                        {recNota.trim()
+                          ? `Tu obstetra te recomienda este contenido: "${recSelected.titulo}".\n\n${recNota.trim()}`
+                          : `Tu obstetra te recomienda leer este contenido: "${recSelected.titulo}".`}
+                      </Text>
+                      <View style={styles.recPreviewCard}>
+                        {thumb ? (
+                          <Image source={{ uri: thumb }} style={[styles.recThumb, { borderRadius: borderRadius.md }]} resizeMode="cover" />
+                        ) : (
+                          <View style={[styles.recIcon, { backgroundColor: cm.bg, borderRadius: borderRadius.md }]}>
+                            <CIcon size={20} color={cm.color} />
                           </View>
+                        )}
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.recMeta, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
+                          <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
+                          <Text style={styles.recMeta}>{tm.label} · {readingTime(body, recSelected.duracionMin)} · Toca para leer</Text>
                         </View>
+                        <ChevronRight size={18} color={commonColors.textTertiary} />
                       </View>
-                    </>
-                  ) : null}
+                    </View>
+                  </View>
                 </>
               );
             })()}

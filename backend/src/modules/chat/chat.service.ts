@@ -440,10 +440,10 @@ export const recommendContent = async (
   }
 
   // El cuerpo lleva la nota del obstetra (si la hay). El título/categoría van en
-  // la tarjeta clickeable del chat, así que el texto puede ser solo la nota.
+  // la tarjeta clickeable del chat. Texto limpio, sin emojis (regla del sistema).
   const texto = nota?.trim()
-    ? `📘 Tu obstetra te recomienda: "${content.titulo}"\n\n${nota.trim()}`
-    : `📘 Tu obstetra te recomienda leer: "${content.titulo}"`;
+    ? `Tu obstetra te recomienda este contenido: "${content.titulo}".\n\n${nota.trim()}`
+    : `Tu obstetra te recomienda leer este contenido: "${content.titulo}".`;
 
   const message = await prisma.message.create({
     data: {
@@ -502,11 +502,13 @@ export const recommendContent = async (
     /* socket opcional */
   }
 
-  const prefs = gestante.user?.notificationPreferences as Record<string, any> | null;
-  if (prefs?.expoPushToken) {
-    const { sendPushNotification } = await import('../notifications/notification.service.js');
-    await sendPushNotification(
-      [prefs.expoPushToken],
+  // Notificación in-app persistente (campana) + tiempo real + push, además del
+  // mensaje de chat. Así la gestante se entera aunque no abra el chat.
+  if (gestante.userId) {
+    const { notifyUser } = await import('../notifications/notification.service.js');
+    await notifyUser(
+      gestante.userId,
+      'educacion',
       'Tu obstetra te recomienda un contenido',
       content.titulo,
       { conversationId: conversation.id, contentId: content.id, tipo: 'educacion' },
