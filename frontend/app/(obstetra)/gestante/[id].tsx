@@ -307,6 +307,8 @@ export default function PatientProfileScreen(): React.ReactElement {
   // Sub-vista dentro de "Seguimiento": evita que las visitas domiciliarias
   // queden enterradas tras una lista larga de controles.
   const [seguimientoView, setSeguimientoView] = useState<'controles' | 'visitas'>('controles');
+  // Controles expandidos manualmente (el más reciente arranca abierto).
+  const [expandedControls, setExpandedControls] = useState<Record<string, boolean>>({});
 
   const { data: patient, isLoading } = usePatientProfile(id || '');
   // Conteo de visitas domiciliarias para el badge de la sub-pestaña (React Query
@@ -1198,23 +1200,37 @@ export default function PatientProfileScreen(): React.ReactElement {
               </View>
 
               {controls.length > 0 ? (
-                [...controls].reverse().map((ctrl: any, idx: number) => {
+                // El backend ordena por fecha desc → el más reciente ya viene
+                // primero. NO se invierte (antes se hacía y el último quedaba al
+                // final, obligando a scrollear). El primero se muestra expandido.
+                controls.map((ctrl: any, idx: number) => {
                   const fecha = new Date(ctrl.date || ctrl.fecha);
                   const nro = ctrl.numeroControl ?? (controls.length - idx);
-                  // Métricas con clasificación de alerta para escaneo rápido.
+                  const esUltimo = idx === 0;
+                  const cid = ctrl.id || ctrl._id || String(idx);
+                  // Métricas con nombre claro (sin abreviaturas crípticas) + alerta.
                   const metrics = [
-                    { key: 'pa', label: 'P. arterial', value: ctrl.bloodPressure, unit: '', status: vitalStatus('pa', ctrl) },
-                    { key: 'fcf', label: 'FCF', value: ctrl.fetalHeartRate, unit: ' lpm', status: vitalStatus('fcf', ctrl) },
-                    { key: 'au', label: 'Altura ut.', value: ctrl.alturaUterina, unit: ' cm', status: 'ok' as const },
-                    { key: 'peso', label: 'Peso', value: ctrl.weight, unit: ' kg', status: 'ok' as const },
-                    { key: 'temp', label: 'Temp.', value: ctrl.temperatura, unit: '°', status: vitalStatus('temp', ctrl) },
-                    { key: 'pulso', label: 'Pulso', value: ctrl.pulsoMaterno, unit: ' lpm', status: vitalStatus('pulso', ctrl) },
+                    { key: 'pa', label: 'Presión arterial', short: 'mmHg', value: ctrl.bloodPressure, unit: '', status: vitalStatus('pa', ctrl) },
+                    { key: 'fcf', label: 'Latido del bebé', short: 'FCF', value: ctrl.fetalHeartRate, unit: ' lpm', status: vitalStatus('fcf', ctrl) },
+                    { key: 'au', label: 'Altura uterina', short: 'AU', value: ctrl.alturaUterina, unit: ' cm', status: 'ok' as const },
+                    { key: 'peso', label: 'Peso', short: '', value: ctrl.weight, unit: ' kg', status: 'ok' as const },
+                    { key: 'temp', label: 'Temperatura', short: '', value: ctrl.temperatura, unit: ' °C', status: vitalStatus('temp', ctrl) },
+                    { key: 'pulso', label: 'Pulso materno', short: '', value: ctrl.pulsoMaterno, unit: ' lpm', status: vitalStatus('pulso', ctrl) },
                   ].filter((m) => m.value != null && m.value !== '');
                   const hasWarn = metrics.some((m) => m.status === 'warn');
+                  // Expandido si es el último o si el usuario lo abrió.
+                  const open = expandedControls[cid] ?? esUltimo;
 
                   return (
-                    <View key={ctrl.id || ctrl._id} style={[styles.controlCard, designTokens.cardShadow]}>
-                      <View style={styles.ctrlHeader}>
+                    <View key={cid} style={[styles.controlCard, designTokens.cardShadow, esUltimo && styles.controlCardLatest]}>
+                      {/* Cabecera tappable: alterna expandir/colapsar */}
+                      <TouchableOpacity
+                        style={styles.ctrlHeader}
+                        activeOpacity={0.7}
+                        onPress={() => setExpandedControls((prev) => ({ ...prev, [cid]: !open }))}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Control ${nro}, ${open ? 'ocultar' : 'ver'} detalle`}
+                      >
                         <View style={styles.ctrlDateBox}>
                           <Text style={styles.ctrlDay}>{fecha.getDate()}</Text>
                           <Text style={styles.ctrlMonth}>
@@ -1222,10 +1238,23 @@ export default function PatientProfileScreen(): React.ReactElement {
                           </Text>
                         </View>
                         <View style={styles.ctrlTitleWrap}>
-                          <Text style={styles.ctrlTitle}>Control N° {nro}</Text>
+                          <View style={styles.ctrlTitleRow}>
+                            <Text style={styles.ctrlTitle}>Control N° {nro}</Text>
+                            {esUltimo && (
+                              <View style={styles.ctrlLatestBadge}>
+                                <Text style={styles.ctrlLatestText}>Más reciente</Text>
+                              </View>
+                            )}
+                          </View>
                           <Text style={styles.ctrlSubtitle}>
                             {ctrl.week != null ? `Semana ${ctrl.week}` : 'Semana —'} · {fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </Text>
+                          {/* Resumen compacto cuando está colapsado */}
+                          {!open && metrics.length > 0 && (
+                            <Text style={styles.ctrlCollapsedSummary} numberOfLines={1}>
+                              {metrics.slice(0, 3).map((m) => `${m.value}${m.unit}`).join('  ·  ')}
+                            </Text>
+                          )}
                         </View>
                         {hasWarn && (
                           <View style={styles.ctrlWarnChip}>
@@ -1233,8 +1262,10 @@ export default function PatientProfileScreen(): React.ReactElement {
                             <Text style={styles.ctrlWarnText}>Revisar</Text>
                           </View>
                         )}
-                      </View>
+                        {open ? <ChevronUp size={18} color={commonColors.textTertiary} /> : <ChevronDown size={18} color={commonColors.textTertiary} />}
+                      </TouchableOpacity>
 
+                      {open && (<>
                       {metrics.length > 0 ? (
                         <View style={styles.ctrlMetrics}>
                           {metrics.map((m) => (
@@ -1242,7 +1273,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                               <Text style={[styles.ctrlMetricVal, m.status === 'warn' && { color: semanticColors.warning }]}>
                                 {m.value}{m.unit}
                               </Text>
-                              <Text style={styles.ctrlMetricLbl}>{m.label}</Text>
+                              <Text style={styles.ctrlMetricLbl} numberOfLines={1}>{m.label}</Text>
                             </View>
                           ))}
                         </View>
@@ -1251,7 +1282,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                       )}
 
                       {ctrl.movimientoFetal ? (
-                        <Text style={styles.ctrlExtra}>Movimiento fetal: <Text style={styles.ctrlExtraStrong}>{ctrl.movimientoFetal}</Text></Text>
+                        <Text style={styles.ctrlExtra}>Movimiento del bebé: <Text style={styles.ctrlExtraStrong}>{ctrl.movimientoFetal}</Text></Text>
                       ) : null}
 
                       {ctrl.observaciones ? (
@@ -1268,6 +1299,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                           </Text>
                         </View>
                       ) : null}
+                      </>)}
                     </View>
                   );
                 })
@@ -2430,15 +2462,28 @@ const styles = StyleSheet.create({
   controlCard: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
-    padding: spacing.md2,
-    marginBottom: spacing.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm2,
     ...shadows.card,
+  },
+  controlCardLatest: {
+    borderWidth: 1.5,
+    borderColor: obstetraColors.primaryMid,
   },
   ctrlHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: spacing.sm,
   },
+  ctrlTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  ctrlLatestBadge: {
+    backgroundColor: obstetraColors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  ctrlLatestText: { ...typography.overline, fontSize: 9, fontWeight: '700', color: BRAND },
+  ctrlCollapsedSummary: { ...typography.caption, color: commonColors.textTertiary, marginTop: 3 },
   ctrlDateBox: {
     backgroundColor: obstetraColors.primaryLight,
     borderRadius: borderRadius.md,
@@ -2478,6 +2523,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: spacing.md,
     rowGap: spacing.md,
+    marginTop: spacing.md,
   },
   ctrlMetricBox: {
     alignItems: 'center',
