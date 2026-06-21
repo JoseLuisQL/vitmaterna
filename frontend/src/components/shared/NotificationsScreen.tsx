@@ -169,7 +169,7 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
-  const { data: items = [], isLoading, refetch, isRefetching } = useNotifications();
+  const { data: items = [], isLoading, isError, refetch, isRefetching } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
   const deleteOne = useDeleteNotification();
@@ -331,6 +331,11 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
         onBack={() => goBack(router, (role === 'neutral' ? '/' : `/(${role})/(tabs)`) as any)}
         scroll={false}
         width={webShell ? 'readable' : 'full'}
+        error={isError}
+        onRetry={() => refetch()}
+        errorTitle="No se pudieron cargar las notificaciones"
+        errorMessage="Revisa tu conexión y vuelve a intentar."
+        accentColor={themeColor}
         actions={
           <View style={styles.headerActions}>
             {unreadCount > 0 && (

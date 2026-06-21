@@ -68,7 +68,7 @@ export default function CronogramaScreen(): React.ReactElement {
   const [modalVisible, setModalVisible] = useState(false);
 
   useAppointmentRealtime();
-  const { data: appointments = [], isLoading, refetch, isRefetching } =
+  const { data: appointments = [], isLoading, isError, refetch, isRefetching } =
     useAppointmentsFiltered({ scope, search });
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
   const { mutate: resolveReschedule, isPending: isResolving } = useResolveReschedule();
@@ -356,6 +356,10 @@ export default function CronogramaScreen(): React.ReactElement {
           width="full"
           accentColor={BRAND}
           scroll={false}
+          error={isError}
+          onRetry={() => refetch()}
+          errorTitle="No se pudo cargar la agenda"
+          errorMessage="Revisa tu conexión y vuelve a intentar."
         >
           <View style={styles.webToolbar}>
             <View style={styles.webSearchBox}>
@@ -401,6 +405,10 @@ export default function CronogramaScreen(): React.ReactElement {
       width="full"
       accentColor={BRAND}
       scroll={false}
+      error={isError}
+      onRetry={() => refetch()}
+      errorTitle="No se pudo cargar la agenda"
+      errorMessage="Revisa tu conexión y vuelve a intentar."
       actions={<NotificationBell href="/(obstetra)/notificaciones" color={commonColors.white} />}
     >
       {/* Buscador */}
