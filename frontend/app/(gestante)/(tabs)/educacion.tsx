@@ -24,6 +24,7 @@ import {
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
@@ -208,7 +209,7 @@ const calcStyles = StyleSheet.create({
   },
   heroNumberRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: 2 },
   heroNumber: { ...typography.display, color: BRAND, lineHeight: 52 },
-  heroUnit: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  heroUnit: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   progressTrack: {
     height: 8,
     borderRadius: borderRadius.full,
@@ -574,13 +575,13 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.xl,
-    padding: spacing.md, marginBottom: spacing.sm2, borderWidth: 1, borderColor: commonColors.border,
+    padding: spacing.md2, marginBottom: spacing.sm2, ...shadows.card,
   },
   cardIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   cardThumb: { width: 56, height: 56, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   cardCategory: { ...typography.overline, textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
-  cardTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, marginTop: 2 },
+  cardTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, marginTop: 2 },
   cardExcerpt: { ...typography.caption, color: commonColors.textSecondary, marginTop: 3, lineHeight: 18 },
   recoTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: gestanteColors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full, flexShrink: 1 },
   recoTagText: { ...typography.overline, fontSize: 9.5, fontWeight: '700', color: BRAND },
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
   cardFav: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   emptyWrap: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl, gap: spacing.sm },
   emptyTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.sm },
-  emptyText: { ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 20 },
   emergencyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
-  emergencyRowText: { flex: 1, ...typography.bodySmall, color: commonColors.text },
+  emergencyRowText: { flex: 1, ...typography.bodySm, color: commonColors.text },
 });

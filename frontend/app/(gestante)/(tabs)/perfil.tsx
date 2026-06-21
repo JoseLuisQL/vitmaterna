@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 import { usePendingSync } from '../../../src/hooks/usePendingSync';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -504,12 +505,11 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
     marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg },
   menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  menuItemTitle: { ...typography.bodyMedium, color: commonColors.text },
+  menuItemTitle: { ...typography.bodyMd, color: commonColors.text },
   menuItemDanger: { color: semanticColors.danger },
   menuDivider: { height: 1, backgroundColor: commonColors.border, marginLeft: 56 },
 
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 4,
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontSize: 15,
     color: commonColors.text,
   },
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   prefTextWrap: { flex: 1 },
-  prefLabel: { ...typography.bodyMedium, color: commonColors.text },
+  prefLabel: { ...typography.bodyMd, color: commonColors.text },
   prefLabelDisabled: { color: commonColors.textTertiary },
   prefDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   prefHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.md, lineHeight: 18 },

@@ -21,6 +21,7 @@ import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 import { useResponsive } from '../../../src/theme/responsive';
 import { WebMaxWidth, DataTable } from '../../../src/components/web';
 import {
@@ -519,15 +520,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: commonColors.border,
+    ...shadows.card,
   },
-  cardAlert: { borderColor: semanticColors.warning, backgroundColor: semanticColors.warningLight },
+  cardAlert: { borderWidth: 1, borderColor: semanticColors.warning, backgroundColor: semanticColors.warningLight },
   timeCol: { minWidth: 76, paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, justifyContent: 'center' },
   timeText: { ...typography.label, fontWeight: '700', color: commonColors.text },
   cardBody: { flex: 1, paddingLeft: spacing.md, minWidth: 0 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2 },
-  patientName: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, flex: 1 },
+  patientName: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 },
   apptType: { ...typography.bodySm, color: commonColors.textSecondary },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   metaText: { ...typography.caption, color: commonColors.textTertiary },

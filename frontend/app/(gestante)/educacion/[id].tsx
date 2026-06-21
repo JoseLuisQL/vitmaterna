@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
   mediaCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.xl,
-    padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.border, ...shadows.card,
+    padding: spacing.lg, marginBottom: spacing.lg, ...shadows.card,
   },
-  mediaText: { ...typography.bodyMedium, fontWeight: '700', color: BRAND },
+  mediaText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
   readBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xl, alignSelf: 'center' },
   readBadgeText: { ...typography.caption, fontWeight: '700' },
   notFound: { ...typography.body, color: commonColors.textSecondary, textAlign: 'center', marginTop: spacing.xl },

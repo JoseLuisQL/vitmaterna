@@ -95,13 +95,13 @@ const filaStyles = StyleSheet.create({
     borderBottomColor: commonColors.borderLight,
   },
   label: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
     flex: 1,
     lineHeight: 20,
   },
   value: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontFamily: typography.label.fontFamily,
     fontWeight: '600',
     color: commonColors.text,
@@ -155,10 +155,10 @@ const labRowStyles = StyleSheet.create({
   // Etiqueta (izquierda) y estado (derecha) comparten el ancho sin encimarse:
   // ambas pueden encoger y su texto se ajusta en varias líneas.
   left: { flex: 1.2, minWidth: 0 },
-  label: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
+  label: { ...typography.bodySm, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
   hint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 1 },
   right: { flexShrink: 1, alignItems: 'flex-end', gap: 4, minWidth: 0 },
-  value: { ...typography.bodySmall, fontWeight: '700', color: commonColors.text, textAlign: 'right' },
+  value: { ...typography.bodySm, fontWeight: '700', color: commonColors.text, textAlign: 'right' },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full, alignSelf: 'flex-end' },
   pillText: { ...typography.overline, fontSize: 10, fontWeight: '700' },
 });
@@ -1517,7 +1517,7 @@ export default function PatientProfileScreen(): React.ReactElement {
               <Seccion titulo="Signos de alarma reportados" />
               {dangerSigns.length === 0 ? (
                 <View style={[styles.card, designTokens.cardShadow]}>
-                  <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>
+                  <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>
                     Esta gestante no ha reportado signos de alarma.
                   </Text>
                 </View>
@@ -1532,14 +1532,14 @@ export default function PatientProfileScreen(): React.ReactElement {
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
                           <AlertTriangle size={16} color={color} />
-                          <Text style={{ ...typography.bodyMedium, fontWeight: '700', color: commonColors.text, flex: 1 }} numberOfLines={2}>{s.tipoSigno}</Text>
+                          <Text style={{ ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 }} numberOfLines={2}>{s.tipoSigno}</Text>
                         </View>
                         <View style={{ backgroundColor: color + '1A', paddingHorizontal: 10, paddingVertical: 3, borderRadius: borderRadius.full }}>
                           <Text style={{ ...typography.overline, color, fontWeight: '700' }}>{grave ? 'GRAVE' : 'LEVE'}</Text>
                         </View>
                       </View>
                       {s.descripcion ? (
-                        <Text style={{ ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: 6 }}>{s.descripcion}</Text>
+                        <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, marginBottom: 6 }}>{s.descripcion}</Text>
                       ) : null}
                       <Text style={{ ...typography.caption, color: commonColors.textTertiary, marginBottom: pendiente ? 10 : 0 }}>
                         {new Date(s.createdAt).toLocaleString('es-PE')} · {estadoLabel}
@@ -1673,7 +1673,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                             }}
                             onPress={() => setLabResultado(opt)}
                           >
-                            <Text style={{ ...typography.bodySmall, fontWeight: '700', color: active ? (isBad ? semanticColors.danger : semanticColors.success) : commonColors.textSecondary }}>{opt}</Text>
+                            <Text style={{ ...typography.bodySm, fontWeight: '700', color: active ? (isBad ? semanticColors.danger : semanticColors.success) : commonColors.textSecondary }}>{opt}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -2129,13 +2129,13 @@ export default function PatientProfileScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   recSearchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44, marginBottom: spacing.md },
   recSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
-  recEmpty: { ...typography.bodySmall, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl },
+  recEmpty: { ...typography.bodySm, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl },
   recRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   recRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.xs2 },
   recIcon: { width: 44, height: 44, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   recThumb: { width: 44, height: 44, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, flexShrink: 0 },
   recRowCat: { ...typography.overline, fontSize: 10, marginBottom: 2 },
-  recTitle: { ...typography.bodyMedium, color: commonColors.text, fontWeight: '600' },
+  recTitle: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600' },
   recMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   // Botón rápido "Vista previa" (ícono ojo) por fila de la lista.
   recPreviewIconBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: obstetraColors.primaryLight, flexShrink: 0 },
@@ -2152,16 +2152,16 @@ const styles = StyleSheet.create({
   recMetaChipText: { ...typography.caption, color: commonColors.textSecondary, fontWeight: '600' },
   // Recurso multimedia.
   recMediaCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
-  recMediaText: { ...typography.bodyMedium, fontWeight: '700', color: BRAND },
+  recMediaText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
   // Cuerpo del contenido (lectura).
   recSectionLabel: { ...typography.overline, color: commonColors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   recBodyWrap: { backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.md },
-  recEmptyBody: { ...typography.bodySmall, color: commonColors.textTertiary, fontStyle: 'italic', backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.md },
+  recEmptyBody: { ...typography.bodySm, color: commonColors.textTertiary, fontStyle: 'italic', backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.md },
   recExpandBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
   recExpandText: { ...typography.caption, fontWeight: '700' },
   recDivider: { height: 1, backgroundColor: commonColors.borderLight, marginVertical: spacing.xs },
   recPreviewBubble: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
-  recPreviewNote: { ...typography.bodySmall, color: commonColors.text, marginBottom: spacing.sm, lineHeight: 19 },
+  recPreviewNote: { ...typography.bodySm, color: commonColors.text, marginBottom: spacing.sm, lineHeight: 19 },
   recPreviewCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.sm2, borderWidth: 1, borderColor: commonColors.border },
   container: {
     flex: 1,
@@ -2315,7 +2315,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm2,
   },
   statusMetricTexts: { flex: 1, minWidth: 0 },
-  statusMetricVal: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  statusMetricVal: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary, marginTop: 1 },
   statusRibbon: {
     backgroundColor: commonColors.surface,
@@ -2380,10 +2380,10 @@ const styles = StyleSheet.create({
     color: commonColors.textSecondary,
     lineHeight: 18,
   },
-  weightSummary: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
+  weightSummary: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
   weightSummaryStrong: { color: commonColors.text, fontFamily: typography.label.fontFamily, fontWeight: '700' },
   labGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  labGroupTitle: { ...typography.bodyMedium, fontWeight: '700', color: commonColors.text },
+  labGroupTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   labGroupNote: { ...typography.caption, color: commonColors.textTertiary, marginBottom: spacing.sm, lineHeight: 18 },
   labModalHint: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 17, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: spacing.sm },
 
@@ -2412,9 +2412,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tamizajesTitle: { ...typography.bodySmall, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.text },
+  tamizajesTitle: { ...typography.bodySm, fontFamily: typography.label.fontFamily, fontWeight: '700', color: commonColors.text },
   tamizajesDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  tamizajesIntro: { ...typography.bodySmall, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 20 },
+  tamizajesIntro: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 20 },
   primaryActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2481,11 +2481,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ctrlTitle: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.text,
   },
   ctrlSubtitle: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
     marginTop: 2,
   },
@@ -2513,14 +2513,14 @@ const styles = StyleSheet.create({
   },
   ctrlWarnText: { ...typography.overline, fontSize: 10, color: semanticColors.warning, fontWeight: '700' },
   ctrlNoData: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textTertiary,
     backgroundColor: commonColors.surfaceAlt,
     borderRadius: 12,
     padding: spacing.md,
     textAlign: 'center',
   },
-  ctrlExtra: { ...typography.bodySmall, color: commonColors.textSecondary, marginTop: spacing.sm },
+  ctrlExtra: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: spacing.sm },
   ctrlExtraStrong: { color: commonColors.text, fontFamily: typography.label.fontFamily, fontWeight: '700' },
   ctrlObsBox: {
     marginTop: spacing.sm,
@@ -2530,11 +2530,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: obstetraColors.primary,
   },
-  ctrlObsText: { ...typography.bodySmall, color: commonColors.text, lineHeight: 20 },
+  ctrlObsText: { ...typography.bodySm, color: commonColors.text, lineHeight: 20 },
   ctrlNextRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
   ctrlNextText: { ...typography.caption, color: commonColors.textSecondary },
   ctrlMetricVal: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontFamily: typography.label.fontFamily,
     fontWeight: '700',
     color: commonColors.text,
@@ -2570,11 +2570,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pillName: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.text,
   },
   pillDosis: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: commonColors.textSecondary,
     marginTop: 2,
     marginBottom: 12,
@@ -2626,14 +2626,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   alertBannerTitle: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontFamily: typography.label.fontFamily,
     fontWeight: '700',
     color: semanticColors.danger,
     marginBottom: 4,
   },
   alertBannerDesc: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     color: semanticColors.danger,
     lineHeight: 18,
   },
@@ -2661,7 +2661,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vaxName: {
-    ...typography.bodySmall,
+    ...typography.bodySm,
     fontFamily: typography.label.fontFamily,
     fontWeight: '600',
     color: commonColors.text,
@@ -2690,7 +2690,7 @@ const styles = StyleSheet.create({
   vaxStatusTextPending: { color: commonColors.textSecondary },
   
   emptyTextInfo: {
-    ...typography.bodyMedium,
+    ...typography.bodyMd,
     color: commonColors.textSecondary,
     fontStyle: 'italic',
     marginTop: 16,
@@ -2769,14 +2769,14 @@ const styles = StyleSheet.create({
   addChipText: { ...typography.caption, fontWeight: '700', color: BRAND },
   antRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   antRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  antCondicion: { ...typography.bodyMedium, color: commonColors.text },
+  antCondicion: { ...typography.bodyMd, color: commonColors.text },
   antMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   antDeleteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: semanticColors.dangerLight },
-  antEmpty: { ...typography.bodySmall, color: commonColors.textSecondary, padding: 16 },
+  antEmpty: { ...typography.bodySm, color: commonColors.textSecondary, padding: 16 },
   segmentRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
   segment: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', backgroundColor: commonColors.surface },
   segmentActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
-  segmentText: { ...typography.bodySmall, color: commonColors.textSecondary },
+  segmentText: { ...typography.bodySm, color: commonColors.textSecondary },
   segmentTextActive: { color: BRAND, fontFamily: typography.label.fontFamily },
   suspendBadge: {
     ...typography.micro,
@@ -2791,6 +2791,6 @@ const styles = StyleSheet.create({
   treatActionsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   treatActionBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', backgroundColor: commonColors.surface },
   treatSuspendBtn: { borderColor: semanticColors.dangerLight, backgroundColor: semanticColors.dangerLight },
-  treatActionText: { ...typography.buttonSmall, color: commonColors.text },
-  suspendHint: { ...typography.bodySmall, color: commonColors.textSecondary, lineHeight: 20 },
+  treatActionText: { ...typography.buttonSm, color: commonColors.text },
+  suspendHint: { ...typography.bodySm, color: commonColors.textSecondary, lineHeight: 20 },
 });
