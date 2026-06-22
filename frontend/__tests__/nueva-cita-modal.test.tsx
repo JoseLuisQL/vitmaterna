@@ -69,4 +69,16 @@ describe('NuevaCitaModal — búsqueda y selección de gestante', () => {
     expect(screen.getByText('Cambiar')).toBeTruthy();
     expect(screen.getByText('Ana Gómez')).toBeTruthy();
   });
+
+  it('permite elegir "Otro…" y escribir un motivo personalizado', () => {
+    renderModal();
+    // Por defecto no se muestra el campo de motivo personalizado.
+    expect(screen.queryByPlaceholderText('Escribe el motivo de la cita')).toBeNull();
+    // Al tocar "Otro…" aparece el input de texto.
+    fireEvent.press(screen.getByText('Otro…'));
+    const input = screen.getByPlaceholderText('Escribe el motivo de la cita');
+    expect(input).toBeTruthy();
+    fireEvent.changeText(input, 'Control de presión arterial');
+    expect(screen.getByDisplayValue('Control de presión arterial')).toBeTruthy();
+  });
 });

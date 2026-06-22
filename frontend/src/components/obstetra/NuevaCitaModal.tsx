@@ -3,7 +3,7 @@ import {
   View, StyleSheet, Text, TouchableOpacity,
   FlatList, TextInput, ScrollView, ActivityIndicator, Dimensions,
 } from 'react-native';
-import { User as UserIcon, Search, Check, FileText, Calendar, Clock, ChevronRight, X, MapPin, Building2, AlertTriangle } from 'lucide-react-native';
+import { User as UserIcon, Search, Check, FileText, Calendar, Clock, ChevronRight, X, MapPin, Building2, AlertTriangle, Pencil } from 'lucide-react-native';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
@@ -41,6 +41,9 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
   const [gestanteId, setGestanteId] = useState('');
   const [gestanteName, setGestanteName] = useState('');
   const [motivo, setMotivo] = useState('Control Prenatal');
+  // "Otro": cuando está activo, el motivo real proviene de motivoCustom.
+  const [motivoOtro, setMotivoOtro] = useState(false);
+  const [motivoCustom, setMotivoCustom] = useState('');
   const [modalidad, setModalidad] = useState<'establecimiento' | 'domiciliaria'>('establecimiento');
   const [observaciones, setObservaciones] = useState('');
   const [dateStr, setDateStr] = useState<string | null>(null);
@@ -93,10 +96,15 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
     setSearch('');
   };
 
+  // Motivo efectivo: el personalizado si "Otro" está activo, si no el del chip.
+  const motivoFinal = (motivoOtro ? motivoCustom : motivo).trim();
+
   const resetForm = () => {
     setGestanteId('');
     setGestanteName('');
     setMotivo('Control Prenatal');
+    setMotivoOtro(false);
+    setMotivoCustom('');
     setModalidad('establecimiento');
     setObservaciones('');
     setDateStr(null);
@@ -119,13 +127,17 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
       toast.warning('Falta fecha y hora', 'Selecciona una fecha y un horario disponible.');
       return;
     }
+    if (motivoOtro && motivoFinal.length < 3) {
+      toast.warning('Falta el motivo', 'Escribe el motivo personalizado de la cita.');
+      return;
+    }
 
     try {
       await createAppointment({
         gestanteId,
         fecha: dateStr,
         hora: timeStr,
-        motivo,
+        motivo: motivoFinal,
         modalidad,
         observaciones: observaciones || null,
       });
@@ -223,7 +235,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalidadBtn, modalidad === 'domiciliaria' && styles.modalidadBtnActive]}
-              onPress={() => { setModalidad('domiciliaria'); if (motivo === 'Control Prenatal') setMotivo('Visita domiciliaria'); }}
+              onPress={() => { setModalidad('domiciliaria'); if (!motivoOtro && motivo === 'Control Prenatal') setMotivo('Visita domiciliaria'); }}
               accessibilityRole="button"
               accessibilityState={{ selected: modalidad === 'domiciliaria' }}
             >
@@ -237,18 +249,45 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
 
           <Text style={styles.fieldLabel}>Motivo</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {MOTIVOS.map(m => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.chip, motivo === m && styles.chipActive]}
-                onPress={() => setMotivo(m)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: motivo === m }}
-              >
-                <Text style={[styles.chipText, motivo === m && styles.chipTextActive]}>{m}</Text>
-              </TouchableOpacity>
-            ))}
+            {MOTIVOS.map(m => {
+              const active = !motivoOtro && motivo === m;
+              return (
+                <TouchableOpacity
+                  key={m}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() => { setMotivoOtro(false); setMotivo(m); }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{m}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            {/* Opción "Otro": habilita un motivo personalizado. */}
+            <TouchableOpacity
+              style={[styles.chip, motivoOtro && styles.chipActive]}
+              onPress={() => setMotivoOtro(true)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: motivoOtro }}
+            >
+              <Text style={[styles.chipText, motivoOtro && styles.chipTextActive]}>Otro…</Text>
+            </TouchableOpacity>
           </ScrollView>
+
+          {motivoOtro && (
+            <View style={styles.customMotivoBox}>
+              <Pencil size={16} color={commonColors.textSecondary} />
+              <TextInput
+                style={styles.customMotivoInput}
+                value={motivoCustom}
+                onChangeText={setMotivoCustom}
+                placeholder="Escribe el motivo de la cita"
+                placeholderTextColor={commonColors.textTertiary}
+                autoFocus
+                maxLength={80}
+              />
+            </View>
+          )}
 
           {/* ── PASO 3 · FECHA Y HORA ── */}
           <Text style={styles.stepLabel}>3 · Fecha y hora</Text>
@@ -342,7 +381,7 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
               </View>
               <View style={styles.summaryRow}>
                 <Clock size={15} color={BRAND} />
-                <Text style={styles.summaryText}>{timeStr} · {motivo}</Text>
+                <Text style={styles.summaryText}>{timeStr}{motivoFinal ? ` · ${motivoFinal}` : ''}</Text>
               </View>
             </View>
           )}
@@ -499,6 +538,16 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
   chipText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '500' },
   chipTextActive: { color: BRAND, fontWeight: '700' },
+  customMotivoBox: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1, borderColor: commonColors.border,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+    marginTop: spacing.sm,
+  },
+  customMotivoInput: { flex: 1, ...typography.body, color: commonColors.text, paddingVertical: spacing.sm + 2 },
 
   // Fecha
   dateRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs2 },
