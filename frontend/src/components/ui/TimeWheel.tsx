@@ -152,13 +152,18 @@ function UnitBox({
   );
 }
 
-/** Rueda de números con scroll continuo (cíclico) y selección central. */
+/** Rueda de números con scroll continuo (cíclico) y selección SIEMPRE en el centro. */
 function CyclicWheel({
   items, selected, accentColor, onSelect,
 }: { items: number[]; selected: number; accentColor: string; onSelect: (n: number) => void }): React.ReactElement {
   const ref = useRef<ScrollView>(null);
   const base = items.length;
   const selIdx = Math.max(0, items.indexOf(selected));
+
+  // Índice de ÍTEM (0..base-1) que está ahora mismo en el centro. Resalta y se
+  // mantiene sincronizado en vivo con el scroll, no solo al final.
+  const [centerItem, setCenterItem] = useState(selIdx);
+  const lastEmitted = useRef(selIdx);
 
   // Lista repetida para dar sensación de continuidad infinita.
   const looped = useMemo(
@@ -173,21 +178,40 @@ function CyclicWheel({
   useEffect(() => {
     const target = MID * base + selIdx;
     ref.current?.scrollTo({ y: yFor(target), animated: false });
+    setCenterItem(selIdx);
+    lastEmitted.current = selIdx;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base]);
 
-  const handleMomentumEnd = useCallback(
+  // En cada frame de scroll: el número del centro es el seleccionado.
+  const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const y = e.nativeEvent.contentOffset.y;
       const centerGlobal = Math.round(y / ROW_HEIGHT) + CENTER;
       const itemIdx = ((centerGlobal % base) + base) % base;
-      // Selecciona el número que quedó centrado.
-      onSelect(items[itemIdx]);
-      // Reposiciona invisiblemente al bloque central si estamos cerca del borde.
+      if (itemIdx !== centerItem) setCenterItem(itemIdx); // resalta el del centro
+      if (itemIdx !== lastEmitted.current) {
+        lastEmitted.current = itemIdx;
+        onSelect(items[itemIdx]); // selecciona en vivo el del centro
+      }
+    },
+    [base, centerItem, items, onSelect],
+  );
+
+  // Al asentarse: snap perfecto + reposición invisible al bloque central.
+  const handleSettle = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const centerGlobal = Math.round(y / ROW_HEIGHT) + CENTER;
+      const itemIdx = ((centerGlobal % base) + base) % base;
+      setCenterItem(itemIdx);
+      if (itemIdx !== lastEmitted.current) {
+        lastEmitted.current = itemIdx;
+        onSelect(items[itemIdx]);
+      }
       const block = Math.floor(centerGlobal / base);
       if (block <= 1 || block >= REPEAT - 2) {
-        const newGlobal = MID * base + itemIdx;
-        ref.current?.scrollTo({ y: yFor(newGlobal), animated: false });
+        ref.current?.scrollTo({ y: yFor(MID * base + itemIdx), animated: false });
       }
     },
     [base, items, onSelect, yFor],
@@ -203,27 +227,31 @@ function CyclicWheel({
         snapToInterval={ROW_HEIGHT}
         decelerationRate="fast"
         nestedScrollEnabled
-        onMomentumScrollEnd={handleMomentumEnd}
-        // En web el scroll no siempre dispara momentum: usamos onScrollEndDrag.
-        onScrollEndDrag={IS_WEB ? handleMomentumEnd : undefined}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        onMomentumScrollEnd={handleSettle}
+        onScrollEndDrag={handleSettle}
       >
         {looped.map((n, i) => {
-          const active = (i % base) === selIdx;
+          const active = (i % base) === centerItem;
           return (
             <Pressable
               key={i}
-              onPress={() => onSelect(n)}
+              onPress={() => { onSelect(n); lastEmitted.current = i % base; setCenterItem(i % base); ref.current?.scrollTo({ y: yFor(MID * base + (i % base)), animated: true }); }}
               style={[styles.row, IS_WEB && ({ cursor: 'pointer' } as any)]}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.rowText, active && { color: accentColor, fontFamily: typography.label.fontFamily, fontWeight: '700' }]}>
+              <Text style={[styles.rowText, active ? { color: accentColor, fontFamily: typography.label.fontFamily, fontWeight: '700' } : styles.rowTextDim]}>
                 {pad(n)}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
+      {/* Velos superior/inferior para enfatizar el centro (estilo rueda iOS). */}
+      <View pointerEvents="none" style={styles.fadeTop} />
+      <View pointerEvents="none" style={styles.fadeBottom} />
     </View>
   );
 }
@@ -276,7 +304,22 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   row: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  rowText: { ...typography.h3, color: commonColors.textSecondary, fontVariant: ['tabular-nums'] },
+  rowText: { ...typography.h3, color: commonColors.text, fontVariant: ['tabular-nums'] },
+  rowTextDim: { color: commonColors.textTertiary, fontWeight: '400' },
+  fadeTop: {
+    position: 'absolute', left: 0, right: 0, top: 0,
+    height: ROW_HEIGHT * CENTER,
+    backgroundColor: commonColors.surface,
+    opacity: 0.55,
+    zIndex: 1,
+  },
+  fadeBottom: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    height: ROW_HEIGHT * CENTER,
+    backgroundColor: commonColors.surface,
+    opacity: 0.55,
+    zIndex: 1,
+  },
 });
 
 export default TimeWheel;
