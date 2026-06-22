@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import { Home, Plus, MapPin, Trash2, Clock, Pencil } from 'lucide-react-native';
 import { AppModal, AppButton, useToast } from '../ui';
+import { DateTimeField } from '../ui/DateTimeField';
 import { useHomeVisits, useCreateHomeVisit, useDeleteHomeVisit } from '../../services/api-queries';
 import { openInMaps } from '../../utils/maps';
 import { confirmAction } from '../../utils/confirm';
@@ -184,17 +185,32 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
       >
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.inputLabel}>Fecha</Text>
-            <TextInput style={styles.input} value={form.fecha} onChangeText={(t) => setForm({ ...form, fecha: t })} placeholder="2026-01-12" placeholderTextColor={commonColors.textTertiary} />
+            <DateTimeField
+              label="Fecha"
+              mode="date"
+              value={form.fecha}
+              onChange={(v) => setForm({ ...form, fecha: v })}
+              themeColor={BRAND}
+              placeholder="Seleccionar fecha"
+              containerStyle={{ marginBottom: 0 }}
+            />
           </View>
-          <View style={{ width: 90 }}>
-            <Text style={styles.inputLabel}>Hora</Text>
-            <TextInput style={styles.input} value={form.horaLlegada} onChangeText={(t) => setForm({ ...form, horaLlegada: t })} placeholder="09:00" placeholderTextColor={commonColors.textTertiary} />
+          <View style={{ flex: 1 }}>
+            <DateTimeField
+              label="Hora de llegada"
+              mode="time"
+              value={form.horaLlegada}
+              onChange={(v) => setForm({ ...form, horaLlegada: v })}
+              themeColor={BRAND}
+              placeholder="Seleccionar hora"
+              minuteStep={5}
+              containerStyle={{ marginBottom: 0 }}
+            />
           </View>
-          <View style={{ width: 70 }}>
-            <Text style={styles.inputLabel}>Min</Text>
-            <TextInput style={styles.input} value={form.duracionMin} onChangeText={(t) => setForm({ ...form, duracionMin: t })} keyboardType="numeric" placeholder="30" placeholderTextColor={commonColors.textTertiary} />
-          </View>
+        </View>
+        <View style={{ width: 110 }}>
+          <Text style={styles.inputLabel}>Duración (min)</Text>
+          <TextInput style={styles.input} value={form.duracionMin} onChangeText={(t) => setForm({ ...form, duracionMin: t })} keyboardType="numeric" placeholder="30" placeholderTextColor={commonColors.textTertiary} />
         </View>
 
         <Text style={styles.inputLabel}>Motivo de la visita</Text>
