@@ -1,12 +1,17 @@
 /**
  * VITMATERNA — TimeWheel (selector de hora de marca)
  *
- * Selección de hora consistente en web y móvil: dos columnas desplazables
- * (horas / minutos) con resalte de acento, en lugar del <input type="time">
- * del navegador. Trabaja con strings 'HH:mm'.
+ * Selección de hora consistente en web y móvil. Patrón:
+ *   1) Vista colapsada: dos cajas (Hora / Minuto) que muestran el valor actual.
+ *   2) Al TOCAR una caja se despliega su rueda de números (scroller).
+ *   3) La rueda es CÍCLICA: tras 23 sigue 00 (y al revés); ídem minutos.
+ *
+ * Trabaja con strings 'HH:mm'. Selección por toque del número o por la
+ * posición central al desplazar (snap), con banda de selección central.
  */
-import React, { useMemo, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
+import { ChevronDown } from 'lucide-react-native';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
@@ -19,28 +24,32 @@ interface TimeWheelProps {
   accentColor: string;
   /** Paso de minutos (default 5). */
   minuteStep?: number;
-  /** Hora mínima/máxima en formato 'HH:mm' (opcional). */
-  minTime?: string;
-  maxTime?: string;
   /** Atajos de horas frecuentes (chips). Vacío = sin atajos. */
   presets?: string[];
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const ROW_HEIGHT = 44;
+const VISIBLE_ROWS = 5; // filas visibles en la rueda (impar → centro real)
+const CENTER = Math.floor(VISIBLE_ROWS / 2); // fila central = 2
+const WHEEL_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS;
+// Repeticiones para simular continuidad infinita; se reposiciona al bloque
+// central cuando el scroll se acerca a los extremos.
+const REPEAT = 11;
+const MID = Math.floor(REPEAT / 2); // bloque central = 5
+
+type Unit = 'hour' | 'minute';
 
 export function TimeWheel({
   value,
   onChange,
   accentColor,
   minuteStep = 5,
-  minTime,
-  maxTime,
   presets = ['06:00', '08:00', '12:00', '18:00', '20:00'],
 }: TimeWheelProps): React.ReactElement {
   const [selH, selM] = useMemo(() => {
     const m = /^(\d{2}):(\d{2})$/.exec(value || '');
-    return m ? [Number(m[1]), Number(m[2])] : [null, null];
+    return m ? [Number(m[1]), Number(m[2])] : [8, 0];
   }, [value]);
 
   const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
@@ -49,67 +58,17 @@ export function TimeWheel({
     [minuteStep],
   );
 
-  const hourRef = useRef<ScrollView>(null);
-  const minRef = useRef<ScrollView>(null);
+  // Cuál rueda está abierta (null = ambas colapsadas).
+  const [editing, setEditing] = useState<Unit | null>(null);
 
-  // Auto-scroll a la selección al abrir.
-  useEffect(() => {
-    if (selH != null) hourRef.current?.scrollTo({ y: Math.max(0, hours.indexOf(selH) * ROW_HEIGHT - ROW_HEIGHT), animated: false });
-    if (selM != null) minRef.current?.scrollTo({ y: Math.max(0, minutes.indexOf(selM) * ROW_HEIGHT - ROW_HEIGHT), animated: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const limit = (h: number, m: number): boolean => {
-    const t = h * 60 + m;
-    if (minTime) { const mm = /^(\d{2}):(\d{2})$/.exec(minTime); if (mm && t < Number(mm[1]) * 60 + Number(mm[2])) return true; }
-    if (maxTime) { const mm = /^(\d{2}):(\d{2})$/.exec(maxTime); if (mm && t > Number(mm[1]) * 60 + Number(mm[2])) return true; }
-    return false;
-  };
-
-  const pick = (h: number, m: number) => onChange(`${pad(h)}:${pad(m)}`);
-
-  const renderCol = (
-    items: number[],
-    selected: number | null,
-    ref: React.RefObject<ScrollView | null>,
-    onPick: (n: number) => void,
-    isHour: boolean,
-  ) => (
-    <ScrollView
-      ref={ref}
-      style={styles.col}
-      contentContainerStyle={styles.colContent}
-      showsVerticalScrollIndicator={false}
-      nestedScrollEnabled
-    >
-      {items.map((n) => {
-        const active = selected === n;
-        const disabled = isHour ? limit(n, selM ?? 0) : limit(selH ?? 0, n);
-        return (
-          <Pressable
-            key={n}
-            onPress={() => !disabled && onPick(n)}
-            disabled={disabled}
-            style={[styles.row, active && { backgroundColor: accentColor }, IS_WEB && !disabled && ({ cursor: 'pointer' } as any)]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active, disabled }}
-          >
-            <Text style={[styles.rowText, active && styles.rowTextActive, disabled && styles.rowTextDisabled]}>
-              {pad(n)}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
+  const setHour = useCallback((h: number) => onChange(`${pad(h)}:${pad(selM)}`), [onChange, selM]);
+  const setMinute = useCallback((m: number) => onChange(`${pad(selH)}:${pad(m)}`), [onChange, selH]);
 
   return (
     <View style={styles.wrap}>
       {/* Valor seleccionado, grande y claro */}
       <View style={styles.preview}>
-        <Text style={[styles.previewText, { color: accentColor }]}>
-          {value || '--:--'}
-        </Text>
+        <Text style={[styles.previewText, { color: accentColor }]}>{value || '--:--'}</Text>
       </View>
 
       {/* Atajos de horas frecuentes */}
@@ -120,7 +79,7 @@ export function TimeWheel({
             return (
               <Pressable
                 key={p}
-                onPress={() => onChange(p)}
+                onPress={() => { onChange(p); setEditing(null); }}
                 style={[styles.preset, active && { backgroundColor: accentColor, borderColor: accentColor }, IS_WEB && ({ cursor: 'pointer' } as any)]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
@@ -132,17 +91,139 @@ export function TimeWheel({
         </View>
       ) : null}
 
-      <View style={styles.cols}>
-        {/* Banda central que indica la fila seleccionada */}
-        <View pointerEvents="none" style={styles.centerBand} />
-        {renderCol(hours, selH, hourRef, (h) => pick(h, selM ?? 0), true)}
-        <Text style={styles.colon}>:</Text>
-        {renderCol(minutes, selM, minRef, (m) => pick(selH ?? 8, m), false)}
+      {/* Cajas Hora / Minuto: al tocar una se despliega su rueda */}
+      <View style={styles.boxesRow}>
+        <UnitBox
+          label="Hora"
+          valueLabel={pad(selH)}
+          open={editing === 'hour'}
+          accentColor={accentColor}
+          onToggle={() => setEditing((e) => (e === 'hour' ? null : 'hour'))}
+        />
+        <UnitBox
+          label="Minuto"
+          valueLabel={pad(selM)}
+          open={editing === 'minute'}
+          accentColor={accentColor}
+          onToggle={() => setEditing((e) => (e === 'minute' ? null : 'minute'))}
+        />
       </View>
-      <View style={styles.labels}>
-        <Text style={styles.colLabel}>Hora</Text>
-        <Text style={styles.colLabel}>Minuto</Text>
+
+      {/* Rueda cíclica de la unidad abierta */}
+      {editing === 'hour' ? (
+        <CyclicWheel
+          items={hours}
+          selected={selH}
+          accentColor={accentColor}
+          onSelect={setHour}
+        />
+      ) : editing === 'minute' ? (
+        <CyclicWheel
+          items={minutes}
+          selected={selM}
+          accentColor={accentColor}
+          onSelect={setMinute}
+        />
+      ) : (
+        <Text style={styles.hint}>Toca «Hora» o «Minuto» para ajustar.</Text>
+      )}
+    </View>
+  );
+}
+
+/** Caja desplegable que muestra el valor de una unidad. */
+function UnitBox({
+  label, valueLabel, open, accentColor, onToggle,
+}: { label: string; valueLabel: string; open: boolean; accentColor: string; onToggle: () => void }): React.ReactElement {
+  return (
+    <Pressable
+      onPress={onToggle}
+      style={[styles.box, open && { borderColor: accentColor, backgroundColor: commonColors.surface }, IS_WEB && ({ cursor: 'pointer' } as any)]}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`${label}: ${valueLabel}`}
+    >
+      <Text style={styles.boxLabel}>{label}</Text>
+      <View style={styles.boxValueRow}>
+        <Text style={[styles.boxValue, open && { color: accentColor }]}>{valueLabel}</Text>
+        <ChevronDown size={16} color={open ? accentColor : commonColors.textTertiary} style={open ? styles.chevronOpen : undefined} />
       </View>
+    </Pressable>
+  );
+}
+
+/** Rueda de números con scroll continuo (cíclico) y selección central. */
+function CyclicWheel({
+  items, selected, accentColor, onSelect,
+}: { items: number[]; selected: number; accentColor: string; onSelect: (n: number) => void }): React.ReactElement {
+  const ref = useRef<ScrollView>(null);
+  const base = items.length;
+  const selIdx = Math.max(0, items.indexOf(selected));
+
+  // Lista repetida para dar sensación de continuidad infinita.
+  const looped = useMemo(
+    () => Array.from({ length: REPEAT * base }, (_, i) => items[i % base]),
+    [items, base],
+  );
+
+  // y que deja el índice global `globalIdx` en la fila central.
+  const yFor = useCallback((globalIdx: number) => (globalIdx - CENTER) * ROW_HEIGHT, []);
+
+  // Centrar en la selección (bloque central) al abrir.
+  useEffect(() => {
+    const target = MID * base + selIdx;
+    ref.current?.scrollTo({ y: yFor(target), animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base]);
+
+  const handleMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const centerGlobal = Math.round(y / ROW_HEIGHT) + CENTER;
+      const itemIdx = ((centerGlobal % base) + base) % base;
+      // Selecciona el número que quedó centrado.
+      onSelect(items[itemIdx]);
+      // Reposiciona invisiblemente al bloque central si estamos cerca del borde.
+      const block = Math.floor(centerGlobal / base);
+      if (block <= 1 || block >= REPEAT - 2) {
+        const newGlobal = MID * base + itemIdx;
+        ref.current?.scrollTo({ y: yFor(newGlobal), animated: false });
+      }
+    },
+    [base, items, onSelect, yFor],
+  );
+
+  return (
+    <View style={styles.wheelWrap}>
+      <View pointerEvents="none" style={styles.centerBand} />
+      <ScrollView
+        ref={ref}
+        style={styles.wheel}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ROW_HEIGHT}
+        decelerationRate="fast"
+        nestedScrollEnabled
+        onMomentumScrollEnd={handleMomentumEnd}
+        // En web el scroll no siempre dispara momentum: usamos onScrollEndDrag.
+        onScrollEndDrag={IS_WEB ? handleMomentumEnd : undefined}
+      >
+        {looped.map((n, i) => {
+          const active = (i % base) === selIdx;
+          return (
+            <Pressable
+              key={i}
+              onPress={() => onSelect(n)}
+              style={[styles.row, IS_WEB && ({ cursor: 'pointer' } as any)]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.rowText, active && { color: accentColor, fontFamily: typography.label.fontFamily, fontWeight: '700' }]}>
+                {pad(n)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -160,39 +241,42 @@ const styles = StyleSheet.create({
   },
   presetText: { ...typography.caption, fontFamily: typography.label.fontFamily, color: commonColors.textSecondary },
   presetTextActive: { color: commonColors.white },
-  cols: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    height: ROW_HEIGHT * 4,
+
+  // Cajas Hora / Minuto
+  boxesRow: { flexDirection: 'row', gap: spacing.sm },
+  box: {
+    flex: 1,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    gap: 2,
   },
+  boxLabel: { ...typography.caption, color: commonColors.textTertiary },
+  boxValueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  boxValue: { ...typography.numericSm, color: commonColors.text },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
+  hint: { ...typography.caption, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.md },
+
+  // Rueda
+  wheelWrap: { height: WHEEL_HEIGHT, justifyContent: 'center' },
   centerBand: {
     position: 'absolute',
     left: 0, right: 0,
-    top: ROW_HEIGHT * 1.5,
+    top: ROW_HEIGHT * CENTER,
     height: ROW_HEIGHT,
     backgroundColor: commonColors.surfaceHover,
     borderRadius: borderRadius.sm,
   },
-  col: {
-    // Altura fija = altura del contenedor; sin esto el ScrollView crece a la
-    // altura de su contenido (24×44px) y descuadra todo el modal.
-    width: 76,
-    height: ROW_HEIGHT * 4,
+  wheel: {
+    height: WHEEL_HEIGHT,
     flexGrow: 0,
     flexShrink: 0,
-    backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.md,
   },
-  colContent: { paddingVertical: ROW_HEIGHT * 1.5 },
-  row: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center', marginHorizontal: spacing.xs, borderRadius: borderRadius.sm },
-  rowText: { ...typography.numericSm, color: commonColors.text },
-  rowTextActive: { color: commonColors.white },
-  rowTextDisabled: { color: commonColors.disabled },
-  colon: { ...typography.h2, color: commonColors.textTertiary },
-  labels: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md },
-  colLabel: { width: 76, textAlign: 'center', ...typography.caption, color: commonColors.textTertiary },
+  row: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  rowText: { ...typography.h3, color: commonColors.textSecondary, fontVariant: ['tabular-nums'] },
 });
 
 export default TimeWheel;

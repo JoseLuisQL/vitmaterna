@@ -21,10 +21,14 @@ describe('CalendarPicker', () => {
 });
 
 describe('TimeWheel', () => {
-  it('selecciona hora y minuto y emite HH:mm', () => {
+  it('despliega la rueda de Hora solo al tocar y permite elegir un número', () => {
     const onChange = jest.fn();
     render(<TimeWheel value={'08:00'} onChange={onChange} accentColor={obstetraColors.primary} minuteStep={15} presets={[]} />);
-    // Hay dos "08" (hora) — tomamos el primero de la columna de horas.
+    // Colapsado: muestra la pista y aún no hay rueda.
+    expect(screen.getByText(/Toca «Hora» o «Minuto»/i)).toBeTruthy();
+    // Tocar la caja "Hora" abre su rueda.
+    fireEvent.press(screen.getByLabelText(/Hora: 08/i));
+    // Elegir 09 emite 09:00 (toma el primero de las filas repetidas/cíclicas).
     fireEvent.press(screen.getAllByText('09')[0]);
     expect(onChange).toHaveBeenCalledWith('09:00');
   });

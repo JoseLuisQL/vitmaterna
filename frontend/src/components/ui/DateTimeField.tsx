@@ -150,8 +150,6 @@ export function DateTimeField({
             onChange={setDraftTime}
             accentColor={accent}
             minuteStep={minuteStep}
-            minTime={minTime}
-            maxTime={maxTime}
           />
         )}
       </Overlay>
