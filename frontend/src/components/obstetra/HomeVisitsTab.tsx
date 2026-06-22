@@ -48,8 +48,6 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
     motivo: 'Seguimiento de consumo de micronutrientes',
     acciones: '',
     acuerdos: '',
-    firmaGestante: false,
-    firmaObstetra: false,
   });
 
   const tieneGps = domicilioLat != null && domicilioLng != null;
@@ -89,14 +87,12 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
         acuerdos: form.acuerdos.trim() || undefined,
         lat: gps.lat ?? (domicilioLat ?? undefined),
         lng: gps.lng ?? (domicilioLng ?? undefined),
-        firmaGestante: form.firmaGestante,
-        firmaObstetra: form.firmaObstetra,
       },
       {
         onSuccess: () => {
           toast.success('Visita registrada', 'El acta de visita domiciliaria fue guardada.');
           setModalVisible(false);
-          setForm((f) => ({ ...f, acciones: '', acuerdos: '', firmaGestante: false, firmaObstetra: false }));
+          setForm((f) => ({ ...f, acciones: '', acuerdos: '' }));
         },
         onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo registrar'),
       },
@@ -160,10 +156,6 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
             <Text style={styles.visitLabel}>Acciones</Text>
             <Text style={styles.visitText}>{v.acciones}</Text>
             {v.acuerdos ? (<><Text style={styles.visitLabel}>Acuerdos</Text><Text style={styles.visitText}>{v.acuerdos}</Text></>) : null}
-            <View style={styles.firmaRow}>
-              <Text style={styles.firma}>{v.firmaGestante ? '✓ Firma usuario' : '— Firma usuario'}</Text>
-              <Text style={styles.firma}>{v.firmaObstetra ? '✓ Firma personal' : '— Firma personal'}</Text>
-            </View>
             {v.obstetra?.user ? (
               <Text style={styles.personal}>Obst. {v.obstetra.user.firstName} {v.obstetra.user.lastName}{v.obstetra.cop ? ` — COP N° ${v.obstetra.cop}` : ''}</Text>
             ) : null}
@@ -221,15 +213,6 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
 
         <Text style={styles.inputLabel}>Acuerdos</Text>
         <TextInput style={[styles.input, { height: 60 }]} value={form.acuerdos} onChangeText={(t) => setForm({ ...form, acuerdos: t })} multiline placeholder="Acuerdos de la visita" placeholderTextColor={commonColors.textTertiary} />
-
-        <View style={styles.firmaToggleRow}>
-          <TouchableOpacity style={[styles.chk, form.firmaGestante && styles.chkActive]} onPress={() => setForm({ ...form, firmaGestante: !form.firmaGestante })}>
-            <Text style={[styles.chkText, form.firmaGestante && styles.chkTextActive]}>Firma del usuario</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chk, form.firmaObstetra && styles.chkActive]} onPress={() => setForm({ ...form, firmaObstetra: !form.firmaObstetra })}>
-            <Text style={[styles.chkText, form.firmaObstetra && styles.chkTextActive]}>Firma del personal</Text>
-          </TouchableOpacity>
-        </View>
       </AppModal>
     </View>
   );
@@ -259,15 +242,8 @@ const styles = StyleSheet.create({
   visitMotivo: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   visitLabel: { ...typography.overline, color: commonColors.textSecondary, marginTop: 4, textTransform: 'uppercase' },
   visitText: { ...typography.bodySm, color: commonColors.textSecondary },
-  firmaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  firma: { ...typography.caption, color: commonColors.textTertiary },
   personal: { ...typography.caption, color: commonColors.text, marginTop: 4, fontWeight: '600' },
   row: { flexDirection: 'row', gap: spacing.sm },
   inputLabel: { ...typography.label, color: commonColors.textSecondary, marginTop: spacing.sm, marginBottom: 4 },
   input: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, padding: spacing.sm + 2, ...typography.bodySm, fontSize: 15, color: commonColors.text, backgroundColor: commonColors.background, textAlignVertical: 'top' },
-  firmaToggleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  chk: { flex: 1, paddingVertical: 10, borderRadius: borderRadius.md, borderWidth: 1, borderColor: commonColors.border, alignItems: 'center', backgroundColor: commonColors.surfaceAlt },
-  chkActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
-  chkText: { ...typography.caption, color: commonColors.textSecondary, fontWeight: '600' },
-  chkTextActive: { color: BRAND, fontWeight: '700' },
 });
