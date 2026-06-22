@@ -45,7 +45,7 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
     fecha: new Date().toISOString().split('T')[0],
     horaLlegada: '09:00',
     duracionMin: '30',
-    motivo: 'Seguimiento de consumo de micronutrientes',
+    motivo: '',
     acciones: '',
     acuerdos: '',
   });
@@ -71,6 +71,10 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
     });
 
   const handleSave = async () => {
+    if (form.motivo.trim().length < 3) {
+      toast.warning('Falta el motivo', 'Indica el motivo de la visita.');
+      return;
+    }
     if (form.acciones.trim().length < 3) {
       toast.warning('Falta información', 'Describe las acciones realizadas en la visita.');
       return;
@@ -82,7 +86,7 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
         fecha: form.fecha,
         horaLlegada: form.horaLlegada || undefined,
         duracionMin: form.duracionMin ? parseInt(form.duracionMin, 10) : undefined,
-        motivo: form.motivo,
+        motivo: form.motivo.trim(),
         acciones: form.acciones.trim(),
         acuerdos: form.acuerdos.trim() || undefined,
         lat: gps.lat ?? (domicilioLat ?? undefined),
@@ -92,7 +96,7 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
         onSuccess: () => {
           toast.success('Visita registrada', 'El acta de visita domiciliaria fue guardada.');
           setModalVisible(false);
-          setForm((f) => ({ ...f, acciones: '', acuerdos: '' }));
+          setForm((f) => ({ ...f, motivo: '', acciones: '', acuerdos: '' }));
         },
         onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo registrar'),
       },
@@ -206,7 +210,7 @@ export function HomeVisitsTab({ gestanteId, domicilioLat, domicilioLng, referenc
         </View>
 
         <Text style={styles.inputLabel}>Motivo de la visita</Text>
-        <TextInput style={styles.input} value={form.motivo} onChangeText={(t) => setForm({ ...form, motivo: t })} />
+        <TextInput style={styles.input} value={form.motivo} onChangeText={(t) => setForm({ ...form, motivo: t })} placeholder="Ej. Seguimiento de consumo de micronutrientes" placeholderTextColor={commonColors.textTertiary} />
 
         <Text style={styles.inputLabel}>Acciones realizadas</Text>
         <TextInput style={[styles.input, { height: 90 }]} value={form.acciones} onChangeText={(t) => setForm({ ...form, acciones: t })} multiline placeholder="Orientación y consejería en nutrición, signos de alarma, lavado de manos…" placeholderTextColor={commonColors.textTertiary} />
