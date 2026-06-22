@@ -198,21 +198,32 @@ function CyclicWheel({
     [base, centerItem, items, onSelect],
   );
 
-  // Al asentarse: snap perfecto + reposición invisible al bloque central.
+  // Al asentarse: SIEMPRE alinea (snap) el número al centro del marcador, con
+  // animación suave. Si quedó cerca de un borde del bloque repetido, lo
+  // reposiciona invisiblemente al bloque central manteniéndolo centrado.
+  const settling = useRef(false);
   const handleSettle = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (settling.current) return;
       const y = e.nativeEvent.contentOffset.y;
-      const centerGlobal = Math.round(y / ROW_HEIGHT) + CENTER;
-      const itemIdx = ((centerGlobal % base) + base) % base;
+      const centerGlobalRaw = Math.round(y / ROW_HEIGHT) + CENTER;
+      const itemIdx = ((centerGlobalRaw % base) + base) % base;
       setCenterItem(itemIdx);
       if (itemIdx !== lastEmitted.current) {
         lastEmitted.current = itemIdx;
         onSelect(items[itemIdx]);
       }
-      const block = Math.floor(centerGlobal / base);
+      const block = Math.floor(centerGlobalRaw / base);
+      settling.current = true;
       if (block <= 1 || block >= REPEAT - 2) {
+        // Reposición invisible al bloque central (ya centrado).
         ref.current?.scrollTo({ y: yFor(MID * base + itemIdx), animated: false });
+      } else {
+        // Snap suave a la fila exacta (clave en web, donde snapToInterval no
+        // siempre actúa): centra el número en el marcador.
+        ref.current?.scrollTo({ y: yFor(centerGlobalRaw), animated: true });
       }
+      setTimeout(() => { settling.current = false; }, 220);
     },
     [base, items, onSelect, yFor],
   );
@@ -222,6 +233,7 @@ function CyclicWheel({
       <View pointerEvents="none" style={styles.centerBand} />
       <ScrollView
         ref={ref}
+        testID="timewheel-scroll"
         style={styles.wheel}
         showsVerticalScrollIndicator={false}
         snapToInterval={ROW_HEIGHT}
@@ -230,7 +242,8 @@ function CyclicWheel({
         scrollEventThrottle={16}
         onScroll={handleScroll}
         onMomentumScrollEnd={handleSettle}
-        onScrollEndDrag={handleSettle}
+        // En web no hay momentum fiable: el snap definitivo se hace al soltar.
+        onScrollEndDrag={IS_WEB ? handleSettle : undefined}
       >
         {looped.map((n, i) => {
           const active = (i % base) === centerItem;

@@ -39,6 +39,18 @@ describe('TimeWheel', () => {
     fireEvent.press(screen.getByText('20:00'));
     expect(onChange).toHaveBeenCalledWith('20:00');
   });
+
+  it('al desplazar, selecciona el número que queda en el centro del marcador', () => {
+    const onChange = jest.fn();
+    render(<TimeWheel value={'08:00'} onChange={onChange} accentColor={obstetraColors.primary} presets={[]} />);
+    fireEvent.press(screen.getByLabelText(/Hora: 08/i));
+    const sv = screen.getByTestId('timewheel-scroll');
+    // Posición inicial centrada en 08 → y = (MID*24 + 8 - CENTER)*44.
+    // ROW_HEIGHT=44, CENTER=2, MID=5, base=24 → baseY = (120+8-2)*44 = 5544.
+    // Desplazar 3 filas hacia abajo (3*44) centra el 11.
+    fireEvent.scroll(sv, { nativeEvent: { contentOffset: { y: 5544 + 44 * 3 } } });
+    expect(onChange).toHaveBeenLastCalledWith('11:00');
+  });
 });
 
 describe('DateTimeField', () => {
