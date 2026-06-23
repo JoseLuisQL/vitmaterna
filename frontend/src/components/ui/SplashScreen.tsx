@@ -26,7 +26,7 @@ interface Props {
   message?: string;
 }
 
-export function SplashScreen({ message = 'Cuidado prenatal inteligente' }: Props): React.ReactElement {
+export function SplashScreen({ message = 'Cuidado prenatal' }: Props): React.ReactElement {
   const reduced = useReducedMotion();
 
   // Valores animados (persistentes entre renders).

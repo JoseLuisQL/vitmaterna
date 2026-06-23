@@ -16,6 +16,7 @@
  */
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { usePathname } from 'expo-router';
 import { useResponsive } from '../../theme/responsive';
 import { useAuthStore } from '../../store/authStore';
 import { commonColors } from '../../theme/colors';
@@ -31,6 +32,11 @@ export function WebShell({ children }: { children: React.ReactNode }): React.Rea
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const colors = useThemedColors();
+  const pathname = usePathname();
+  // La pantalla de carga inicial (index "/") siempre va a pantalla completa,
+  // incluso con sesión activa: si no, el splash quedaría encajonado dentro del
+  // cuerpo del portal (sidebar + topbar) al recargar la web ya autenticado.
+  const isSplashRoute = pathname === '/' || pathname === '/index';
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof localStorage === 'undefined') return false;
     try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'; } catch { return false; }
@@ -51,9 +57,9 @@ export function WebShell({ children }: { children: React.ReactNode }): React.Rea
     return <View style={styles.full}>{children}</View>;
   }
 
-  // Web ancho pero sin sesión (login, registro, splash) → contenido a pantalla
-  // completa, sin portal.
-  if (!isAuthenticated || !role) {
+  // Web ancho pero sin sesión (login, registro) o en la pantalla de carga
+  // inicial → contenido a pantalla completa, sin portal.
+  if (!isAuthenticated || !role || isSplashRoute) {
     return <View style={styles.full}>{children}</View>;
   }
 
