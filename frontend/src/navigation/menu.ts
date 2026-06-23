@@ -13,7 +13,7 @@
  */
 import {
   Home, Users, FileText, Calendar, Pill, MessageCircle, Baby,
-  BookOpen, MapPin, Bell, AlertTriangle, BarChart3, User, Send,
+  BookOpen, MapPin, Bell, AlertTriangle, BarChart3, User,
   Building2, Settings, ShieldAlert, type LucideIcon,
 } from 'lucide-react-native';
 import type { Href } from 'expo-router';
@@ -84,12 +84,6 @@ export const NAVIGATION: Record<UserRole, RoleNav> = {
         title: 'Análisis',
         items: [
           { icon: BarChart3, label: 'Reportes', description: 'KPIs clínicos y MINSA', href: '/(obstetra)/(tabs)/reportes' },
-        ],
-      },
-      {
-        title: 'Comunicación',
-        items: [
-          { icon: Send, label: 'Mensaje masivo', description: 'Enviar a varias gestantes', href: '/(obstetra)/mensaje-masivo' },
         ],
       },
       {
