@@ -10,7 +10,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import {
-  View, StyleSheet, Text, ScrollView, TouchableOpacity,
+  View, StyleSheet, Text, ScrollView, TouchableOpacity, Pressable,
   Linking, StatusBar, Image,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -257,7 +257,10 @@ function ContentCard({ item, leido, fav, onPress, onToggleFav }: {
   const TypeIcon = ty.icon;
   const thumb = resolveMediaUrl(item.thumbnailUrl);
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={item.titulo}>
+    // Contenedor no-botón: card pulsable + botón de favorito como hermanos
+    // (evita anidar un <button> dentro de otro, inválido en web).
+    <View style={styles.cardWrap}>
+    <Pressable style={({ pressed }: any) => [styles.card, pressed && { opacity: 0.7 }]} onPress={onPress} accessibilityRole="button" accessibilityLabel={item.titulo}>
       {thumb ? (
         <Image source={{ uri: thumb }} style={styles.cardThumb} resizeMode="cover" />
       ) : (
@@ -294,10 +297,12 @@ function ContentCard({ item, leido, fav, onPress, onToggleFav }: {
           </View>
         </View>
       </View>
-      <TouchableOpacity onPress={onToggleFav} hitSlop={10} style={styles.cardFav} accessibilityLabel={fav ? 'Quitar de favoritos' : 'Guardar'}>
-        <Heart size={18} color={fav ? semanticColors.danger : commonColors.textTertiary} fill={fav ? semanticColors.danger : 'transparent'} />
-      </TouchableOpacity>
+      <View style={styles.cardFavSpacer} />
+    </Pressable>
+    <TouchableOpacity onPress={onToggleFav} hitSlop={10} style={styles.cardFav} accessibilityRole="button" accessibilityLabel={fav ? 'Quitar de favoritos' : 'Guardar'}>
+      <Heart size={18} color={fav ? semanticColors.danger : commonColors.textTertiary} fill={fav ? semanticColors.danger : 'transparent'} />
     </TouchableOpacity>
+    </View>
   );
 }
 
@@ -572,10 +577,11 @@ const styles = StyleSheet.create({
   catChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
   catChipTextActive: { color: commonColors.white },
   sectionHint: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.sm, marginLeft: 4 },
+  cardWrap: { position: 'relative', marginBottom: spacing.sm2 },
   card: {
     flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.xl,
-    padding: spacing.md2, marginBottom: spacing.sm2, ...shadows.card,
+    padding: spacing.md2, ...shadows.card,
   },
   cardIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   cardThumb: { width: 56, height: 56, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt },
@@ -589,7 +595,8 @@ const styles = StyleSheet.create({
   cardMetaRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   cardMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardMetaText: { ...typography.overline, letterSpacing: 0, color: commonColors.textTertiary },
-  cardFav: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  cardFavSpacer: { width: 24 },
+  cardFav: { position: 'absolute', top: spacing.sm, right: spacing.sm, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   emptyWrap: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl, gap: spacing.sm },
   emptyTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.sm },
   emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 20 },

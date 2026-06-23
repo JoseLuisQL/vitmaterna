@@ -9,7 +9,7 @@
  *  - "Marcar todo como leído" y pull-to-refresh.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Pressable, RefreshControl } from 'react-native';
 import {
   CheckCircle2, Hourglass, Calendar, XCircle, AlertTriangle, AlertCircle,
   TrendingDown, Pill, Heart, FlaskConical, Bell, ChevronLeft, Siren, type LucideIcon,
@@ -297,14 +297,21 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
     // Urgente: borde rojo siempre (leída o no). No urgente sin leer: borde del rol.
     const borderColor = urgent ? semanticColors.danger : unread ? themeColor : undefined;
     return (
-      <TouchableOpacity activeOpacity={0.7} onPress={() => handlePress(item)}>
-        <View
-          style={[
+      // El contenedor NO es un botón: la card pulsable y el botón eliminar son
+      // hermanos (el botón va posicionado en absoluto). Así evitamos anidar un
+      // <button> dentro de otro <button>, que es HTML inválido en web.
+      <View style={styles.cardWrap}>
+        <Pressable
+          onPress={() => handlePress(item)}
+          style={({ pressed }: any) => [
             styles.card,
             borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : null,
             urgent && unread ? styles.cardUrgent : null,
             !unread && !urgent ? styles.cardRead : null,
+            pressed && { opacity: 0.7 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir notificación: ${item.titulo || 'Notificación'}`}
         >
           <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}>
             {React.createElement(meta.icon, { size: 20, color: meta.color })}
@@ -326,17 +333,19 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
               {grouped ? `${item.groupCount} avisos · ` : ''}{tiempoRelativo(item.createdAt)}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleDelete(item)}
-            hitSlop={10}
-            style={styles.deleteBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Eliminar notificación"
-          >
-            <X size={16} color={commonColors.textTertiary} />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+          {/* Espacio reservado para que el texto no quede bajo el botón eliminar. */}
+          <View style={styles.deleteSpacer} />
+        </Pressable>
+        <TouchableOpacity
+          onPress={() => handleDelete(item)}
+          hitSlop={10}
+          style={styles.deleteBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Eliminar notificación"
+        >
+          <X size={16} color={commonColors.textTertiary} />
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -473,19 +482,29 @@ const styles = StyleSheet.create({
   },
   list: { paddingTop: spacing.md, paddingBottom: layout.tabBarSpace },
   listWeb: { width: '100%', paddingBottom: spacing.xl },
+  cardWrap: { position: 'relative', marginBottom: spacing.sm + 2 },
   card: {
     flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
     padding: spacing.md,
-    marginBottom: spacing.sm + 2,
     ...shadows.card,
   },
   cardRead: { opacity: 0.78 },
   cardUrgent: { backgroundColor: semanticColors.dangerLight },
   iconCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  deleteBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
+  deleteSpacer: { width: 28 },
+  deleteBtn: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   body: { flex: 1, gap: 3 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 },
