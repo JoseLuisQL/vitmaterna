@@ -37,10 +37,29 @@ export interface ChatMessage {
   /** Datos del contenido educativo para la tarjeta clickeable. */
   content?: ChatMessageContent | null;
   leido?: boolean;
+  /** El mensaje optimista aún no fue confirmado por el servidor. */
   pending?: boolean;
+  /** El envío no se confirmó en el tiempo esperado: ofrecer reintento. */
+  failed?: boolean;
 }
 
 const PAGE_SIZE = 30;
+
+/**
+ * Tiempo máximo de espera de confirmación de un envío antes de marcarlo fallido.
+ * Se lee en tiempo de ejecución (no al cargar el módulo) para poder acelerarlo
+ * en las pruebas automatizadas vía variable de entorno.
+ */
+function sendAckTimeout(): number {
+  return Number(process.env.EXPO_PUBLIC_CHAT_ACK_TIMEOUT_MS) || 12000;
+}
+
+/**
+ * Caché en memoria del último historial por conversación. Permite mostrar los
+ * mensajes al instante al reabrir un chat (sin spinner) mientras se revalida en
+ * segundo plano. Es la pieza que hace que entrar al chat se sienta fluido.
+ */
+const historyCache = new Map<string, ChatMessage[]>();
 
 const mapServerMessage = (m: any): ChatMessage => ({
   id: m.id,
@@ -65,7 +84,11 @@ interface UseChatArgs {
 }
 
 export function useChat({ socket, isConnected, emit, conversationId, currentUserId, otherUserId }: UseChatArgs) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Hidratar al instante desde caché si ya visitamos esta conversación: el chat
+  // abre con los mensajes ya pintados, sin parpadeo de skeleton.
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    () => (conversationId && historyCache.get(conversationId)) || [],
+  );
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -76,6 +99,17 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
   const pageRef = useRef(1);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSent = useRef(false);
+  const ackTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Espejo síncrono de `messages` para leer el estado actual sin depender del
+  // ciclo de render (lo usa retryMessage para encontrar el mensaje a reenviar).
+  const messagesRef = useRef<ChatMessage[]>(messages);
+
+  // Espeja `messages` en la caché en memoria y en el ref para hidratación
+  // instantánea futura y lectura síncrona.
+  useEffect(() => {
+    messagesRef.current = messages;
+    if (conversationId) historyCache.set(conversationId, messages);
+  }, [conversationId, messages]);
 
   // ── Carga inicial del historial (página 1, los más recientes) ──
   useEffect(() => {
@@ -84,7 +118,16 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
       setMessages([]);
       return;
     }
-    setIsLoadingHistory(true);
+    // Si hay caché, mostramos de inmediato y revalidamos en segundo plano
+    // (no bloqueamos con skeleton). Si no, sí mostramos el estado de carga.
+    const cached = historyCache.get(conversationId);
+    if (cached && cached.length > 0) {
+      setMessages(cached);
+      setIsLoadingHistory(false);
+    } else {
+      setMessages([]);
+      setIsLoadingHistory(true);
+    }
     pageRef.current = 1;
     (async () => {
       try {
@@ -94,10 +137,19 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
         const meta = res.data?.meta;
         // El backend devuelve desc (más nuevos primero); invertimos para mostrar
         // del más antiguo (arriba) al más nuevo (abajo).
-        setMessages(list.map(mapServerMessage).reverse());
+        const fresh = list.map(mapServerMessage).reverse();
+        // Conservar mensajes optimistas locales aún sin confirmar (pending/failed)
+        // para no perderlos al reconciliar con el servidor.
+        setMessages((prev) => {
+          const optimistic = prev.filter((m) => m.pending || m.failed);
+          const ids = new Set(fresh.map((m) => m.id));
+          const keep = optimistic.filter((m) => !ids.has(m.id));
+          return [...fresh, ...keep];
+        });
         setHasMore(meta ? meta.page < meta.totalPages : list.length === PAGE_SIZE);
       } catch {
-        if (!cancelled) setMessages([]);
+        // En error mantenemos lo que haya en caché (no vaciamos la vista).
+        if (!cancelled && !cached) setMessages([]);
       } finally {
         if (!cancelled) setIsLoadingHistory(false);
       }
@@ -151,13 +203,21 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     const onReceive = (message: any) => {
       const incoming = mapServerMessage(message);
       const clientId = message.clientId as string | undefined;
+      // Llegó la confirmación del servidor: cancelar el temporizador de "fallo".
+      if (clientId) {
+        const t = ackTimers.current.get(clientId);
+        if (t) {
+          clearTimeout(t);
+          ackTimers.current.delete(clientId);
+        }
+      }
       setMessages((prev) => {
         // Reconciliación: si es la confirmación de un optimista nuestro, lo reemplazamos.
         if (clientId) {
           const idx = prev.findIndex((m) => m.clientId === clientId);
           if (idx >= 0) {
             const next = [...prev];
-            next[idx] = { ...incoming, clientId };
+            next[idx] = { ...incoming, clientId, pending: false, failed: false };
             return next;
           }
         }
@@ -205,7 +265,20 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     };
   }, [socket, conversationId, currentUserId, otherUserId, emit]);
 
-  // ── Enviar texto (optimista con clientId) ──
+  // Programa el temporizador que marca un envío como fallido si no llega el ack.
+  const armAckTimeout = useCallback((clientId: string) => {
+    const prevTimer = ackTimers.current.get(clientId);
+    if (prevTimer) clearTimeout(prevTimer);
+    const timer = setTimeout(() => {
+      ackTimers.current.delete(clientId);
+      setMessages((prev) =>
+        prev.map((m) => (m.clientId === clientId && m.pending ? { ...m, pending: false, failed: true } : m)),
+      );
+    }, sendAckTimeout());
+    ackTimers.current.set(clientId, timer);
+  }, []);
+
+  // ── Enviar texto (optimista con clientId + acuse con timeout) ──
   const sendText = useCallback(
     (text: string) => {
       const trimmed = text.trim();
@@ -224,12 +297,13 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
           pending: true,
         },
       ]);
+      armAckTimeout(clientId);
       stopTyping();
     },
-    [conversationId, currentUserId, emit],
+    [conversationId, currentUserId, emit, armAckTimeout],
   );
 
-  // ── Enviar imagen (optimista con clientId) ──
+  // ── Enviar imagen (optimista con clientId + acuse con timeout) ──
   const sendImage = useCallback(
     (mediaUrl: string) => {
       if (!conversationId) return;
@@ -248,8 +322,28 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
           pending: true,
         },
       ]);
+      armAckTimeout(clientId);
     },
-    [conversationId, currentUserId, emit],
+    [conversationId, currentUserId, emit, armAckTimeout],
+  );
+
+  // ── Reintentar un mensaje fallido (lo re-emite con el mismo clientId) ──
+  const retryMessage = useCallback(
+    (clientId: string) => {
+      if (!conversationId) return;
+      const target = messagesRef.current.find((m) => m.clientId === clientId);
+      setMessages((prev) =>
+        prev.map((m) => (m.clientId === clientId ? { ...m, pending: true, failed: false } : m)),
+      );
+      if (!target) return;
+      if (target.tipo === 'imagen' && target.mediaUrl) {
+        emit('send_message', { conversationId, content: target.text || '📷 Foto', type: 'imagen', mediaUrl: target.mediaUrl, clientId });
+      } else {
+        emit('send_message', { conversationId, content: target.text, type: 'texto', clientId });
+      }
+      armAckTimeout(clientId);
+    },
+    [conversationId, emit, armAckTimeout],
   );
 
   // ── Indicador "escribiendo..." con debounce ──
@@ -274,6 +368,15 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     typingTimeout.current = setTimeout(stopTyping, 2500);
   }, [conversationId, emit, stopTyping]);
 
+  // Limpieza de temporizadores de acuse al desmontar.
+  useEffect(() => {
+    const timers = ackTimers.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
+
   return {
     messages,
     isLoadingHistory,
@@ -285,6 +388,7 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     loadOlder,
     sendText,
     sendImage,
+    retryMessage,
     notifyTyping,
     stopTyping,
   };

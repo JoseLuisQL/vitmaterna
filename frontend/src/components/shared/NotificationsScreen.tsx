@@ -230,9 +230,16 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
       'inasistencia',
     ];
 
+    const datos = (n.datos ?? {}) as { gestanteId?: string; conversationId?: string; messageId?: string; contentId?: string };
+
     let target: string | null = null;
     if (n.tipo === 'emergencia' && role === 'obstetra') {
-      target = '/(obstetra)/(tabs)/chat';
+      // Entra directo a la conversación de la gestante en emergencia.
+      target = datos.conversationId
+        ? `/(obstetra)/(tabs)/chat?conversationId=${datos.conversationId}`
+        : datos.gestanteId
+          ? `/(obstetra)/(tabs)/chat?gestanteId=${datos.gestanteId}`
+          : '/(obstetra)/(tabs)/chat';
     } else if (citaTipos.includes(n.tipo)) {
       target = role === 'obstetra' ? '/(obstetra)/(tabs)/cronograma' : '/(gestante)/(tabs)/citas';
     } else if (n.tipo === 'signo_alarma' && role === 'obstetra') {
@@ -244,8 +251,20 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
       const gid = (n.datos as { gestanteId?: string })?.gestanteId;
       target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
     } else if (n.tipo === 'mensaje_chat') {
-      // Mensaje de chat → abrir la pantalla de chat del rol.
-      target = role === 'obstetra' ? '/(obstetra)/(tabs)/chat' : '/(gestante)/(tabs)/chat';
+      // Mensaje de chat → abrir DIRECTO la conversación correcta (no la bandeja),
+      // con scroll/resaltado al mensaje exacto cuando viene el id.
+      const msgQs = datos.messageId ? `&messageId=${datos.messageId}` : '';
+      if (role === 'gestante') {
+        target = datos.conversationId
+          ? `/(gestante)/(tabs)/chat?conversationId=${datos.conversationId}${msgQs}`
+          : '/(gestante)/(tabs)/chat';
+      } else {
+        target = datos.conversationId
+          ? `/(obstetra)/(tabs)/chat?conversationId=${datos.conversationId}${msgQs}`
+          : datos.gestanteId
+            ? `/(obstetra)/(tabs)/chat?gestanteId=${datos.gestanteId}`
+            : '/(obstetra)/(tabs)/chat';
+      }
     } else if (n.tipo === 'educacion' && role === 'gestante') {
       // Recomendación de contenido → abrir el recurso directamente.
       const cid = (n.datos as { contentId?: string })?.contentId;

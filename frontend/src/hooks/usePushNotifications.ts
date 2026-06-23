@@ -29,9 +29,15 @@ function routeForNotification(role: string | undefined, data: Record<string, any
     if (role === 'gestante') return '/(gestante)/(tabs)/citas';
   }
 
-  // Emergencia (botón de pánico) → el obstetra va al chat (donde actúa).
+  // Emergencia (botón de pánico) → el obstetra entra DIRECTO a la conversación
+  // de esa gestante (donde actúa), no a la bandeja.
   if (tipo === 'emergencia') {
-    if (role === 'obstetra') return '/(obstetra)/(tabs)/chat';
+    if (role === 'obstetra') {
+      const conv = data?.conversationId as string | undefined;
+      const gid = data?.gestanteId as string | undefined;
+      const qs = conv ? `?conversationId=${conv}` : gid ? `?gestanteId=${gid}` : '';
+      return `/(obstetra)/(tabs)/chat${qs}`;
+    }
   }
 
   // Signo de alarma → el obstetra va a la ficha de la gestante (sección
@@ -57,10 +63,22 @@ function routeForNotification(role: string | undefined, data: Record<string, any
     }
   }
 
-  // Mensaje de chat → abrir la pantalla de chat del rol correspondiente.
+  // Mensaje de chat → abrir DIRECTO la conversación de quien escribió, con scroll
+  // al mensaje. La gestante tiene un único hilo; el obstetra abre el de la
+  // gestante remitente (conversationId/gestanteId vienen en los datos).
   if (tipo === 'mensaje_chat') {
-    if (role === 'gestante') return '/(gestante)/(tabs)/chat';
-    if (role === 'obstetra') return '/(obstetra)/(tabs)/chat';
+    const conv = data?.conversationId as string | undefined;
+    const msgId = data?.messageId as string | undefined;
+    const msgQs = msgId ? `&messageId=${msgId}` : '';
+    if (role === 'gestante') {
+      return conv ? `/(gestante)/(tabs)/chat?conversationId=${conv}${msgQs}` : '/(gestante)/(tabs)/chat';
+    }
+    if (role === 'obstetra') {
+      const gid = data?.gestanteId as string | undefined;
+      if (conv) return `/(obstetra)/(tabs)/chat?conversationId=${conv}${msgQs}`;
+      if (gid) return `/(obstetra)/(tabs)/chat?gestanteId=${gid}`;
+      return '/(obstetra)/(tabs)/chat';
+    }
   }
 
   // Por defecto, abrir la bandeja de notificaciones del rol.

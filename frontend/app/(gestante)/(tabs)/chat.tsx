@@ -6,11 +6,11 @@
  * al chat del obstetra (Enter envía en web, separadores de fecha, recibos de
  * lectura, contenido educativo recomendado).
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
@@ -46,8 +46,19 @@ export default function GestanteChatScreen() {
 
   const {
     messages, isLoadingHistory, isLoadingMore, hasMore,
-    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
+    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, retryMessage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId: obstetra?.userId });
+
+  // Deep-link desde notificación: resaltar el mensaje exacto (el hilo es único).
+  const params = useLocalSearchParams<{ messageId?: string }>();
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  useEffect(() => {
+    const msgId = params.messageId as string | undefined;
+    if (!msgId) return;
+    setHighlightMessageId(msgId);
+    const t = setTimeout(() => setHighlightMessageId(null), 2500);
+    return () => clearTimeout(t);
+  }, [params.messageId]);
 
   const { isLoading: isResolvingConv, isError: convError, refetch: refetchConv } = useQuery({
     queryKey: ['chat-conversation'],
@@ -140,6 +151,8 @@ export default function GestanteChatScreen() {
       isLoadingMore={isLoadingMore}
       hasMore={hasMore}
       onLoadOlder={loadOlder}
+      onRetry={retryMessage}
+      highlightMessageId={highlightMessageId}
       onOpenContent={(cid) => router.push(`/(gestante)/educacion/${cid}` as any)}
       emptyText="Envía un mensaje a tu obstetra para comenzar la consulta."
     />

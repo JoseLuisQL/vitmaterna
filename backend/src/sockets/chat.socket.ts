@@ -229,6 +229,19 @@ export const setupChatSockets = (io: Server) => {
             if (!viewing) {
               const senderName = `${message.sender?.firstName ?? ''} ${message.sender?.lastName ?? ''}`.trim() || 'Nuevo mensaje';
               const preview = type === 'imagen' ? '📷 Te envió una foto' : content.slice(0, 120);
+              // gestanteId permite al obstetra abrir la conversación correcta aun
+              // si todavía no tiene el id local; messageId permite resaltar/scrollear
+              // al mensaje exacto desde la notificación (deep-link preciso).
+              let gestanteId: string | null = null;
+              try {
+                const conv = await prisma.conversation.findUnique({
+                  where: { id: conversationId },
+                  select: { gestanteId: true },
+                });
+                gestanteId = conv?.gestanteId ?? null;
+              } catch {
+                /* noop */
+              }
               try {
                 const { notifyUser } = await import('../modules/notifications/notification.service.js');
                 await notifyUser(
@@ -236,7 +249,7 @@ export const setupChatSockets = (io: Server) => {
                   'mensaje_chat',
                   `Nuevo mensaje de ${senderName}`,
                   preview,
-                  { conversationId, senderId: userId },
+                  { conversationId, senderId: userId, gestanteId, messageId: message.id },
                 );
               } catch (e) {
                 console.error('No se pudo crear la notificación de chat:', e);

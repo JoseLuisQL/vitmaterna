@@ -8,10 +8,10 @@
  * - Móvil: lista → al tocar, abre el hilo a pantalla completa.
  * - Tiempo real: la lista se reordena/actualiza al recibir mensajes nuevos.
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -72,12 +72,34 @@ export default function ObstetraChatScreen() {
     };
   }, [socket, queryClient]);
 
+  // Presencia de TODA la bandeja: mapa userId→online que se alimenta de los
+  // eventos `presence` globales del servidor, para mostrar el punto verde en
+  // cualquier gestante en línea (no solo la conversación abierta).
+  const [presenceMap, setPresenceMap] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!socket) return;
+    const onPresence = (data: { userId: string; online: boolean }) => {
+      if (!data?.userId) return;
+      setPresenceMap((prev) => (prev[data.userId] === data.online ? prev : { ...prev, [data.userId]: data.online }));
+    };
+    socket.on('presence', onPresence);
+    return () => {
+      socket.off('presence', onPresence);
+    };
+  }, [socket]);
+
   const conversationId = activeId;
   const otherUserId = activeRow?.otherUserId ?? undefined;
   const {
     messages, isLoadingHistory, isLoadingMore, hasMore,
-    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, notifyTyping,
+    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, retryMessage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId });
+
+  // Deep-link desde notificación: abrir directo la conversación del remitente y
+  // resaltar el mensaje. Se ejecuta cuando llega el parámetro y ya hay bandeja.
+  const params = useLocalSearchParams<{ conversationId?: string; gestanteId?: string; messageId?: string }>();
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const handledDeepLink = useRef<string | null>(null);
 
   // Solo filas con el formato nuevo (la caché persistida puede traer registros
   // antiguos sin `nombre`; los descartamos para no romper el render).
@@ -113,6 +135,29 @@ export default function ObstetraChatScreen() {
     queryClient.invalidateQueries({ queryKey: ['chat', 'unread'] });
   };
 
+  // ── Deep-link: abre la conversación indicada por la notificación ──
+  useEffect(() => {
+    const wantConv = (params.conversationId as string) || '';
+    const wantGest = (params.gestanteId as string) || '';
+    const wantMsg = (params.messageId as string) || '';
+    const key = wantConv || wantGest;
+    if (!key || handledDeepLink.current === key) return;
+    if (rows.length === 0) return; // esperar a que cargue la bandeja
+    // Buscar la fila por conversación o por gestante.
+    const row =
+      rows.find((r) => (wantConv && r.id === wantConv)) ||
+      rows.find((r) => (wantGest && r.gestanteId === wantGest));
+    if (row) {
+      handledDeepLink.current = key;
+      void openConversation(row);
+      if (wantMsg) {
+        setHighlightMessageId(wantMsg);
+        setTimeout(() => setHighlightMessageId(null), 2500);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.conversationId, params.gestanteId, params.messageId, rows]);
+
   const handleBack = () => {
     setActiveId(null);
     setActiveRow(null);
@@ -123,7 +168,8 @@ export default function ObstetraChatScreen() {
     if (!inputText.trim() || !conversationId) return;
     sendText(inputText);
     setInputText('');
-    setTimeout(() => { refetchConvs(); }, 400);
+    // La bandeja se reordena sola al recibir `chat:new_message` por socket;
+    // no hace falta un refetch agresivo que provoca parpadeo.
   };
 
   const handleAttachPhoto = async () => {
@@ -172,7 +218,11 @@ export default function ObstetraChatScreen() {
           accent={BRAND}
           useRiskColor
           selected={inWeb && activeId === item.id}
-          online={otherUserId === item.otherUserId && otherOnline}
+          online={
+            item.otherUserId
+              ? (otherUserId === item.otherUserId ? otherOnline : !!presenceMap[item.otherUserId])
+              : false
+          }
           onPress={() => openConversation(item)}
         />
       )}
@@ -244,6 +294,8 @@ export default function ObstetraChatScreen() {
           isLoadingMore={isLoadingMore}
           hasMore={hasMore}
           onLoadOlder={loadOlder}
+          onRetry={retryMessage}
+          highlightMessageId={highlightMessageId}
           emptyText="No hay mensajes en esta conversación. Escribe el primero."
           bottomSpace={spacing.lg}
         />

@@ -9,11 +9,12 @@
  * dispositivo controla el salto de línea).
  */
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Pressable } from 'react-native';
 import { Send, ImagePlus } from 'lucide-react-native';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { haptics } from '../../utils/haptics';
 
 interface Props {
   value: string;
@@ -37,12 +38,19 @@ export function ChatInput({
 }: Props): React.ReactElement {
   const canSend = value.trim().length > 0 && !uploading;
 
+  // Enviar con feedback háptico (móvil) y reseteo del estado.
+  const handleSend = () => {
+    if (!canSend) return;
+    haptics.light();
+    onSend();
+  };
+
   // CHAT-04: en web, Enter envía; Shift+Enter = salto de línea.
   const handleKeyPress = (e: any) => {
     if (Platform.OS !== 'web') return;
     if (e?.nativeEvent?.key === 'Enter' && !e?.nativeEvent?.shiftKey) {
       e.preventDefault?.();
-      if (canSend) onSend();
+      handleSend();
     }
   };
 
@@ -70,15 +78,19 @@ export function ChatInput({
         maxLength={1000}
         {...(Platform.OS === 'web' ? ({ blurOnSubmit: false } as any) : {})}
       />
-      <TouchableOpacity
-        style={[styles.send, { backgroundColor: canSend ? accent : commonColors.disabled }]}
-        onPress={onSend}
+      <Pressable
+        style={({ pressed }: any) => [
+          styles.send,
+          { backgroundColor: canSend ? accent : commonColors.disabled },
+          pressed && canSend && styles.sendPressed,
+        ]}
+        onPress={handleSend}
         disabled={!canSend}
         accessibilityRole="button"
         accessibilityLabel="Enviar mensaje"
       >
         <Send size={20} color={commonColors.white} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
@@ -121,6 +133,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sendPressed: { transform: [{ scale: 0.92 }], opacity: 0.9 },
 });
 
 export default ChatInput;
