@@ -116,7 +116,28 @@ export default function UsuariosScreen(): React.ReactElement {
     setEditPhone(selectedUser.phone || '');
     setEditEmail(selectedUser.email || '');
     setEditCop(selectedUser.obstetra?.cop || '');
+    // Un solo modal a la vez: cerramos el detalle antes de abrir el de edición.
+    // (Dos Modal nativos montados a la vez se apilan mal en react-native-web y
+    // el nuevo queda detrás del principal.)
+    setIsDetailModalVisible(false);
     setIsEditVisible(true);
+  };
+
+  const openReset = () => {
+    if (!selectedUser) return;
+    setNewPassword('');
+    setIsDetailModalVisible(false);
+    setIsResetVisible(true);
+  };
+
+  // Cierra un sub-modal y regresa a la ficha de detalle (si aún hay usuario).
+  const closeEditBackToDetail = () => {
+    setIsEditVisible(false);
+    if (selectedUser) setIsDetailModalVisible(true);
+  };
+  const closeResetBackToDetail = () => {
+    setIsResetVisible(false);
+    if (selectedUser) setIsDetailModalVisible(true);
   };
 
   const handleSaveEdit = () => {
@@ -133,7 +154,7 @@ export default function UsuariosScreen(): React.ReactElement {
       onSuccess: () => {
         toast.success('Usuario actualizado', 'Los datos se guardaron correctamente.');
         setSelectedUser({ ...selectedUser, ...data, obstetra: selectedUser.obstetra ? { ...selectedUser.obstetra, cop: data.cop ?? selectedUser.obstetra.cop } : undefined });
-        setIsEditVisible(false);
+        closeEditBackToDetail();
       },
       onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo actualizar.'),
     });
@@ -148,7 +169,7 @@ export default function UsuariosScreen(): React.ReactElement {
       onSuccess: () => {
         toast.success('Contraseña actualizada', `Nueva contraseña establecida para ${selectedUser.firstName}.`);
         setNewPassword('');
-        setIsResetVisible(false);
+        closeResetBackToDetail();
       },
       onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo restablecer.'),
     });
@@ -490,7 +511,7 @@ export default function UsuariosScreen(): React.ReactElement {
                   <Pencil size={18} color={BRAND} />
                   <Text style={styles.actionBtnText}>Editar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => { setNewPassword(''); setIsResetVisible(true); }} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.actionBtn} onPress={openReset} activeOpacity={0.8}>
                   <KeyRound size={18} color={BRAND} />
                   <Text style={styles.actionBtnText}>Contraseña</Text>
                 </TouchableOpacity>
@@ -508,11 +529,11 @@ export default function UsuariosScreen(): React.ReactElement {
   const renderEditModal = () => (
     <AppModal
       visible={isEditVisible}
-      onClose={() => setIsEditVisible(false)}
+      onClose={closeEditBackToDetail}
       title="Editar usuario"
       footer={
         <>
-          <AppButton title="Cancelar" variant="outline" onPress={() => setIsEditVisible(false)} style={{ flex: 1 }} disabled={updateUserMutation.isPending} />
+          <AppButton title="Cancelar" variant="outline" onPress={closeEditBackToDetail} style={{ flex: 1 }} disabled={updateUserMutation.isPending} />
           <AppButton title="Guardar" onPress={handleSaveEdit} style={{ flex: 1 }} themeColor={BRAND} loading={updateUserMutation.isPending} />
         </>
       }
@@ -538,12 +559,12 @@ export default function UsuariosScreen(): React.ReactElement {
   const renderResetModal = () => (
     <AppModal
       visible={isResetVisible}
-      onClose={() => setIsResetVisible(false)}
+      onClose={closeResetBackToDetail}
       title="Restablecer contraseña"
       subtitle={selectedUser ? `Nueva contraseña para ${selectedUser.firstName} ${selectedUser.lastName}` : undefined}
       footer={
         <>
-          <AppButton title="Cancelar" variant="outline" onPress={() => setIsResetVisible(false)} style={{ flex: 1 }} disabled={resetPasswordMutation.isPending} />
+          <AppButton title="Cancelar" variant="outline" onPress={closeResetBackToDetail} style={{ flex: 1 }} disabled={resetPasswordMutation.isPending} />
           <AppButton title="Restablecer" onPress={handleResetPassword} style={{ flex: 1 }} themeColor={BRAND} loading={resetPasswordMutation.isPending} />
         </>
       }
