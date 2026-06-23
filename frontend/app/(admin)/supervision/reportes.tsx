@@ -14,7 +14,7 @@ import api from '../../../src/services/api';
 import { AutoGrid, useToast } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
-import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
+import { ChartDonut, type DonutDatum } from '../../../src/components/ui/ChartDonut';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
 import { exportPdf } from '../../../src/utils/exportPdf';
@@ -111,7 +111,8 @@ export default function AdminReportesScreen(): React.ReactElement {
     finally { setExportingXlsx(false); }
   };
 
-  const riskBars: ChartBarDatum[] = (data?.riskDistribution || []).map((r) => ({ label: r.name, value: r.population, color: r.color }));
+  const riskDonut: DonutDatum[] = (data?.riskDistribution || []).map((r) => ({ label: r.name, value: r.population, color: r.color }));
+  const riskTotal = riskDonut.reduce((a, r) => a + r.value, 0);
 
   return (
     <ScreenLayout
@@ -163,6 +164,7 @@ export default function AdminReportesScreen(): React.ReactElement {
             <View style={webShell ? styles.col : undefined}>
               <Text style={styles.sectionTitle}>Indicadores MINSA</Text>
               <View style={[styles.card, webShell && { flex: 1 }]}>
+                <Text style={styles.cardCaption}>Cada barra es el avance actual; la marca vertical es la meta.</Text>
                 {(data?.kpisMinsa || []).map((k) => {
                   const ok = k.pct >= k.meta;
                   return (
@@ -171,7 +173,10 @@ export default function AdminReportesScreen(): React.ReactElement {
                         <Text style={styles.minsaLabel}>{k.label}</Text>
                         <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{k.pct}% <Text style={styles.minsaMeta}>/ {k.meta}%</Text></Text>
                       </View>
-                      <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, k.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
+                      <View style={styles.bar}>
+                        <View style={[styles.barFill, { width: `${Math.min(100, k.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} />
+                        <View style={[styles.barMeta, { left: `${Math.min(100, k.meta)}%` }]} />
+                      </View>
                     </View>
                   );
                 })}
@@ -179,10 +184,13 @@ export default function AdminReportesScreen(): React.ReactElement {
             </View>
 
             <View style={webShell ? styles.col : undefined}>
-              {riskBars.length > 0 && (
+              {riskTotal > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Distribución de riesgo</Text>
-                  <View style={[styles.card, webShell && { flex: 1 }]}><ChartBar data={riskBars} height={160} showValues /></View>
+                  <View style={[styles.card, webShell && { flex: 1 }]}>
+                    <Text style={styles.cardCaption}>Semáforo de riesgo de las {riskTotal} gestantes registradas.</Text>
+                    <ChartDonut data={riskDonut} centerLabel="gestantes" />
+                  </View>
                 </>
               )}
             </View>
@@ -204,13 +212,15 @@ const styles = StyleSheet.create({
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.lg, marginLeft: 4 },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
+  cardCaption: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 17 },
   minsaRow: { marginBottom: spacing.md },
   minsaHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 },
   minsaLabel: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1 },
   minsaPct: { ...typography.bodySm, fontWeight: '700' },
   minsaMeta: { ...typography.caption, color: commonColors.textTertiary, fontWeight: '500' },
-  bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
+  bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, position: 'relative' },
   barFill: { height: '100%', borderRadius: 4 },
+  barMeta: { position: 'absolute', top: -3, width: 2, height: 14, backgroundColor: commonColors.text, opacity: 0.45, borderRadius: 1 },
   twoCol: {
     flexDirection: 'row',
     gap: spacing.lg,

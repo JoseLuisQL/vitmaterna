@@ -46,6 +46,34 @@ const BRAND_DARK = '#235980';
 const INK = '#16242B';
 const MUTED = '#566873';
 const LINE = '#E7ECEE';
+const SURFACE = '#F8FAFD';
+
+/** Dibuja un donut SVG (proporciones) para incrustar en el PDF. */
+function donutSvg(slices: ReportRiskSlice[], size = 132, thickness = 24): string {
+  const total = slices.reduce((a, s) => a + s.count, 0);
+  if (total <= 0) return '';
+  const r = (size - thickness) / 2;
+  const c = 2 * Math.PI * r;
+  const cx = size / 2;
+  const cy = size / 2;
+  let acc = 0;
+  const segs = slices
+    .filter((s) => s.count > 0)
+    .map((s) => {
+      const frac = s.count / total;
+      const dash = frac * c;
+      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${thickness}" stroke-dasharray="${dash} ${c - dash}" stroke-dashoffset="${-acc}" transform="rotate(-90 ${cx} ${cy})" />`;
+      acc += dash;
+      return el;
+    })
+    .join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#EEF2F3" stroke-width="${thickness}" />
+    ${segs}
+    <text x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="26" font-weight="800" fill="${INK}">${total}</text>
+    <text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="9" fill="${MUTED}">gestantes</text>
+  </svg>`;
+}
 
 const esc = (s: unknown): string =>
   String(s ?? '')
@@ -101,15 +129,16 @@ export function buildClinicReportHtml(d: ClinicReportData): string {
     .join('');
 
   const totalRisk = d.risk.reduce((a, r) => a + r.count, 0) || 1;
-  const riskBars = d.risk
-    .map(
-      (r) => `<div class="risk-seg" style="width:${(r.count / totalRisk) * 100}%;background:${r.color}" title="${esc(r.label)}"></div>`,
-    )
-    .join('');
+  const riskDonut = donutSvg(d.risk);
   const riskLegend = d.risk
-    .map(
-      (r) => `<span class="legend"><span class="dot" style="background:${r.color}"></span>${esc(r.label)}: <b>${esc(r.count)}</b></span>`,
-    )
+    .map((r) => {
+      const pct = Math.round((r.count / totalRisk) * 100);
+      return `<div class="legend-row">
+        <span class="dot" style="background:${r.color}"></span>
+        <span class="legend-name">${esc(r.label)}</span>
+        <span class="legend-val">${esc(r.count)} <span class="legend-pct">(${pct}%)</span></span>
+      </div>`;
+    })
     .join('');
 
   const priorityRows = d.priority
@@ -139,9 +168,16 @@ export function buildClinicReportHtml(d: ClinicReportData): string {
   .report-sub { font-size: 12px; color: ${MUTED}; margin: 0 0 18px; }
   .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${BRAND_DARK}; margin: 24px 0 12px; }
   .kpis { display: flex; gap: 12px; }
-  .kpi { flex: 1; border: 1px solid ${LINE}; border-radius: 12px; padding: 14px 12px; text-align: center; background: #F8FAFD; }
-  .kpi-value { font-size: 26px; font-weight: 800; color: ${BRAND}; }
-  .kpi-label { font-size: 10px; color: ${MUTED}; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .kpi { flex: 1; border: 1px solid ${LINE}; border-radius: 14px; padding: 16px 12px; text-align: center; background: ${SURFACE}; }
+  .kpi-value { font-size: 27px; font-weight: 800; color: ${BRAND}; letter-spacing: -0.5px; }
+  .kpi-label { font-size: 10px; color: ${MUTED}; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; }
+  .risk-wrap { display: flex; align-items: center; gap: 24px; background: ${SURFACE}; border: 1px solid ${LINE}; border-radius: 14px; padding: 16px 20px; }
+  .legend-list { flex: 1; }
+  .legend-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid ${LINE}; font-size: 12px; }
+  .legend-row:last-child { border-bottom: 0; }
+  .legend-name { flex: 1; color: ${INK}; }
+  .legend-val { font-weight: 700; color: ${INK}; }
+  .legend-pct { color: ${MUTED}; font-weight: 600; font-size: 11px; }
   .minsa-row { margin-bottom: 14px; }
   .minsa-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
   .minsa-label { font-size: 12px; font-weight: 600; }
@@ -194,8 +230,10 @@ export function buildClinicReportHtml(d: ClinicReportData): string {
   ${
     d.risk.length
       ? `<div class="section-title">Distribución de riesgo</div>
-         <div class="risk-bar">${riskBars}</div>
-         <div class="risk-legend">${riskLegend}</div>`
+         <div class="risk-wrap">
+           <div>${riskDonut}</div>
+           <div class="legend-list">${riskLegend}</div>
+         </div>`
       : ''
   }
 

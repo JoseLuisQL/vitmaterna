@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Download, Users, TrendingUp, CheckCircle, AlertTriangle, Sheet } from 'lucide-react-native';
 import api from '../../../src/services/api';
 import { ChartBar, type ChartBarDatum } from '../../../src/components/ui/ChartBar';
+import { ChartDonut, type DonutDatum } from '../../../src/components/ui/ChartDonut';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useToast, AutoGrid } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
@@ -104,30 +105,56 @@ export default function ReportesScreen(): React.ReactElement {
     setExportingXlsx(true);
     try {
       const stamp = new Date().toISOString().slice(0, 10);
+      const responsable = user?.lastName ? `Obst. ${user.firstName ?? ''} ${user.lastName}`.trim() : '—';
       const ok = await exportExcel(`vitmaterna_reporte_${stamp}`, [
         {
+          name: 'Portada',
+          colWidths: [30, 40],
+          rows: [
+            ['VITMATERNA'],
+            ['Plataforma de salud materna prenatal'],
+            [],
+            ['Reporte', 'Reporte Clínico de Gestantes'],
+            ['Establecimiento', 'C.S. Talavera — Apurímac'],
+            ['Responsable', responsable],
+            ['Generado', new Date().toLocaleString('es-PE')],
+            ['Confidencialidad', 'Uso clínico autorizado'],
+          ],
+        },
+        {
           name: 'Resumen',
-          colWidths: [28, 16],
+          colWidths: [30, 16],
           rows: [
             ['Métrica', 'Valor'],
             ['Total gestantes', data.totalGestantes],
             ['Adherencia promedio (%)', data.averageAdherence],
             ['Con 6+ controles', data.con6Controles],
             ['En alto riesgo', data.enAltoRiesgo],
-            ['Generado', new Date().toLocaleString('es-PE')],
+            ['Alertas activas', data.alertasActivas],
           ],
         },
         {
           name: 'Indicadores MINSA',
-          colWidths: [32, 12, 12, 10],
+          colWidths: [34, 12, 12, 10],
           rows: [
             ['Indicador MINSA', 'Valor (%)', 'Meta (%)', 'Cumple'],
             ...(data.kpisMinsa || []).map((k) => [k.label, k.pct, k.meta, k.pct >= k.meta ? 'Sí' : 'No']),
           ],
         },
         {
+          name: 'Distribución de riesgo',
+          colWidths: [20, 12, 12],
+          rows: [
+            ['Nivel de riesgo', 'Gestantes', '% del total'],
+            ...(data.riskDistribution || []).map((r) => {
+              const tot = (data.riskDistribution || []).reduce((a, x) => a + x.population, 0) || 1;
+              return [r.name, r.population, `${Math.round((r.population / tot) * 100)}%`];
+            }),
+          ],
+        },
+        {
           name: 'Pacientes prioritarias',
-          colWidths: [32, 16, 12],
+          colWidths: [34, 16, 12],
           rows: [
             ['Gestante', 'Adherencia (%)', 'Riesgo'],
             ...(data.gestantesMenorAdherencia || []).map((g) => [g.nombre, g.pct, g.riesgo]),
@@ -146,12 +173,13 @@ export default function ReportesScreen(): React.ReactElement {
   const attendanceData: ChartBarDatum[] =
     data?.attendanceStats.map((s) => ({ label: s.month, value: s.attended })) || [];
 
-  const riskBars: ChartBarDatum[] =
+  const riskDonut: DonutDatum[] =
     data?.riskDistribution.map((r) => ({
       label: r.name,
       value: r.population,
       color: r.color,
     })) || [];
+  const riskTotal = riskDonut.reduce((a, r) => a + r.value, 0);
 
   return (
     <View style={styles.container}>
@@ -202,6 +230,7 @@ export default function ReportesScreen(): React.ReactElement {
             {/* Indicadores MINSA */}
             <Text style={styles.sectionTitle}>Indicadores MINSA / ENDES</Text>
             <View style={styles.card}>
+              <Text style={styles.cardCaption}>Cada barra es el avance actual; la marca vertical es la meta.</Text>
               {data?.kpisMinsa.map((kpi, idx) => {
                 const ok = kpi.pct >= kpi.meta;
                 return (
@@ -210,7 +239,10 @@ export default function ReportesScreen(): React.ReactElement {
                       <Text style={styles.minsaLabel} numberOfLines={1}>{kpi.label}</Text>
                       <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{kpi.pct}% <Text style={styles.minsaMeta}>/ {kpi.meta}%</Text></Text>
                     </View>
-                    <View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, kpi.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} /></View>
+                    <View style={styles.bar}>
+                      <View style={[styles.barFill, { width: `${Math.min(100, kpi.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} />
+                      <View style={[styles.barMeta, { left: `${Math.min(100, kpi.meta)}%` }]} />
+                    </View>
                   </View>
                 );
               })}
@@ -219,6 +251,7 @@ export default function ReportesScreen(): React.ReactElement {
             {/* Tabla de menor adherencia */}
             <Text style={styles.sectionTitle}>Atención prioritaria</Text>
             <View style={styles.card}>
+              <Text style={styles.cardCaption}>Gestantes con menor adherencia al tratamiento; revisa primero estas.</Text>
               {(data?.gestantesMenorAdherencia?.length ?? 0) === 0 ? (
                 <Text style={styles.emptyInline}>Sin pacientes prioritarias por ahora.</Text>
               ) : (
@@ -236,11 +269,14 @@ export default function ReportesScreen(): React.ReactElement {
           </View>
 
           <View style={webShell ? styles.col : undefined}>
-            {/* Gráfica distribución por riesgo */}
-            {riskBars.length > 0 && (
+            {/* Gráfica distribución por riesgo (dona: proporción clara) */}
+            {riskTotal > 0 && (
               <>
                 <Text style={styles.sectionTitle}>Distribución por Riesgo</Text>
-                <View style={styles.card}><ChartBar data={riskBars} height={150} showValues /></View>
+                <View style={styles.card}>
+                  <Text style={styles.cardCaption}>Semáforo de riesgo de tus {riskTotal} gestantes activas.</Text>
+                  <ChartDonut data={riskDonut} centerLabel="gestantes" />
+                </View>
               </>
             )}
 
@@ -248,7 +284,10 @@ export default function ReportesScreen(): React.ReactElement {
             {attendanceData.length > 0 && (
               <>
                 <Text style={styles.sectionTitle}>Asistencia a Citas (2026)</Text>
-                <View style={styles.card}><ChartBar data={attendanceData} color={BRAND} height={150} showValues /></View>
+                <View style={styles.card}>
+                  <Text style={styles.cardCaption}>Citas atendidas por mes.</Text>
+                  <ChartBar data={attendanceData} color={BRAND} height={150} showValues />
+                </View>
               </>
             )}
           </View>
@@ -278,14 +317,16 @@ const styles = StyleSheet.create({
   // Títulos de sección como etiqueta pequeña sobre cada tarjeta (igual que admin).
   sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.lg, marginLeft: 4 },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
+  cardCaption: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 17 },
   // Filas MINSA (igual que admin).
   minsaRow: { marginBottom: spacing.md },
   minsaHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 },
   minsaLabel: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, marginRight: 12 },
   minsaPct: { ...typography.bodySm, fontWeight: '700' },
   minsaMeta: { ...typography.caption, color: commonColors.textTertiary, fontWeight: '500' },
-  bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
+  bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, position: 'relative' },
   barFill: { height: '100%', borderRadius: 4 },
+  barMeta: { position: 'absolute', top: -3, width: 2, height: 14, backgroundColor: commonColors.text, opacity: 0.45, borderRadius: 1 },
   // Tabla de prioridad.
   adherenciaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.sm2 },
   adherenciaRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
