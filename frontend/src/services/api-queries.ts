@@ -393,15 +393,15 @@ export const fetchObstetraDashboard = async () => {
   try {
     const [patientsRes, appointmentsRes, alertsRes] = await Promise.all([
       api.get('/patients', { params: { limit: 1000 } }).catch(e => {
-        console.error('Failed to fetch patients for dashboard', e);
+        if (__DEV__) console.warn('Dashboard: no se pudo cargar pacientes', e?.message);
         return { data: { data: [] } };
       }),
       api.get('/appointments', { params: { today: true } }).catch(e => {
-        console.error('Failed to fetch appointments for dashboard', e);
+        if (__DEV__) console.warn('Dashboard: no se pudo cargar citas', e?.message);
         return { data: { data: [] } };
       }),
       api.get('/clinical/danger-signs', { params: { estado: 'pendiente' } }).catch(e => {
-        console.error('Failed to fetch alerts for dashboard', e);
+        if (__DEV__) console.warn('Dashboard: no se pudo cargar alertas', e?.message);
         return { data: { data: [] } };
       }),
     ]);
@@ -423,8 +423,8 @@ export const fetchObstetraDashboard = async () => {
       completed: appointments.filter((a: any) => a.estado === 'completada').length,
       riskDistribution,
     };
-  } catch (e) {
-    console.error('Dashboard fetch failed completely:', e);
+  } catch (e: any) {
+    if (__DEV__) console.warn('Dashboard: carga incompleta', e?.message);
     return { totalPatients: 0, appointmentsToday: 0, alerts: 0, completed: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
   }
 };
