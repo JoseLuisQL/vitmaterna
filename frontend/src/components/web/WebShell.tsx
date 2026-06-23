@@ -16,7 +16,7 @@
  */
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { usePathname } from 'expo-router';
+import { useSegments } from 'expo-router';
 import { useResponsive } from '../../theme/responsive';
 import { useAuthStore } from '../../store/authStore';
 import { commonColors } from '../../theme/colors';
@@ -32,11 +32,16 @@ export function WebShell({ children }: { children: React.ReactNode }): React.Rea
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const colors = useThemedColors();
-  const pathname = usePathname();
-  // La pantalla de carga inicial (index "/") siempre va a pantalla completa,
+  const segments = useSegments();
+  // La pantalla de carga inicial (app/index.tsx) siempre va a pantalla completa,
   // incluso con sesión activa: si no, el splash quedaría encajonado dentro del
   // cuerpo del portal (sidebar + topbar) al recargar la web ya autenticado.
-  const isSplashRoute = pathname === '/' || pathname === '/index';
+  //
+  // Importante: usamos useSegments() (no usePathname), porque los grupos de ruta
+  // de Expo Router — p. ej. (admin)/(tabs)/index — NO añaden segmento a la URL,
+  // así que el dashboard de "Inicio" también reporta pathname "/". Con segmentos,
+  // el splash real es el único con la lista vacía.
+  const isSplashRoute = (segments as string[]).length === 0;
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof localStorage === 'undefined') return false;
     try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'; } catch { return false; }
