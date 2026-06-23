@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar, TouchableOpacity, ScrollView, Switch } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Stethoscope, ArrowLeft } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
+import { Bell, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
 import { useMyProfile, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
+import { layout, spacing } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -83,26 +82,6 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
 
   const abrirNotificaciones = () => setIsPrefsVisible(true);
 
-  const abrirConfiguracion = () => setInfoModal({
-    title: 'Configuración profesional',
-    description: 'Parámetros operativos de tu cuenta de obstetra.',
-    rows: [
-      { label: 'Panel', value: 'Gestantes activas, cronograma, alertas y reportes' },
-      { label: 'Acceso', value: 'Autorizado por rol obstetra' },
-      { label: 'Edición clínica', value: 'Controles, laboratorio, vacunas, tratamientos y tamizajes' },
-    ],
-  });
-
-  const abrirPrivacidad = () => setInfoModal({
-    title: 'Privacidad y seguridad',
-    description: 'Los datos de salud son sensibles. El sistema aplica autenticación, RBAC y auditoría para protegerlos.',
-    rows: [
-      { label: 'RBAC', value: 'Solo accedes a funciones clínicas autorizadas' },
-      { label: 'Auditoría', value: 'Las acciones administrativas y clínicas quedan registradas' },
-      { label: 'Recomendación', value: 'No compartas tu cuenta ni tokens de acceso' },
-    ],
-  });
-
   const abrirAyuda = () => setInfoModal({
     title: 'Ayuda y soporte',
     description: 'Guía rápida para operar los módulos clínicos principales.',
@@ -112,16 +91,6 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
       { label: 'Mensajes', value: 'Usa consultas o mensaje masivo para comunicados' },
     ],
   });
-
-  const verDatosProfesionales = () =>
-    setInfoModal({
-      title: 'Datos profesionales',
-      rows: [
-        { label: 'Nombre', value: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '—' },
-        { label: 'DNI', value: user?.dni || '—' },
-        { label: 'Rol', value: 'Obstetra' },
-      ],
-    });
 
   const displayName = user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Obstetra';
   const initials = (user?.firstName?.charAt(0) || '') + (user?.lastName?.charAt(0) || '') || 'O';
@@ -160,13 +129,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
             {/* Menu Items */}
             <Text style={styles.sectionTitle}>General</Text>
             <View style={styles.menuCard}>
-              <MenuItem icon={<User size={20} color={BRAND} />} title="Datos Profesionales" onPress={verDatosProfesionales} />
-              <View style={styles.menuDivider} />
               <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
-              <View style={styles.menuDivider} />
-              <MenuItem icon={<Settings size={20} color={BRAND} />} title="Configuración" onPress={abrirConfiguracion} />
-              <View style={styles.menuDivider} />
-              <MenuItem icon={<Shield size={20} color={BRAND} />} title="Privacidad y Seguridad" onPress={abrirPrivacidad} />
               <View style={styles.menuDivider} />
               <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
             </View>
@@ -246,21 +209,6 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerWrapper: {
-    paddingBottom: spacing.lg,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  safeAreaHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
-  headerTitle: { ...typography.h1, color: commonColors.white, marginBottom: 4 },
-  headerSubtitle: { ...typography.body, color: commonColors.onColorTextSoft },
-  scroll: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: layout.tabBarSpace, paddingTop: 16 },
   profileCard: {
     backgroundColor: commonColors.surface,
     borderRadius: 24,
