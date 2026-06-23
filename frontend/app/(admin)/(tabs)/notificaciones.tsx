@@ -70,6 +70,9 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   // Prueba
   const [smsTest, setSmsTest] = useState('');
   const [waTest, setWaTest] = useState('');
+  const DEFAULT_TEST_MSG = 'VITMATERNA: mensaje de prueba. Si lo recibes, el canal está configurado correctamente.';
+  const [smsTestMsg, setSmsTestMsg] = useState(DEFAULT_TEST_MSG);
+  const [waTestMsg, setWaTestMsg] = useState(DEFAULT_TEST_MSG);
   const [testing, setTesting] = useState<'sms' | 'whatsapp' | null>(null);
 
   useEffect(() => {
@@ -114,6 +117,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
   const runTest = (canal: 'sms' | 'whatsapp') => {
     const destino = (canal === 'sms' ? smsTest : waTest).trim();
+    const mensaje = (canal === 'sms' ? smsTestMsg : waTestMsg).trim();
     if (!destino) {
       toast.info('Falta el número', 'Ingresa un número de destino para la prueba.');
       return;
@@ -122,11 +126,15 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
       toast.error('Número inválido', 'Usa formato E.164, ej. +51987654321.');
       return;
     }
+    if (!mensaje) {
+      toast.info('Falta el mensaje', 'Escribe el texto de prueba a enviar.');
+      return;
+    }
     setTesting(canal);
     testChannel.mutate(
-      { canal, destino },
+      { canal, destino, mensaje },
       {
-        onSuccess: () => toast.success('Prueba enviada', 'El mensaje de prueba se envió correctamente.'),
+        onSuccess: () => toast.success('Prueba enviada', `El mensaje de prueba se envió a ${destino}.`),
         onError: (e: any) => toast.error('Falló la conexión', e?.response?.data?.error?.message || 'Revisa las credenciales.'),
         onSettled: () => setTesting(null),
       },
@@ -210,13 +218,18 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
               {!smsConfigured ? (
                 <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
               ) : (
-                <View style={styles.testRow}>
-                  <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-                  <TouchableOpacity style={[styles.testBtn, testing === 'sms' && { opacity: 0.7 }]} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8}>
-                    {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
-                    <Text style={styles.testBtnText}>Probar</Text>
-                  </TouchableOpacity>
-                </View>
+                <>
+                  <Text style={styles.label}>Texto de prueba</Text>
+                  <TextInput style={[styles.input, styles.testMsgInput]} value={smsTestMsg} onChangeText={setSmsTestMsg} placeholder="Escribe el mensaje a enviar…" placeholderTextColor={commonColors.textTertiary} multiline maxLength={500} />
+                  <Text style={styles.label}>Número de destino</Text>
+                  <View style={styles.testRow}>
+                    <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                    <TouchableOpacity style={[styles.testBtn, testing === 'sms' && { opacity: 0.7 }]} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Enviar SMS de prueba">
+                      {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
+                      <Text style={styles.testBtnText}>Probar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
               )}
             </View>
           </View>
@@ -258,13 +271,18 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
               {!waConfigured ? (
                 <Text style={styles.testDisabledHint}>Guarda credenciales válidas para habilitar el envío de prueba.</Text>
               ) : (
-                <View style={styles.testRow}>
-                  <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
-                  <TouchableOpacity style={[styles.testBtn, testing === 'whatsapp' && { opacity: 0.7 }]} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8}>
-                    {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
-                    <Text style={styles.testBtnText}>Probar</Text>
-                  </TouchableOpacity>
-                </View>
+                <>
+                  <Text style={styles.label}>Texto de prueba</Text>
+                  <TextInput style={[styles.input, styles.testMsgInput]} value={waTestMsg} onChangeText={setWaTestMsg} placeholder="Escribe el mensaje a enviar…" placeholderTextColor={commonColors.textTertiary} multiline maxLength={500} />
+                  <Text style={styles.label}>Número de destino</Text>
+                  <View style={styles.testRow}>
+                    <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                    <TouchableOpacity style={[styles.testBtn, testing === 'whatsapp' && { opacity: 0.7 }]} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Enviar WhatsApp de prueba">
+                      {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
+                      <Text style={styles.testBtnText}>Probar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
               )}
             </View>
           </View>
@@ -306,6 +324,7 @@ const styles = StyleSheet.create({
   testBlock: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
   testTitle: { ...typography.caption, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   testDisabledHint: { ...typography.caption, color: commonColors.textTertiary, fontStyle: 'italic' },
+  testMsgInput: { minHeight: 64, textAlignVertical: 'top', marginBottom: spacing.sm },
   testRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   testBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
   testBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },

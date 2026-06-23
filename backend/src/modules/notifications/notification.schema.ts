@@ -31,5 +31,7 @@ export const testChannelSchema = {
   body: z.object({
     canal: z.enum(['sms', 'whatsapp']),
     destino: z.string().min(6, 'Número de destino requerido'),
+    // Mensaje de prueba opcional (personalizable por el admin).
+    mensaje: z.string().trim().min(1).max(500).optional(),
   }),
 };

@@ -1,7 +1,15 @@
 import { Router } from 'express';
 import { authRoutes } from '../modules/auth/auth.routes.js';
+import { systemRoutes } from '../modules/system/system.routes.js';
+import { maintenanceGuard } from '../middleware/maintenance.middleware.js';
 
 export const apiRouter = Router();
+
+// ---- Estado del sistema (público; debe ir antes del guard de mantenimiento) ----
+apiRouter.use('/system', systemRoutes);
+
+// ---- Modo mantenimiento: bloquea a no-admin cuando está activo ----
+apiRouter.use(maintenanceGuard);
 
 // ---- Auth Module ----
 apiRouter.use('/auth', authRoutes);

@@ -221,8 +221,14 @@ export async function updateWhatsAppConfig(req: Request, res: Response): Promise
 
 /** Prueba la conexión enviando un mensaje real al destino indicado. */
 export async function testChannel(req: Request, res: Response): Promise<void> {
-  const { canal, destino } = req.body as { canal: 'sms' | 'whatsapp'; destino: string };
-  const mensaje = 'VITMATERNA: mensaje de prueba de conexión. Si lo recibes, el canal está configurado correctamente.';
+  const { canal, destino, mensaje: customMensaje } = req.body as {
+    canal: 'sms' | 'whatsapp';
+    destino: string;
+    mensaje?: string;
+  };
+  const mensaje =
+    customMensaje?.trim() ||
+    'VITMATERNA: mensaje de prueba de conexión. Si lo recibes, el canal está configurado correctamente.';
   try {
     if (canal === 'sms') {
       const c = await resolveSmsCredentials();

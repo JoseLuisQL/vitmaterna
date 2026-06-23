@@ -257,7 +257,7 @@ export const useUpdateWhatsAppConfig = () => {
 
 export const useTestChannel = () =>
   useMutation({
-    mutationFn: async (data: { canal: 'sms' | 'whatsapp'; destino: string }) => {
+    mutationFn: async (data: { canal: 'sms' | 'whatsapp'; destino: string; mensaje?: string }) => {
       const res = await api.post('/notifications/channels/test', data);
       return res.data;
     },

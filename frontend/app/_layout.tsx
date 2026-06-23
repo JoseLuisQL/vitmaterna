@@ -22,6 +22,8 @@ import { WebShell } from '../src/components/web/WebShell';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { SplashScreen } from '../src/components/ui/SplashScreen';
+import { MaintenanceScreen } from '../src/components/ui/MaintenanceScreen';
+import { useSystemStatus } from '../src/hooks/useSystemStatus';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
@@ -85,9 +87,11 @@ export default function RootLayout(): React.ReactElement | null {
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <ThemedStatusBar />
-            <WebShell>
-              <AppNavigator />
-            </WebShell>
+            <MaintenanceGate>
+              <WebShell>
+                <AppNavigator />
+              </WebShell>
+            </MaintenanceGate>
             <OfflineBanner />
             <ConfirmHost />
           </ToastProvider>
@@ -101,6 +105,34 @@ export default function RootLayout(): React.ReactElement | null {
 function ThemedStatusBar(): React.ReactElement {
   const { isDark } = useTheme();
   return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
+
+/**
+ * Puerta de mantenimiento: si el admin activó el modo mantenimiento, muestra la
+ * pantalla de mantenimiento a gestantes y obstetras autenticados. El admin
+ * queda exento (sigue operando para poder desactivarlo) y los usuarios sin
+ * sesión ven la app normal (login).
+ */
+function MaintenanceGate({ children }: { children: React.ReactNode }): React.ReactElement {
+  const { data, refetch, isFetching } = useSystemStatus();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const role = useAuthStore((s) => s.user?.role);
+
+  const enabled = data?.maintenance?.enabled ?? false;
+  const blocked = enabled && isAuthenticated && role !== 'admin';
+
+  if (blocked) {
+    return (
+      <MaintenanceScreen
+        message={data?.maintenance?.message}
+        role={role}
+        onRetry={() => refetch()}
+        retrying={isFetching}
+      />
+    );
+  }
+
+  return <>{children}</>;
 }
 
 /**

@@ -14,6 +14,7 @@ import { useResponsive } from '../../../src/theme/responsive';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
+import { confirmAction } from '../../../src/utils/confirm';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
@@ -28,6 +29,7 @@ const schema = z.object({
   allowNewRegistrations: z.boolean(),
   autoGenerarCitas: z.boolean(),
   maintenanceMode: z.boolean(),
+  maintenanceMessage: z.string().max(500, 'Máximo 500 caracteres').optional(),
   supportEmail: z.string().email('Email inválido'),
 });
 
@@ -40,7 +42,7 @@ export default function ConfigScreen(): React.ReactElement {
   const { data: config, isLoading } = useSystemConfig();
   const updateConfigMutation = useUpdateSystemConfig();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormValues>({
+  const { control, handleSubmit, reset, watch, formState: { errors } } = useForm<ConfigFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       maxPatientsPerObstetra: '50',
@@ -48,6 +50,7 @@ export default function ConfigScreen(): React.ReactElement {
       allowNewRegistrations: true,
       autoGenerarCitas: true,
       maintenanceMode: false,
+      maintenanceMessage: '',
       supportEmail: 'soporte@vitmaterna.com',
     },
   });
@@ -60,25 +63,48 @@ export default function ConfigScreen(): React.ReactElement {
         allowNewRegistrations: config.allowNewRegistrations ?? true,
         autoGenerarCitas: config.autoGenerarCitas ?? true,
         maintenanceMode: config.maintenanceMode ?? false,
+        maintenanceMessage: config.maintenanceMessage || '',
         supportEmail: config.supportEmail || 'soporte@vitmaterna.com',
       });
     }
   }, [config, reset]);
 
-  const onSubmit = (data: ConfigFormValues) => {
+  const persist = (data: ConfigFormValues) => {
     const payload = {
       ...data,
       maxPatientsPerObstetra: parseInt(data.maxPatientsPerObstetra, 10),
       altitudMsnm: parseInt(data.altitudMsnm, 10),
+      maintenanceMessage: (data.maintenanceMessage || '').trim(),
     };
     updateConfigMutation.mutate(payload, {
       onSuccess: () => {
-        toast.success('Configuración guardada', 'Los cambios se aplicaron correctamente.');
+        toast.success(
+          'Configuración guardada',
+          data.maintenanceMode
+            ? 'Modo mantenimiento ACTIVO: gestantes y obstetras verán la pantalla de mantenimiento.'
+            : 'Los cambios se aplicaron correctamente.',
+        );
       },
       onError: (error: any) => {
         toast.error('No se pudo guardar', error.response?.data?.message || 'Inténtalo de nuevo en unos momentos.');
       },
     });
+  };
+
+  const onSubmit = async (data: ConfigFormValues) => {
+    // Activar mantenimiento es una acción sensible: confirmamos antes.
+    const wasOff = !(config?.maintenanceMode ?? false);
+    if (data.maintenanceMode && wasOff) {
+      const ok = await confirmAction({
+        title: 'Activar modo mantenimiento',
+        message:
+          'Mientras esté activo, las gestantes y obstetras NO podrán usar la app: verán una pantalla de mantenimiento. Tú (administrador) seguirás teniendo acceso. ¿Continuar?',
+        confirmText: 'Activar mantenimiento',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    persist(data);
   };
 
   return (
@@ -189,6 +215,24 @@ export default function ConfigScreen(): React.ReactElement {
               />
             </View>
 
+            {watch('maintenanceMode') && (
+              <View style={styles.maintenanceBox}>
+                <AppInput
+                  name="maintenanceMessage"
+                  control={control}
+                  label="Mensaje de mantenimiento"
+                  placeholder="Ej. Estamos mejorando VITMATERNA. Volvemos en unos minutos."
+                  error={errors.maintenanceMessage?.message}
+                  themeColor={BRAND}
+                  multiline
+                />
+                <Text style={styles.helperText}>
+                  Este mensaje se mostrará a gestantes y obstetras en la pantalla de mantenimiento.
+                  Si lo dejas vacío, se usará un mensaje por defecto.
+                </Text>
+              </View>
+            )}
+
             <AppInput
               name="supportEmail"
               control={control}
@@ -257,6 +301,13 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: commonColors.textSecondary,
     marginTop: spacing.xs,
+  },
+  maintenanceBox: {
+    backgroundColor: semanticColors.dangerLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   twoCol: {
     flexDirection: 'row',
