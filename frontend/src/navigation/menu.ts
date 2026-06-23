@@ -129,6 +129,12 @@ export const NAVIGATION: Record<UserRole, RoleNav> = {
           { icon: ShieldAlert, label: 'Auditoría y backup', description: 'Registro y respaldo', href: '/(admin)/(tabs)/auditoria' },
         ],
       },
+      {
+        title: 'Cuenta',
+        items: [
+          { icon: User, label: 'Mi perfil', description: 'Datos de tu cuenta', href: '/(admin)/perfil' },
+        ],
+      },
     ],
   },
 };

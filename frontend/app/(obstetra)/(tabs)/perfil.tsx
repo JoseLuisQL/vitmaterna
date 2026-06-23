@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
-import { Bell, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, Switch, TextInput } from 'react-native';
+import { UserCog, Bell, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
-import { useMyProfile, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
+import { useMyProfile, useUpdateNotificationPreferences, useUpdateMyAccount, useChannelsStatus } from '../../../src/services/api-queries';
 import { commonColors, obstetraColors, semanticColors } from '../../../src/theme/colors';
-import { layout, spacing } from '../../../src/theme/spacing';
+import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -51,6 +51,14 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
   const [prefSms, setPrefSms] = useState(true);
   const [prefWhatsapp, setPrefWhatsapp] = useState(true);
 
+  // Edición de datos personales de la cuenta (nombre, teléfono, correo).
+  const updateAccount = useUpdateMyAccount();
+  const [isEditVisible, setIsEditVisible] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+
   // Sincroniza los switches con las preferencias guardadas al abrir.
   useEffect(() => {
     const prefs = (profileData?.user?.notificationPreferences ?? (user as any)?.notificationPreferences ?? {}) as
@@ -81,6 +89,40 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
   };
 
   const abrirNotificaciones = () => setIsPrefsVisible(true);
+
+  const abrirEdicion = () => {
+    const u = profileData?.user ?? user;
+    setFirstName(u?.firstName || '');
+    setLastName(u?.lastName || '');
+    setPhone(u?.phone || '');
+    setEmail(u?.email || '');
+    setIsEditVisible(true);
+  };
+
+  const handleSaveAccount = () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      return toast.error('Datos incompletos', 'Nombres y apellidos son obligatorios.');
+    }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return toast.error('Correo inválido', 'Revisa el formato del correo electrónico.');
+    }
+    updateAccount.mutate(
+      {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Datos actualizados', 'Tu información se guardó correctamente.');
+          setIsEditVisible(false);
+          refetchProfile();
+        },
+        onError: () => toast.error('No se pudo guardar', 'Inténtalo nuevamente en unos momentos.'),
+      },
+    );
+  };
 
   const abrirAyuda = () => setInfoModal({
     title: 'Ayuda y soporte',
@@ -129,6 +171,8 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
             {/* Menu Items */}
             <Text style={styles.sectionTitle}>General</Text>
             <View style={styles.menuCard}>
+              <MenuItem icon={<UserCog size={20} color={BRAND} />} title="Editar mis datos" onPress={abrirEdicion} />
+              <View style={styles.menuDivider} />
               <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
               <View style={styles.menuDivider} />
               <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
@@ -140,6 +184,39 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
           </View>
         </View>
       </ScreenLayout>
+
+      {/* MODAL: EDITAR DATOS PERSONALES */}
+      <AppModal
+        visible={isEditVisible}
+        onClose={() => setIsEditVisible(false)}
+        title="Editar mis datos"
+        subtitle="Actualiza tu nombre, teléfono y correo."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsEditVisible(false)} style={{ flex: 1 }} disabled={updateAccount.isPending} />
+            <AppButton title="Guardar" onPress={handleSaveAccount} style={{ flex: 1 }} themeColor={BRAND} loading={updateAccount.isPending} />
+          </>
+        }
+      >
+        <View style={{ gap: spacing.sm2 }}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Nombres *</Text>
+            <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="Nombres" placeholderTextColor={commonColors.textTertiary} />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Apellidos *</Text>
+            <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Apellidos" placeholderTextColor={commonColors.textTertiary} />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Teléfono</Text>
+            <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="ej. +51999888777" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Correo electrónico</Text>
+            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="ej. correo@servidor.com" placeholderTextColor={commonColors.textTertiary} keyboardType="email-address" autoCapitalize="none" />
+          </View>
+        </View>
+      </AppModal>
 
       {/* MODAL: PREFERENCIAS DE NOTIFICACIÓN (canales) */}
       <AppModal
@@ -254,6 +331,19 @@ const styles = StyleSheet.create({
   prefLabelDisabled: { color: commonColors.textTertiary },
   prefDesc: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
   prefHint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.md, lineHeight: 18 },
+  // Edición de datos personales
+  fieldGroup: { gap: 6 },
+  fieldLabel: { ...typography.label, fontWeight: '600', color: commonColors.textSecondary },
+  input: {
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    ...typography.bodyMd,
+    color: commonColors.text,
+  },
   twoCol: {
     flexDirection: 'row',
     gap: spacing.lg,

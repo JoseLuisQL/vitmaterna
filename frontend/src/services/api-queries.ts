@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import api from './api';
 import { isOnline } from './network';
 import { enqueue } from './outbox';
+import { useAuthStore } from '../store/authStore';
 
 /** Fecha de hoy en formato YYYY-MM-DD (para dedupe de cola offline). */
 const todayISO = () => new Date().toISOString().split('T')[0];
@@ -879,6 +880,41 @@ export const useUpdateNotificationPreferences = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myProfile'] });
+    },
+  });
+};
+
+/**
+ * Actualiza los datos personales de la cuenta del propio usuario (cualquier
+ * rol) vía PATCH /auth/me. Sirve para que obstetra y admin editen su nombre,
+ * teléfono y correo (la gestante edita su perfil clínico por otra vía).
+ * Refresca la caché del perfil y el usuario del store de sesión.
+ */
+export interface UpdateMyAccountInput {
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export const useUpdateMyAccount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: UpdateMyAccountInput) => {
+      const res = await api.patch('/auth/me', data);
+      // El backend responde { data: { user } }.
+      return res.data?.data?.user ?? res.data?.data;
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: ['myProfile'] });
+      // Reflejar de inmediato el nombre/datos en la sesión actual.
+      if (updatedUser) {
+        try {
+          useAuthStore.getState().setUser(updatedUser);
+        } catch {
+          /* noop */
+        }
+      }
     },
   });
 };
