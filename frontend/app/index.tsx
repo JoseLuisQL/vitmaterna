@@ -1,17 +1,13 @@
 /**
- * VITMATERNA - Splash/Redirect Screen
- * Checks auth state and redirects by role.
+ * VITMATERNA — Pantalla inicial (splash + redirección por rol).
+ *
+ * Muestra la pantalla de carga profesional con el logo oficial y, una vez
+ * resuelta la sesión, redirige al área que corresponde según el rol.
  */
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart } from 'lucide-react-native';
 import { useAuthStore } from '../src/store/authStore';
-import { gestanteColors, commonColors } from '../src/theme/colors';
-import { typography } from '../src/theme/typography';
-import { spacing } from '../src/theme/spacing';
-
-const BRAND = gestanteColors.primary;
+import { SplashScreen } from '../src/components/ui/SplashScreen';
 
 export default function IndexScreen(): React.ReactElement {
   const router = useRouter();
@@ -20,6 +16,8 @@ export default function IndexScreen(): React.ReactElement {
   useEffect(() => {
     if (!isInitialized) return;
 
+    // Breve permanencia del splash para que la animación se perciba (pulido
+    // visual), luego redirige según el estado de sesión y el rol.
     const timeout = setTimeout(() => {
       if (isAuthenticated && user) {
         if (user.role === 'gestante') {
@@ -32,57 +30,10 @@ export default function IndexScreen(): React.ReactElement {
       } else {
         router.replace('/(auth)/login');
       }
-    }, 800); // Brief splash delay for visual polish
+    }, 1100);
 
     return () => clearTimeout(timeout);
   }, [isAuthenticated, user, isInitialized, router]);
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <View style={styles.iconCircle}>
-          <Heart
-            size={40}
-            color={commonColors.surface}
-            fill={commonColors.surface}
-          />
-        </View>
-        <Text style={styles.title}>VITMATERNA</Text>
-        <Text style={styles.subtitle}>Cuidado prenatal inteligente</Text>
-      </View>
-    </View>
-  );
+  return <SplashScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BRAND,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    gap: spacing.sm + 4,
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: commonColors.onColorSurfaceStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  title: {
-    ...typography.display,
-    fontSize: 36,
-    color: commonColors.surface,
-    letterSpacing: 2,
-  },
-  subtitle: {
-    ...typography.body,
-    color: commonColors.onColorTextSoft,
-    letterSpacing: 0.5,
-  },
-});

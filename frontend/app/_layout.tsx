@@ -21,6 +21,7 @@ import { ConfirmHost } from '../src/components/ui/ConfirmHost';
 import { WebShell } from '../src/components/web/WebShell';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
+import { SplashScreen } from '../src/components/ui/SplashScreen';
 import { commonColors } from '../src/theme/colors';
 import { initializeDatabase } from '../src/database/init';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
@@ -69,7 +70,13 @@ export default function RootLayout(): React.ReactElement | null {
   }, [loadStoredAuth]);
 
   if (!isInitialized || !fontsLoaded) {
-    return null; // La pantalla splash se muestra mientras carga
+    // Mientras cargan fuentes/sesión mostramos la pantalla de carga de marca
+    // (logo oficial + animación), no una pantalla en blanco.
+    return (
+      <SafeAreaProvider>
+        <SplashScreen />
+      </SafeAreaProvider>
+    );
   }
 
   return (
