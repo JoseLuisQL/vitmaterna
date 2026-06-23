@@ -148,13 +148,22 @@ function remove(id: string): void {
 }
 
 function bumpAttempt(id: string, attempts: number, error: string): void {
-  if (Platform.OS === 'web') {
+  const webFallback = () => {
     const ops = webRead().map((o) => (o.id === id ? { ...o, attempts } : o));
     webWrite(ops);
+  };
+  if (Platform.OS === 'web') {
+    webFallback();
     return;
   }
   const db = getDb();
-  if (!db) return;
+  // Sin SQLite (nativo degradado) usamos el mismo fallback que insert()/remove()
+  // para no perder el contador de intentos; de lo contrario MAX_ATTEMPTS nunca
+  // se alcanzaría y una op con 5xx permanente quedaría atascada en la cola.
+  if (!db) {
+    webFallback();
+    return;
+  }
   try {
     db.runSync('UPDATE outbox SET attempts = ?, last_error = ? WHERE id = ?', attempts, error, id);
   } catch {
