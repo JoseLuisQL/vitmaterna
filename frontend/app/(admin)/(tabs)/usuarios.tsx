@@ -886,7 +886,7 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingBottom: layout.tabBarSpace,
+    paddingBottom: layout.tabBarSpace + 80,
   },
   userCard: {
     backgroundColor: commonColors.surface,
@@ -947,8 +947,10 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 32,
-    right: 24,
+    // Sobre la barra de tabs flotante (64 + safe-area). Antes en bottom:32 el
+    // FAB quedaba TAPADO por la barra inferior en móvil.
+    bottom: layout.tabBarSpace + spacing.sm,
+    right: spacing.lg,
     width: 64,
     height: 64,
     borderRadius: 32,

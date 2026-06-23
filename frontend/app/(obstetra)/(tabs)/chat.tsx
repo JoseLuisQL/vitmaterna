@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
 
   mobileSearchWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.md },
 
-  listContent: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace },
+  listContent: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace + 80 },
   emptyWrap: { paddingTop: spacing.xxl },
 
   // Hilo
@@ -426,6 +426,8 @@ const styles = StyleSheet.create({
 
   broadcastBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, paddingHorizontal: spacing.sm2, height: 36, borderRadius: borderRadius.full },
   broadcastBtnText: { ...typography.bodySm, fontWeight: '600', color: commonColors.white },
-  broadcastFab: { position: 'absolute', right: 20, bottom: 24, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BRAND, paddingHorizontal: 20, paddingVertical: 14, borderRadius: borderRadius.full, ...coloredGlow(BRAND) },
+  // Sobre la barra de tabs flotante (64 + safe-area). Antes en bottom:24 el FAB
+  // quedaba TAPADO por la barra inferior en móvil.
+  broadcastFab: { position: 'absolute', right: spacing.lg, bottom: layout.tabBarSpace + spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BRAND, paddingHorizontal: 20, paddingVertical: 14, borderRadius: borderRadius.full, ...coloredGlow(BRAND) },
   broadcastFabText: { color: commonColors.white, ...typography.button, fontSize: 15 },
 });

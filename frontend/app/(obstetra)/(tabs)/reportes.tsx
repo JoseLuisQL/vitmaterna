@@ -196,11 +196,11 @@ export default function ReportesScreen(): React.ReactElement {
         actions={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={[styles.exportRow, { marginTop: 0 }]}>
-              <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+              <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
                 {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
                 <Text style={styles.expBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.expBtn} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+              <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
                 {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
                 <Text style={styles.expBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
               </TouchableOpacity>
@@ -307,6 +307,9 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
   exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: commonColors.onColorSurfaceStrong, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  // En el portal web el header es una superficie blanca: el fondo translúcido
+  // blanco dejaba los botones invisibles. Sobre web usamos el color de marca sólido.
+  expBtnWeb: { backgroundColor: BRAND, paddingHorizontal: spacing.md2, paddingVertical: 10, minWidth: 104 },
   expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   // KPIs (mismo estilo que admin).

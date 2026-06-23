@@ -10,6 +10,7 @@
  */
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Send, ImagePlus } from 'lucide-react-native';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -36,6 +37,7 @@ export function ChatInput({
   accent,
   placeholder = 'Escribe un mensaje...',
 }: Props): React.ReactElement {
+  const insets = useSafeAreaInsets();
   const canSend = value.trim().length > 0 && !uploading;
 
   // Enviar con feedback háptico (móvil) y reseteo del estado.
@@ -55,7 +57,7 @@ export function ChatInput({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.sm2) }]}>
       {onAttach && (
         <TouchableOpacity
           style={[styles.attach, { backgroundColor: accent + '1A' }]}
@@ -104,7 +106,9 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surface,
     borderTopWidth: 1,
     borderColor: commonColors.borderLight,
-    paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.sm2,
+    // paddingBottom real = safe-area inferior (home indicator / gesto Android),
+    // aplicado inline; antes era un valor fijo que tapaba el campo en algunos
+    // dispositivos.
   },
   attach: {
     width: 44,

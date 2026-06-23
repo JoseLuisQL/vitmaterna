@@ -130,11 +130,11 @@ export default function AdminReportesScreen(): React.ReactElement {
       accentColor={BRAND}
       actions={
         <View style={styles.exportRow}>
-          <TouchableOpacity style={styles.expBtn} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
+          <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportXLSX} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
             {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
             <Text style={styles.expBtnText}>Excel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.expBtn} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
+          <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportPDF} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
             {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
             <Text style={styles.expBtnText}>PDF</Text>
           </TouchableOpacity>
@@ -204,6 +204,9 @@ export default function AdminReportesScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   exportRow: { flexDirection: 'row', gap: spacing.sm },
   expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: commonColors.onColorSurfaceStrong, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  // En el portal web el header es una superficie blanca: el fondo translúcido
+  // blanco dejaba los botones invisibles. Sobre web usamos el color de marca sólido.
+  expBtnWeb: { backgroundColor: BRAND, paddingHorizontal: spacing.md2, paddingVertical: 10, minWidth: 104 },
   expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
   content: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, ...shadows.card },
