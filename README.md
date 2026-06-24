@@ -28,6 +28,7 @@ Centro de Salud Talavera · Andahuaylas, Apurímac, Perú · 2.926 msnm
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Puesta en marcha](#puesta-en-marcha)
+- [Generar el APK (Android)](#generar-el-apk-android)
 - [Variables de entorno](#variables-de-entorno)
 - [Roles y flujos de usuario](#roles-y-flujos-de-usuario)
 - [Motor de alertas proactivas](#motor-de-alertas-proactivas)
@@ -268,6 +269,65 @@ npm run web              # http://localhost:8081
 npm run android
 npm run ios
 ```
+
+---
+
+## Generar el APK (Android)
+
+Guía rápida para construir el instalable `.apk`. La guía completa
+(paso a paso, build en la nube o local, solución de problemas) está en
+**[GUIA_APK.md](GUIA_APK.md)**.
+
+### Cómo se conecta con el backend
+
+La app elige su backend con dos variables (en `frontend/eas.json`, campo `env`
+de cada perfil, o en `frontend/.env` durante el desarrollo):
+
+| Variable | Qué hace | Ejemplo |
+|---|---|---|
+| `EXPO_PUBLIC_API_URL` | URL del backend que usa la app | `http://192.168.18.21:3000/v1` |
+| `APP_ENV` | `local` o `production` (controla el HTTP en claro) | `local` |
+
+> En **local**, `app.config.js` habilita el tráfico HTTP en claro (Android 9+ lo
+> bloquea por defecto). En **producción** se exige HTTPS automáticamente.
+
+### Preparar (una sola vez)
+
+```bash
+npm install -g eas-cli && eas login
+cd frontend && npm install && eas init   # vincula el proyecto a tu cuenta Expo
+```
+
+### APK de prueba (backend en tu PC)
+
+```bash
+# 1) Averigua la IP de tu PC:  Windows → ipconfig | Linux/Mac → ip a
+# 2) Ponla en frontend/eas.json, perfil "apk-local":
+#       "EXPO_PUBLIC_API_URL": "http://TU_IP:3000/v1"
+# 3) Levanta el backend (cd backend && npm run dev) en la MISMA red Wi-Fi
+cd frontend
+npm run build:apk:local
+```
+
+### APK de producción (backend público por HTTPS)
+
+```bash
+# Pon tu dominio en frontend/eas.json, perfiles "production-apk" / "production":
+#   "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+cd frontend
+npm run build:apk:prod     # APK para repartir directamente
+npm run build:aab:prod     # .aab para subir a Google Play
+```
+
+| Comando | Perfil | Resultado |
+|---|---|---|
+| `npm run build:apk:local` | `apk-local` | APK que apunta a tu PC (LAN) |
+| `npm run build:apk:preview` | `preview` | APK de prueba con backend de producción |
+| `npm run build:apk:prod` | `production-apk` | **APK final** de producción |
+| `npm run build:aab:prod` | `production` | `.aab` para Google Play |
+
+> Añade el sufijo `:here` (`build:apk:local:here`, `build:apk:prod:here`) para
+> compilar en tu propia PC (requiere Android Studio + JDK 17) en vez de la nube.
 
 ---
 
