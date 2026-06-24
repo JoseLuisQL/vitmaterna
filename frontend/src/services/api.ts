@@ -5,8 +5,9 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { API_URL } from '../config/env';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/v1';
+const BASE_URL = API_URL;
 
 const STORAGE_KEYS = {
   TOKEN: 'vitmaterna_token',

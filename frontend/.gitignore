@@ -32,6 +32,10 @@ yarn-error.*
 
 # local env files
 .env*.local
+# ...pero SÍ versionamos las plantillas de ejemplo
+!.env.example
+!.env.local.example
+!.env.production.example
 
 # typescript
 *.tsbuildinfo

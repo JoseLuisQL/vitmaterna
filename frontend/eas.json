@@ -12,18 +12,54 @@
       },
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "APP_ENV": "local"
       }
     },
+
+    "apk-local": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "local",
+        "EXPO_PUBLIC_API_URL": "http://192.168.18.21:3000/v1"
+      }
+    },
+
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
       }
     },
+
+    "production-apk": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+      }
+    },
+
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
       }
     }
   },

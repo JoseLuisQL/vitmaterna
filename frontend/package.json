@@ -20,6 +20,7 @@
     "date-fns": "^4.4.0",
     "expo": "~56.0.9",
     "expo-audio": "~56.0.12",
+    "expo-build-properties": "~56.0.19",
     "expo-constants": "~56.0.17",
     "expo-dev-client": "^56.0.20",
     "expo-device": "^56.0.4",
@@ -77,7 +78,13 @@
     "audit:design": "node scripts/audit-design.mjs",
     "audit:design:strict": "node scripts/audit-design.mjs --strict",
     "verify": "npm run tsc && npm run audit:design:strict && npm run test",
-    "setup:hooks": "git -C .. config core.hooksPath .githooks && echo 'Hooks de git activados (.githooks).'"
+    "setup:hooks": "git -C .. config core.hooksPath .githooks && echo 'Hooks de git activados (.githooks).'",
+    "build:apk:local": "eas build -p android --profile apk-local",
+    "build:apk:preview": "eas build -p android --profile preview",
+    "build:apk:prod": "eas build -p android --profile production-apk",
+    "build:aab:prod": "eas build -p android --profile production",
+    "build:apk:local:here": "eas build -p android --profile apk-local --local",
+    "build:apk:prod:here": "eas build -p android --profile production-apk --local"
   },
   "jest": {
     "preset": "jest-expo",

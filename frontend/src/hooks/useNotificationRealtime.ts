@@ -19,8 +19,7 @@ import { useAuthStore } from '../store/authStore';
 import { useToast } from '../components/ui';
 import { playNotificationSound } from '../utils/notificationSound';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/v1';
-const SOCKET_URL = API_URL.replace(/\/v1|\/api/g, '');
+import { SERVER_ORIGIN as SOCKET_URL } from '../config/env';
 
 /** Suscribe la app a notificaciones y mensajes de chat en tiempo real. */
 export function useNotificationRealtime(): void {

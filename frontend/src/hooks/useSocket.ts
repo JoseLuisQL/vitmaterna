@@ -1,12 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
-import Constants from 'expo-constants';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/v1';
-
-// Derive socket URL from API URL (remove /v1 or /api path if present)
-const SOCKET_URL = API_URL.replace(/\/v1|\/api/g, '');
+import { SERVER_ORIGIN as SOCKET_URL } from '../config/env';
 
 export const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);

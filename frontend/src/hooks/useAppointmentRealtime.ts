@@ -9,9 +9,7 @@ import { useEffect } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/v1';
-const SOCKET_URL = API_URL.replace(/\/v1|\/api/g, '');
+import { SERVER_ORIGIN as SOCKET_URL } from '../config/env';
 
 const APPOINTMENT_EVENTS = [
   'appointment:created',
