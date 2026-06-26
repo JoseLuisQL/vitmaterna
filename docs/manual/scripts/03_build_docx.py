@@ -65,7 +65,7 @@ def add_toc(doc):
 def style_base(doc):
     # Cuerpo: interlineado 1.4, espacio entre párrafos, lectura cómoda.
     st = doc.styles["Normal"]
-    st.font.name = "Calibri"; st.font.size = Pt(11); st.font.color.rgb = INK
+    st.font.name = "Carlito"; st.font.size = Pt(11); st.font.color.rgb = INK
     pf = st.paragraph_format
     pf.line_spacing = 1.4
     pf.space_after = Pt(8)
@@ -78,7 +78,7 @@ def style_base(doc):
     }
     for name, (size, color, before, after, keep) in specs.items():
         s = doc.styles[name]
-        s.font.name = "Calibri"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True
+        s.font.name = "Carlito"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True
         s.font.italic = False
         pfh = s.paragraph_format
         pfh.space_before = Pt(before); pfh.space_after = Pt(after)
@@ -103,6 +103,7 @@ def shot(doc, fid, cap, height=11.3):
     if not os.path.exists(path):
         doc.add_paragraph(f"[Captura {fid} no encontrada]"); return
     p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.keep_with_next = True; p.paragraph_format.keep_together = True; p.paragraph_format.space_before = Pt(4)
     p.add_run().add_picture(path, height=Cm(height))
     caption(doc, cap)
 
@@ -173,6 +174,8 @@ def para(doc, t, size=11):
 
 
 def pb(doc): doc.add_page_break()
+def section_gap(doc):
+    p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(10)
 
 
 def cover(doc):
@@ -233,7 +236,7 @@ def build():
     para(doc, "La información de pacientes que aparece en las capturas corresponde a datos de demostración y "
               "no representa a personas reales. El manejo de datos de salud se realiza conforme a la normativa "
               "de protección de datos personales vigente.")
-    note(doc, "Este manual es una guía de consulta. Usa el índice para ir directo a la tarea que necesites.")
+    note(doc, "Este documento está diseñado como guía de consulta; se recomienda utilizar el índice para acceder directamente a la sección deseada.")
     pb(doc)
 
     # Índice
@@ -265,7 +268,7 @@ def build():
         "Las credenciales de acceso: número de DNI y contraseña.",
     ])
     h2(doc, "2.2 Instalación")
-    para(doc, "Descarga la aplicación «VITMATERNA» desde la tienda de tu dispositivo (Play Store en Android o "
+    para(doc, "Descarga la aplicación “VITMATERNA” desde la tienda de tu dispositivo (Play Store en Android o "
               "App Store en iPhone) e instálala. Una vez instalada, abre la aplicación tocando su ícono.")
     h2(doc, "2.3 Convenciones de este manual")
     para(doc, "En las imágenes verás marcas numeradas y recuadros que indican exactamente de qué elemento se "
@@ -278,7 +281,7 @@ def build():
     ]):
         tbl.cell(i, 0).paragraphs[0].add_run(a).bold = True
         tbl.cell(i, 1).paragraphs[0].add_run(b)
-    pb(doc)
+    section_gap(doc)
 
     # 3. Acceso
     h1(doc, "3. Acceso al sistema")
@@ -286,63 +289,63 @@ def build():
     para(doc, "Al abrir la aplicación se muestra la pantalla de inicio de sesión. Ingresa tus credenciales "
               "para acceder a tu cuenta:")
     steps(doc, [
-        "En el campo «DNI», escribe tu número de documento.",
-        "En el campo «Contraseña», escribe tu contraseña.",
-        "Toca el botón «Iniciar Sesión» para ingresar.",
+        "En el campo “DNI”, escribe tu número de documento.",
+        "En el campo “Contraseña”, escribe tu contraseña.",
+        "Toca el botón “Iniciar Sesión” para ingresar.",
     ])
     shot(doc, "A0", "Pantalla de inicio de sesión.")
-    note(doc, "Si olvidaste tu contraseña, toca «¿Olvidaste tu contraseña?» o solicita ayuda a tu obstetra.")
-    h2(doc, "3.2 Recorrido guiado «Conoce tu app»")
+    note(doc, "Si olvidaste tu contraseña, toca “¿Olvidaste tu contraseña?” o solicita ayuda a tu obstetra.")
+    h2(doc, "3.2 Recorrido guiado “Conoce tu app”")
     para(doc, "Durante el primer ingreso, la aplicación ofrece un recorrido guiado que presenta sus principales "
-              "funciones. Puede repetirse en cualquier momento desde «Mi perfil» → «Conoce tu app».")
-    pb(doc)
+              "funciones. Puede repetirse en cualquier momento desde “Mi perfil” → “Conoce tu app”.")
+    section_gap(doc)
 
     # 4. Inicio
     h1(doc, "4. Pantalla de inicio")
     para(doc, "Es la primera pantalla al entrar. Te muestra un resumen de tu embarazo del día.")
     steps(doc, [
-        "① «Tu embarazo»: la cinta muestra tu semana de gestación, el trimestre y tu nivel de riesgo.",
-        "② «Próxima Cita»: el día, la hora y el estado de tu siguiente control.",
-        "③ «Tratamiento del Día»: cuántas vitaminas o pastillas debes tomar hoy y tu avance.",
+        "① “Tu embarazo”: la cinta muestra tu semana de gestación, el trimestre y tu nivel de riesgo.",
+        "② “Próxima Cita”: el día, la hora y el estado de tu siguiente control.",
+        "③ “Tratamiento del Día”: cuántas vitaminas o pastillas debes tomar hoy y tu avance.",
         "④ Botón de menú (☰): abre el menú lateral para ir a Educación, Perfil y más.",
     ])
     shot(doc, "A1", "Pantalla de inicio de la gestante.")
     note(doc, "La semana de embarazo y el avance se calculan solos a partir de tu fecha de última regla (FUM).")
 
     h2(doc, "4.1 Confirmar la asistencia a tu cita")
-    steps(doc, ["① En la tarjeta «Próxima Cita», toca «Confirmar asistencia» para avisar que asistirás. "
+    steps(doc, ["① En la tarjeta “Próxima Cita”, toca “Confirmar asistencia” para avisar que asistirás. "
                 "Tu obstetra recibirá la confirmación."])
     shot(doc, "A1c", "Botón para confirmar la asistencia a la próxima cita.")
 
     h2(doc, "4.2 Acciones rápidas")
     para(doc, "En la parte inferior del inicio tienes tres accesos directos:")
     steps(doc, [
-        "① «Reportar»: informa un signo de alarma (síntoma) a tu obstetra.",
-        "② «Emergencia»: envía una alerta de auxilio con tu ubicación.",
-        "③ «Educación»: abre la biblioteca de contenido para tu embarazo.",
+        "① “Reportar”: informa un signo de alarma (síntoma) a tu obstetra.",
+        "② “Emergencia”: envía una alerta de auxilio con tu ubicación.",
+        "③ “Educación”: abre la biblioteca de contenido para tu embarazo.",
     ])
     shot(doc, "A1b", "Acciones rápidas del inicio.")
-    note(doc, "Al tocar «Emergencia» se abre una ventana de confirmación con el botón «Enviar ahora». Solo se "
-              "envía la alerta cuando lo confirmas; también puedes «Cancelar».", "alerta")
+    note(doc, "Al tocar “Emergencia” se abre una ventana de confirmación con el botón “Enviar ahora”. Solo se "
+              "envía la alerta cuando lo confirmas; también puedes “Cancelar”.", "alerta")
 
     h2(doc, "4.3 El menú lateral")
     para(doc, "Toca el botón de menú (☰) del inicio para abrir el menú lateral, desde donde llegas al resto "
               "de funciones:")
     steps(doc, [
-        "① «Educación»: contenido para tu embarazo.",
-        "② «Signos de alarma»: reportar síntomas.",
-        "③ «Visitas domiciliarias»: historial de visitas a tu domicilio.",
-        "④ «Mi perfil»: tus datos, tu FUM y tus preferencias.",
+        "① “Educación”: contenido para tu embarazo.",
+        "② “Signos de alarma”: reportar síntomas.",
+        "③ “Visitas domiciliarias”: historial de visitas a tu domicilio.",
+        "④ “Mi perfil”: tus datos, tu FUM y tus preferencias.",
     ])
     shot(doc, "MENU", "Menú lateral de navegación.")
-    pb(doc)
+    section_gap(doc)
 
     # 5. Citas
     h1(doc, "5. Mis citas")
     para(doc, "Aquí llevas el control de tus citas de control prenatal (la meta son 8 controles).")
     steps(doc, [
-        "① Pestañas «Próximas» e «Historial» para alternar entre tus citas futuras y las ya realizadas.",
-        "② «Controles prenatales»: muestra cuántos controles llevas de la meta de 8.",
+        "① Pestañas “Próximas” e “Historial” para alternar entre tus citas futuras y las ya realizadas.",
+        "② “Controles prenatales”: muestra cuántos controles llevas de la meta de 8.",
     ])
     shot(doc, "A2", "Listado de citas de control prenatal.")
 
@@ -352,107 +355,107 @@ def build():
     shot(doc, "A2b", "Ventana de detalle de la cita.") if os.path.exists(os.path.join(IMG, "A2b.png")) else None
     para(doc, "Desde el detalle, según el estado de la cita, puedes:")
     steps(doc, [
-        "Tocar «Confirmar» para confirmar tu asistencia.",
-        "Tocar «Reprogramar» o «Solicitar reprogramación» para pedir un cambio de día. Se abrirá una ventana "
+        "Tocar “Confirmar” para confirmar tu asistencia.",
+        "Tocar “Reprogramar” o “Solicitar reprogramación” para pedir un cambio de día. Se abrirá una ventana "
         "donde eliges la nueva fecha, un horario disponible y escribes el motivo (mínimo 5 caracteres). "
         "Tu obstetra debe aprobar la solicitud; te avisaremos cuando lo haga.",
     ])
     note(doc, "Una solicitud de reprogramación queda pendiente hasta que tu obstetra la apruebe. Mientras "
               "tanto, tu cita original sigue vigente.")
-    pb(doc)
+    section_gap(doc)
 
     # 6. Tratamiento
     h1(doc, "6. Mi tratamiento")
     para(doc, "En esta pantalla registras la toma de tus vitaminas y pastillas, y ves tu constancia.")
-    steps(doc, ["① «Mi adherencia»: muestra tu porcentaje de cumplimiento y las dosis tomadas de los últimos días."])
+    steps(doc, ["① “Mi adherencia”: muestra tu porcentaje de cumplimiento y las dosis tomadas de los últimos días."])
     shot(doc, "A3", "Resumen de adherencia al tratamiento.")
     h2(doc, "6.1 Marcar un medicamento como tomado")
-    steps(doc, ["① Cuando tomes una vitamina o pastilla, toca «Marcar como tomado». El botón cambiará a "
-                "«Tomado hoy» y tu porcentaje de cumplimiento se actualizará."])
-    shot(doc, "A3b", "Botón «Marcar como tomado» en cada medicamento.")
+    steps(doc, ["① Cuando tomes una vitamina o pastilla, toca “Marcar como tomado”. El botón cambiará a "
+                "“Tomado hoy” y tu porcentaje de cumplimiento se actualizará."])
+    shot(doc, "A3b", "Botón “Marcar como tomado” en cada medicamento.")
     note(doc, "Tu obstetra puede ver tu constancia. Tomar tus suplementos a diario ayuda a prevenir la anemia "
               "y cuida a tu bebé.")
-    pb(doc)
+    section_gap(doc)
 
     # 7. Chat
     h1(doc, "7. Chat con mi obstetra")
     para(doc, "Puedes escribirle a tu obstetra para hacer preguntas o contarle cómo te sientes.")
     steps(doc, [
-        "① Toca «Chat» en la barra inferior para abrir la conversación con tu obstetra.",
+        "① Toca “Chat” en la barra inferior para abrir la conversación con tu obstetra.",
         "② Escribe tu mensaje en el campo inferior. ③ Toca el botón de enviar. Con el clip puedes adjuntar una foto.",
     ])
     shot(doc, "A4", "Conversación con la obstetra.")
-    pb(doc)
+    section_gap(doc)
 
     # 8. Educación
     h1(doc, "8. Educación")
     para(doc, "Encuentra artículos y recursos sencillos, elegidos según tu mes de embarazo.")
     steps(doc, [
         "① Buscador: escribe un tema para encontrar contenido.",
-        "② «Mis semanas»: abre la calculadora de semanas de embarazo.",
-        "③ «Signos de alarma»: acceso directo para reportar síntomas.",
+        "② “Mis semanas”: abre la calculadora de semanas de embarazo.",
+        "③ “Signos de alarma”: acceso directo para reportar síntomas.",
     ])
     shot(doc, "A5", "Biblioteca de contenido educativo.")
     h2(doc, "8.1 Calcular mis semanas de embarazo")
-    para(doc, "Al tocar «Mis semanas» se abre una calculadora. Elige la fecha de tu última regla (FUM) y toca "
-              "«Ver mis semanas de embarazo»; verás tu semana actual, el trimestre y la fecha probable de parto.")
-    shot(doc, "A5b", "Calculadora «¿En qué semana estoy?».")
-    pb(doc)
+    para(doc, "Al tocar “Mis semanas” se abre una calculadora. Elige la fecha de tu última regla (FUM) y toca "
+              "“Ver mis semanas de embarazo”; verás tu semana actual, el trimestre y la fecha probable de parto.")
+    shot(doc, "A5b", "Calculadora “¿En qué semana estoy?”.")
+    section_gap(doc)
 
     # 9. Signos de alarma
     h1(doc, "9. Signos de alarma y emergencia")
     para(doc, "Si algo te preocupa, puedes reportar uno o varios síntomas a tu obstetra.")
     steps(doc, [
-        "Marca los síntomas que presentas (están agrupados en «Durante el Embarazo», «Durante el Parto» y "
-        "«Después del Parto»).",
-        "Si quieres, escribe más detalles en «Información adicional».",
-        "① Toca «Enviar alerta a mi obstetra». Recibirás una confirmación y tu obstetra será notificada.",
+        "Marca los síntomas que presentas (están agrupados en “Durante el Embarazo”, “Durante el Parto” y "
+        "“Después del Parto”).",
+        "Si quieres, escribe más detalles en “Información adicional”.",
+        "① Toca “Enviar alerta a mi obstetra”. Recibirás una confirmación y tu obstetra será notificada.",
     ])
     shot(doc, "A6", "Pantalla para reportar signos de alarma.")
     note(doc, "Si tienes sangrado, dolor de cabeza muy fuerte, pérdida de líquido, fiebre o tu bebé se mueve "
               "menos, usa el botón de Emergencia del inicio y acude de inmediato al establecimiento de salud. "
               "Teléfono: 083 – 421800.", "alerta")
-    pb(doc)
+    section_gap(doc)
 
     # 10. Perfil
     h1(doc, "10. Mi perfil")
     para(doc, "Desde tu perfil editas tus datos, eliges cómo recibir avisos y puedes repetir el recorrido guiado.")
     steps(doc, [
-        "① «Mis datos y fecha de última regla»: edita tu información y registra tu FUM.",
-        "② «Notificaciones»: elige por qué canales recibir avisos.",
-        "③ «Conoce tu app»: repite el recorrido guiado cuando quieras.",
+        "① “Mis datos y fecha de última regla”: edita tu información y registra tu FUM.",
+        "② “Notificaciones”: elige por qué canales recibir avisos.",
+        "③ “Conoce tu app”: repite el recorrido guiado cuando quieras.",
     ])
     shot(doc, "A7", "Pantalla de perfil de la gestante.")
 
     h2(doc, "10.1 Editar mis datos y mi FUM")
-    para(doc, "Al tocar «Mis datos y fecha de última regla» se abre un formulario con tus datos. Los campos "
+    para(doc, "Al tocar “Mis datos y fecha de última regla” se abre un formulario con tus datos. Los campos "
               "con asterisco (*) son obligatorios:")
     steps(doc, [
-        "Completa «Nombres *», «Apellidos *», «Teléfono» y «Correo Electrónico».",
-        "Elige tu «Fecha de Nacimiento *».",
-        "Elige tu «Fecha de tu última regla (FUM) *»: es el primer día de tu última menstruación. Con ella se "
+        "Completa “Nombres *”, “Apellidos *”, “Teléfono” y “Correo Electrónico”.",
+        "Elige tu “Fecha de Nacimiento *”.",
+        "Elige tu “Fecha de tu última regla (FUM) *”: es el primer día de tu última menstruación. Con ella se "
         "calculan tus semanas y tu cronograma de 8 controles.",
-        "① Toca «Guardar Datos» para confirmar (o «Cancelar» para salir sin cambios).",
+        "① Toca “Guardar Datos” para confirmar (o “Cancelar” para salir sin cambios).",
     ])
-    shot(doc, "A7b", "Formulario «Modificar Perfil y FUM».")
+    shot(doc, "A7b", "Formulario “Modificar Perfil y FUM”.")
 
     h2(doc, "10.2 Preferencias de notificación")
-    para(doc, "Al tocar «Notificaciones» eliges por qué canales quieres recibir recordatorios y alertas:")
+    para(doc, "Al tocar “Notificaciones” eliges por qué canales quieres recibir recordatorios y alertas:")
     steps(doc, [
-        "Activa o desactiva «Notificaciones en la app», «SMS» y «WhatsApp» según prefieras.",
-        "① Toca «Guardar» para confirmar tus preferencias.",
+        "Activa o desactiva “Notificaciones en la app”, “SMS” y “WhatsApp” según prefieras.",
+        "① Toca “Guardar” para confirmar tus preferencias.",
     ])
-    shot(doc, "A7c", "Ventana «Preferencias de notificación».")
+    shot(doc, "A7c", "Ventana “Preferencias de notificación”.")
     note(doc, "Las alertas clínicas urgentes siempre se enviarán por seguridad, aunque desactives algún canal.")
-    pb(doc)
+    section_gap(doc)
 
     # 11. Troubleshooting
     h1(doc, "11. Solución de problemas")
     for q, a in [
-        ("No puedo iniciar sesión", "Verifica que tu DNI y contraseña sean correctos. Si los olvidaste, usa «¿Olvidaste tu contraseña?» o pide ayuda a tu obstetra."),
-        ("No veo mi semana de embarazo", "Asegúrate de haber registrado tu fecha de última regla (FUM) en «Mi perfil» → «Mis datos y fecha de última regla»."),
+        ("No puedo iniciar sesión", "Verifica que tu DNI y contraseña sean correctos. Si los olvidaste, usa “¿Olvidaste tu contraseña?” o pide ayuda a tu obstetra."),
+        ("No veo mi semana de embarazo", "Asegúrate de haber registrado tu fecha de última regla (FUM) en “Mi perfil” → “Mis datos y fecha de última regla”."),
         ("La app no carga o se ve en blanco", "Revisa tu conexión a internet, cierra la aplicación y vuelve a abrirla."),
-        ("No recibo los recordatorios", "Entra a «Mi perfil» → «Notificaciones» y activa los canales que prefieras."),
+        ("No recibo los recordatorios", "Entra a “Mi perfil” → “Notificaciones” y activa los canales que prefieras."),
     ]:
         h3(doc, q); para(doc, a)
 

@@ -63,7 +63,7 @@ def add_toc(doc):
 
 def style_base(doc):
     st = doc.styles["Normal"]
-    st.font.name = "Calibri"; st.font.size = Pt(11); st.font.color.rgb = INK
+    st.font.name = "Carlito"; st.font.size = Pt(11); st.font.color.rgb = INK
     pf = st.paragraph_format
     pf.line_spacing = 1.4; pf.space_after = Pt(8); pf.space_before = Pt(0)
     specs = {
@@ -73,7 +73,7 @@ def style_base(doc):
     }
     for name, (size, color, before, after) in specs.items():
         s = doc.styles[name]
-        s.font.name = "Calibri"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True; s.font.italic = False
+        s.font.name = "Carlito"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True; s.font.italic = False
         pfh = s.paragraph_format
         pfh.space_before = Pt(before); pfh.space_after = Pt(after); pfh.line_spacing = 1.15; pfh.keep_with_next = True
     try:
@@ -95,6 +95,7 @@ def shot(doc, fid, cap):
     if not os.path.exists(path):
         doc.add_paragraph(f"[Captura {fid} no encontrada]"); return
     p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.keep_with_next = True; p.paragraph_format.keep_together = True; p.paragraph_format.space_before = Pt(4)
     p.add_run().add_picture(path, height=Cm(11.3))
     caption(doc, cap)
 
@@ -152,6 +153,8 @@ def h3(doc, t): return doc.add_heading(t, level=3)
 def para(doc, t):
     p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY; p.add_run(t); return p
 def pb(doc): doc.add_page_break()
+def section_gap(doc):
+    p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(10)
 
 
 def cover(doc):
@@ -209,7 +212,7 @@ def build():
     para(doc, "La información que aparece en las capturas corresponde a datos de demostración y no representa a "
               "personas reales. El manejo de datos de salud se realiza conforme a la normativa de protección de "
               "datos personales vigente.")
-    note(doc, "Este manual es una guía de consulta. Usa el índice para ir directo a la tarea que necesites.")
+    note(doc, "Este documento está diseñado como guía de consulta; se recomienda utilizar el índice para acceder directamente a la sección deseada.")
     pb(doc)
 
     h1(doc, "Índice de contenidos"); add_toc(doc); pb(doc)
@@ -238,20 +241,20 @@ def build():
     ]):
         tbl.cell(i, 0).paragraphs[0].add_run(a).bold = True
         tbl.cell(i, 1).paragraphs[0].add_run(b)
-    pb(doc)
+    section_gap(doc)
 
     h1(doc, "3. Acceso al sistema")
     para(doc, "Al abrir la aplicación se muestra la pantalla de inicio de sesión. Ingresa tus credenciales "
               "para acceder a tu cuenta:")
     steps(doc, [
-        "En el campo «DNI», escribe tu número de documento.",
-        "En el campo «Contraseña», escribe tu contraseña.",
-        "Toca el botón «Iniciar Sesión» para ingresar.",
+        "En el campo “DNI”, escribe tu número de documento.",
+        "En el campo “Contraseña”, escribe tu contraseña.",
+        "Toca el botón “Iniciar Sesión” para ingresar.",
     ])
     shot(doc, "A0", "Pantalla de inicio de sesión.")
-    note(doc, "Durante el primer ingreso se mostrará el recorrido guiado «Conoce tu app», que puede repetirse "
+    note(doc, "Durante el primer ingreso se mostrará el recorrido guiado “Conoce tu app”, que puede repetirse "
               "en cualquier momento desde el perfil.")
-    pb(doc)
+    section_gap(doc)
 
     for sec in CONTENT["sections"]:
         # Nivel de título según la profundidad del número: "4" -> H1, "4.1" -> H2
@@ -265,7 +268,7 @@ def build():
         if sec.get("shot"): shot(doc, sec["shot"], sec.get("cap", ""))
         if sec.get("note"): note(doc, sec["note"], sec.get("note_kind", "nota"))
 
-    pb(doc)
+    section_gap(doc)
     h1(doc, "Solución de problemas")
     for q, a in CONTENT["troubleshooting"]:
         h3(doc, q); para(doc, a)

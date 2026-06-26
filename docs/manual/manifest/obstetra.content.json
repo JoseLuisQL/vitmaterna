@@ -10,8 +10,8 @@
       "h": "4. Panel de inicio",
       "p": "Es la primera pantalla al entrar. Resume tu jornada del día.",
       "steps": [
-        "① Tarjetas con tus cifras del día: «Citas hoy», «Pacientes» y «Alertas». Toca cada una para ir a ese módulo.",
-        "② «Distribución de riesgo»: el semáforo de tus gestantes (bajo, medio y alto)."
+        "① Tarjetas con tus cifras del día: “Citas hoy”, “Pacientes” y “Alertas”. Toca cada una para ir a ese módulo.",
+        "② “Distribución de riesgo”: el semáforo de tus gestantes (bajo, medio y alto)."
       ],
       "shot": "B1",
       "cap": "Panel de inicio de la obstetra.",
@@ -21,7 +21,7 @@
       "h": "4.1 Citas de hoy",
       "p": "Más abajo en el inicio verás el listado de tus citas del día.",
       "steps": [
-        "① Toca una cita para abrir la ficha de esa gestante; «Ver todas» abre la agenda completa."
+        "① Toca una cita para abrir la ficha de esa gestante; “Ver todas” abre la agenda completa."
       ],
       "shot": "B1b",
       "cap": "Listado de citas de hoy en el inicio."
@@ -40,7 +40,7 @@
       "h": "5.1 Registrar una nueva gestante",
       "p": "Para dar de alta a una paciente nueva:",
       "steps": [
-        "① Toca el botón «+» (Registrar nueva gestante). Se abre un formulario por pasos: identificación y DNI, embarazo actual (FUM), medidas y antecedentes, y contacto. Al finalizar, toca «Guardar»."
+        "① Toca el botón “+” (Registrar nueva gestante). Se abre un formulario por pasos: identificación y DNI, embarazo actual (FUM), medidas y antecedentes, y contacto. Al finalizar, toca “Guardar”."
       ],
       "shot": "B2b",
       "cap": "Botón para registrar una nueva gestante.",
@@ -51,11 +51,11 @@
       "p": "Organiza y atiende tus citas.",
       "steps": [
         "① Buscador de paciente por nombre o DNI.",
-        "② Filtros «Hoy», «Próximas», «Historial» y «Todas» (con el número de citas de cada uno)."
+        "② Filtros “Hoy”, “Próximas”, “Historial” y “Todas” (con el número de citas de cada uno)."
       ],
       "shot": "B3",
       "cap": "Agenda de citas.",
-      "note": "En cada cita puedes atenderla (flujo de 4 pasos: control, laboratorios, tamizajes y tratamiento), marcar «No asistió», aprobar o rechazar una reprogramación, o convertirla en visita domiciliaria."
+      "note": "En cada cita puedes atenderla (flujo de 4 pasos: control, laboratorios, tamizajes y tratamiento), marcar “No asistió”, aprobar o rechazar una reprogramación, o convertirla en visita domiciliaria."
     },
     {
       "h": "7. Reportes e indicadores",
@@ -70,8 +70,8 @@
       "h": "7.1 Exportar reportes",
       "p": "Puedes descargar tus reportes para imprimir o compartir.",
       "steps": [
-        "① Toca «Excel» para descargar la hoja de cálculo completa.",
-        "② Toca «PDF» para generar un reporte clínico listo para imprimir."
+        "① Toca “Excel” para descargar la hoja de cálculo completa.",
+        "② Toca “PDF” para generar un reporte clínico listo para imprimir."
       ],
       "shot": "B4b",
       "cap": "Botones para exportar a Excel y PDF."
@@ -89,7 +89,7 @@
       "h": "9. Mi perfil",
       "p": "Desde tu perfil editas tus datos, ajustas tus notificaciones y puedes repetir el recorrido guiado.",
       "steps": [
-        "① «Conoce tu app»: repite el recorrido guiado cuando quieras."
+        "① “Conoce tu app”: repite el recorrido guiado cuando quieras."
       ],
       "shot": "B6",
       "cap": "Pantalla de perfil de la obstetra."
@@ -112,15 +112,15 @@
   "faq": [
     [
       "¿Cómo atiendo una cita?",
-      "Desde la Agenda, abre la cita y usa «Atender»: te guiará por control, laboratorios, tamizajes y tratamiento."
+      "Desde la Agenda, abre la cita y usa “Atender”: te guiará por control, laboratorios, tamizajes y tratamiento."
     ],
     [
       "¿Puedo enviar un aviso a varias gestantes?",
-      "Sí, desde el Chat usa «Mensaje masivo» y filtra por trimestre o riesgo."
+      "Sí, desde el Chat usa “Mensaje masivo” y filtra por trimestre o riesgo."
     ],
     [
       "¿Dónde veo los indicadores MINSA?",
-      "En la pantalla de Reportes, sección «Indicadores MINSA / ENDES»."
+      "En la pantalla de Reportes, sección “Indicadores MINSA / ENDES”."
     ]
   ],
   "glossary": [

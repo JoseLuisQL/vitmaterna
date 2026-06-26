@@ -9,8 +9,9 @@ B=build
 
 echo "▶ Gestante"
 python3 $SC/03_build_docx.py
-python3 $SC/07_build_toc.py "$B/manual_usuario_gestante_vitmaterna_movil.docx" manifest/gestante.toc.json
+python3 $SC/07_build_toc.py "$B/manual_usuario_gestante_vitmaterna_movil.docx" manifest/gestante.toc.json 0C8174
 
+declare -A ACCENT=( [obstetra]=2C6EA8 [admin]=3C5168 )
 for ROLE in obstetra admin; do
   echo "▶ ${ROLE^}"
   python3 $SC/03b_build_role.py "$ROLE"
@@ -29,7 +30,7 @@ titles += [[t,1] for t in fixed_post]
 json.dump(titles, open(f"manifest/{role}.toc.json","w"), ensure_ascii=False)
 print(f"   {role}: {len(titles)} títulos")
 PY
-  python3 $SC/07_build_toc.py "$B/manual_usuario_${ROLE}_vitmaterna_movil.docx" "manifest/${ROLE}.toc.json"
+  python3 $SC/07_build_toc.py "$B/manual_usuario_${ROLE}_vitmaterna_movil.docx" "manifest/${ROLE}.toc.json" "${ACCENT[$ROLE]}"
 done
 
 echo "✅ Pipeline completo. PDFs y DOCX en $B/"
