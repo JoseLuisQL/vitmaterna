@@ -8,12 +8,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { UserCog, LogOut, ChevronRight, ShieldCheck, Compass } from 'lucide-react-native';
+import { UserCog, LogOut, ChevronRight, ShieldCheck, Compass, FileText } from 'lucide-react-native';
 import { useAuthStore } from '../../src/store/authStore';
 import { useToast, AppModal, AppButton } from '../../src/components/ui';
 import { useUpdateMyAccount } from '../../src/services/api-queries';
 import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
 import { useRestartTour } from '../../src/components/tour/useRestartTour';
+import { openManual } from '../../src/utils/openManual';
 import { confirmAction } from '../../src/utils/confirm';
 import { goBack } from '../../src/utils/navigation';
 import { useResponsive } from '../../src/theme/responsive';
@@ -134,6 +135,8 @@ export default function AdminPerfilScreen(): React.ReactElement {
               <MenuItem icon={<UserCog size={20} color={BRAND} />} title="Editar mis datos" onPress={abrirEdicion} />
               <View style={styles.menuDivider} />
               <MenuItem icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<FileText size={20} color={BRAND} />} title="Manual de usuario" onPress={() => openManual('admin')} />
             </View>
 
             <View style={[styles.menuCard, { marginTop: spacing.lg }]}>

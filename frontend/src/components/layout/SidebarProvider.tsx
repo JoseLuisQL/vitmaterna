@@ -10,6 +10,7 @@ import { AppSidebar } from './AppSidebar';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationRealtime } from '../../hooks/useNotificationRealtime';
 import { useRestartTour } from '../tour/useRestartTour';
+import { openManual } from '../../utils/openManual';
 import { gestanteColors, obstetraColors, adminColors } from '../../theme/colors';
 import { NAVIGATION, ROLE_LABEL } from '../../navigation/menu';
 import type { UserRole } from '../../types/user';
@@ -59,6 +60,7 @@ export function SidebarProvider({ role, children }: SidebarProviderProps): React
         userSubtitle={roleLabel}
         sections={NAVIGATION[role].sections}
         onRestartTour={restartTour}
+        onOpenManual={() => openManual(role)}
       />
     </SidebarContext.Provider>
   );

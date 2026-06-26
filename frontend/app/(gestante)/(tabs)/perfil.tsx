@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Bell, HelpCircle, LogOut, ChevronRight, CloudOff, ArrowLeft, Compass
+  User, Bell, HelpCircle, LogOut, ChevronRight, CloudOff, ArrowLeft, Compass, FileText
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -15,6 +15,7 @@ import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useRestartTour } from '../../../src/components/tour/useRestartTour';
+import { openManual } from '../../../src/utils/openManual';
 import { useTourTarget } from '../../../src/components/tour/tourTargets';
 import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { WebMaxWidth } from '../../../src/components/web';
@@ -228,6 +229,8 @@ export default function PerfilScreen(): React.ReactElement {
         <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
         <View style={styles.menuDivider} />
         <MenuItem tourId={TOUR_TARGETS.gestantePerfilTour} icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
+        <View style={styles.menuDivider} />
+        <MenuItem icon={<FileText size={20} color={BRAND} />} title="Manual de usuario" onPress={() => openManual('gestante')} />
       </View>
 
       <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>

@@ -17,10 +17,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname, type Href } from 'expo-router';
-import { LogOut, ChevronLeft, ChevronRight, Compass, type LucideIcon } from 'lucide-react-native';
+import { LogOut, ChevronLeft, ChevronRight, Compass, FileText, type LucideIcon } from 'lucide-react-native';
 import { VitMaternaLogo } from '../ui/VitMaternaLogo';
 import { ThemeToggle, isThemeToggleAvailable } from '../ui/ThemeToggle';
 import { useRestartTour } from '../tour/useRestartTour';
+import { openManual } from '../../utils/openManual';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../ui/ToastProvider';
 import { confirmAction } from '../../utils/confirm';
@@ -179,6 +180,24 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
         >
           <Compass size={18} color={accent} />
           {!collapsed && <Text style={[styles.tourText, { color: accent }]}>Conoce tu app</Text>}
+        </Pressable>
+
+        {/* Manual de usuario (PDF) del rol actual. */}
+        <Pressable
+          onPress={() => openManual(role)}
+          style={({ pressed, hovered }: any) => [
+            styles.tourBtn,
+            collapsed && styles.tourBtnCollapsed,
+            { backgroundColor: accent + '12' },
+            hovered && { backgroundColor: accent + '1F' },
+            pressed && { backgroundColor: accent + '26' },
+            IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s', outlineStyle: 'none' } as any),
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir el manual de usuario en PDF"
+        >
+          <FileText size={18} color={accent} />
+          {!collapsed && <Text style={[styles.tourText, { color: accent }]}>Manual de usuario</Text>}
         </Pressable>
 
         {!collapsed && isThemeToggleAvailable && (

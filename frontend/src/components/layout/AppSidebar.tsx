@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
-import { LogOut, X, Compass, type LucideIcon, ChevronRight } from 'lucide-react-native';
+import { LogOut, X, Compass, FileText, type LucideIcon, ChevronRight } from 'lucide-react-native';
 import { ThemeToggle, isThemeToggleAvailable } from '../ui/ThemeToggle';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../ui/ToastProvider';
@@ -56,6 +56,8 @@ interface AppSidebarProps {
   sections: SidebarSection[];
   /** Re-lanza el recorrido guiado (onboarding). Si se omite, no se muestra. */
   onRestartTour?: () => void;
+  /** Abre el manual de usuario (PDF). Si se omite, no se muestra. */
+  onOpenManual?: () => void;
 }
 
 const PANEL_MAX = 360;
@@ -68,6 +70,7 @@ export function AppSidebar({
   userSubtitle,
   sections,
   onRestartTour,
+  onOpenManual,
 }: AppSidebarProps): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
@@ -175,11 +178,12 @@ export function AppSidebar({
               </View>
             )}
 
-            {/* Ayuda: re-lanzar el recorrido guiado. */}
-            {onRestartTour && (
+            {/* Ayuda: recorrido guiado + manual de usuario. */}
+            {(onRestartTour || onOpenManual) && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Ayuda</Text>
                 <View style={styles.sectionCard}>
+                  {onRestartTour && (
                   <Pressable
                     onPress={() => {
                       onClose();
@@ -198,6 +202,27 @@ export function AppSidebar({
                     </View>
                     <ChevronRight size={18} color={commonColors.textTertiary} />
                   </Pressable>
+                  )}
+                  {onOpenManual && (
+                  <Pressable
+                    onPress={() => {
+                      onClose();
+                      setTimeout(() => onOpenManual(), 80);
+                    }}
+                    style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Abrir el manual de usuario en PDF"
+                  >
+                    <View style={[styles.itemIcon, { backgroundColor: accentColor + '1A' }]}>
+                      <FileText size={20} color={accentColor} />
+                    </View>
+                    <View style={styles.flex}>
+                      <Text style={styles.itemLabel}>Manual de usuario</Text>
+                      <Text style={styles.itemDesc} numberOfLines={1}>Abre la guía completa en PDF</Text>
+                    </View>
+                    <ChevronRight size={18} color={commonColors.textTertiary} />
+                  </Pressable>
+                  )}
                 </View>
               </View>
             )}

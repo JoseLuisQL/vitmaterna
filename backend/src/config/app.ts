@@ -30,6 +30,11 @@ export function createApp(): express.Express {
   // ---- Archivos subidos (imágenes del chat, RF-9.01) ----
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
+  // ---- Manuales de usuario (PDF) servidos públicamente por rol ----
+  // Permite que cada usuario abra su manual desde la app (Perfil → Manual de
+  // usuario). Sin autenticación, igual que /uploads.
+  app.use('/manuales', express.static(path.resolve(process.cwd(), 'manuales')));
+
   // ---- Body Parsing ----
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));

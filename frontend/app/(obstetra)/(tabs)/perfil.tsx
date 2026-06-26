@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, TextInput } from 'react-native';
-import { UserCog, Bell, HelpCircle, LogOut, ChevronRight, Stethoscope, Compass } from 'lucide-react-native';
+import { UserCog, Bell, HelpCircle, LogOut, ChevronRight, Stethoscope, Compass, FileText } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
@@ -11,6 +11,7 @@ import { typography } from '../../../src/theme/typography';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
 import { useRestartTour } from '../../../src/components/tour/useRestartTour';
+import { openManual } from '../../../src/utils/openManual';
 
 const BRAND = obstetraColors.primary;
 
@@ -180,6 +181,8 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
               <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
               <View style={styles.menuDivider} />
               <MenuItem icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<FileText size={20} color={BRAND} />} title="Manual de usuario" onPress={() => openManual('obstetra')} />
             </View>
 
             <View style={[styles.menuCard, { marginTop: 24 }]}>
