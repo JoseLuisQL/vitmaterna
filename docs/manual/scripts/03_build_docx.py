@@ -31,7 +31,7 @@ GRAY = RGBColor(0x56, 0x68, 0x73)
 RED = RGBColor(0xD6, 0x45, 0x45)
 AMBER = RGBColor(0xB0, 0x7A, 0x14)
 FIG = {"n": 0}
-AUTHOR = "Cristhian Rodrigo Berrocal Salazar"
+AUTHOR = "CRISTHIAN RODRIGO BERROCAL SALAZAR"
 
 
 def set_cell_bg(cell, hexc):
