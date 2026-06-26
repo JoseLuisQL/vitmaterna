@@ -19,9 +19,9 @@ export const gestanteTourSteps: TourStep[] = [
   // 1) Bienvenida
   {
     navigateTo: HOME,
-    title: 'Conoce tu app paso a paso',
+    title: 'Conoce tu app',
     description:
-      'Te mostramos todas las funciones para que las uses con confianza. Puedes salir cuando quieras y repetir el recorrido desde tu perfil.',
+      'Te vamos a mostrar, en pocos pasos, para qué sirve cada parte. Toca "Siguiente" para avanzar. Puedes salir cuando quieras.',
   },
 
   // ── INICIO ──────────────────────────────────────────────────────────────
@@ -29,31 +29,31 @@ export const gestanteTourSteps: TourStep[] = [
     navigateTo: HOME,
     targetId: TOUR_TARGETS.gestanteHomeRibbon,
     label: 'Inicio',
-    title: 'Tu embarazo, semana a semana',
+    title: 'En qué semana vas',
     description:
-      'En tu inicio ves en qué semana estás, tu progreso y tu próximo control prenatal de un vistazo.',
+      'Esta barra te muestra la semana de tu embarazo y cuánto has avanzado. Se actualiza sola, no tienes que hacer nada.',
   },
   {
     navigateTo: HOME,
     targetId: TOUR_TARGETS.gestanteNextAppointment,
     label: 'Inicio',
     title: 'Tu próxima cita',
-    description: 'Revisa tu próximo control y confirma tu asistencia con un solo toque.',
+    description: 'Aquí ves el día y la hora de tu siguiente control. Con un toque puedes confirmar que vas a asistir.',
   },
   {
     navigateTo: HOME,
     targetId: TOUR_TARGETS.gestanteTreatment,
     label: 'Inicio',
-    title: 'Tu tratamiento del día',
-    description: 'Mira de un vistazo cuántos suplementos te faltan tomar hoy y tu adherencia.',
+    title: 'Tus pastillas de hoy',
+    description: 'Te recuerda cuántas vitaminas o pastillas debes tomar hoy. El círculo muestra cuántas ya tomaste.',
   },
   {
     navigateTo: HOME,
     targetId: TOUR_TARGETS.gestanteQuickActions,
     label: 'Inicio',
-    title: 'Reporta o pide ayuda',
+    title: 'Si te sientes mal',
     description:
-      'Si algo te preocupa, reporta un signo de alarma o activa la ayuda de emergencia desde aquí.',
+      'Si tienes un malestar o una urgencia, toca aquí para avisar a tu obstetra o pedir ayuda rápido.',
   },
 
   // ── CITAS ───────────────────────────────────────────────────────────────
@@ -61,9 +61,9 @@ export const gestanteTourSteps: TourStep[] = [
     navigateTo: `${HOME}/citas`,
     targetId: TOUR_TARGETS.gestanteCitas,
     label: 'Citas',
-    title: 'Tus controles prenatales',
+    title: 'Tus citas médicas',
     description:
-      'Aquí llevas el seguimiento de tus controles MINSA: cuántos llevas, los próximos y tu historial. Toca una cita para confirmar o pedir reprogramación.',
+      'Aquí están todas tus citas: las que vienen y las pasadas. Toca una cita para ver los detalles, confirmar o pedir cambiarla de fecha.',
   },
 
   // ── TRATAMIENTO ─────────────────────────────────────────────────────────
@@ -71,36 +71,36 @@ export const gestanteTourSteps: TourStep[] = [
     navigateTo: `${HOME}/tratamiento`,
     targetId: TOUR_TARGETS.gestanteTratamiento,
     label: 'Tratamiento',
-    title: 'Tus suplementos y medicamentos',
+    title: 'Tus vitaminas y pastillas',
     description:
-      'Marca cada toma del día, cuida tu constancia y revisa tus indicaciones. Tu obstetra ve tu adherencia.',
+      'Cada vez que tomes una pastilla, márcala aquí. Así no se te olvida y tu obstetra ve que las estás tomando bien.',
   },
 
   // ── CHAT ────────────────────────────────────────────────────────────────
   {
     navigateTo: `${HOME}/chat`,
     targetId: TOUR_TARGETS.gestanteChat,
-    label: 'Chat',
-    title: 'Conversa con tu obstetra',
+    label: 'Mensajes',
+    title: 'Habla con tu obstetra',
     description:
-      'Escríbele cuando lo necesites: dudas, fotos o cómo te sientes. Verás cuándo está en línea.',
+      'Escribe aquí para hacer preguntas o contar cómo te sientes. También puedes enviar fotos. Es como un chat normal.',
   },
 
   // ── EDUCACIÓN ───────────────────────────────────────────────────────────
   {
     navigateTo: `${HOME}/educacion`,
     targetId: TOUR_TARGETS.gestanteEducacion,
-    label: 'Educación',
-    title: 'Aprende sobre tu embarazo',
+    label: 'Aprende',
+    title: 'Información para ti',
     description:
-      'Contenido recomendado para tu trimestre: busca temas, marca favoritos y aprende a tu ritmo.',
+      'Artículos y consejos sencillos sobre tu embarazo, elegidos según el mes en que vas. Toca cualquiera para leerlo.',
   },
 
   // ── CIERRE ──────────────────────────────────────────────────────────────
   {
     navigateTo: HOME,
-    title: '¡Listo, ya conoces tu app!',
+    title: '¡Eso es todo!',
     description:
-      'Explora con calma. Tu obstetra te acompaña en cada paso. Puedes repetir este recorrido cuando quieras desde tu perfil.',
+      'Ya sabes usar tu app. Explora con calma; tu obstetra te acompaña. Si quieres ver este recorrido otra vez, búscalo en el menú o en tu perfil.',
   },
 ];

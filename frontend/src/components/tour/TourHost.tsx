@@ -207,9 +207,9 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
 
   if (!step || !applicableSteps) return null;
 
-  // Posición de la tarjeta: bajo el target si cabe, si no encima; centrada si no
-  // hay rect.
-  const tooltipStyle = computeTooltipPosition(rect, width, height);
+  // Posición y ancho de la tarjeta: bajo el target si cabe, si no encima;
+  // centrada si no hay rect. El ancho se ajusta para no salir de pantalla.
+  const { top, left, cardWidth } = computeTooltipPosition(rect, width, height);
 
   return (
     <View style={[styles.overlay, { zIndex: zIndex.modal }]} pointerEvents="box-none">
@@ -227,7 +227,7 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
       <Animated.View
         style={[
           styles.tooltipWrap,
-          tooltipStyle,
+          { top, left, width: cardWidth },
           {
             opacity: appear,
             transform: [{ translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
@@ -253,33 +253,40 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
   );
 }
 
-/** Calcula la posición de la tarjeta respecto al target. */
+/**
+ * Calcula la posición y el ancho de la tarjeta respecto al target, asegurando
+ * que NUNCA se salga de la pantalla (ancho = mín(320, viewport − márgenes)).
+ */
 function computeTooltipPosition(
   rect: TargetRect | null,
   width: number,
   height: number,
-): { top: number; left: number } {
-  const estimatedHeight = 220;
+): { top: number; left: number; cardWidth: number } {
+  const estimatedHeight = 230;
+  // Ancho seguro: tope de 320, pero se encoge en pantallas angostas.
+  const cardWidth = Math.min(TOOLTIP_WIDTH, width - spacing.md * 2);
+
   if (!rect) {
-    // Centrado.
+    // Centrado horizontal y vertical.
     return {
       top: Math.max((height - estimatedHeight) / 2, spacing.lg),
-      left: Math.max((width - TOOLTIP_WIDTH) / 2, spacing.md),
+      left: Math.round((width - cardWidth) / 2),
+      cardWidth,
     };
   }
 
-  // Horizontal: alinear con el target, sin salirse de la pantalla.
-  let left = rect.x + rect.width / 2 - TOOLTIP_WIDTH / 2;
-  left = Math.max(spacing.md, Math.min(left, width - TOOLTIP_WIDTH - spacing.md));
+  // Horizontal: alinear con el centro del target, sin salirse de la pantalla.
+  let left = rect.x + rect.width / 2 - cardWidth / 2;
+  left = Math.max(spacing.md, Math.min(left, width - cardWidth - spacing.md));
 
-  // Vertical: debajo del target si cabe; si no, encima.
+  // Vertical: debajo del target si cabe; si no, encima; con clamp a la pantalla.
   const below = rect.y + rect.height + TOOLTIP_GAP;
   const fitsBelow = below + estimatedHeight < height - spacing.lg;
   const top = fitsBelow
     ? below
     : Math.max(rect.y - estimatedHeight - TOOLTIP_GAP, spacing.lg);
 
-  return { top, left };
+  return { top, left, cardWidth };
 }
 
 const styles = StyleSheet.create({
@@ -293,8 +300,7 @@ const styles = StyleSheet.create({
   },
   tooltipWrap: {
     position: 'absolute',
-    width: TOOLTIP_WIDTH,
-    maxWidth: '100%',
+    // El ancho se fija inline (cardWidth) para adaptarse al viewport.
   },
 });
 

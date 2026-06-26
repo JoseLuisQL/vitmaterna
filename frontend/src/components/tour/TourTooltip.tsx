@@ -1,20 +1,27 @@
 /**
- * VITMATERNA — TourTooltip (tarjeta de un paso del tour).
+ * VITMATERNA — TourTooltip (tarjeta de un paso del recorrido).
  *
- * Muestra el texto explicativo del paso actual: etiqueta, título, descripción,
- * indicador de progreso (dots) y acciones (Atrás / Siguiente·Finalizar /
- * Omitir). Usa solo tokens del sistema y el color de acento del rol.
+ * Diseño cuidado y a prueba de desbordes:
+ *  - Cabecera: chip "Paso N de M" + botón cerrar (no se solapan).
+ *  - Título + descripción en lenguaje simple y claro.
+ *  - Progreso: BARRA fina animada (reanimated) que escala a cualquier número de
+ *    pasos — nunca empuja los botones (a diferencia de N puntos en línea).
+ *  - Acciones: fila propia, ancho completo. "Atrás" (icono) + acción primaria
+ *    que ocupa el resto del ancho. Botones con feedback de presión (PressableScale).
  *
- * El posicionamiento (sobre/bajo el target, o centrado) lo decide el TourHost y
- * se aplica vía `style`.
+ * Solo tokens del sistema, color de acento del rol, contraste AA, áreas táctiles
+ * ≥48, respeta reduce-motion. El posicionamiento lo decide el TourHost vía `style`.
  */
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, type ViewStyle } from 'react-native';
-import { X } from 'lucide-react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import { X, ArrowLeft, ArrowRight, Check } from 'lucide-react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
+import { useReducedMotion } from '../../theme/motion';
 
 interface Props {
   label?: string;
@@ -45,66 +52,75 @@ export function TourTooltip({
   onSkip,
   style,
 }: Props): React.ReactElement {
+  const reduced = useReducedMotion();
+  const progress = useSharedValue((stepIndex + 1) / stepCount);
+
+  useEffect(() => {
+    const target = (stepIndex + 1) / stepCount;
+    if (reduced) {
+      progress.value = target;
+    } else {
+      progress.value = withTiming(target, { duration: 360, easing: Easing.out(Easing.cubic) });
+    }
+  }, [stepIndex, stepCount, reduced, progress]);
+
+  const barStyle = useAnimatedStyle(() => ({
+    width: `${Math.max(0, Math.min(1, progress.value)) * 100}%`,
+  }));
+
   return (
     <View style={[styles.card, style]} accessibilityRole="summary">
-      {/* Cerrar / omitir */}
-      <Pressable
-        onPress={onSkip}
-        style={styles.close}
-        accessibilityRole="button"
-        accessibilityLabel="Omitir el recorrido"
-        hitSlop={10}
-      >
-        <X size={18} color={commonColors.textTertiary} />
-      </Pressable>
-
+      {/* Cabecera: progreso textual + cerrar (en su propia fila, sin solaparse) */}
       <View style={styles.headerRow}>
-        {!!label && <Text style={[styles.label, { color: accent }]}>{label.toUpperCase()}</Text>}
-        <View style={[styles.stepChip, { backgroundColor: accent }]}>
-          <Text style={styles.stepChipText}>{stepIndex + 1}/{stepCount}</Text>
+        <View style={[styles.stepChip, { backgroundColor: accent + '14' }]}>
+          {!!label && <Text style={[styles.stepLabel, { color: accent }]} numberOfLines={1}>{label.toUpperCase()}</Text>}
+          <Text style={[styles.stepCount, { color: accent }]}>Paso {stepIndex + 1} de {stepCount}</Text>
         </View>
+        <PressableScale
+          onPress={onSkip}
+          style={styles.close}
+          scaleTo={0.9}
+          accessibilityRole="button"
+          accessibilityLabel="Salir del recorrido"
+          hitSlop={10}
+        >
+          <X size={18} color={commonColors.textSecondary} />
+        </PressableScale>
       </View>
-      <Text style={styles.title} accessibilityRole="header">
-        {title}
-      </Text>
+
+      <Text style={styles.title} accessibilityRole="header">{title}</Text>
       <Text style={styles.description}>{description}</Text>
 
-      <View style={styles.footer}>
-        {/* Dots de progreso */}
-        <View style={styles.dots} accessibilityLabel={`Paso ${stepIndex + 1} de ${stepCount}`}>
-          {Array.from({ length: stepCount }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                { backgroundColor: i === stepIndex ? accent : commonColors.border },
-                i === stepIndex && styles.dotActive,
-              ]}
-            />
-          ))}
-        </View>
+      {/* Barra de progreso animada (escala a cualquier nº de pasos) */}
+      <View style={styles.progressTrack} accessibilityLabel={`Paso ${stepIndex + 1} de ${stepCount}`}>
+        <Animated.View style={[styles.progressFill, { backgroundColor: accent }, barStyle]} />
+      </View>
 
-        {/* Acciones */}
-        <View style={styles.actions}>
-          {!isFirst && (
-            <Pressable
-              onPress={onPrev}
-              style={styles.ghostBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Paso anterior"
-            >
-              <Text style={styles.ghostBtnText}>Atrás</Text>
-            </Pressable>
-          )}
-          <Pressable
-            onPress={onNext}
-            style={[styles.primaryBtn, { backgroundColor: accent }]}
+      {/* Acciones: fila propia, ancho completo, sin desbordes */}
+      <View style={styles.actions}>
+        {!isFirst && (
+          <PressableScale
+            onPress={onPrev}
+            style={[styles.backBtn, { borderColor: commonColors.border }]}
+            scaleTo={0.94}
             accessibilityRole="button"
-            accessibilityLabel={isLast ? 'Finalizar el recorrido' : 'Siguiente paso'}
+            accessibilityLabel="Volver al paso anterior"
           >
-            <Text style={styles.primaryBtnText}>{isLast ? 'Finalizar' : 'Siguiente'}</Text>
-          </Pressable>
-        </View>
+            <ArrowLeft size={20} color={commonColors.textSecondary} />
+          </PressableScale>
+        )}
+        <PressableScale
+          onPress={onNext}
+          style={[styles.primaryBtn, { backgroundColor: accent }]}
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel={isLast ? 'Terminar el recorrido' : 'Ir al siguiente paso'}
+        >
+          <Text style={styles.primaryBtnText} numberOfLines={1}>
+            {isLast ? 'Entendido' : 'Siguiente'}
+          </Text>
+          {isLast ? <Check size={18} color={commonColors.white} /> : <ArrowRight size={18} color={commonColors.white} />}
+        </PressableScale>
       </View>
     </View>
   );
@@ -115,98 +131,87 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
-    width: 320,
-    maxWidth: '100%',
+    width: '100%',
+    maxWidth: 340,
     ...shadows.modal,
-  },
-  close: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    padding: spacing.xs,
-    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-    paddingRight: spacing.xl,
     gap: spacing.sm,
-  },
-  label: {
-    ...typography.overline,
-    flex: 1,
+    marginBottom: spacing.sm2,
   },
   stepChip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    minWidth: 34,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: 5,
+    borderRadius: borderRadius.full,
+    flexShrink: 1,
   },
-  stepChipText: {
-    ...typography.micro,
-    fontSize: 11,
-    color: commonColors.white,
-    fontWeight: '700',
+  stepLabel: { ...typography.overline, fontSize: 10, flexShrink: 1 },
+  stepCount: { ...typography.caption, fontSize: 11, fontWeight: '700' },
+  close: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   title: {
     ...typography.h3,
     color: commonColors.text,
     marginBottom: spacing.xs,
-    paddingRight: spacing.lg,
   },
   description: {
     ...typography.body,
     color: commonColors.textSecondary,
+    lineHeight: 23,
   },
-  footer: {
-    marginTop: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+  progressTrack: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: commonColors.surfaceAlt,
+    overflow: 'hidden',
+    marginTop: spacing.md,
   },
-  dots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  dotActive: {
-    width: 20,
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  ghostBtn: {
-    height: 40,
-    paddingHorizontal: spacing.md,
+  backBtn: {
+    width: 52,
+    height: 50,
     borderRadius: borderRadius.full,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  ghostBtnText: {
-    ...typography.button,
-    color: commonColors.textSecondary,
+    flexShrink: 0,
   },
   primaryBtn: {
-    height: 40,
-    paddingHorizontal: spacing.lg,
+    flex: 1,
+    height: 50,
     borderRadius: borderRadius.full,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   primaryBtnText: {
     ...typography.button,
+    fontSize: 16,
     color: commonColors.white,
+    flexShrink: 1,
   },
 });
 
