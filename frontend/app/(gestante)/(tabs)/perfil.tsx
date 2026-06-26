@@ -15,6 +15,8 @@ import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useRestartTour } from '../../../src/components/tour/useRestartTour';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { WebMaxWidth } from '../../../src/components/web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
@@ -32,17 +34,23 @@ interface MenuItemProps {
   title: string;
   onPress: () => void;
   danger?: boolean;
+  /** Id de objetivo del tour (resalta esta fila durante el recorrido). */
+  tourId?: string;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger }) => (
-  <Pressable onPress={onPress} style={styles.menuItem}>
-    <View style={styles.menuItemLeft}>
-      {icon}
-      <Text style={[styles.menuItemTitle, danger && styles.menuItemDanger]}>{title}</Text>
-    </View>
-    <ChevronRight size={18} color={commonColors.textTertiary} />
-  </Pressable>
-);
+const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, danger, tourId }) => {
+  // El hook se llama siempre (regla de hooks); el id "noop" no se usa en el tour.
+  const ref = useTourTarget(tourId || 'noop-menu-item');
+  return (
+    <Pressable ref={tourId ? (ref as any) : undefined} collapsable={false} onPress={onPress} style={styles.menuItem}>
+      <View style={styles.menuItemLeft}>
+        {icon}
+        <Text style={[styles.menuItemTitle, danger && styles.menuItemDanger]}>{title}</Text>
+      </View>
+      <ChevronRight size={18} color={commonColors.textTertiary} />
+    </Pressable>
+  );
+};
 
 export default function PerfilScreen(): React.ReactElement {
   const { user: authUser, logout } = useAuthStore();
@@ -213,13 +221,13 @@ export default function PerfilScreen(): React.ReactElement {
 
       <Text style={styles.sectionTitle}>Cuenta</Text>
       <View style={styles.menuCard}>
-        <MenuItem icon={<User size={20} color={BRAND} />} title="Mis datos y fecha de última regla" onPress={openEditModal} />
+        <MenuItem tourId={TOUR_TARGETS.gestantePerfilDatos} icon={<User size={20} color={BRAND} />} title="Mis datos y fecha de última regla" onPress={openEditModal} />
         <View style={styles.menuDivider} />
-        <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
+        <MenuItem tourId={TOUR_TARGETS.gestantePerfilNotif} icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
         <View style={styles.menuDivider} />
         <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
         <View style={styles.menuDivider} />
-        <MenuItem icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
+        <MenuItem tourId={TOUR_TARGETS.gestantePerfilTour} icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
       </View>
 
       <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>

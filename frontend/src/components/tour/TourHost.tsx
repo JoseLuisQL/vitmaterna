@@ -232,8 +232,8 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
           width={width}
           height={height}
           rect={rect}
-          shape={step.shape}
           overlayColor={commonColors.overlay}
+          accent={accent}
         />
       </Pressable>
 

@@ -16,6 +16,9 @@ export const TOUR_TARGETS = {
   gestanteTratamiento: 'tour-gestante-tratamiento',
   gestanteChat: 'tour-gestante-chat',
   gestanteEducacion: 'tour-gestante-educacion',
+  gestantePerfilDatos: 'tour-gestante-perfil-datos',
+  gestantePerfilNotif: 'tour-gestante-perfil-notif',
+  gestantePerfilTour: 'tour-gestante-perfil-tour',
   // Obstetra
   obstetraKpis: 'tour-obstetra-kpis',
   obstetraRisk: 'tour-obstetra-risk',
