@@ -16,6 +16,8 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
@@ -39,6 +41,7 @@ export default function ConfigScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
+  const configTourTarget = useTourTarget(TOUR_TARGETS.adminConfig);
   const { data: config, isLoading } = useSystemConfig();
   const updateConfigMutation = useUpdateSystemConfig();
 
@@ -119,7 +122,7 @@ export default function ConfigScreen(): React.ReactElement {
     >
       <View style={webShell ? styles.formGrid : undefined}>
         {/* Fila 1 */}
-        <View style={webShell ? styles.rowGrid : undefined}>
+        <View ref={configTourTarget} collapsable={false} style={webShell ? styles.rowGrid : undefined}>
           <View style={[styles.section, webShell && styles.col]}>
             <Text style={styles.sectionTitle}>Límites y Accesos</Text>
             <AppInput

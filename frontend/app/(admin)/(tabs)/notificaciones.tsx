@@ -18,6 +18,8 @@ import { useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
 import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
@@ -51,6 +53,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
+  const notifTourTarget = useTourTarget(TOUR_TARGETS.adminNotif);
   const { data: status, isLoading } = useChannelsConfig();
   const updateSms = useUpdateSmsConfig();
   const updateWa = useUpdateWhatsAppConfig();
@@ -159,7 +162,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Resumen de estado */}
-        <View style={styles.summaryRow}>
+        <View ref={notifTourTarget} collapsable={false} style={styles.summaryRow}>
           <View style={styles.summaryCard}>
             <View style={[styles.summaryIcon, { backgroundColor: semanticColors.infoLight }]}>
               <MessageSquare size={18} color={semanticColors.info} />

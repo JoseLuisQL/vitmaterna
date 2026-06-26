@@ -128,7 +128,10 @@ export default function AdminInicioScreen(): React.ReactElement {
         <View style={webShell ? styles.col : undefined}>
           {/* Estado del sistema: lo informativo, compacto */}
           <Text style={styles.sectionTitle}>Estado del sistema</Text>
-          <View style={styles.statusCard}>
+          {/* Cuando NO hay cuentas pendientes, este bloque hace de objetivo del
+              tour para el paso de "aprobaciones" (la tarjeta de pendientes no se
+              monta). Así el recorrido siempre tiene algo que resaltar. */}
+          <View ref={pendientes === 0 ? pendingTarget : undefined} collapsable={false} style={styles.statusCard}>
             <StatusRow
               icon={AlertTriangle}
               label="Alertas pendientes"

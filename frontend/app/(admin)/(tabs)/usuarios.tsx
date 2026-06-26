@@ -10,6 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, CheckCircle, UserPlus, ChevronRight, Plus, Menu } from 'lucide-react-native';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -98,6 +100,7 @@ export default function UsuariosScreen(): React.ReactElement {
   const { open: openSidebar } = useSidebar();
   const { user: authUser } = useAuthStore();
   const { webShell } = useResponsive();
+  const usuariosTourTarget = useTourTarget(TOUR_TARGETS.adminUsuarios);
 
   // Edición / reset / baja
   const [isEditVisible, setIsEditVisible] = useState(false);
@@ -330,7 +333,7 @@ export default function UsuariosScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <View style={styles.searchContainer}>
+      <View ref={!webShell ? usuariosTourTarget : undefined} collapsable={false} style={styles.searchContainer}>
         <SearchField
           value={search}
           onChangeText={setSearch}
@@ -631,7 +634,7 @@ export default function UsuariosScreen(): React.ReactElement {
       accentColor={adminColors.primary}
       scroll={false}
     >
-      <View style={styles.webToolbar}>
+      <View ref={webShell ? usuariosTourTarget : undefined} collapsable={false} style={styles.webToolbar}>
         <SearchField
           value={search}
           onChangeText={setSearch}

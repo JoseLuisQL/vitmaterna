@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Pencil, Trash2, BookOpen, Search, X, ImagePlus, Eye, TrendingUp, Menu } from 'lucide-react-native';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -99,6 +101,7 @@ export default function ContenidoScreen(): React.ReactElement {
   const toast = useToast();
   const { open: openSidebar } = useSidebar();
   const { webShell } = useResponsive();
+  const contenidoTourTarget = useTourTarget(TOUR_TARGETS.adminContenido);
   const { data: items = [], isLoading, refetch, isRefetching } = useEducationContent();
   const createMut = useCreateEducationContent();
   const updateMut = useUpdateEducationContent();
@@ -308,12 +311,14 @@ export default function ContenidoScreen(): React.ReactElement {
         )}
       </View>
 
-      <SearchField
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Buscar recurso…"
-        containerStyle={styles.searchBox}
-      />
+      <View ref={!webShell ? contenidoTourTarget : undefined} collapsable={false}>
+        <SearchField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar recurso…"
+          containerStyle={styles.searchBox}
+        />
+      </View>
       {availableCats.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           <TouchableOpacity style={[styles.filterChip, !filterCat && styles.filterChipActive]} onPress={() => setFilterCat(null)}>
@@ -430,7 +435,7 @@ export default function ContenidoScreen(): React.ReactElement {
       accentColor={adminColors.primary}
     >
       <>
-        <View style={styles.webToolbar}>
+        <View ref={webShell ? contenidoTourTarget : undefined} collapsable={false} style={styles.webToolbar}>
           <SearchField
             value={search}
             onChangeText={setSearch}
