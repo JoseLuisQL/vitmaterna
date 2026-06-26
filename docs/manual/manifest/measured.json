@@ -1,4 +1,36 @@
 {
+  "A0": {
+    "title": "Inicio de sesión",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "dni": {
+        "x": 170,
+        "y": 880,
+        "w": 512,
+        "h": 96,
+        "mark": 1,
+        "box": true
+      },
+      "pass": {
+        "x": 146,
+        "y": 1056,
+        "w": 480,
+        "h": 96,
+        "mark": 2,
+        "box": true
+      },
+      "iniciar": {
+        "x": 96,
+        "y": 1264,
+        "w": 588,
+        "h": 120,
+        "mark": 3,
+        "box": true
+      }
+    }
+  },
   "A1": {
     "title": "Pantalla de inicio",
     "dpr": 2,

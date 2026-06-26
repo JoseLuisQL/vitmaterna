@@ -40,6 +40,22 @@ def set_cell_bg(cell, hexc):
     tcPr.append(shd)
 
 
+def _field(run, instr):
+    """Inserta un campo de Word COMPLETO (begin/instr/separate/end) en `run`.
+    A diferencia de fldSimple, LibreOffice sí lo calcula al exportar (números
+    de página reales)."""
+    def el(tag, **attrs):
+        e = OxmlElement(tag)
+        for k, v in attrs.items():
+            e.set(qn(k), v)
+        return e
+    begin = el("w:fldChar", **{"w:fldCharType": "begin"})
+    it = el("w:instrText", **{"xml:space": "preserve"}); it.text = instr
+    sep = el("w:fldChar", **{"w:fldCharType": "separate"})
+    end = el("w:fldChar", **{"w:fldCharType": "end"})
+    run._r.append(begin); run._r.append(it); run._r.append(sep); run._r.append(end)
+
+
 def add_toc(doc):
     # Marcador que 07_build_toc.py reemplaza por una tabla de índice con números
     # de página reales (dos pasadas de render).
@@ -125,6 +141,13 @@ def steps(doc, items):
         p.add_run(it)
 
 
+def bullets(doc, items):
+    for it in items:
+        p = doc.add_paragraph(style="List Bullet")
+        p.paragraph_format.space_after = Pt(4); p.paragraph_format.line_spacing = 1.3
+        p.add_run(it)
+
+
 def _accent_rule(p, color=None):
     """Línea fina de color bajo un título (borde inferior del párrafo)."""
     color = color or "0C8174"
@@ -182,8 +205,10 @@ def cover(doc):
 
 def footer(doc):
     p = doc.sections[0].footer.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("VITMATERNA · Manual de Usuario (Gestante) · Página "); r.font.size = Pt(8); r.font.color.rgb = GRAY
-    fld = OxmlElement("w:fldSimple"); fld.set(qn("w:instr"), "PAGE"); rr = p.add_run(); rr._r.append(fld)
+    r = p.add_run("VITMATERNA · Manual de Usuario (Gestante)     ·     Página "); r.font.size = Pt(8); r.font.color.rgb = GRAY
+    rp = p.add_run(); rp.font.size = Pt(8); rp.font.color.rgb = GRAY; _field(rp, "PAGE")
+    rmid = p.add_run(" de "); rmid.font.size = Pt(8); rmid.font.color.rgb = GRAY
+    rt = p.add_run(); rt.font.size = Pt(8); rt.font.color.rgb = GRAY; _field(rt, "NUMPAGES")
 
 
 def header(doc):
@@ -217,25 +242,31 @@ def build():
     # 1. Introducción
     h1(doc, "1. Introducción")
     h2(doc, "1.1 ¿Qué es VITMATERNA?")
-    para(doc, "VITMATERNA es una aplicación móvil que te acompaña durante todo tu embarazo. Con ella puedes "
-              "seguir tus semanas de gestación, conocer tus próximas citas de control prenatal, registrar la "
-              "toma de tus vitaminas, conversar con tu obstetra, aprender sobre tu embarazo y pedir ayuda si "
-              "te sientes mal.")
-    h2(doc, "1.2 ¿A quién está dirigido?")
-    para(doc, "A las gestantes que usan la aplicación en su teléfono. Está escrita en lenguaje sencillo y no "
-              "requiere conocimientos técnicos.")
-    h2(doc, "1.3 Alcance")
-    para(doc, "Explica, paso a paso y con imágenes, cómo usar cada función: inicio, citas, tratamiento, chat, "
-              "educación, signos de alarma, perfil y los formularios y ventanas (modales) de cada uno.")
+    para(doc, "VITMATERNA es una aplicación móvil de acompañamiento prenatal. Permite a la gestante seguir la "
+              "evolución de su embarazo semana a semana, consultar y confirmar sus controles prenatales, "
+              "registrar la toma de sus suplementos, comunicarse con su obstetra, acceder a contenido educativo "
+              "y reportar signos de alarma o solicitar ayuda en caso de emergencia.")
+    h2(doc, "1.2 Propósito de este manual")
+    para(doc, "Este manual tiene como objetivo guiar a la gestante en el uso correcto de la aplicación. Describe "
+              "cada función mediante instrucciones paso a paso acompañadas de capturas de pantalla, de modo que "
+              "la usuaria pueda completar sus tareas con autonomía y seguridad.")
+    h2(doc, "1.3 Contenido")
+    para(doc, "El documento abarca el acceso al sistema, la pantalla de inicio, la gestión de citas, el "
+              "seguimiento del tratamiento, la comunicación por chat, el contenido educativo, el reporte de "
+              "signos de alarma y la administración del perfil personal.")
 
     # 2. Antes de empezar
     h1(doc, "2. Antes de empezar")
     h2(doc, "2.1 Requisitos")
-    para(doc, "• Un teléfono con Android o iPhone (iOS).\n• Conexión a internet (datos móviles o wifi).\n"
-              "• Tu número de DNI y la contraseña que te entregó tu obstetra.")
+    para(doc, "Para utilizar la aplicación es necesario contar con:")
+    bullets(doc, [
+        "Un teléfono móvil con sistema operativo Android o iOS (iPhone).",
+        "Conexión a internet (datos móviles o red wifi).",
+        "Las credenciales de acceso: número de DNI y contraseña.",
+    ])
     h2(doc, "2.2 Instalación")
-    para(doc, "Descarga la aplicación «VITMATERNA» desde la tienda de tu teléfono (Play Store en Android o "
-              "App Store en iPhone) e instálala. Al terminar, toca el ícono para abrirla.")
+    para(doc, "Descarga la aplicación «VITMATERNA» desde la tienda de tu dispositivo (Play Store en Android o "
+              "App Store en iPhone) e instálala. Una vez instalada, abre la aplicación tocando su ícono.")
     h2(doc, "2.3 Convenciones de este manual")
     para(doc, "En las imágenes verás marcas numeradas y recuadros que indican exactamente de qué elemento se "
               "habla y en qué orden usarlo:")
@@ -252,16 +283,18 @@ def build():
     # 3. Acceso
     h1(doc, "3. Acceso al sistema")
     h2(doc, "3.1 Iniciar sesión")
+    para(doc, "Al abrir la aplicación se muestra la pantalla de inicio de sesión. Ingresa tus credenciales "
+              "para acceder a tu cuenta:")
     steps(doc, [
-        "Abre la aplicación VITMATERNA en tu teléfono.",
-        "Escribe tu número de DNI en el primer campo.",
-        "Escribe tu contraseña en el segundo campo.",
-        "Toca el botón «Iniciar Sesión».",
+        "En el campo «DNI», escribe tu número de documento.",
+        "En el campo «Contraseña», escribe tu contraseña.",
+        "Toca el botón «Iniciar Sesión» para ingresar.",
     ])
-    note(doc, "Si olvidaste tu contraseña, toca «¿Olvidaste tu contraseña?» o pídele ayuda a tu obstetra.")
-    h2(doc, "3.2 El recorrido guiado «Conoce tu app»")
-    para(doc, "La primera vez que entras, la app te ofrece un recorrido que te muestra para qué sirve cada "
-              "parte. Puedes verlo otra vez desde «Mi perfil» → «Conoce tu app».")
+    shot(doc, "A0", "Pantalla de inicio de sesión.")
+    note(doc, "Si olvidaste tu contraseña, toca «¿Olvidaste tu contraseña?» o solicita ayuda a tu obstetra.")
+    h2(doc, "3.2 Recorrido guiado «Conoce tu app»")
+    para(doc, "Durante el primer ingreso, la aplicación ofrece un recorrido guiado que presenta sus principales "
+              "funciones. Puede repetirse en cualquier momento desde «Mi perfil» → «Conoce tu app».")
     pb(doc)
 
     # 4. Inicio

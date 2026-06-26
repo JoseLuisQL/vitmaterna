@@ -45,6 +45,18 @@ def set_cell_bg(cell, hexc):
     tcPr.append(shd)
 
 
+def _field(run, instr):
+    def el(tag, **attrs):
+        e = OxmlElement(tag)
+        for k, v in attrs.items():
+            e.set(qn(k), v)
+        return e
+    run._r.append(el("w:fldChar", **{"w:fldCharType": "begin"}))
+    it = el("w:instrText", **{"xml:space": "preserve"}); it.text = instr; run._r.append(it)
+    run._r.append(el("w:fldChar", **{"w:fldCharType": "separate"}))
+    run._r.append(el("w:fldChar", **{"w:fldCharType": "end"}))
+
+
 def add_toc(doc):
     doc.add_paragraph("[[TOC]]")
 
@@ -118,6 +130,13 @@ def steps(doc, items):
         p.add_run(it)
 
 
+def bullets(doc, items):
+    for it in items:
+        p = doc.add_paragraph(style="List Bullet")
+        p.paragraph_format.space_after = Pt(4); p.paragraph_format.line_spacing = 1.3
+        p.add_run(it)
+
+
 def _accent_rule(p, color):
     pPr = p._p.get_or_add_pPr()
     pbdr = OxmlElement("w:pBdr"); bottom = OxmlElement("w:bottom")
@@ -164,8 +183,10 @@ def cover(doc):
 
 def footer(doc):
     p = doc.sections[0].footer.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run(f"VITMATERNA · {CONTENT['title']} · Página "); r.font.size = Pt(8); r.font.color.rgb = GRAY
-    fld = OxmlElement("w:fldSimple"); fld.set(qn("w:instr"), "PAGE"); rr = p.add_run(); rr._r.append(fld)
+    r = p.add_run(f"VITMATERNA · {CONTENT['title']}     ·     Página "); r.font.size = Pt(8); r.font.color.rgb = GRAY
+    rp = p.add_run(); rp.font.size = Pt(8); rp.font.color.rgb = GRAY; _field(rp, "PAGE")
+    rmid = p.add_run(" de "); rmid.font.size = Pt(8); rmid.font.color.rgb = GRAY
+    rt = p.add_run(); rt.font.size = Pt(8); rt.font.color.rgb = GRAY; _field(rt, "NUMPAGES")
 
 
 def header(doc):
@@ -195,13 +216,17 @@ def build():
 
     h1(doc, "1. Introducción")
     h2(doc, "1.1 ¿Qué es VITMATERNA?"); para(doc, CONTENT["intro_que"])
-    h2(doc, "1.2 ¿A quién está dirigido?"); para(doc, CONTENT["intro_quien"])
-    h2(doc, "1.3 Alcance"); para(doc, CONTENT["intro_alcance"])
+    h2(doc, "1.2 Propósito de este manual"); para(doc, CONTENT["intro_quien"])
+    h2(doc, "1.3 Contenido"); para(doc, CONTENT["intro_alcance"])
 
     h1(doc, "2. Antes de empezar")
     h2(doc, "2.1 Requisitos")
-    para(doc, "• Un teléfono con Android o iPhone (iOS).\n• Conexión a internet (datos móviles o wifi).\n"
-              "• Tu número de DNI y la contraseña de tu cuenta.")
+    para(doc, "Para utilizar la aplicación es necesario contar con:")
+    bullets(doc, [
+        "Un teléfono móvil con sistema operativo Android o iOS (iPhone).",
+        "Conexión a internet (datos móviles o red wifi).",
+        "Las credenciales de acceso: número de DNI y contraseña.",
+    ])
     h2(doc, "2.2 Convenciones de este manual")
     para(doc, "En las imágenes verás marcas numeradas y recuadros que indican exactamente de qué elemento se "
               "habla y en qué orden usarlo:")
@@ -216,13 +241,16 @@ def build():
     pb(doc)
 
     h1(doc, "3. Acceso al sistema")
+    para(doc, "Al abrir la aplicación se muestra la pantalla de inicio de sesión. Ingresa tus credenciales "
+              "para acceder a tu cuenta:")
     steps(doc, [
-        "Abre la aplicación VITMATERNA en tu teléfono.",
-        "Escribe tu número de DNI.",
-        "Escribe tu contraseña.",
-        "Toca el botón «Iniciar Sesión».",
+        "En el campo «DNI», escribe tu número de documento.",
+        "En el campo «Contraseña», escribe tu contraseña.",
+        "Toca el botón «Iniciar Sesión» para ingresar.",
     ])
-    note(doc, "La primera vez verás un recorrido guiado «Conoce tu app». Puedes verlo otra vez desde tu perfil.")
+    shot(doc, "A0", "Pantalla de inicio de sesión.")
+    note(doc, "Durante el primer ingreso se mostrará el recorrido guiado «Conoce tu app», que puede repetirse "
+              "en cualquier momento desde el perfil.")
     pb(doc)
 
     for sec in CONTENT["sections"]:
