@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, TextInput } from 'react-native';
-import { UserCog, Bell, HelpCircle, LogOut, ChevronRight, Stethoscope } from 'lucide-react-native';
+import { UserCog, Bell, HelpCircle, LogOut, ChevronRight, Stethoscope, Compass } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileInfoModal, useToast, AppModal, AppButton } from '../../../src/components/ui';
@@ -10,6 +10,7 @@ import { layout, spacing, borderRadius } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
+import { useRestartTour } from '../../../src/components/tour/useRestartTour';
 
 const BRAND = obstetraColors.primary;
 
@@ -37,6 +38,7 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
   const { webShell } = useResponsive();
   const toast = useToast();
   const router = useRouter();
+  const restartTour = useRestartTour();
   const [infoModal, setInfoModal] = useState<{ title: string; description?: string; rows?: { label: string; value: string }[] } | null>(null);
 
   // Preferencias de notificación reales (canales) + disponibilidad de canales.
@@ -176,6 +178,8 @@ export default function ObstetraPerfilScreen(): React.ReactElement {
               <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
               <View style={styles.menuDivider} />
               <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Soporte" onPress={abrirAyuda} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<Compass size={20} color={BRAND} />} title="Ver el recorrido de nuevo" onPress={restartTour} />
             </View>
 
             <View style={[styles.menuCard, { marginTop: 24 }]}>

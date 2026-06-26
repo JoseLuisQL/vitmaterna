@@ -8,11 +8,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { UserCog, LogOut, ChevronRight, ShieldCheck } from 'lucide-react-native';
+import { UserCog, LogOut, ChevronRight, ShieldCheck, Compass } from 'lucide-react-native';
 import { useAuthStore } from '../../src/store/authStore';
 import { useToast, AppModal, AppButton } from '../../src/components/ui';
 import { useUpdateMyAccount } from '../../src/services/api-queries';
 import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
+import { useRestartTour } from '../../src/components/tour/useRestartTour';
 import { confirmAction } from '../../src/utils/confirm';
 import { goBack } from '../../src/utils/navigation';
 import { useResponsive } from '../../src/theme/responsive';
@@ -44,6 +45,7 @@ export default function AdminPerfilScreen(): React.ReactElement {
   const { webShell } = useResponsive();
   const toast = useToast();
   const router = useRouter();
+  const restartTour = useRestartTour();
 
   const updateAccount = useUpdateMyAccount();
   const [isEditVisible, setIsEditVisible] = useState(false);
@@ -130,6 +132,8 @@ export default function AdminPerfilScreen(): React.ReactElement {
             <Text style={styles.sectionTitle}>General</Text>
             <View style={styles.menuCard}>
               <MenuItem icon={<UserCog size={20} color={BRAND} />} title="Editar mis datos" onPress={abrirEdicion} />
+              <View style={styles.menuDivider} />
+              <MenuItem icon={<Compass size={20} color={BRAND} />} title="Ver el recorrido de nuevo" onPress={restartTour} />
             </View>
 
             <View style={[styles.menuCard, { marginTop: spacing.lg }]}>
@@ -208,6 +212,7 @@ const styles = StyleSheet.create({
     borderColor: commonColors.border,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  menuDivider: { height: 1, backgroundColor: commonColors.borderLight, marginLeft: 56 },
   menuItemPressed: { backgroundColor: commonColors.surfaceAlt },
   menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   menuIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },

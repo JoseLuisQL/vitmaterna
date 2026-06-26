@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, StatusBar, TextInput, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  User, Bell, HelpCircle, LogOut, ChevronRight, CloudOff, ArrowLeft
+  User, Bell, HelpCircle, LogOut, ChevronRight, CloudOff, ArrowLeft, Compass
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -14,6 +14,7 @@ import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences, useCh
 import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { useRestartTour } from '../../../src/components/tour/useRestartTour';
 import { WebMaxWidth } from '../../../src/components/web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
@@ -49,6 +50,7 @@ export default function PerfilScreen(): React.ReactElement {
   const pendingSync = usePendingSync();
   const toast = useToast();
   const router = useRouter();
+  const restartTour = useRestartTour();
 
   const { data: profileData, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
   const updatePatientMutation = useUpdatePatient();
@@ -216,6 +218,8 @@ export default function PerfilScreen(): React.ReactElement {
         <MenuItem icon={<Bell size={20} color={BRAND} />} title="Notificaciones" onPress={abrirNotificaciones} />
         <View style={styles.menuDivider} />
         <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
+        <View style={styles.menuDivider} />
+        <MenuItem icon={<Compass size={20} color={BRAND} />} title="Ver el recorrido de nuevo" onPress={restartTour} />
       </View>
 
       <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>
