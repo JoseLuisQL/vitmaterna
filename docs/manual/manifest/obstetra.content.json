@@ -10,8 +10,8 @@
       "h": "4. Panel de inicio",
       "p": "Es la primera pantalla al entrar. Resume tu jornada del día.",
       "steps": [
-        "① Tarjetas con tus cifras del día: “Citas hoy”, “Pacientes” y “Alertas”. Toca cada una para ir a ese módulo.",
-        "② “Distribución de riesgo”: el semáforo de tus gestantes (bajo, medio y alto)."
+        "Tarjetas con tus cifras del día: “Citas hoy”, “Pacientes” y “Alertas”. Toca cada una para ir a ese módulo.",
+        "“Distribución de riesgo”: el semáforo de tus gestantes (bajo, medio y alto)."
       ],
       "shot": "B1",
       "cap": "Panel de inicio de la obstetra.",
@@ -21,7 +21,7 @@
       "h": "4.1 Citas de hoy",
       "p": "Más abajo en el inicio verás el listado de tus citas del día.",
       "steps": [
-        "① Toca una cita para abrir la ficha de esa gestante; “Ver todas” abre la agenda completa."
+        "Toca una cita para abrir la ficha de esa gestante; “Ver todas” abre la agenda completa."
       ],
       "shot": "B1b",
       "cap": "Listado de citas de hoy en el inicio."
@@ -30,8 +30,8 @@
       "h": "5. Gestantes",
       "p": "Aquí encuentras y administras a tus pacientes.",
       "steps": [
-        "① Buscador: escribe el nombre o DNI para encontrar a una gestante.",
-        "② Filtros de riesgo (Todas, Sin riesgo, Moderado, Alto) para priorizar a quién atender."
+        "Buscador: escribe el nombre o DNI para encontrar a una gestante.",
+        "Filtros de riesgo (Todas, Sin riesgo, Moderado, Alto) para priorizar a quién atender."
       ],
       "shot": "B2",
       "cap": "Lista de gestantes."
@@ -40,7 +40,7 @@
       "h": "5.1 Registrar una nueva gestante",
       "p": "Para dar de alta a una paciente nueva:",
       "steps": [
-        "① Toca el botón “+” (Registrar nueva gestante). Se abre un formulario por pasos: identificación y DNI, embarazo actual (FUM), medidas y antecedentes, y contacto. Al finalizar, toca “Guardar”."
+        "Toca el botón “+” (Registrar nueva gestante). Se abre un formulario por pasos: identificación y DNI, embarazo actual (FUM), medidas y antecedentes, y contacto. Al finalizar, toca “Guardar”."
       ],
       "shot": "B2b",
       "cap": "Botón para registrar una nueva gestante.",
@@ -50,8 +50,8 @@
       "h": "6. Agenda de citas",
       "p": "Organiza y atiende tus citas.",
       "steps": [
-        "① Buscador de paciente por nombre o DNI.",
-        "② Filtros “Hoy”, “Próximas”, “Historial” y “Todas” (con el número de citas de cada uno)."
+        "Buscador de paciente por nombre o DNI.",
+        "Filtros “Hoy”, “Próximas”, “Historial” y “Todas” (con el número de citas de cada uno)."
       ],
       "shot": "B3",
       "cap": "Agenda de citas.",
@@ -61,7 +61,7 @@
       "h": "7. Reportes e indicadores",
       "p": "Consulta tus indicadores clínicos y los oficiales MINSA.",
       "steps": [
-        "① KPIs principales: pacientes, adherencia, gestantes con 6+ controles y casos de alto riesgo. Más abajo: indicadores MINSA frente a su meta y la atención prioritaria."
+        "KPIs principales: pacientes, adherencia, gestantes con 6+ controles y casos de alto riesgo. Más abajo: indicadores MINSA frente a su meta y la atención prioritaria."
       ],
       "shot": "B4",
       "cap": "Reportes e indicadores clínicos."
@@ -70,8 +70,8 @@
       "h": "7.1 Exportar reportes",
       "p": "Puedes descargar tus reportes para imprimir o compartir.",
       "steps": [
-        "① Toca “Excel” para descargar la hoja de cálculo completa.",
-        "② Toca “PDF” para generar un reporte clínico listo para imprimir."
+        "Toca “Excel” para descargar la hoja de cálculo completa.",
+        "Toca “PDF” para generar un reporte clínico listo para imprimir."
       ],
       "shot": "B4b",
       "cap": "Botones para exportar a Excel y PDF."
@@ -80,7 +80,7 @@
       "h": "8. Chat con gestantes",
       "p": "Responde consultas o envía avisos a tus gestantes.",
       "steps": [
-        "① Busca a una gestante por nombre o DNI y toca su conversación para abrir el chat. También puedes enviar un mensaje masivo a un grupo según trimestre o nivel de riesgo."
+        "Busca a una gestante por nombre o DNI y toca su conversación para abrir el chat. También puedes enviar un mensaje masivo a un grupo según trimestre o nivel de riesgo."
       ],
       "shot": "B5",
       "cap": "Bandeja de conversaciones."
@@ -89,7 +89,7 @@
       "h": "9. Mi perfil",
       "p": "Desde tu perfil editas tus datos, ajustas tus notificaciones y puedes repetir el recorrido guiado.",
       "steps": [
-        "① “Conoce tu app”: repite el recorrido guiado cuando quieras."
+        "“Conoce tu app”: repite el recorrido guiado cuando quieras."
       ],
       "shot": "B6",
       "cap": "Pantalla de perfil de la obstetra."

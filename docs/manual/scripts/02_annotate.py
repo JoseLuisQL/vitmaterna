@@ -57,23 +57,23 @@ def annotate(img, rects, W, H):
     r = max(int(W * 0.040), 22)
     lw = max(int(W * 0.007), 4)
     pad = max(int(W * 0.010), 5)
-    # ordenar por número de marca
-    items = sorted(rects.values(), key=lambda v: v.get("mark", 99))
     margin = r + 6  # margen mínimo para que el círculo completo quede visible
-    for v in items:
+    # RENUMERAR por POSICIÓN visual: de arriba hacia abajo y, en una misma fila
+    # (misma banda vertical), de izquierda a derecha. Así el número ① siempre es
+    # el elemento más alto, ② el siguiente, etc., sin depender del orden de
+    # declaración en el manifest.
+    row_band = max(int(H * 0.05), 60)  # tolerancia para considerar "misma fila"
+    items = sorted(rects.values(), key=lambda v: (round(v["y"] / row_band), v["x"]))
+    for idx, v in enumerate(items, start=1):
         x, y, w, h = v["x"], v["y"], v["w"], v["h"]
-        # recuadro de realce, recortado al lienzo
         x0, y0 = max(x - pad, 2), max(y - pad, 2)
         x1, y1 = min(x + w + pad, W - 2), min(y + h + pad, H - 2)
         if v.get("box", True):
             d.rounded_rectangle([x0, y0, x1, y1], radius=int(W * 0.025), outline=ACCENT, width=lw)
-        # marca numerada anclada a la esquina del elemento, pero SIEMPRE dentro
-        # del lienzo (clamp del centro): evita que el círculo se recorte cuando
-        # el elemento toca el borde de la pantalla.
-        if "mark" in v:
+        if v.get("mark") is not None:
             cx = min(max(x0, margin), W - margin)
             cy = min(max(y0, margin), H - margin)
-            draw_marker(d, cx, cy, v["mark"], ACCENT, r)
+            draw_marker(d, cx, cy, idx, ACCENT, r)  # idx = orden visual
     return Image.alpha_composite(img, overlay).convert("RGB")
 
 
