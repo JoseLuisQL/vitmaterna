@@ -1,13 +1,16 @@
 /**
  * VITMATERNA — TourTooltip (tarjeta de un paso del recorrido).
  *
- * Diseño cuidado y a prueba de desbordes:
- *  - Cabecera: chip "Paso N de M" + botón cerrar (no se solapan).
- *  - Título + descripción en lenguaje simple y claro.
- *  - Progreso: BARRA fina animada (reanimated) que escala a cualquier número de
- *    pasos — nunca empuja los botones (a diferencia de N puntos en línea).
- *  - Acciones: fila propia, ancho completo. "Atrás" (icono) + acción primaria
- *    que ocupa el resto del ancho. Botones con feedback de presión (PressableScale).
+ * Diseño limpio y profesional, a prueba de desbordes:
+ *  - Cabecera ligera: punto de acento + etiqueta de sección y, a la derecha,
+ *    el contador "N / M" + botón cerrar (área táctil amplia, sin solaparse).
+ *  - Título + descripción en lenguaje simple, con buena medida de línea.
+ *  - Progreso: barra SEGMENTADA (un segmento por paso) que se llena con el
+ *    acento del rol. Escala a cualquier número de pasos y comunica la posición
+ *    de un vistazo, sin empujar los botones.
+ *  - Acciones: fila propia, ancho completo. "Atrás" (icono, sólo desde el 2º
+ *    paso) + acción primaria que ocupa el resto. Feedback de presión con
+ *    PressableScale.
  *
  * Solo tokens del sistema, color de acento del rol, contraste AA, áreas táctiles
  * ≥48, respeta reduce-motion. El posicionamiento lo decide el TourHost vía `style`.
@@ -38,6 +41,9 @@ interface Props {
   style?: ViewStyle;
 }
 
+/** Máximo de segmentos visibles en la barra de progreso (evita saturar). */
+const MAX_SEGMENTS = 14;
+
 export function TourTooltip({
   label,
   title,
@@ -60,48 +66,68 @@ export function TourTooltip({
     if (reduced) {
       progress.value = target;
     } else {
-      progress.value = withTiming(target, { duration: 360, easing: Easing.out(Easing.cubic) });
+      progress.value = withTiming(target, { duration: 320, easing: Easing.out(Easing.cubic) });
     }
   }, [stepIndex, stepCount, reduced, progress]);
 
-  const barStyle = useAnimatedStyle(() => ({
+  const fillStyle = useAnimatedStyle(() => ({
     width: `${Math.max(0, Math.min(1, progress.value)) * 100}%`,
+    height: '100%',
   }));
+
+  const showSegments = stepCount <= MAX_SEGMENTS;
 
   return (
     <View style={[styles.card, style]} accessibilityRole="summary">
-      {/* Cabecera: progreso textual + cerrar (en su propia fila, sin solaparse) */}
+      {/* Cabecera ligera: acento + etiqueta · contador + cerrar */}
       <View style={styles.headerRow}>
-        <View style={[styles.stepChip, { backgroundColor: accent + '14' }]}>
-          {!!label && <Text style={[styles.stepLabel, { color: accent }]} numberOfLines={1}>{label.toUpperCase()}</Text>}
-          <Text style={[styles.stepCount, { color: accent }]}>Paso {stepIndex + 1} de {stepCount}</Text>
+        <View style={styles.labelWrap}>
+          <View style={[styles.dot, { backgroundColor: accent }]} />
+          <Text style={[styles.label, { color: accent }]} numberOfLines={1}>
+            {(label || 'Recorrido').toUpperCase()}
+          </Text>
         </View>
-        <PressableScale
-          onPress={onSkip}
-          style={styles.close}
-          scaleTo={0.9}
-          accessibilityRole="button"
-          accessibilityLabel="Salir del recorrido"
-          hitSlop={10}
-        >
-          <X size={18} color={commonColors.textSecondary} />
-        </PressableScale>
+        <View style={styles.headerRight}>
+          <Text style={styles.counter}>
+            {stepIndex + 1} <Text style={styles.counterTotal}>/ {stepCount}</Text>
+          </Text>
+          <PressableScale
+            onPress={onSkip}
+            style={styles.close}
+            scaleTo={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="Salir del recorrido"
+            hitSlop={12}
+          >
+            <X size={17} color={commonColors.textSecondary} />
+          </PressableScale>
+        </View>
       </View>
 
       <Text style={styles.title} accessibilityRole="header">{title}</Text>
       <Text style={styles.description}>{description}</Text>
 
-      {/* Barra de progreso animada (escala a cualquier nº de pasos) */}
-      <View style={styles.progressTrack} accessibilityLabel={`Paso ${stepIndex + 1} de ${stepCount}`}>
-        <Animated.View style={[styles.progressFill, { backgroundColor: accent }, barStyle]} />
+      {/* Progreso: barra segmentada (un segmento por paso) sobre pista continua. */}
+      <View
+        style={styles.progressTrack}
+        accessibilityLabel={`Paso ${stepIndex + 1} de ${stepCount}`}
+      >
+        <Animated.View style={[styles.progressFill, { backgroundColor: accent }, fillStyle]} />
+        {showSegments && (
+          <View style={styles.segments} pointerEvents="none">
+            {Array.from({ length: stepCount - 1 }).map((_, i) => (
+              <View key={i} style={styles.segmentGap} />
+            ))}
+          </View>
+        )}
       </View>
 
-      {/* Acciones: fila propia, ancho completo, sin desbordes */}
+      {/* Acciones: fila propia, ancho completo, sin desbordes. */}
       <View style={styles.actions}>
         {!isFirst && (
           <PressableScale
             onPress={onPrev}
-            style={[styles.backBtn, { borderColor: commonColors.border }]}
+            style={styles.backBtn}
             scaleTo={0.94}
             accessibilityRole="button"
             accessibilityLabel="Volver al paso anterior"
@@ -130,9 +156,13 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.xl,
-    padding: spacing.lg,
+    paddingTop: spacing.md2,
+    paddingBottom: spacing.md2,
+    paddingHorizontal: spacing.lg,
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 348,
+    borderWidth: 1,
+    borderColor: commonColors.borderLight,
     ...shadows.modal,
   },
   headerRow: {
@@ -142,29 +172,34 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm2,
   },
-  stepChip: {
+  labelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+    flexShrink: 1,
+  },
+  dot: { width: 7, height: 7, borderRadius: borderRadius.full },
+  label: { ...typography.overline, flexShrink: 1 },
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.sm2,
-    paddingVertical: 5,
-    borderRadius: borderRadius.full,
-    flexShrink: 1,
+    flexShrink: 0,
   },
-  stepLabel: { ...typography.overline, fontSize: 10, flexShrink: 1 },
-  stepCount: { ...typography.caption, fontSize: 11, fontWeight: '700' },
+  counter: { ...typography.label, fontWeight: '700', color: commonColors.text },
+  counterTotal: { color: commonColors.textTertiary, fontWeight: '600' },
   close: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+    backgroundColor: commonColors.surfaceAlt,
   },
   title: {
     ...typography.h3,
     color: commonColors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs + 1,
   },
   description: {
     ...typography.body,
@@ -172,34 +207,50 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   progressTrack: {
-    height: 5,
-    borderRadius: 3,
+    height: 6,
+    borderRadius: borderRadius.full,
     backgroundColor: commonColors.surfaceAlt,
     overflow: 'hidden',
-    marginTop: spacing.md,
+    marginTop: spacing.md2,
   },
   progressFill: {
-    height: '100%',
-    borderRadius: 3,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: borderRadius.full,
   },
+  // Cortes finos (color de superficie) que segmentan la barra por paso.
+  segments: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+  segmentGap: { width: 2, height: '100%', backgroundColor: commonColors.surface },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+    gap: spacing.sm2,
+    marginTop: spacing.md2,
   },
   backBtn: {
     width: 52,
-    height: 50,
+    height: 52,
     borderRadius: borderRadius.full,
     borderWidth: 1.5,
+    borderColor: commonColors.border,
+    backgroundColor: commonColors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   primaryBtn: {
     flex: 1,
-    height: 50,
+    height: 52,
     borderRadius: borderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',

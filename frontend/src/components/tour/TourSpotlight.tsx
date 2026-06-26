@@ -4,9 +4,13 @@
  * Velo oscuro a pantalla completa con un "agujero" redondeado sobre el elemento
  * resaltado (máscara de `react-native-svg`, cross-platform web + nativo).
  *
- * Profesional y fluido: el recorte se DESPLAZA suavemente de un elemento al
- * siguiente con física de resorte (reanimated), en vez de saltar. Un anillo de
- * acento enmarca el foco para guiar la mirada. Respeta reduce-motion.
+ * Profesional y fluido:
+ *  - El recorte se DESPLAZA suavemente de un elemento al siguiente con física de
+ *    resorte (reanimated), en vez de saltar.
+ *  - Doble anillo: un halo de acento difuso (suave, baja opacidad) + un anillo
+ *    nítido que enmarca el foco, para guiar la mirada sin estridencias.
+ *  - Pulso muy sutil del halo (respira) que llama la atención al elemento sin
+ *    distraer. Respeta reduce-motion (sin pulso, corte directo).
  */
 import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
@@ -16,6 +20,9 @@ import Animated, {
   useAnimatedProps,
   withSpring,
   withTiming,
+  withRepeat,
+  withSequence,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import type { TargetRect } from './types';
 import { useReducedMotion } from '../../theme/motion';
@@ -34,9 +41,10 @@ interface Props {
   accent?: string;
 }
 
-const RADIUS = 18;
+const RADIUS = 16;
+const HALO_GAP = 6;
 // Resorte suave y profesional para el desplazamiento del foco.
-const SPRING = { damping: 22, stiffness: 200, mass: 0.9 };
+const SPRING = { damping: 24, stiffness: 210, mass: 0.9 };
 
 export function TourSpotlight({
   width,
@@ -64,6 +72,8 @@ export function TourSpotlight({
   const y = useSharedValue(target.y);
   const w = useSharedValue(target.w);
   const h = useSharedValue(target.h);
+  // Pulso del halo (0 = reposo, 1 = expandido). Respira sutilmente.
+  const pulse = useSharedValue(0);
 
   useEffect(() => {
     if (reduced) {
@@ -76,20 +86,38 @@ export function TourSpotlight({
     // Si aparece/desaparece (w/h en 0), un fade rápido; si se mueve entre
     // elementos, un resorte que desliza el foco.
     const appearing = w.value === 0 || h.value === 0;
-    const cfg = appearing ? undefined : SPRING;
     if (appearing) {
       x.value = target.x;
       y.value = target.y;
       w.value = withTiming(target.w, { duration: 220 });
       h.value = withTiming(target.h, { duration: 220 });
     } else {
-      x.value = withSpring(target.x, cfg);
-      y.value = withSpring(target.y, cfg);
-      w.value = withSpring(target.w, cfg);
-      h.value = withSpring(target.h, cfg);
+      x.value = withSpring(target.x, SPRING);
+      y.value = withSpring(target.y, SPRING);
+      w.value = withSpring(target.w, SPRING);
+      h.value = withSpring(target.h, SPRING);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target.x, target.y, target.w, target.h, reduced]);
+
+  // Pulso continuo del halo (solo si hay target y no se pidió reducir motion).
+  useEffect(() => {
+    if (reduced || !rect) {
+      cancelAnimation(pulse);
+      pulse.value = 0;
+      return;
+    }
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1100 }),
+        withTiming(0, { duration: 1100 }),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(pulse);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced, rect]);
 
   const holeProps = useAnimatedProps(() => ({
     x: x.value,
@@ -98,12 +126,25 @@ export function TourSpotlight({
     height: Math.max(0, h.value),
   }));
 
+  // Anillo nítido pegado al agujero.
   const ringProps = useAnimatedProps(() => ({
     x: x.value,
     y: y.value,
     width: Math.max(0, w.value),
     height: Math.max(0, h.value),
   }));
+
+  // Halo difuso que respira: se separa unos px del anillo según el pulso.
+  const haloProps = useAnimatedProps(() => {
+    const grow = HALO_GAP + pulse.value * 5;
+    return {
+      x: x.value - grow,
+      y: y.value - grow,
+      width: Math.max(0, w.value + grow * 2),
+      height: Math.max(0, h.value + grow * 2),
+      opacity: 0.16 + (1 - pulse.value) * 0.12,
+    };
+  });
 
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -115,7 +156,18 @@ export function TourSpotlight({
       </Defs>
       {/* Velo con el agujero recortado. */}
       <Rect x={0} y={0} width={width} height={height} fill={overlayColor} mask="url(#tour-hole)" />
-      {/* Anillo de acento que enmarca el foco (se desliza con el agujero). */}
+      {/* Halo difuso de acento que respira (guía la mirada con suavidad). */}
+      {!!accent && rect && (
+        <AnimatedRect
+          animatedProps={haloProps}
+          rx={RADIUS + HALO_GAP}
+          ry={RADIUS + HALO_GAP}
+          fill="none"
+          stroke={accent}
+          strokeWidth={6}
+        />
+      )}
+      {/* Anillo nítido que enmarca el foco (se desliza con el agujero). */}
       {!!accent && rect && (
         <AnimatedRect
           animatedProps={ringProps}

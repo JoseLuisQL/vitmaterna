@@ -55,6 +55,10 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
   const [steps, setSteps] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<TargetRect | null>(null);
+  // ¿Ya se resolvió la posición del paso actual? Para pasos con target, la
+  // tarjeta permanece oculta hasta que el target se midió (o se agotaron los
+  // reintentos), evitando que aparezca centrada y luego "salte" a su sitio.
+  const [resolved, setResolved] = useState(false);
   // Altura real de la tarjeta (medida con onLayout) para posicionarla sin tapar
   // el elemento resaltado. Mientras no se conoce, se usa una estimación.
   const [cardHeight, setCardHeight] = useState(0);
@@ -116,6 +120,7 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
     let active = true;
     cancelled.current = false;
     setRect(null);
+    setResolved(false);
     setCardHeight(0); // re-medir la altura de la tarjeta para este paso
 
     (async () => {
@@ -145,8 +150,11 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
       }
 
       if (!step.targetId) {
-        // Paso centrado (sin spotlight).
-        if (active) setRect(null);
+        // Paso centrado (sin spotlight): se muestra de inmediato.
+        if (active) {
+          setRect(null);
+          setResolved(true);
+        }
         return;
       }
 
@@ -169,13 +177,19 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
 
         const measured = await measureTarget(step.targetId);
         if (measured) {
-          if (active) setRect(measured);
+          if (active) {
+            setRect(measured);
+            setResolved(true);
+          }
           return;
         }
         await new Promise((r) => setTimeout(r, MEASURE_DELAY));
       }
       // No se pudo medir: mostrar el paso centrado (no romper el flujo).
-      if (active) setRect(null);
+      if (active) {
+        setRect(null);
+        setResolved(true);
+      }
     })();
 
     return () => {
@@ -186,6 +200,12 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
   // Animación de entrada suave de la tarjeta cada vez que cambia el paso o se
   // resuelve la posición del target (transición fluida y profesional).
   useEffect(() => {
+    // Solo animamos la entrada cuando la posición del paso ya está resuelta
+    // (evita el "salto" de la tarjeta desde el centro a su posición final).
+    if (!resolved) {
+      appear.setValue(0);
+      return;
+    }
     if (reduced) {
       appear.setValue(1);
       return;
@@ -193,13 +213,13 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
     appear.setValue(0);
     const t = Animated.timing(appear, {
       toValue: 1,
-      duration: 260,
+      duration: 240,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     });
     t.start();
     return () => t.stop();
-  }, [index, rect, reduced, appear]);
+  }, [index, resolved, reduced, appear]);
 
   const handleNext = useCallback(() => {
     haptics.selection();
@@ -246,11 +266,12 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
           styles.tooltipWrap,
           { top, left, width: cardWidth },
           {
-            opacity: appear,
-            transform: [{ translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+            // Oculta hasta resolver la posición (no parpadea ni salta).
+            opacity: resolved ? appear : 0,
+            transform: [{ translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
           },
         ]}
-        pointerEvents="box-none"
+        pointerEvents={resolved ? 'box-none' : 'none'}
       >
         <TourTooltip
           label={step.label}

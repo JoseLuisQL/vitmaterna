@@ -1,10 +1,12 @@
 /**
- * VITMATERNA — Recorrido guiado de la gestante (completo).
+ * VITMATERNA — Recorrido guiado de la gestante (completo y depurado).
  *
  * Cubre TODAS las funciones que la gestante debe saber usar, navegando por cada
- * módulo y resaltando su elemento clave. Textos en lenguaje simple y cercano,
- * para usuarias sin experiencia con apps. El motor centra y resalta el elemento
- * con una transición suave, y la tarjeta nunca lo tapa.
+ * módulo y resaltando su elemento clave UNA sola vez por elemento (sin pasos
+ * repetidos sobre el mismo target, para que el foco siempre avance y nunca
+ * parezca "trabado"). Textos en lenguaje simple y cercano, para usuarias sin
+ * experiencia con apps. El motor centra y resalta el elemento con una transición
+ * suave, y la tarjeta nunca lo tapa.
  */
 import { TOUR_TARGETS } from './targets';
 import type { TourStep } from '../types';
@@ -12,12 +14,13 @@ import type { TourStep } from '../types';
 const HOME = '/(gestante)/(tabs)';
 
 export const gestanteTourSteps: TourStep[] = [
-  // 1) Bienvenida
+  // 1) Bienvenida (sin spotlight, centrado)
   {
     navigateTo: HOME,
-    title: 'Conoce tu app',
+    label: 'Recorrido',
+    title: 'Conoce tu app en 1 minuto',
     description:
-      'Te mostramos para qué sirve cada parte, en pasos cortos. Toca "Siguiente" para avanzar; puedes salir cuando quieras.',
+      'Te mostramos para qué sirve cada parte, en pasos cortos. Avanza con "Siguiente"; puedes salir cuando quieras.',
   },
 
   // ── INICIO ──────────────────────────────────────────────────────────────
@@ -27,7 +30,7 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Inicio',
     title: 'En qué semana vas',
     description:
-      'Esta barra muestra la semana de tu embarazo y cuánto has avanzado. Se actualiza sola; no tienes que hacer nada.',
+      'Esta barra muestra la semana de tu embarazo y cuánto has avanzado. Se actualiza sola.',
   },
   {
     navigateTo: HOME,
@@ -35,7 +38,7 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Inicio',
     title: 'Tu próxima cita',
     description:
-      'Aquí ves el día y la hora de tu siguiente control. Toca "Confirmar asistencia" para avisar que vas a ir.',
+      'Aquí ves el día y la hora de tu siguiente control. Toca "Confirmar asistencia" para avisar que irás.',
   },
   {
     navigateTo: HOME,
@@ -51,7 +54,7 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Inicio',
     title: 'Ayuda rápida',
     description:
-      'Si te sientes mal: "Reportar" avisa a tu obstetra, y "Emergencia" envía tu ubicación para pedir auxilio.',
+      'Si te sientes mal: "Reportar" avisa a tu obstetra y "Emergencia" envía tu ubicación para pedir auxilio.',
   },
 
   // ── CITAS ───────────────────────────────────────────────────────────────
@@ -59,17 +62,9 @@ export const gestanteTourSteps: TourStep[] = [
     navigateTo: `${HOME}/citas`,
     targetId: TOUR_TARGETS.gestanteCitas,
     label: 'Citas',
-    title: 'Tus controles',
+    title: 'Tus controles prenatales',
     description:
-      'Lleva la cuenta de tus controles (la meta es 8). Aquí se ven cuántos llevas y los que faltan.',
-  },
-  {
-    navigateTo: `${HOME}/citas`,
-    targetId: TOUR_TARGETS.gestanteCitas,
-    label: 'Citas',
-    title: 'Confirmar o cambiar una cita',
-    description:
-      'Toca cualquier cita para ver sus detalles. Desde ahí puedes confirmar que asistirás o pedir cambiarla de día.',
+      'Lleva la cuenta de tus controles (la meta es 8). Toca cualquier cita para confirmarla o pedir cambiarla de día.',
   },
 
   // ── TRATAMIENTO ─────────────────────────────────────────────────────────
@@ -79,15 +74,7 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Tratamiento',
     title: 'Marca lo que tomas',
     description:
-      'Cada vez que tomes una vitamina o pastilla, márcala con "Marcar como tomado". Así no se te olvida.',
-  },
-  {
-    navigateTo: `${HOME}/tratamiento`,
-    targetId: TOUR_TARGETS.gestanteTratamiento,
-    label: 'Tratamiento',
-    title: 'Tu constancia',
-    description:
-      'Más abajo verás tu racha y tu porcentaje de cumplimiento. Tu obstetra ve que las estás tomando bien.',
+      'Cada vez que tomes una vitamina o pastilla, márcala con "Marcar como tomado". Así llevas tu constancia y tu obstetra la ve.',
   },
 
   // ── CHAT ────────────────────────────────────────────────────────────────
@@ -107,7 +94,7 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Aprende',
     title: 'Información para ti',
     description:
-      'Artículos sencillos elegidos según tu mes de embarazo. Búscalos, guárdalos con el corazón y calcula tus semanas con "Mis semanas".',
+      'Artículos sencillos según tu mes de embarazo. Búscalos, guárdalos con el corazón y calcula tus semanas.',
   },
 
   // ── PERFIL ──────────────────────────────────────────────────────────────
@@ -117,7 +104,7 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Mi perfil',
     title: 'Tus datos y tu fecha',
     description:
-      'Aquí editas tus datos y registras tu fecha de última regla (FUM). Con ella la app calcula tus semanas.',
+      'Aquí editas tus datos y registras tu fecha de última regla (FUM). Con ella calculamos tus semanas.',
   },
   {
     navigateTo: `${HOME}/perfil`,
@@ -133,12 +120,13 @@ export const gestanteTourSteps: TourStep[] = [
     label: 'Mi perfil',
     title: 'Repite este recorrido',
     description:
-      'Cuando quieras volver a ver esta guía, tócala aquí o búscala en el menú como "Conoce tu app".',
+      'Cuando quieras volver a ver esta guía, tócala aquí como "Conoce tu app".',
   },
 
-  // ── CIERRE ──────────────────────────────────────────────────────────────
+  // ── CIERRE (sin spotlight, centrado) ──────────────────────────────────────
   {
     navigateTo: HOME,
+    label: 'Listo',
     title: '¡Eso es todo!',
     description:
       'Ya sabes usar tu app. Explora con calma; tu obstetra te acompaña en cada paso.',
