@@ -29,6 +29,8 @@ import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
 import { ToggleTabs, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
 import { SearchField } from '../../../src/components/ui/Field';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { resolveMediaUrl } from '../../../src/services/api';
@@ -311,6 +313,7 @@ type Seccion = 'recomendados' | 'parati' | 'biblioteca' | 'favoritos';
 export default function EducacionScreen(): React.ReactElement {
   const router = useRouter();
   const { webShell, select } = useResponsive();
+  const educacionTourTarget = useTourTarget(TOUR_TARGETS.gestanteEducacion);
   const webBodyMax = select({ base: 9999, lg: webLayout.contentMaxWidth.lg, xl: webLayout.contentMaxWidth.xl, xxl: webLayout.contentMaxWidth.xxl });
   const [query, setQuery] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
@@ -361,7 +364,7 @@ export default function EducacionScreen(): React.ReactElement {
   );
 
   const renderHeader = () => (
-    <View>
+    <View ref={educacionTourTarget} collapsable={false}>
       {/* Buscador */}
       <SearchField
         value={query}

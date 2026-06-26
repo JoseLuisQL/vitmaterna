@@ -20,6 +20,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { ProgressRing } from '../../../src/components/ui/ProgressRing';
 import { useToast } from '../../../src/components/ui';
@@ -271,6 +273,7 @@ const calStyles = StyleSheet.create({
 
 export default function TratamientoScreen(): React.ReactElement {
   const { webShell, select } = useResponsive();
+  const tratamientoTourTarget = useTourTarget(TOUR_TARGETS.gestanteTratamiento);
   const webBodyMax = select({ base: 9999, lg: webLayout.contentMaxWidth.lg, xl: webLayout.contentMaxWidth.xl, xxl: webLayout.contentMaxWidth.xxl });
   const { data: treatments, isLoading, refetch, isRefetching } = useTreatments();
   const { mutate: logTreatment } = useLogTreatment();
@@ -294,7 +297,7 @@ export default function TratamientoScreen(): React.ReactElement {
     <>
       {/* Resumen de HOY: lo más accionable, arriba del todo */}
       {activos.length > 0 && (
-        <View style={[styles.card, styles.todayCard]}>
+        <View ref={tratamientoTourTarget} collapsable={false} style={[styles.card, styles.todayCard]}>
           <View style={styles.todayIconWrap}>
             <Pill size={22} color={BRAND} />
           </View>

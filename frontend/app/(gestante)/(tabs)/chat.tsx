@@ -14,6 +14,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
@@ -36,6 +38,7 @@ const BRAND = gestanteColors.primary;
 export default function GestanteChatScreen() {
   const router = useRouter();
   const { webShell } = useResponsive();
+  const chatTourTarget = useTourTarget(TOUR_TARGETS.gestanteChat);
   const { user } = useAuthStore();
   const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
@@ -159,14 +162,16 @@ export default function GestanteChatScreen() {
   );
 
   const input = (
-    <ChatInput
-      value={inputText}
-      onChangeText={(t) => { setInputText(t); notifyTyping(); }}
-      onSend={handleSend}
-      onAttach={handleAttachPhoto}
-      uploading={uploading}
-      accent={BRAND}
-    />
+    <View ref={chatTourTarget} collapsable={false}>
+      <ChatInput
+        value={inputText}
+        onChangeText={(t) => { setInputText(t); notifyTyping(); }}
+        onSend={handleSend}
+        onAttach={handleAttachPhoto}
+        uploading={uploading}
+        accent={BRAND}
+      />
+    </View>
   );
 
   // ── WEB: cabecera del ScreenLayout + hilo ──

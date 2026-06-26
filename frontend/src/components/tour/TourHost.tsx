@@ -13,7 +13,7 @@
  * captura toques fuera de la tarjeta (no se filtran a la app debajo).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Pressable, useWindowDimensions, Platform, InteractionManager } from 'react-native';
+import { View, StyleSheet, Pressable, Animated, Easing, useWindowDimensions, Platform, InteractionManager } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboarding } from '../../hooks/useOnboarding';
@@ -21,6 +21,7 @@ import { colors as roleColorMap, commonColors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { zIndex } from '../../theme/zIndex';
 import { useResponsive } from '../../theme/responsive';
+import { useReducedMotion } from '../../theme/motion';
 import { haptics } from '../../utils/haptics';
 import type { UserRole } from '../../types/user';
 import type { TargetRect, TourStep } from './types';
@@ -31,8 +32,10 @@ import { TourTooltip } from './TourTooltip';
 
 const TOOLTIP_WIDTH = 320;
 const TOOLTIP_GAP = 16;
-const MEASURE_RETRIES = 6;
-const MEASURE_DELAY = 120;
+const MEASURE_RETRIES = 12;
+const MEASURE_DELAY = 140;
+// Margen tras navegar a otra pantalla, para que monte y registre sus targets.
+const NAV_SETTLE_MS = 380;
 
 interface Props {
   /** Se llama cuando el tour termina (finalizado u omitido). */
@@ -45,11 +48,14 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
   const role = (useAuthStore((s) => s.user?.role) as UserRole | undefined) ?? 'gestante';
   const accent = (roleColorMap[role] ?? roleColorMap.gestante).primary;
   const { markTourDone } = useOnboarding();
+  const reduced = useReducedMotion();
 
   const [steps, setSteps] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<TargetRect | null>(null);
   const cancelled = useRef(false);
+  // Animación de aparición de la tarjeta/spotlight en cada paso (fade + leve sube).
+  const appear = useRef(new Animated.Value(0)).current;
 
   const platform: 'web' | 'mobile' = webShell ? 'web' : 'mobile';
 
@@ -107,9 +113,11 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
     setRect(null);
 
     (async () => {
+      let didNavigate = false;
       if (step.navigateTo) {
         try {
           router.navigate(step.navigateTo as any);
+          didNavigate = true;
         } catch {
           /* ruta inválida: continuar sin navegar */
         }
@@ -122,6 +130,13 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
         setTimeout(() => resolve(), 50);
         return () => task?.cancel?.();
       });
+
+      // Tras navegar a otra pantalla, dar tiempo a que monte y registre sus
+      // targets (la transición de ruta + carga de datos puede tardar).
+      if (didNavigate) {
+        await new Promise((r) => setTimeout(r, NAV_SETTLE_MS));
+        if (!active || cancelled.current) return;
+      }
 
       if (!step.targetId) {
         // Paso centrado (sin spotlight).
@@ -162,6 +177,24 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
     };
   }, [step]);
 
+  // Animación de entrada suave de la tarjeta cada vez que cambia el paso o se
+  // resuelve la posición del target (transición fluida y profesional).
+  useEffect(() => {
+    if (reduced) {
+      appear.setValue(1);
+      return;
+    }
+    appear.setValue(0);
+    const t = Animated.timing(appear, {
+      toValue: 1,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    t.start();
+    return () => t.stop();
+  }, [index, rect, reduced, appear]);
+
   const handleNext = useCallback(() => {
     haptics.selection();
     setIndex((i) => i + 1);
@@ -191,7 +224,17 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
         />
       </Pressable>
 
-      <View style={[styles.tooltipWrap, tooltipStyle]} pointerEvents="box-none">
+      <Animated.View
+        style={[
+          styles.tooltipWrap,
+          tooltipStyle,
+          {
+            opacity: appear,
+            transform: [{ translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+          },
+        ]}
+        pointerEvents="box-none"
+      >
         <TourTooltip
           label={step.label}
           title={step.title}
@@ -205,7 +248,7 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
           onPrev={handlePrev}
           onSkip={finish}
         />
-      </View>
+      </Animated.View>
     </View>
   );
 }

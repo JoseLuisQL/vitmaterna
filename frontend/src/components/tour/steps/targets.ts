@@ -6,11 +6,16 @@
  * que las pantallas los consuman sin acoplarse a la lista de pasos.
  */
 export const TOUR_TARGETS = {
-  // Gestante
+  // Gestante — inicio
   gestanteHomeRibbon: 'tour-gestante-ribbon',
   gestanteNextAppointment: 'tour-gestante-next-appointment',
   gestanteTreatment: 'tour-gestante-treatment',
   gestanteQuickActions: 'tour-gestante-quick-actions',
+  // Gestante — módulos (cada pantalla)
+  gestanteCitas: 'tour-gestante-citas',
+  gestanteTratamiento: 'tour-gestante-tratamiento',
+  gestanteChat: 'tour-gestante-chat',
+  gestanteEducacion: 'tour-gestante-educacion',
   // Obstetra
   obstetraKpis: 'tour-obstetra-kpis',
   obstetraRisk: 'tour-obstetra-risk',

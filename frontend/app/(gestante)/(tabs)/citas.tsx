@@ -13,6 +13,8 @@ import {
 import { AppModal, AppButton, useToast, ToggleTabs, ListSkeleton } from '../../../src/components/ui';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { DataTable } from '../../../src/components/web';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -89,6 +91,7 @@ function statusMeta(estado: string) {
 export default function AppointmentsScreen() {
   const toast = useToast();
   const { webShell, select } = useResponsive();
+  const citasTourTarget = useTourTarget(TOUR_TARGETS.gestanteCitas);
   // Ancho máximo del cuerpo en web, escalado por breakpoint (igual que el header
   // de ScreenLayout width="wide"): así el contenido acompaña al ancho disponible
   // en vez de quedar fijo a 1024 centrado.
@@ -317,7 +320,7 @@ export default function AppointmentsScreen() {
   const canRescheduleFromConfirmed = selected && (selected.estado === 'programada' || selected.estado === 'confirmada');
 
   const ProgressHeader = activeTab === 'upcoming' ? (
-    <View style={styles.progressCard}>
+    <View ref={citasTourTarget} collapsable={false} style={styles.progressCard}>
       <View style={styles.progressHeaderRow}>
         <Text style={styles.progressTitle}>Controles prenatales</Text>
         <Text style={styles.progressCount}>{completados} de {META_CONTROLES}</Text>
