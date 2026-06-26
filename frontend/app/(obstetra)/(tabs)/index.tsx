@@ -28,6 +28,9 @@ import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = obstetraColors.primary;
 
+/** Máximo de citas a mostrar en el widget "Citas de hoy" del dashboard web. */
+const DASHBOARD_TODAY_LIMIT = 8;
+
 /** KPI sobrio: icono neutro + cifra + etiqueta. Acento opcional solo en la cifra. */
 function Kpi({
   icon: Icon, value, label, onPress, alert,
@@ -219,7 +222,14 @@ export default function ObstetraDashboard(): React.ReactElement {
               </View>
               <View style={{ gap: spacing.sm, flex: 1 }}>
                 {appointments && appointments.length > 0 ? (
-                  appointments.map((item: any) => (
+                  // Widget de dashboard: este es un resumen del día acotado, no un
+                  // feed. Se renderiza dentro del ScrollView de dos columnas, por
+                  // lo que NO se usa FlashList (anidar una lista virtualizada en un
+                  // ScrollView de la misma orientación rompe la virtualización).
+                  // En su lugar se acota la cantidad visible; "Ver todas" lleva al
+                  // cronograma completo, evitando un render sin límite si el día
+                  // tuviera muchísimas citas.
+                  appointments.slice(0, DASHBOARD_TODAY_LIMIT).map((item: any) => (
                     <TouchableOpacity
                       key={item.id || item._id}
                       style={[styles.appointmentCard, { marginBottom: 0 }]}
@@ -246,6 +256,17 @@ export default function ObstetraDashboard(): React.ReactElement {
                   ))
                 ) : (
                   renderEmpty()
+                )}
+                {appointments && appointments.length > DASHBOARD_TODAY_LIMIT && (
+                  <TouchableOpacity
+                    onPress={() => router.push('/(obstetra)/(tabs)/cronograma')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver las ${appointments.length} citas de hoy`}
+                  >
+                    <Text style={styles.moreLink}>
+                      Ver {appointments.length - DASHBOARD_TODAY_LIMIT} citas más
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -323,6 +344,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm },
   sectionTitle: { ...typography.label, fontWeight: '700', color: commonColors.text },
   sectionLink: { ...typography.caption, color: BRAND, fontWeight: '600' },
+  moreLink: { ...typography.bodySm, color: BRAND, fontWeight: '600', textAlign: 'center', paddingVertical: spacing.sm },
 
   riskCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm, ...shadows.card },
   riskRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },

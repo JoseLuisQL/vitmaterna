@@ -391,10 +391,14 @@ const applyTakenToday = (t: any) => {
 
 export const fetchObstetraDashboard = async () => {
   try {
-    const [patientsRes, appointmentsRes, alertsRes] = await Promise.all([
-      api.get('/patients', { params: { limit: 1000 } }).catch(e => {
-        if (__DEV__) console.warn('Dashboard: no se pudo cargar pacientes', e?.message);
-        return { data: { data: [] } };
+    // `totalPatients` y `riskDistribution` se obtienen de un endpoint de
+    // agregación (conteo en BD), en vez de descargar toda la tabla de pacientes
+    // (`limit:1000`) para contar en el cliente. Mucho más liviano en red,
+    // crítico en zonas con conexión limitada.
+    const [statsRes, appointmentsRes, alertsRes] = await Promise.all([
+      api.get('/patients/stats').catch(e => {
+        if (__DEV__) console.warn('Dashboard: no se pudo cargar estadísticas', e?.message);
+        return { data: { data: { totalPatients: 0, riskDistribution: { low: 0, medium: 0, high: 0 } } } };
       }),
       api.get('/appointments', { params: { today: true } }).catch(e => {
         if (__DEV__) console.warn('Dashboard: no se pudo cargar citas', e?.message);
@@ -405,20 +409,20 @@ export const fetchObstetraDashboard = async () => {
         return { data: { data: [] } };
       }),
     ]);
-    
-    const patients = patientsRes.data?.data || [];
+
+    const stats = statsRes.data?.data || { totalPatients: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
     const appointments = appointmentsRes.data?.data || [];
     const alertsList = alertsRes.data?.data || [];
-    
+
     const riskDistribution = {
-      low: patients.filter((p: any) => p.nivelRiesgo === 'verde').length,
-      medium: patients.filter((p: any) => p.nivelRiesgo === 'amarillo').length,
-      high: patients.filter((p: any) => p.nivelRiesgo === 'rojo').length,
+      low: stats.riskDistribution?.low ?? 0,
+      medium: stats.riskDistribution?.medium ?? 0,
+      high: stats.riskDistribution?.high ?? 0,
     };
 
-    return { 
-      totalPatients: patients.length, 
-      appointmentsToday: appointments.length, 
+    return {
+      totalPatients: stats.totalPatients ?? 0,
+      appointmentsToday: appointments.length,
       alerts: alertsList.length,
       completed: appointments.filter((a: any) => a.estado === 'completada').length,
       riskDistribution,

@@ -21,6 +21,13 @@ export const getPatientsSchema = {
   }),
 };
 
+export const getPatientStatsSchema = {
+  query: z.object({
+    obstetraId: z.string().uuid().optional(),
+    estado: z.enum(['activa', 'parto', 'puerperio', 'inactiva']).optional(),
+  }),
+};
+
 export const getPatientByIdSchema = {
   params: z.object({
     id: z.string().uuid('El ID de la gestante debe ser un UUID válido'),

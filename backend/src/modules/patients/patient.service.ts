@@ -102,6 +102,45 @@ export class PatientService {
   }
 
   /**
+   * Estadísticas agregadas de gestantes para el dashboard del obstetra.
+   *
+   * Sustituye al patrón anterior (descargar `/patients?limit=1000` y contar en
+   * el cliente). Hace el conteo en la base de datos con `groupBy`, devolviendo
+   * solo los números: total de gestantes y distribución por nivel de riesgo.
+   *
+   * Acepta los mismos filtros de alcance que `findAll` (obstetraId, estado) para
+   * poder acotar a las pacientes de una obstetra si se desea.
+   */
+  async getStats(filters: { obstetraId?: string; estado?: string } = {}) {
+    const where: any = {};
+    if (filters.estado) where.estado = filters.estado;
+    if (filters.obstetraId) {
+      where.OR = [
+        { appointments: { some: { obstetraId: filters.obstetraId } } },
+        { prenatalControls: { some: { obstetraId: filters.obstetraId } } },
+      ];
+    }
+
+    const grouped = await prisma.gestante.groupBy({
+      by: ['nivelRiesgo'],
+      where,
+      _count: { _all: true },
+    });
+
+    const riskDistribution = { low: 0, medium: 0, high: 0 };
+    let total = 0;
+    for (const row of grouped) {
+      const count = row._count._all;
+      total += count;
+      if (row.nivelRiesgo === 'verde') riskDistribution.low = count;
+      else if (row.nivelRiesgo === 'amarillo') riskDistribution.medium = count;
+      else if (row.nivelRiesgo === 'rojo') riskDistribution.high = count;
+    }
+
+    return { totalPatients: total, riskDistribution };
+  }
+
+  /**
    * Calcula la predicción de inasistencia de una gestante a partir de su
    * historial de citas y su adherencia. Centraliza la lógica para reutilizarla.
    */

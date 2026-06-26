@@ -17,7 +17,10 @@
 | Lógica de negocio | Completa y por dominios | 8/10 |
 | Rendimiento | Bueno, con puntos de mejora | 7/10 |
 | Calidad de código | Alta, tipado, testeado | 8/10 |
-| Seguridad de rutas | **Punto débil** | 5/10 |
+| Seguridad de rutas | **Resuelto** (RoleGuard en los 3 layouts) | 8.5/10 |
+
+> **Actualización (jun 2026):** varias observaciones de este documento ya fueron
+> resueltas. Ver la sección **§10 — Estado de las recomendaciones** al final.
 
 ---
 
@@ -161,7 +164,7 @@ Chat profesional: reconexión automática, fallback websocket→polling (robusto
 - **Cross-platform** consciente: cada API sensible (SecureStore, SQLite, geolocation, push) tiene rama web/nativo.
 
 ### Debilidades
-1. **🔴 Falta protección de rutas por rol** (el punto más serio). Los layouts `(gestante)/_layout.tsx`, `(obstetra)/_layout.tsx`, `(admin)/_layout.tsx` **no verifican el rol** del usuario — solo configuran estilos. La separación por rol se hace **únicamente** en la redirección inicial (`app/index.tsx`). Si un usuario navega manualmente (deep link) a una ruta de otro rol, no hay un `<Redirect>` guard que lo impida. La seguridad real depende del backend (correcto), pero el frontend debería añadir guards en cada layout para defensa en profundidad y evitar pantallas rotas. **Recomendación**: en cada `_layout` de rol, leer `useAuthStore` y `<Redirect>` si el rol no coincide o no hay sesión.
+1. **~~🔴 Falta protección de rutas por rol~~ → RESUELTO.** Ya existe `src/components/layout/RoleGuard.tsx` y está cableado en los tres layouts de rol (`(gestante)/_layout.tsx`, `(obstetra)/_layout.tsx`, `(admin)/_layout.tsx`). El guard espera a `isInitialized`, redirige a login sin sesión, redirige al área propia si el rol no coincide (defensa contra deep-links) y fuerza el cambio de contraseña inicial. Defensa en profundidad correcta sobre la validación del backend.
 2. **`: any` extendido** (ver §6.5).
 3. **Componentes monolíticos** (ver §6.3).
 4. **Coordenadas hardcodeadas** de fallback (Talavera) en el botón de emergencia — aceptable como fallback pero debería ser configurable.
@@ -170,14 +173,14 @@ Chat profesional: reconexión automática, fallback websocket→polling (robusto
 
 ## 8. Resumen de recomendaciones priorizadas
 
-| Prioridad | Acción | Impacto |
-|---|---|---|
-| 🔴 Alta | Añadir guards de rol (`<Redirect>`) en los `_layout.tsx` de cada rol | Seguridad / UX |
-| 🟠 Media | Endpoint de agregación para el dashboard del obstetra (evitar `limit:1000`) | Rendimiento / red |
-| 🟠 Media | Migrar listas largas de `FlatList` → `FlashList` (ya instalada) | Rendimiento |
-| 🟡 Baja | Trocear `gestante/[id].tsx` y `usuarios.tsx` (extraer modales/estado) | Mantenibilidad |
-| 🟡 Baja | Tipar respuestas del backend (reducir `: any`) | Robustez |
-| 🟡 Baja | Completar migración a `useThemedColors()` para dark mode total | Consistencia visual |
+| Prioridad | Acción | Impacto | Estado |
+|---|---|---|---|
+| 🔴 Alta | Añadir guards de rol (`<Redirect>`) en los `_layout.tsx` de cada rol | Seguridad / UX | ✅ Hecho |
+| 🟠 Media | Endpoint de agregación para el dashboard del obstetra (evitar `limit:1000`) | Rendimiento / red | ✅ Hecho |
+| 🟠 Media | Migrar listas largas de `FlatList` → `FlashList` (ya instalada) | Rendimiento | ◑ Parcial |
+| 🟡 Baja | Trocear `gestante/[id].tsx` y `usuarios.tsx` (extraer modales/estado) | Mantenibilidad | Pendiente |
+| 🟡 Baja | Tipar respuestas del backend (reducir `: any`) | Robustez | Pendiente |
+| 🟡 Baja | Completar migración a `useThemedColors()` para dark mode total | Consistencia visual | Pendiente |
 
 ---
 
@@ -185,4 +188,44 @@ Chat profesional: reconexión automática, fallback websocket→polling (robusto
 
 El frontend de VITMATERNA está **bien construido y bastante completo**. Destaca por una arquitectura offline-first de nivel profesional, un sistema de diseño propio y coherente, chat en tiempo real robusto, y una cobertura funcional clínica amplia y rigurosa (referencias CLAP/OPS, semáforo de riesgo, tamizajes). El código está tipado, testeado y comentado con criterio.
 
-Las mejoras pendientes son **acotadas y conocidas**: la prioridad clara es añadir **protección de rutas por rol** en el frontend; el resto (rendimiento de listas, dashboards agregados, trocear pantallas grandes, tipado fino) es optimización incremental, no deuda estructural. En conjunto, es una base sólida y lista para iterar hacia producción.
+Las mejoras pendientes son **acotadas y conocidas**. La prioridad que marcaba este informe (protección de rutas por rol) **ya está resuelta**; el resto (trocear pantallas grandes, tipado fino, dark mode total) es optimización incremental, no deuda estructural. En conjunto, es una base sólida y lista para iterar hacia producción.
+
+---
+
+## 10. Estado de las recomendaciones (jun 2026)
+
+Pase de corrección aplicado sobre los hallazgos de este documento:
+
+### ✅ Protección de rutas por rol — RESUELTO
+`src/components/layout/RoleGuard.tsx` envuelve el `Stack` en los tres `_layout.tsx`
+de rol. Cubre: espera de `isInitialized`, redirección a login sin sesión,
+redirección al área propia si el rol no coincide (deep-links), y cambio de
+contraseña obligatorio. Cierra el punto 🔴 #1.
+
+### ✅ Dashboard del obstetra sin `limit:1000` — RESUELTO
+Nuevo endpoint de agregación **`GET /v1/patients/stats`** (backend
+`patient.service.ts → getStats()`), que cuenta en la base de datos con
+`prisma.groupBy` y devuelve `{ totalPatients, riskDistribution }`. El frontend
+(`fetchObstetraDashboard`) ya no descarga toda la tabla de pacientes solo para
+contar; pide las estadísticas agregadas. Verificado: el resultado coincide
+exactamente con el conteo anterior (4 pacientes · 2/1/1).
+
+### ◑ `FlatList` → `FlashList` — PARCIAL (decisión deliberada)
+- **Migrado:** la **bandeja de conversaciones** del chat del obstetra
+  (`app/(obstetra)/(tabs)/chat.tsx`), una lista vertical que crece.
+- **NO migrado a propósito:**
+  - **`MessageThread`** usa `inverted`, prop que **FlashList v2 eliminó**. Su
+    sustituto para chat (`maintainVisibleContentPosition` + `startRenderingFromBottom`)
+    está marcado *"New arch only"*, lo que es arriesgado en `react-native-web`
+    (uno de los dos targets). Migrarlo requiere validación de scroll en
+    dispositivo; se deja en `FlatList` (estable) hasta poder probarlo.
+  - **"Citas de hoy" (web)** del dashboard del obstetra vive **dentro** del
+    `ScrollView` de dos columnas. Anidar una lista virtualizada en un
+    `ScrollView` de la misma orientación rompe la virtualización. En su lugar se
+    **acotó** el widget (`DASHBOARD_TODAY_LIMIT = 8`) con enlace "Ver N citas más"
+    al cronograma completo — evita render sin límite sin el anti-patrón.
+
+### Pendientes (optimización incremental, sin cambios en este pase)
+- Trocear `gestante/[id].tsx` (2.8k líneas) y `usuarios.tsx`.
+- Tipar respuestas del backend (reducir `: any`).
+- Completar `useThemedColors()` para dark mode total.

@@ -9,7 +9,8 @@
  * - Tiempo real: la lista se reordena/actualiza al recibir mensajes nuevos.
  */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -209,7 +210,7 @@ export default function ObstetraChatScreen() {
         />
       </View>
     ) : (
-    <FlatList
+    <FlashList
       data={filtered}
       keyExtractor={(item) => item.id ?? item.gestanteId ?? item.nombre}
       renderItem={({ item }) => (

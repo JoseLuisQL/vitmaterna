@@ -23,6 +23,14 @@ patientRoutes.get(
   controller.buscarPatient
 );
 
+// Estadísticas agregadas (dashboard del obstetra). Debe ir ANTES de '/:id'
+// para que 'stats' no se interprete como un id de gestante.
+patientRoutes.get(
+  '/stats',
+  validate(schema.getPatientStatsSchema),
+  controller.getPatientStats
+);
+
 patientRoutes.get(
   '/:id',
   validate(schema.getPatientByIdSchema),

@@ -12,6 +12,15 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const getPatientStats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await patientService.getStats(req.query as any);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createPatient = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const obstetraUserId = req.user!.userId;
