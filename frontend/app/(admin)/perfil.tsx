@@ -133,7 +133,7 @@ export default function AdminPerfilScreen(): React.ReactElement {
             <View style={styles.menuCard}>
               <MenuItem icon={<UserCog size={20} color={BRAND} />} title="Editar mis datos" onPress={abrirEdicion} />
               <View style={styles.menuDivider} />
-              <MenuItem icon={<Compass size={20} color={BRAND} />} title="Ver el recorrido de nuevo" onPress={restartTour} />
+              <MenuItem icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
             </View>
 
             <View style={[styles.menuCard, { marginTop: spacing.lg }]}>

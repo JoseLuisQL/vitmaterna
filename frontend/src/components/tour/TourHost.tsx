@@ -14,6 +14,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, Pressable, Animated, Easing, useWindowDimensions, Platform, InteractionManager } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboarding } from '../../hooks/useOnboarding';
@@ -44,6 +45,7 @@ interface Props {
 
 export function TourHost({ onFinish }: Props): React.ReactElement | null {
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { webShell } = useResponsive();
   const role = (useAuthStore((s) => s.user?.role) as UserRole | undefined) ?? 'gestante';
   const accent = (roleColorMap[role] ?? roleColorMap.gestante).primary;
@@ -53,6 +55,9 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
   const [steps, setSteps] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<TargetRect | null>(null);
+  // Altura real de la tarjeta (medida con onLayout) para posicionarla sin tapar
+  // el elemento resaltado. Mientras no se conoce, se usa una estimación.
+  const [cardHeight, setCardHeight] = useState(0);
   const cancelled = useRef(false);
   // Animación de aparición de la tarjeta/spotlight en cada paso (fade + leve sube).
   const appear = useRef(new Animated.Value(0)).current;
@@ -111,6 +116,7 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
     let active = true;
     cancelled.current = false;
     setRect(null);
+    setCardHeight(0); // re-medir la altura de la tarjeta para este paso
 
     (async () => {
       let didNavigate = false;
@@ -207,9 +213,16 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
 
   if (!step || !applicableSteps) return null;
 
-  // Posición y ancho de la tarjeta: bajo el target si cabe, si no encima;
-  // centrada si no hay rect. El ancho se ajusta para no salir de pantalla.
-  const { top, left, cardWidth } = computeTooltipPosition(rect, width, height);
+  // Posición y ancho de la tarjeta. Garantiza que la tarjeta NUNCA tape el
+  // elemento resaltado: la coloca en el lado (arriba/abajo) con más espacio y
+  // dentro de los límites de la pantalla. Usa la altura real medida.
+  const { top, left, cardWidth } = computeTooltipPosition(
+    rect,
+    width,
+    height,
+    cardHeight,
+    insets,
+  );
 
   return (
     <View style={[styles.overlay, { zIndex: zIndex.modal }]} pointerEvents="box-none">
@@ -225,6 +238,10 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
       </Pressable>
 
       <Animated.View
+        onLayout={(e) => {
+          const h = Math.round(e.nativeEvent.layout.height);
+          if (h > 0 && Math.abs(h - cardHeight) > 1) setCardHeight(h);
+        }}
         style={[
           styles.tooltipWrap,
           { top, left, width: cardWidth },
@@ -253,38 +270,66 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
   );
 }
 
+interface Insets { top: number; bottom: number; left: number; right: number }
+
 /**
- * Calcula la posición y el ancho de la tarjeta respecto al target, asegurando
- * que NUNCA se salga de la pantalla (ancho = mín(320, viewport − márgenes)).
+ * Calcula posición y ancho de la tarjeta de forma profesional:
+ *  - Ancho seguro: mín(320, viewport − márgenes).
+ *  - Elige el lado (debajo / encima del elemento) con MÁS espacio libre, de modo
+ *    que la tarjeta NUNCA tape el elemento resaltado.
+ *  - Respeta safe-areas y nunca se sale de la pantalla (clamp en X e Y).
+ *  - Usa la altura real medida (`measuredH`); si aún no se conoce, una estimación.
  */
 function computeTooltipPosition(
   rect: TargetRect | null,
   width: number,
   height: number,
+  measuredH: number,
+  insets: Insets,
 ): { top: number; left: number; cardWidth: number } {
-  const estimatedHeight = 230;
-  // Ancho seguro: tope de 320, pero se encoge en pantallas angostas.
   const cardWidth = Math.min(TOOLTIP_WIDTH, width - spacing.md * 2);
+  const cardH = measuredH > 0 ? measuredH : 240;
+  const topSafe = insets.top + spacing.md;
+  const bottomSafe = height - insets.bottom - spacing.md;
 
+  // Sin target: tarjeta centrada en pantalla.
   if (!rect) {
-    // Centrado horizontal y vertical.
     return {
-      top: Math.max((height - estimatedHeight) / 2, spacing.lg),
+      top: Math.max((height - cardH) / 2, topSafe),
       left: Math.round((width - cardWidth) / 2),
       cardWidth,
     };
   }
 
-  // Horizontal: alinear con el centro del target, sin salirse de la pantalla.
+  // Horizontal: centrar respecto al elemento, con clamp a los bordes.
   let left = rect.x + rect.width / 2 - cardWidth / 2;
   left = Math.max(spacing.md, Math.min(left, width - cardWidth - spacing.md));
 
-  // Vertical: debajo del target si cabe; si no, encima; con clamp a la pantalla.
-  const below = rect.y + rect.height + TOOLTIP_GAP;
-  const fitsBelow = below + estimatedHeight < height - spacing.lg;
-  const top = fitsBelow
-    ? below
-    : Math.max(rect.y - estimatedHeight - TOOLTIP_GAP, spacing.lg);
+  // Espacio libre por encima y por debajo del elemento (descontando el gap).
+  const spaceBelow = bottomSafe - (rect.y + rect.height + TOOLTIP_GAP);
+  const spaceAbove = (rect.y - TOOLTIP_GAP) - topSafe;
+
+  let top: number;
+  if (spaceBelow >= cardH) {
+    // Cabe debajo: justo debajo del elemento.
+    top = rect.y + rect.height + TOOLTIP_GAP;
+  } else if (spaceAbove >= cardH) {
+    // Cabe encima: justo encima del elemento.
+    top = rect.y - TOOLTIP_GAP - cardH;
+  } else {
+    // No cabe completa en ningún lado: usar el lado con más espacio y anclar al
+    // borde seguro (la tarjeta puede recortar su contenido por scroll interno,
+    // pero NO se superpone al elemento resaltado).
+    if (spaceBelow >= spaceAbove) {
+      top = Math.max(rect.y + rect.height + TOOLTIP_GAP, bottomSafe - cardH);
+    } else {
+      top = Math.min(rect.y - TOOLTIP_GAP - cardH, topSafe);
+      top = Math.max(top, topSafe);
+    }
+  }
+
+  // Clamp final dentro de la zona segura.
+  top = Math.max(topSafe, Math.min(top, bottomSafe - cardH));
 
   return { top, left, cardWidth };
 }

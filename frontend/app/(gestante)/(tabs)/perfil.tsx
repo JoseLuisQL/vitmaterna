@@ -219,7 +219,7 @@ export default function PerfilScreen(): React.ReactElement {
         <View style={styles.menuDivider} />
         <MenuItem icon={<HelpCircle size={20} color={BRAND} />} title="Ayuda y Privacidad" onPress={mostrarAyuda} />
         <View style={styles.menuDivider} />
-        <MenuItem icon={<Compass size={20} color={BRAND} />} title="Ver el recorrido de nuevo" onPress={restartTour} />
+        <MenuItem icon={<Compass size={20} color={BRAND} />} title="Conoce tu app" onPress={restartTour} />
       </View>
 
       <View style={[styles.menuCard, { marginTop: spacing.sm + 4 }]}>

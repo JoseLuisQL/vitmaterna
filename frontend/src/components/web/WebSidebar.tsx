@@ -175,10 +175,10 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
             IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s', outlineStyle: 'none' } as any),
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Ver el recorrido guiado de nuevo"
+          accessibilityLabel="Conoce tu app: ver el recorrido guiado"
         >
           <Compass size={18} color={accent} />
-          {!collapsed && <Text style={[styles.tourText, { color: accent }]}>Ver recorrido</Text>}
+          {!collapsed && <Text style={[styles.tourText, { color: accent }]}>Conoce tu app</Text>}
         </Pressable>
 
         {!collapsed && isThemeToggleAvailable && (

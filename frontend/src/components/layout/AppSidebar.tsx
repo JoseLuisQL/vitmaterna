@@ -187,14 +187,14 @@ export function AppSidebar({
                     }}
                     style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
                     accessibilityRole="button"
-                    accessibilityLabel="Ver el recorrido guiado de nuevo"
+                    accessibilityLabel="Conoce tu app: ver el recorrido guiado"
                   >
                     <View style={[styles.itemIcon, { backgroundColor: accentColor + '1A' }]}>
                       <Compass size={20} color={accentColor} />
                     </View>
                     <View style={styles.flex}>
-                      <Text style={styles.itemLabel}>Ver recorrido</Text>
-                      <Text style={styles.itemDesc} numberOfLines={1}>Repite la guía de la app</Text>
+                      <Text style={styles.itemLabel}>Conoce tu app</Text>
+                      <Text style={styles.itemDesc} numberOfLines={1}>Recorrido guiado paso a paso</Text>
                     </View>
                     <ChevronRight size={18} color={commonColors.textTertiary} />
                   </Pressable>
