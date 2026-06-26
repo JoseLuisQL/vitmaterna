@@ -221,13 +221,29 @@
     "vw": 390,
     "vh": 844,
     "rects": {
+      "input": {
+        "x": 128,
+        "y": 1376,
+        "w": 524,
+        "h": 144,
+        "mark": 1,
+        "box": true
+      },
+      "adjuntar": {
+        "x": 24,
+        "y": 1432,
+        "w": 88,
+        "h": 88,
+        "mark": 2,
+        "box": true
+      },
       "enviar": {
         "x": 668,
         "y": 1432,
         "w": 88,
         "h": 88,
         "mark": 3,
-        "box": false
+        "box": true
       }
     }
   },

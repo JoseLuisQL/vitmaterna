@@ -59,16 +59,21 @@ def annotate(img, rects, W, H):
     pad = max(int(W * 0.010), 5)
     # ordenar por número de marca
     items = sorted(rects.values(), key=lambda v: v.get("mark", 99))
+    margin = r + 6  # margen mínimo para que el círculo completo quede visible
     for v in items:
         x, y, w, h = v["x"], v["y"], v["w"], v["h"]
-        # clamp al lienzo
+        # recuadro de realce, recortado al lienzo
         x0, y0 = max(x - pad, 2), max(y - pad, 2)
         x1, y1 = min(x + w + pad, W - 2), min(y + h + pad, H - 2)
         if v.get("box", True):
             d.rounded_rectangle([x0, y0, x1, y1], radius=int(W * 0.025), outline=ACCENT, width=lw)
-        # marca en la esquina superior izquierda del elemento (no tapa el texto)
+        # marca numerada anclada a la esquina del elemento, pero SIEMPRE dentro
+        # del lienzo (clamp del centro): evita que el círculo se recorte cuando
+        # el elemento toca el borde de la pantalla.
         if "mark" in v:
-            draw_marker(d, x0, y0, v["mark"], ACCENT, r)
+            cx = min(max(x0, margin), W - margin)
+            cy = min(max(y0, margin), H - margin)
+            draw_marker(d, cx, cy, v["mark"], ACCENT, r)
     return Image.alpha_composite(img, overlay).convert("RGB")
 
 
