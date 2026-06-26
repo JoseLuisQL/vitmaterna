@@ -58,7 +58,12 @@ export function TourTooltip({
         <X size={18} color={commonColors.textTertiary} />
       </Pressable>
 
-      {!!label && <Text style={[styles.label, { color: accent }]}>{label.toUpperCase()}</Text>}
+      <View style={styles.headerRow}>
+        {!!label && <Text style={[styles.label, { color: accent }]}>{label.toUpperCase()}</Text>}
+        <View style={[styles.stepChip, { backgroundColor: accent }]}>
+          <Text style={styles.stepChipText}>{stepIndex + 1}/{stepCount}</Text>
+        </View>
+      </View>
       <Text style={styles.title} accessibilityRole="header">
         {title}
       </Text>
@@ -121,9 +126,30 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
     zIndex: 1,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+    paddingRight: spacing.xl,
+    gap: spacing.sm,
+  },
   label: {
     ...typography.overline,
-    marginBottom: spacing.xs,
+    flex: 1,
+  },
+  stepChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+    minWidth: 34,
+    alignItems: 'center',
+  },
+  stepChipText: {
+    ...typography.micro,
+    fontSize: 11,
+    color: commonColors.white,
+    fontWeight: '700',
   },
   title: {
     ...typography.h3,

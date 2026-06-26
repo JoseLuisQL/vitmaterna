@@ -35,6 +35,48 @@ export function hasTarget(id: string): boolean {
   return registry.has(id);
 }
 
+/** Resuelve el nodo del DOM (web) a partir del ref, si es posible. */
+function webDomNode(node: any): any {
+  if (!node) return null;
+  if (typeof node.getBoundingClientRect === 'function') return node;
+  // react-native-web a veces guarda el nodo real en estas propiedades.
+  if (node._nativeTag && typeof node._nativeTag.getBoundingClientRect === 'function') return node._nativeTag;
+  return null;
+}
+
+/**
+ * Desplaza el target para que quede CENTRADO en la vista (enfoque inteligente).
+ * - Web: usa scrollIntoView({ block: 'center' }) sobre el nodo del DOM.
+ * - Nativo: best-effort; si el target no es visible, el reintento de medición
+ *   del TourHost lo resuelve igualmente.
+ * Devuelve una promesa que resuelve tras dar tiempo a que el scroll termine.
+ */
+export function scrollTargetIntoView(id: string): Promise<void> {
+  const ref = registry.get(id);
+  const node = ref?.current;
+  if (!node) return Promise.resolve();
+
+  if (Platform.OS === 'web') {
+    const dom = webDomNode(node);
+    if (dom && typeof dom.scrollIntoView === 'function') {
+      try {
+        dom.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      } catch {
+        try {
+          dom.scrollIntoView();
+        } catch {
+          /* ignore */
+        }
+      }
+      // Esperar a que el scroll suave termine antes de medir.
+      return new Promise((r) => setTimeout(r, 360));
+    }
+    return Promise.resolve();
+  }
+
+  return Promise.resolve();
+}
+
 /**
  * Mide el rectángulo (coordenadas de ventana) del target. Resuelve a null si
  * el target no está registrado o no se puede medir (p. ej. aún no montado).

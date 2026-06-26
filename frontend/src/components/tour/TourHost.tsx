@@ -25,7 +25,7 @@ import { haptics } from '../../utils/haptics';
 import type { UserRole } from '../../types/user';
 import type { TargetRect, TourStep } from './types';
 import { _registerTourHost } from './tourController';
-import { measureTarget } from './tourTargets';
+import { measureTarget, scrollTargetIntoView } from './tourTargets';
 import { TourSpotlight } from './TourSpotlight';
 import { TourTooltip } from './TourTooltip';
 
@@ -129,8 +129,23 @@ export function TourHost({ onFinish }: Props): React.ReactElement | null {
         return;
       }
 
+      // Enfoque inteligente: primero esperamos a que el target exista, luego lo
+      // desplazamos para centrarlo en la vista y recién después medimos. Así la
+      // zona resaltada queda siempre visible (no a medias ni fuera de pantalla).
+      let scrolled = false;
       for (let attempt = 0; attempt < MEASURE_RETRIES; attempt++) {
         if (!active || cancelled.current) return;
+
+        // Una vez que el target ya está montado, lo centramos (solo una vez).
+        if (!scrolled) {
+          const exists = await measureTarget(step.targetId);
+          if (exists) {
+            scrolled = true;
+            await scrollTargetIntoView(step.targetId);
+            if (!active || cancelled.current) return;
+          }
+        }
+
         const measured = await measureTarget(step.targetId);
         if (measured) {
           if (active) setRect(measured);

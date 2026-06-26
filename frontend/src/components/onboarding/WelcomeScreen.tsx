@@ -1,35 +1,33 @@
 /**
  * VITMATERNA — WelcomeScreen (bienvenida para usuarios nuevos).
  *
- * Pantalla de introducción de marca que se muestra tras el primer inicio de
- * sesión. Da la bienvenida personalizada ("¡Hola, {nombre}!") y presenta, en
- * pocas láminas, las funciones clave del rol (gestante / obstetra / admin).
+ * Carrusel de bienvenida propio, liviano y profesional. Reemplaza a la librería
+ * externa (que forzaba una imagen PNG pesada por lámina y cargaba lento). Aquí:
+ *   - NO se cargan imágenes: cada lámina usa un icono vectorial (Lucide), por lo
+ *     que la pantalla aparece al instante (regla de rendimiento del sistema de
+ *     diseño: sin assets raster pesados).
+ *   - Diseño calmo y de marca: gradiente del rol, una tarjeta blanca flotante con
+ *     el contenido, indicador de progreso y una sola acción primaria.
+ *   - Accesible: roles/labels, contraste AA, respeta reduce-motion, áreas táctiles
+ *     ≥48, un único CTA primario por pantalla.
  *
- * Construida sobre `@blazejkustra/react-native-onboarding` (Software Mansion),
- * cross-platform web/móvil, tematizada con los tokens del sistema: color del
- * rol, tipografía Inter y voz del producto. El contenido vive en
- * `welcomeSlides.ts`.
- *
- * Al terminar (`onDone`) o si la lib reporta "skip", se considera vista la
- * bienvenida; el llamador decide si continúa con el tour guiado.
+ * Contenido en `welcomeSlides.ts`. Al terminar llama `onStartTour`; al omitir,
+ * `onSkip`.
  */
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Onboarding, {
-  type OnboardingColors,
-  type OnboardingStep,
-} from '@blazejkustra/react-native-onboarding';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated, Easing, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowRight, ArrowLeft, X, Check } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { colors as roleColorMap, commonColors } from '../../theme/colors';
-import { typography, fontFamilies } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 import { VitMaternaLogo } from '../ui/VitMaternaLogo';
 import { welcomeContentForRole } from './welcomeSlides';
 import { haptics } from '../../utils/haptics';
+import { useReducedMotion } from '../../theme/motion';
 import type { UserRole } from '../../types/user';
-
-const WELCOME_IMAGE = require('../../../assets/icon.png');
 
 interface Props {
   /** Se llama al completar la última lámina ("Empezar el recorrido"). */
@@ -43,123 +41,202 @@ export function WelcomeScreen({ onStartTour, onSkip }: Props): React.ReactElemen
   const role = (user?.role as UserRole | undefined) ?? 'gestante';
   const accent = roleColorMap[role] ?? roleColorMap.gestante;
   const content = useMemo(() => welcomeContentForRole(role), [role]);
-  const firstName = user?.firstName?.trim() || '';
-  const introTitle = content.introTitle.replace('{nombre}', firstName || 'bienvenida');
+  const reduced = useReducedMotion();
+  const { width } = useWindowDimensions();
 
-  // Tokens de color del sistema mapeados al contrato de la librería.
-  const themeColors: OnboardingColors = useMemo(
-    () => ({
-      background: {
-        primary: commonColors.background,
-        secondary: commonColors.surface,
-        label: accent.primaryLight,
-        accent: accent.primary,
-      },
-      text: {
-        primary: commonColors.text,
-        secondary: commonColors.textSecondary,
-        contrast: commonColors.white,
-      },
-    }),
-    [accent],
-  );
+  const firstName = user?.firstName?.trim().split(' ')[0] || '';
+  const greeting = content.introTitle.replace('{nombre}', firstName || '');
 
-  const themeFonts = useMemo(
-    () => ({
-      introTitle: fontFamilies.bold,
-      introSubtitle: fontFamilies.regular,
-      introButton: fontFamilies.semibold,
-      stepLabel: fontFamilies.semibold,
-      stepTitle: fontFamilies.bold,
-      stepDescription: fontFamilies.regular,
-      stepButton: fontFamilies.semibold,
-      primaryButton: fontFamilies.semibold,
-      secondaryButton: fontFamilies.semibold,
-    }),
-    [],
-  );
+  // -1 = pantalla de bienvenida (intro); 0..n = láminas.
+  const [index, setIndex] = useState(-1);
+  const total = content.slides.length;
 
-  const steps: OnboardingStep[] = useMemo(
-    () =>
-      content.slides.map((slide, idx) => ({
-        label: slide.label,
-        title: slide.title,
-        description: slide.description,
-        buttonLabel: idx === content.slides.length - 1 ? 'Empezar el recorrido' : 'Siguiente',
-        image: WELCOME_IMAGE,
-        position: 'top' as const,
-      })),
-    [content.slides],
-  );
+  // Animación de transición entre láminas (fade + leve desplazamiento vertical).
+  const anim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduced) {
+      anim.setValue(1);
+      return;
+    }
+    anim.setValue(0);
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [index, reduced, anim]);
+
+  const goNext = useCallback(() => {
+    haptics.selection();
+    if (index >= total - 1) {
+      haptics.success();
+      onStartTour();
+      return;
+    }
+    setIndex((i) => i + 1);
+  }, [index, total, onStartTour]);
+
+  const goPrev = useCallback(() => {
+    haptics.selection();
+    setIndex((i) => Math.max(-1, i - 1));
+  }, []);
+
+  const startSlides = useCallback(() => {
+    haptics.light();
+    setIndex(0);
+  }, []);
+
+  const cardWidth = Math.min(width - spacing.lg * 2, 460);
+  const animStyle = {
+    opacity: anim,
+    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+  };
 
   return (
-    <View style={styles.fill}>
-      <Onboarding
-        colors={themeColors}
-        fonts={themeFonts}
-        animationDuration={420}
-        wrapInModalOnWeb
-        showCloseButton
-        showBackButton
-        steps={steps}
-        onComplete={() => {
-          haptics.success();
-          onStartTour();
-        }}
-        onSkip={onSkip}
-        onStepChange={(i) => {
-          if (i >= 0) haptics.selection();
-        }}
-        background={() => (
-          <LinearGradient
-            colors={accent.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fill}
-          >
-            <View style={styles.haloTop} pointerEvents="none" />
-            <View style={styles.haloBottom} pointerEvents="none" />
-          </LinearGradient>
-        )}
-        introPanel={({ onPressStart }) => (
-          <View style={styles.introPanel} accessibilityRole="summary">
-            <View style={styles.logoPlate} accessibilityRole="image" accessibilityLabel="VITMATERNA">
-              <VitMaternaLogo size={72} />
-            </View>
-            <Text style={styles.introTitle} accessibilityRole="header">
-              {introTitle}
-            </Text>
-            <Text style={styles.introSubtitle}>{content.introSubtitle}</Text>
+    <LinearGradient
+      colors={accent.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.fill}
+    >
+      {/* Halos decorativos suaves (sin imágenes). */}
+      <View style={styles.haloTop} pointerEvents="none" />
+      <View style={styles.haloBottom} pointerEvents="none" />
 
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Botón omitir, siempre accesible arriba a la derecha. */}
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={onSkip}
+            style={({ pressed }) => [styles.skipBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Omitir la introducción"
+            hitSlop={10}
+          >
+            <Text style={styles.skipText}>Omitir</Text>
+            <X size={16} color={commonColors.onColorTextSoft} />
+          </Pressable>
+        </View>
+
+        <View style={styles.center}>
+          {index === -1 ? (
+            // ── Lámina de bienvenida ──────────────────────────────────────
+            <Animated.View style={[styles.intro, { width: cardWidth }, animStyle]}>
+              <View style={styles.logoPlate} accessibilityRole="image" accessibilityLabel="VITMATERNA">
+                <VitMaternaLogo size={64} />
+              </View>
+              <Text style={styles.introTitle} accessibilityRole="header">
+                {greeting ? `¡Hola, ${firstName}!` : '¡Te damos la bienvenida!'}
+              </Text>
+              <Text style={styles.introSubtitle}>{content.introSubtitle}</Text>
+            </Animated.View>
+          ) : (
+            // ── Láminas de funciones ──────────────────────────────────────
+            <Animated.View style={[styles.card, { width: cardWidth }, animStyle]}>
+              <SlideIcon icon={content.slides[index].icon} accent={accent.primary} accentBg={accent.primaryLight} />
+              <Text style={[styles.cardLabel, { color: accent.primary }]}>
+                {content.slides[index].label.toUpperCase()}
+              </Text>
+              <Text style={styles.cardTitle} accessibilityRole="header">
+                {content.slides[index].title}
+              </Text>
+              <Text style={styles.cardDescription}>{content.slides[index].description}</Text>
+            </Animated.View>
+          )}
+        </View>
+
+        {/* Controles inferiores: progreso + acción primaria. */}
+        <View style={[styles.footer, { width: cardWidth, alignSelf: 'center' }]}>
+          {/* Indicador de progreso por puntos. */}
+          <View style={styles.dots} accessibilityLabel={index === -1 ? 'Bienvenida' : `Paso ${index + 1} de ${total}`}>
+            {Array.from({ length: total }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  { backgroundColor: i === index ? commonColors.white : commonColors.onColorTrack },
+                  i === index && styles.dotActive,
+                ]}
+              />
+            ))}
+          </View>
+
+          {index === -1 ? (
             <Pressable
-              onPress={() => {
-                haptics.light();
-                onPressStart();
-              }}
-              style={({ pressed }) => [styles.primaryBtn, pressed && styles.btnPressed]}
+              onPress={startSlides}
+              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel="Conocer la app"
             >
-              <Text style={styles.primaryBtnText}>Conocer la app</Text>
+              <Text style={[styles.primaryBtnText, { color: accent.primary }]}>Conocer la app</Text>
+              <ArrowRight size={20} color={accent.primary} />
             </Pressable>
+          ) : (
+            <View style={styles.navRow}>
+              <Pressable
+                onPress={goPrev}
+                style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Anterior"
+                hitSlop={8}
+              >
+                <ArrowLeft size={22} color={commonColors.white} />
+              </Pressable>
+              <Pressable
+                onPress={goNext}
+                style={({ pressed }) => [styles.primaryBtn, styles.primaryBtnFlex, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={index === total - 1 ? 'Empezar el recorrido' : 'Siguiente'}
+              >
+                <Text style={[styles.primaryBtnText, { color: accent.primary }]}>
+                  {index === total - 1 ? 'Empezar el recorrido' : 'Siguiente'}
+                </Text>
+                {index === total - 1 ? (
+                  <Check size={20} color={accent.primary} />
+                ) : (
+                  <ArrowRight size={20} color={accent.primary} />
+                )}
+              </Pressable>
+            </View>
+          )}
 
+          {index === -1 && (
             <Pressable
               onPress={onSkip}
-              style={({ pressed }) => [styles.ghostBtn, pressed && styles.btnPressed]}
+              style={({ pressed }) => [styles.ghostBtn, pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel="Explorar por mi cuenta"
             >
               <Text style={styles.ghostBtnText}>Explorar por mi cuenta</Text>
             </Pressable>
-          </View>
-        )}
-      />
+          )}
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+}
+
+/** Icono de la lámina dentro de un círculo translúcido blanco. */
+function SlideIcon({
+  icon: Icon,
+  accent,
+  accentBg,
+}: {
+  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  accent: string;
+  accentBg: string;
+}): React.ReactElement {
+  return (
+    <View style={[styles.iconCircle, { backgroundColor: accentBg }]}>
+      <Icon size={34} color={accent} strokeWidth={2} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  safe: { flex: 1, justifyContent: 'space-between' },
   haloTop: {
     position: 'absolute',
     top: -120,
@@ -178,16 +255,31 @@ const styles = StyleSheet.create({
     borderRadius: 160,
     backgroundColor: commonColors.onColorSurfaceFaint,
   },
-  introPanel: {
-    alignItems: 'center',
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    gap: spacing.md,
+    paddingTop: spacing.sm,
+    minHeight: 44,
   },
+  skipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  skipText: { ...typography.label, color: commonColors.onColorTextSoft },
+
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
+
+  // Bienvenida
+  intro: { alignItems: 'center', gap: spacing.md },
   logoPlate: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: commonColors.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -195,43 +287,71 @@ const styles = StyleSheet.create({
     ...({ boxShadow: '0 12px 32px rgba(0,0,0,0.18)' } as any),
     elevation: 10,
   },
-  introTitle: {
-    ...typography.h1,
-    color: commonColors.white,
-    textAlign: 'center',
-  },
+  introTitle: { ...typography.displayXl, fontSize: 30, lineHeight: 38, color: commonColors.white, textAlign: 'center' },
   introSubtitle: {
-    ...typography.body,
+    ...typography.bodyLg,
     color: commonColors.onColorTextSoft,
     textAlign: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+
+  // Lámina de función (tarjeta blanca flotante)
+  card: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xxl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.sm,
+    ...({ boxShadow: '0 16px 40px rgba(0,0,0,0.20)' } as any),
+    elevation: 12,
+  },
+  iconCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.sm,
+  },
+  cardLabel: { ...typography.overline, letterSpacing: 1 },
+  cardTitle: { ...typography.h2, color: commonColors.text, textAlign: 'center' },
+  cardDescription: {
+    ...typography.body,
+    color: commonColors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 23,
+  },
+
+  // Footer / controles
+  footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md, alignItems: 'center' },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 8 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  dotActive: { width: 22 },
+
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, width: '100%' },
+  backBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.full,
+    backgroundColor: commonColors.onColorSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryBtn: {
     width: '100%',
-    maxWidth: 420,
-    height: 52,
+    height: 54,
     borderRadius: borderRadius.full,
     backgroundColor: commonColors.white,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
   },
-  primaryBtnText: {
-    ...typography.button,
-    color: commonColors.text,
-  },
-  ghostBtn: {
-    width: '100%',
-    maxWidth: 420,
-    height: 48,
-    borderRadius: borderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ghostBtnText: {
-    ...typography.button,
-    color: commonColors.onColorTextSoft,
-  },
-  btnPressed: { opacity: 0.85 },
+  primaryBtnFlex: { flex: 1, width: undefined },
+  primaryBtnText: { ...typography.button, fontSize: 16 },
+  ghostBtn: { height: 44, alignItems: 'center', justifyContent: 'center' },
+  ghostBtnText: { ...typography.button, color: commonColors.onColorTextSoft },
+  pressed: { opacity: 0.82 },
 });
 
 export default WelcomeScreen;
