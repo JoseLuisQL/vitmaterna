@@ -170,7 +170,7 @@ export default function ObstetraDashboard(): React.ReactElement {
           <Text style={styles.todayDate} numberOfLines={1}>{fecha}</Text>
 
           {/* 3 KPIs accionables, sobrios */}
-          <View style={styles.kpiRow}>
+          <View ref={kpisTarget} collapsable={false} style={styles.kpiRow}>
             <Kpi icon={Calendar} value={appointmentsToday} label="Citas hoy" onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} />
             <Kpi icon={Users} value={totalPatients} label="Pacientes" onPress={() => router.push('/(obstetra)/(tabs)/gestantes')} />
             <Kpi icon={AlertTriangle} value={alerts} label="Alertas" alert onPress={() => router.push('/(obstetra)/notificaciones')} />
@@ -185,7 +185,7 @@ export default function ObstetraDashboard(): React.ReactElement {
                   <Text style={styles.sectionLink}>Ver reportes</Text>
                 </TouchableOpacity>
               </View>
-              <View style={[styles.riskCard, { flex: 1, marginBottom: 0 }]}>
+              <View ref={riskTarget} collapsable={false} style={[styles.riskCard, { flex: 1, marginBottom: 0 }]}>
                 <View style={styles.riskRow}>
                   <View style={styles.riskItem}>
                     <Text style={styles.riskCount}>{riskDistribution.low || 0}</Text>

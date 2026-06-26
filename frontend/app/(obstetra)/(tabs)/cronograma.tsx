@@ -14,6 +14,8 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { SearchField } from '../../../src/components/ui/Field';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useToast } from '../../../src/components/ui';
@@ -64,6 +66,7 @@ export default function CronogramaScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
+  const agendaTourTarget = useTourTarget(TOUR_TARGETS.obstetraAgenda);
   const [scope, setScope] = useState<Scope>('hoy');
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput, 350);
@@ -363,7 +366,7 @@ export default function CronogramaScreen(): React.ReactElement {
           errorTitle="No se pudo cargar la agenda"
           errorMessage="Revisa tu conexión y vuelve a intentar."
         >
-          <View style={styles.webToolbar}>
+          <View ref={webShell ? agendaTourTarget : undefined} collapsable={false} style={styles.webToolbar}>
             <SearchField
               value={searchInput}
               onChangeText={setSearchInput}
@@ -425,7 +428,7 @@ export default function CronogramaScreen(): React.ReactElement {
       />
 
       {/* Segmentos de filtro */}
-      <View style={styles.segments}>
+      <View ref={!webShell ? agendaTourTarget : undefined} collapsable={false} style={styles.segments}>
         {SEGMENTS.map((s) => {
           const active = scope === s.key;
           const count = counts[s.key];

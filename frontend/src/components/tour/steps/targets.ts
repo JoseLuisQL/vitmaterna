@@ -22,9 +22,16 @@ export const TOUR_TARGETS = {
   // Obstetra
   obstetraKpis: 'tour-obstetra-kpis',
   obstetraRisk: 'tour-obstetra-risk',
+  obstetraGestantes: 'tour-obstetra-gestantes',
+  obstetraNuevaGestante: 'tour-obstetra-nueva-gestante',
+  obstetraAgenda: 'tour-obstetra-agenda',
+  obstetraReportes: 'tour-obstetra-reportes',
+  obstetraChat: 'tour-obstetra-chat',
   // Admin
   adminKpis: 'tour-admin-kpis',
   adminPending: 'tour-admin-pending',
-  // Navegación (compartido)
-  navChat: 'tour-nav-chat',
+  adminUsuarios: 'tour-admin-usuarios',
+  adminContenido: 'tour-admin-contenido',
+  adminNotif: 'tour-admin-notif',
+  adminConfig: 'tour-admin-config',
 } as const;

@@ -12,6 +12,8 @@ import { PrenatalRibbon } from '../../../src/components/ui/PrenatalRibbon';
 import { SearchField } from '../../../src/components/ui/Field';
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { usePatientsInfinite } from '../../../src/services/api-queries';
 import { useResponsive } from '../../../src/theme/responsive';
@@ -36,6 +38,8 @@ export default function GestantesScreen(): React.ReactElement {
   const [filterMode, setFilterMode] = useState<'todas' | 'bajo' | 'medio' | 'alto'>('todas');
   const router = useRouter();
   const { webShell } = useResponsive();
+  const gestantesTourTarget = useTourTarget(TOUR_TARGETS.obstetraGestantes);
+  const nuevaGestanteTourTarget = useTourTarget(TOUR_TARGETS.obstetraNuevaGestante);
 
   const debouncedSearch = useDebouncedValue(search, 400);
 
@@ -78,7 +82,7 @@ export default function GestantesScreen(): React.ReactElement {
         </SafeAreaView>
       </LinearGradient>
 
-      <View style={styles.searchContainer}>
+      <View ref={!webShell ? gestantesTourTarget : undefined} collapsable={false} style={styles.searchContainer}>
         <SearchField
           value={search}
           onChangeText={setSearch}
@@ -286,7 +290,7 @@ export default function GestantesScreen(): React.ReactElement {
           accentColor={BRAND}
           scroll={false}
         >
-          <View style={styles.webToolbar}>
+          <View ref={webShell ? gestantesTourTarget : undefined} collapsable={false} style={styles.webToolbar}>
             <SearchField
               value={search}
               onChangeText={setSearch}
@@ -300,10 +304,12 @@ export default function GestantesScreen(): React.ReactElement {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity style={styles.webCreateBtn} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)} activeOpacity={0.85}>
-              <Plus size={18} color={commonColors.white} />
-              <Text style={styles.webCreateText}>Nueva gestante</Text>
-            </TouchableOpacity>
+            <View ref={webShell ? nuevaGestanteTourTarget : undefined} collapsable={false}>
+              <TouchableOpacity style={styles.webCreateBtn} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)} activeOpacity={0.85}>
+                <Plus size={18} color={commonColors.white} />
+                <Text style={styles.webCreateText}>Nueva gestante</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <DataTable
@@ -341,7 +347,7 @@ export default function GestantesScreen(): React.ReactElement {
         }
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)} accessibilityRole="button" accessibilityLabel="Registrar nueva gestante">
+      <TouchableOpacity ref={!webShell ? (nuevaGestanteTourTarget as any) : undefined} style={styles.fab} onPress={() => router.push('/(obstetra)/gestante/nueva' as any)} accessibilityRole="button" accessibilityLabel="Registrar nueva gestante">
         <Plus size={28} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
     </View>

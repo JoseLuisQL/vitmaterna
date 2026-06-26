@@ -22,6 +22,8 @@ import { useToast } from '../../../src/components/ui';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SearchField } from '../../../src/components/ui/Field';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { ConversationListItem, type ConversationRow } from '../../../src/components/shared/ConversationListItem';
 import { MessageThread } from '../../../src/components/shared/MessageThread';
 import { ChatInput } from '../../../src/components/shared/ChatInput';
@@ -44,6 +46,7 @@ const LIST_WIDTH = 380;
 export default function ObstetraChatScreen() {
   const router = useRouter();
   const { webShell } = useResponsive();
+  const chatTourTarget = useTourTarget(TOUR_TARGETS.obstetraChat);
   const { user } = useAuthStore();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -320,7 +323,7 @@ export default function ObstetraChatScreen() {
       <View style={styles.webShell}>
         {/* Columna izquierda: lista */}
         <View style={styles.webListCol}>
-          <View style={styles.webListHeader}>
+          <View ref={webShell ? chatTourTarget : undefined} collapsable={false} style={styles.webListHeader}>
             <View>
               <Text style={styles.webListTitle}>Bandeja de Consultas</Text>
               <Text style={styles.webListSubtitle}>Tus gestantes</Text>
@@ -372,7 +375,7 @@ export default function ObstetraChatScreen() {
         </SafeAreaView>
       </LinearGradient>
 
-      <View style={styles.mobileSearchWrap}>{SearchBar}</View>
+      <View ref={!webShell ? chatTourTarget : undefined} collapsable={false} style={styles.mobileSearchWrap}>{SearchBar}</View>
 
       {isLoadingConvs ? (
         <View style={{ paddingHorizontal: spacing.md }}><ListSkeleton count={6} /></View>

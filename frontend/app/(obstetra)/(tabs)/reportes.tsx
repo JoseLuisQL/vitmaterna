@@ -9,6 +9,8 @@ import { ChartDonut, type DonutDatum } from '../../../src/components/ui/ChartDon
 import { NotificationBell } from '../../../src/components/shared/NotificationBell';
 import { useToast, AutoGrid } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { useResponsive } from '../../../src/theme/responsive';
 import { useAuthStore } from '../../../src/store/authStore';
 import { buildClinicReportHtml } from '../../../src/utils/reportTemplate';
@@ -56,6 +58,7 @@ export default function ReportesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
+  const reportesTourTarget = useTourTarget(TOUR_TARGETS.obstetraReportes);
   const { user } = useAuthStore();
   const [exporting, setExporting] = React.useState(false);
   const [exportingXlsx, setExportingXlsx] = React.useState(false);
@@ -210,6 +213,7 @@ export default function ReportesScreen(): React.ReactElement {
         }
       >
         {/* KPIs principales */}
+        <View ref={reportesTourTarget} collapsable={false}>
         <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.xs }}>
           {[
             { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: obstetraColors.primaryLight },
@@ -224,6 +228,7 @@ export default function ReportesScreen(): React.ReactElement {
             </View>
           ))}
         </AutoGrid>
+        </View>
 
         <View style={webShell ? styles.twoCol : undefined}>
           <View style={webShell ? styles.col : undefined}>
