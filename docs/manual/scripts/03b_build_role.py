@@ -100,12 +100,58 @@ def shot(doc, fid, cap):
     caption(doc, cap)
 
 
+def add_rich(p, text, size=11, base_color=None):
+    import re
+    parts = re.split(r'(“[^”]*”)', text)
+    for seg in parts:
+        if not seg:
+            continue
+        r = p.add_run(seg); r.font.size = Pt(size)
+        if base_color is not None:
+            r.font.color.rgb = base_color
+        if seg.startswith("“") and seg.endswith("”"):
+            r.bold = True
+    return p
+
+
 def _cell_pad(cell, top=80, bottom=80, left=120, right=120):
     tcPr = cell._tc.get_or_add_tcPr()
     m = OxmlElement("w:tcMar")
     for side, val in (("top", top), ("bottom", bottom), ("start", left), ("end", right)):
         e = OxmlElement(f"w:{side}"); e.set(qn("w:w"), str(val)); e.set(qn("w:type"), "dxa"); m.append(e)
     tcPr.append(m)
+
+
+def _set_col_widths(tbl, widths_cm):
+    tbl.autofit = False
+    for row in tbl.rows:
+        for idx, w in enumerate(widths_cm):
+            row.cells[idx].width = Cm(w)
+
+
+def convenciones_table(doc, accent_hex):
+    rows = [
+        ("Elemento", "Significado"),
+        ("①  ②  ③", "Marca de paso: indica el orden en que debes tocar cada elemento."),
+        ("Recuadro de color", "Resalta el botón, la tarjeta o el campo que se explica."),
+        ("Nota / Importante / Atención", "Avisos con información útil o advertencias importantes."),
+    ]
+    tbl = doc.add_table(rows=len(rows), cols=2)
+    tbl.style = "Table Grid"; tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    _set_col_widths(tbl, [5.0, 11.6])
+    for i, (a, b) in enumerate(rows):
+        ca, cb = tbl.rows[i].cells
+        _cell_pad(ca, 60, 60, 120, 120); _cell_pad(cb, 60, 60, 120, 120)
+        pa = ca.paragraphs[0]; pa.paragraph_format.space_after = Pt(0)
+        pb_ = cb.paragraphs[0]; pb_.paragraph_format.space_after = Pt(0)
+        if i == 0:
+            set_cell_bg(ca, accent_hex); set_cell_bg(cb, accent_hex)
+            ra = pa.add_run(a); ra.bold = True; ra.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF); ra.font.size = Pt(10)
+            rb = pb_.add_run(b); rb.bold = True; rb.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF); rb.font.size = Pt(10)
+        else:
+            ra = pa.add_run(a); ra.bold = True; ra.font.size = Pt(10); ra.font.color.rgb = INK
+            rb = pb_.add_run(b); rb.font.size = Pt(10); rb.font.color.rgb = INK
+    return tbl
 
 
 def note(doc, text, kind="nota"):
@@ -120,7 +166,7 @@ def note(doc, text, kind="nota"):
         pass
     p = c.paragraphs[0]; p.paragraph_format.space_after = Pt(0); p.paragraph_format.line_spacing = 1.3
     r = p.add_run(f"{label}.  "); r.bold = True; r.font.color.rgb = fg; r.font.size = Pt(10)
-    r2 = p.add_run(text); r2.font.size = Pt(10); r2.font.color.rgb = INK
+    add_rich(p, text, size=10, base_color=INK)
     doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
 
@@ -128,14 +174,14 @@ def steps(doc, items):
     for it in items:
         p = doc.add_paragraph(style="List Number")
         p.paragraph_format.space_after = Pt(6); p.paragraph_format.line_spacing = 1.3
-        p.add_run(it)
+        add_rich(p, it)
 
 
 def bullets(doc, items):
     for it in items:
         p = doc.add_paragraph(style="List Bullet")
         p.paragraph_format.space_after = Pt(4); p.paragraph_format.line_spacing = 1.3
-        p.add_run(it)
+        add_rich(p, it)
 
 
 def _accent_rule(p, color):
@@ -151,7 +197,7 @@ def h1(doc, t):
 def h2(doc, t): return doc.add_heading(t, level=2)
 def h3(doc, t): return doc.add_heading(t, level=3)
 def para(doc, t):
-    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY; p.add_run(t); return p
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY; add_rich(p, t); return p
 def pb(doc): doc.add_page_break()
 def section_gap(doc):
     p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(10)
@@ -233,14 +279,7 @@ def build():
     h2(doc, "2.2 Convenciones de este manual")
     para(doc, "En las imágenes verás marcas numeradas y recuadros que indican exactamente de qué elemento se "
               "habla y en qué orden usarlo:")
-    tbl = doc.add_table(rows=3, cols=2); tbl.style = "Light Grid Accent 1"
-    for i, (a, b) in enumerate([
-        ("① ② ③", "Marca de paso: el número indica el orden en que debes tocar cada elemento."),
-        ("Recuadro rojo", "Resalta el botón, la tarjeta o el campo que se está explicando."),
-        ("Nota / Importante / Atención", "Avisos con información útil o advertencias a tener en cuenta."),
-    ]):
-        tbl.cell(i, 0).paragraphs[0].add_run(a).bold = True
-        tbl.cell(i, 1).paragraphs[0].add_run(b)
+    convenciones_table(doc, CONTENT["accent"])
     section_gap(doc)
 
     h1(doc, "3. Acceso al sistema")
@@ -285,7 +324,7 @@ def build():
     para(doc, "Para soporte de la aplicación, comunícate con el área de sistemas de tu establecimiento. Para "
               "emergencias clínicas, acude al establecimiento de salud.")
     p = doc.add_paragraph(); p.add_run("Centro de Salud Talavera\n").bold = True
-    p.add_run("Andahuaylas, Apurímac\nTeléfono: 083 – 421800")
+    p.add_run("Andahuaylas, Apurímac")
 
     cp = doc.core_properties
     cp.author = AUTHOR
