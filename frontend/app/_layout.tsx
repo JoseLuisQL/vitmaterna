@@ -19,6 +19,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { ToastProvider } from '../src/components/ui/ToastProvider';
 import { ConfirmHost } from '../src/components/ui/ConfirmHost';
 import { WebShell } from '../src/components/web/WebShell';
+import { OnboardingGate } from '../src/components/onboarding/OnboardingGate';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { SplashScreen } from '../src/components/ui/SplashScreen';
@@ -89,7 +90,9 @@ export default function RootLayout(): React.ReactElement | null {
             <ThemedStatusBar />
             <MaintenanceGate>
               <WebShell>
-                <AppNavigator />
+                <OnboardingGate>
+                  <AppNavigator />
+                </OnboardingGate>
               </WebShell>
             </MaintenanceGate>
             <OfflineBanner />
