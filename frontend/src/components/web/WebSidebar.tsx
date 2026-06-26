@@ -17,9 +17,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname, type Href } from 'expo-router';
-import { LogOut, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react-native';
+import { LogOut, ChevronLeft, ChevronRight, Compass, type LucideIcon } from 'lucide-react-native';
 import { VitMaternaLogo } from '../ui/VitMaternaLogo';
 import { ThemeToggle, isThemeToggleAvailable } from '../ui/ThemeToggle';
+import { useRestartTour } from '../tour/useRestartTour';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../ui/ToastProvider';
 import { confirmAction } from '../../utils/confirm';
@@ -77,6 +78,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
   const user = useAuthStore((s) => s.user);
   const { logout } = useAuthStore();
   const colors = useThemedColors();
+  const restartTour = useRestartTour();
 
   const accent = ACCENT[role];
   const nav = NAVIGATION[role];
@@ -158,8 +160,27 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
         ))}
       </ScrollView>
 
-      {/* Pie: tema + logout */}
+      {/* Pie: recorrido + tema + logout */}
       <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
+        {/* Re-lanzar el recorrido guiado. Acento del rol (acción positiva),
+            separado visualmente del logout destructivo. */}
+        <Pressable
+          onPress={restartTour}
+          style={({ pressed, hovered }: any) => [
+            styles.tourBtn,
+            collapsed && styles.tourBtnCollapsed,
+            { backgroundColor: accent + '12' },
+            hovered && { backgroundColor: accent + '1F' },
+            pressed && { backgroundColor: accent + '26' },
+            IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s', outlineStyle: 'none' } as any),
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Ver el recorrido guiado de nuevo"
+        >
+          <Compass size={18} color={accent} />
+          {!collapsed && <Text style={[styles.tourText, { color: accent }]}>Ver recorrido</Text>}
+        </Pressable>
+
         {!collapsed && isThemeToggleAvailable && (
           <View style={styles.themeWrap}>
             <ThemeToggle accentColor={accent} />
@@ -331,6 +352,13 @@ const styles = StyleSheet.create({
   userName: { ...typography.bodyMd },
   userSub: { ...typography.caption },
   themeWrap: { paddingHorizontal: spacing.xs },
+  tourBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm2,
+    paddingHorizontal: spacing.sm2, paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.md,
+  },
+  tourBtnCollapsed: { justifyContent: 'center', paddingHorizontal: 0 },
+  tourText: { ...typography.bodyMd, fontWeight: '600' },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm2,
     paddingHorizontal: spacing.sm2, paddingVertical: spacing.sm + 2,

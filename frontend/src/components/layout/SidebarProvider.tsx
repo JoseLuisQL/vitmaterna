@@ -9,6 +9,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import { AppSidebar } from './AppSidebar';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationRealtime } from '../../hooks/useNotificationRealtime';
+import { useRestartTour } from '../tour/useRestartTour';
 import { gestanteColors, obstetraColors, adminColors } from '../../theme/colors';
 import { NAVIGATION, ROLE_LABEL } from '../../navigation/menu';
 import type { UserRole } from '../../types/user';
@@ -34,6 +35,7 @@ interface SidebarProviderProps {
 export function SidebarProvider({ role, children }: SidebarProviderProps): React.ReactElement {
   const [visible, setVisible] = useState(false);
   const user = useAuthStore((s) => s.user);
+  const restartTour = useRestartTour();
 
   // Notificaciones en tiempo real: una sola suscripción por sesión de rol.
   useNotificationRealtime();
@@ -56,6 +58,7 @@ export function SidebarProvider({ role, children }: SidebarProviderProps): React
         userName={userName}
         userSubtitle={roleLabel}
         sections={NAVIGATION[role].sections}
+        onRestartTour={restartTour}
       />
     </SidebarContext.Provider>
   );
