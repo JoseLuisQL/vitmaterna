@@ -31,6 +31,7 @@ GRAY = RGBColor(0x56, 0x68, 0x73)
 RED = RGBColor(0xD6, 0x45, 0x45)
 AMBER = RGBColor(0xB0, 0x7A, 0x14)
 FIG = {"n": 0}
+AUTHOR = "Cristhian Rodrigo Berrocal Salazar"
 
 
 def set_cell_bg(cell, hexc):
@@ -106,7 +107,7 @@ def cover(doc):
     ]:
         p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         r = p.add_run(txt); r.font.size = Pt(sz); r.font.color.rgb = col; r.bold = bold
-    for _ in range(6):
+    for _ in range(5):
         doc.add_paragraph()
     for txt, sz, col in [
         ("Plataforma de Salud Prenatal", 13, INK),
@@ -115,6 +116,10 @@ def cover(doc):
     ]:
         p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         r = p.add_run(txt); r.font.size = Pt(sz); r.font.color.rgb = col
+    # Autor
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run("Autor: "); r.font.size = Pt(11); r.font.color.rgb = GRAY
+    r2 = p.add_run(AUTHOR); r2.font.size = Pt(11); r2.bold = True; r2.font.color.rgb = INK
     pb(doc)
 
 
@@ -139,6 +144,7 @@ def build():
 
     # Créditos
     h1(doc, "Créditos y confidencialidad")
+    pa = doc.add_paragraph(); pa.add_run("Autor del manual: ").bold = True; pa.add_run(AUTHOR)
     para(doc, "Este documento es el manual de usuario oficial de la aplicación móvil VITMATERNA, plataforma "
               "de seguimiento de salud prenatal, propiedad del Centro de Salud Talavera. Se entrega con fines "
               "de capacitación y uso del sistema.")
@@ -389,8 +395,12 @@ def build():
     p = doc.add_paragraph(); p.add_run("Centro de Salud Talavera\n").bold = True
     p.add_run("Andahuaylas, Apurímac\nTeléfono: 083 – 421800")
 
+    cp = doc.core_properties
+    cp.author = AUTHOR
+    cp.title = "Manual de Usuario VITMATERNA — Guía para la Gestante"
+    cp.category = "Manual de Usuario"
     doc.save(OUT)
-    print(f"✅ DOCX: {OUT}  ·  figuras: {FIG['n']}")
+    print(f"✅ DOCX: {OUT}  ·  figuras: {FIG['n']}  ·  autor: {AUTHOR}")
 
 
 if __name__ == "__main__":
