@@ -1,0 +1,63 @@
+{
+  "comment": "Manual obstetra. nav: url:/tab:/drawer:. Targets medidos por texto/aria.",
+  "shots": [
+    {
+      "id": "B1", "title": "Panel de inicio", "nav": "home",
+      "targets": [
+        { "key": "kpis", "label": "Citas hoy", "mode": "contains", "up": 3, "mark": 1, "box": true },
+        { "key": "riesgo", "label": "Distribución de riesgo", "mode": "contains", "up": 2, "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "B1b", "title": "Citas de hoy en el inicio", "nav": "home", "scrollTo": "Citas de hoy",
+      "targets": [
+        { "key": "citas", "label": "Citas de hoy", "mode": "exact", "up": 1, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "B2", "title": "Lista de gestantes", "nav": "url:gestantes",
+      "targets": [
+        { "key": "buscar", "label": "Buscar por nombre o DNI...", "mode": "aria", "up": 2, "mark": 1, "box": true },
+        { "key": "filtros", "label": "Todas", "mode": "exact", "up": 1, "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "B2b", "title": "Registrar nueva gestante", "nav": "url:gestantes",
+      "targets": [
+        { "key": "nueva", "label": "Registrar nueva gestante", "mode": "aria", "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "B3", "title": "Agenda de citas", "nav": "url:cronograma",
+      "targets": [
+        { "key": "buscar", "label": "Buscar paciente por nombre o DNI", "mode": "aria", "up": 2, "mark": 1, "box": true },
+        { "key": "hoy", "label": "Hoy, 2 citas", "mode": "aria", "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "B4", "title": "Reportes e indicadores", "nav": "url:reportes",
+      "targets": [
+        { "key": "kpis", "label": "Pacientes", "mode": "exact", "up": 3, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "B4b", "title": "Exportar reportes", "nav": "url:reportes",
+      "targets": [
+        { "key": "excel", "label": "Exportar Excel", "mode": "aria", "mark": 1, "box": true },
+        { "key": "pdf", "label": "Exportar PDF", "mode": "aria", "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "B5", "title": "Chat con gestantes", "nav": "tab:Chat",
+      "targets": [
+        { "key": "buscar", "label": "Buscar gestante por nombre o DNI", "mode": "aria", "up": 2, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "B6", "title": "Mi perfil", "nav": "drawer:Mi perfil",
+      "targets": [
+        { "key": "tour", "label": "Conoce tu app", "mode": "exact", "up": 1, "mark": 1, "box": true }
+      ]
+    }
+  ]
+}

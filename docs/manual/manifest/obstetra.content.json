@@ -1,0 +1,96 @@
+{
+  "role": "obstetra",
+  "accent": "2C6EA8",
+  "title": "Guía para la Obstetra",
+  "intro_que": "VITMATERNA es la plataforma con la que acompañas y haces seguimiento a tus gestantes: revisas tu panel del día, gestionas a tus pacientes y sus historias clínicas, organizas tu agenda de citas, consultas reportes e indicadores MINSA, y te comunicas por chat con tus gestantes.",
+  "intro_quien": "A las obstetras y personal de salud que usan la aplicación en su teléfono para la atención prenatal.",
+  "intro_alcance": "Explica, paso a paso y con imágenes, cada función: panel de inicio, gestantes, agenda, reportes, chat y perfil, incluyendo los formularios y ventanas de cada módulo.",
+  "sections": [
+    {
+      "h": "4. Panel de inicio",
+      "p": "Es la primera pantalla al entrar. Resume tu jornada del día.",
+      "steps": [
+        "① Tarjetas con tus cifras del día: «Citas hoy», «Pacientes» y «Alertas». Toca cada una para ir a ese módulo.",
+        "② «Distribución de riesgo»: el semáforo de tus gestantes (bajo, medio y alto)."
+      ],
+      "shot": "B1", "cap": "Panel de inicio de la obstetra.",
+      "note": "Las cifras se actualizan automáticamente con la actividad de tus gestantes."
+    },
+    {
+      "h": "4.1 Citas de hoy",
+      "p": "Más abajo en el inicio verás el listado de tus citas del día.",
+      "steps": ["① Toca una cita para abrir la ficha de esa gestante; «Ver todas» abre la agenda completa."],
+      "shot": "B1b", "cap": "Listado de citas de hoy en el inicio."
+    },
+    {
+      "h": "5. Gestantes",
+      "p": "Aquí encuentras y administras a tus pacientes.",
+      "steps": [
+        "① Buscador: escribe el nombre o DNI para encontrar a una gestante.",
+        "② Filtros de riesgo (Todas, Sin riesgo, Moderado, Alto) para priorizar a quién atender."
+      ],
+      "shot": "B2", "cap": "Lista de gestantes."
+    },
+    {
+      "h": "5.1 Registrar una nueva gestante",
+      "p": "Para dar de alta a una paciente nueva:",
+      "steps": ["① Toca el botón «+» (Registrar nueva gestante). Se abre un formulario por pasos: identificación y DNI, embarazo actual (FUM), medidas y antecedentes, y contacto. Al finalizar, toca «Guardar»."],
+      "shot": "B2b", "cap": "Botón para registrar una nueva gestante.",
+      "note": "La ficha clínica de cada gestante tiene 4 pestañas: Resumen, Seguimiento, Tratamiento y Clínico. Desde su cabecera puedes llamar, escribir por WhatsApp o recomendar contenido educativo."
+    },
+    {
+      "h": "6. Agenda de citas",
+      "p": "Organiza y atiende tus citas.",
+      "steps": [
+        "① Buscador de paciente por nombre o DNI.",
+        "② Filtros «Hoy», «Próximas», «Historial» y «Todas» (con el número de citas de cada uno)."
+      ],
+      "shot": "B3", "cap": "Agenda de citas.",
+      "note": "En cada cita puedes atenderla (flujo de 4 pasos: control, laboratorios, tamizajes y tratamiento), marcar «No asistió», aprobar o rechazar una reprogramación, o convertirla en visita domiciliaria."
+    },
+    {
+      "h": "7. Reportes e indicadores",
+      "p": "Consulta tus indicadores clínicos y los oficiales MINSA.",
+      "steps": ["① KPIs principales: pacientes, adherencia, gestantes con 6+ controles y casos de alto riesgo. Más abajo: indicadores MINSA frente a su meta y la atención prioritaria."],
+      "shot": "B4", "cap": "Reportes e indicadores clínicos."
+    },
+    {
+      "h": "7.1 Exportar reportes",
+      "p": "Puedes descargar tus reportes para imprimir o compartir.",
+      "steps": [
+        "① Toca «Excel» para descargar la hoja de cálculo completa.",
+        "② Toca «PDF» para generar un reporte clínico listo para imprimir."
+      ],
+      "shot": "B4b", "cap": "Botones para exportar a Excel y PDF."
+    },
+    {
+      "h": "8. Chat con gestantes",
+      "p": "Responde consultas o envía avisos a tus gestantes.",
+      "steps": ["① Busca a una gestante por nombre o DNI y toca su conversación para abrir el chat. También puedes enviar un mensaje masivo a un grupo según trimestre o nivel de riesgo."],
+      "shot": "B5", "cap": "Bandeja de conversaciones."
+    },
+    {
+      "h": "9. Mi perfil",
+      "p": "Desde tu perfil editas tus datos, ajustas tus notificaciones y puedes repetir el recorrido guiado.",
+      "steps": ["① «Conoce tu app»: repite el recorrido guiado cuando quieras."],
+      "shot": "B6", "cap": "Pantalla de perfil de la obstetra."
+    }
+  ],
+  "troubleshooting": [
+    ["No veo a una gestante en mi lista", "Verifica el filtro de riesgo activo y usa el buscador por nombre o DNI. Si la paciente es de otra obstetra, no aparecerá en tu lista."],
+    ["No puedo registrar una gestante", "Completa todos los campos obligatorios del formulario (marcados con *). El DNI no puede estar repetido en el sistema."],
+    ["La exportación no descarga", "Revisa tu conexión a internet e inténtalo nuevamente; en el portal web la descarga se inicia en el navegador."]
+  ],
+  "faq": [
+    ["¿Cómo atiendo una cita?", "Desde la Agenda, abre la cita y usa «Atender»: te guiará por control, laboratorios, tamizajes y tratamiento."],
+    ["¿Puedo enviar un aviso a varias gestantes?", "Sí, desde el Chat usa «Mensaje masivo» y filtra por trimestre o riesgo."],
+    ["¿Dónde veo los indicadores MINSA?", "En la pantalla de Reportes, sección «Indicadores MINSA / ENDES»."]
+  ],
+  "glossary": [
+    ["KPI", "Indicador clave de desempeño (cifra resumen como citas del día o pacientes)."],
+    ["MINSA / ENDES", "Indicadores oficiales de salud materna que el sistema reporta."],
+    ["Adherencia", "Constancia de la gestante en la toma de sus suplementos."],
+    ["Tamizaje", "Evaluación para detectar riesgos (violencia, salud mental, etc.)."],
+    ["Ficha clínica", "Historia clínica completa de la gestante, organizada en pestañas."]
+  ]
+}

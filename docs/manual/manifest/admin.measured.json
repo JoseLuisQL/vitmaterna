@@ -1,0 +1,146 @@
+{
+  "C1": {
+    "title": "Panel de control",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "pend": {
+        "x": 48,
+        "y": 238,
+        "w": 684,
+        "h": 216,
+        "mark": 1,
+        "box": true
+      },
+      "kpis": {
+        "x": 402,
+        "y": 564,
+        "w": 330,
+        "h": 264,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "C1b": {
+    "title": "Estado del sistema y gestión",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "estado": {
+        "x": 48,
+        "y": 804,
+        "w": 684,
+        "h": 516,
+        "mark": 1,
+        "box": true
+      },
+      "gestion": {
+        "x": 48,
+        "y": 1320,
+        "w": 684,
+        "h": 282,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "C2": {
+    "title": "Gestión de usuarios",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "buscar": {
+        "x": 0,
+        "y": 248,
+        "w": 780,
+        "h": 124,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "C3": {
+    "title": "Contenido educativo",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "buscar": {
+        "x": 48,
+        "y": 598,
+        "w": 684,
+        "h": 108,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "C4": {
+    "title": "Canales de notificación",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "sms": {
+        "x": 48,
+        "y": 544,
+        "w": 684,
+        "h": 642,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "C5": {
+    "title": "Configuración del sistema",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "limites": {
+        "x": 48,
+        "y": 224,
+        "w": 684,
+        "h": 486,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "C6": {
+    "title": "Establecimientos de salud",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "crear": {
+        "x": 644,
+        "y": 35,
+        "w": 88,
+        "h": 88,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "C7": {
+    "title": "Auditoría y backup",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "backup": {
+        "x": 342,
+        "y": 32,
+        "w": 390,
+        "h": 80,
+        "mark": 1,
+        "box": true
+      }
+    }
+  }
+}

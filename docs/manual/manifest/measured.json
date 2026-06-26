@@ -1,0 +1,338 @@
+{
+  "A1": {
+    "title": "Pantalla de inicio",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "ribbon": {
+        "x": 48,
+        "y": 238,
+        "w": 684,
+        "h": 390,
+        "mark": 1,
+        "box": true
+      },
+      "cita": {
+        "x": 48,
+        "y": 628,
+        "w": 684,
+        "h": 722,
+        "mark": 2,
+        "box": true
+      },
+      "trat": {
+        "x": 224,
+        "y": 1404,
+        "w": 388,
+        "h": 84,
+        "mark": 3,
+        "box": true
+      },
+      "menu": {
+        "x": 652,
+        "y": 39,
+        "w": 80,
+        "h": 80,
+        "mark": 4,
+        "box": false
+      }
+    }
+  },
+  "A1b": {
+    "title": "Acciones rápidas del inicio",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "reportar": {
+        "x": 48,
+        "y": 1062,
+        "w": 212,
+        "h": 290,
+        "mark": 1,
+        "box": true
+      },
+      "emergencia": {
+        "x": 284,
+        "y": 1062,
+        "w": 212,
+        "h": 290,
+        "mark": 2,
+        "box": true
+      },
+      "educacion": {
+        "x": 520,
+        "y": 1062,
+        "w": 212,
+        "h": 290,
+        "mark": 3,
+        "box": true
+      }
+    }
+  },
+  "A1c": {
+    "title": "Confirmar asistencia a la cita",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "confirmar": {
+        "x": 128,
+        "y": 1118,
+        "w": 524,
+        "h": 104,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "MENU": {
+    "title": "Menú lateral",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "educacion": {
+        "x": 50,
+        "y": 224,
+        "w": 556,
+        "h": 138,
+        "mark": 1,
+        "box": true
+      },
+      "signos": {
+        "x": 50,
+        "y": 362,
+        "w": 556,
+        "h": 140,
+        "mark": 2,
+        "box": true
+      },
+      "visitas": {
+        "x": 50,
+        "y": 502,
+        "w": 556,
+        "h": 140,
+        "mark": 3,
+        "box": true
+      },
+      "perfil": {
+        "x": 50,
+        "y": 724,
+        "w": 556,
+        "h": 138,
+        "mark": 4,
+        "box": true
+      }
+    }
+  },
+  "A2": {
+    "title": "Mis citas",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "tabs": {
+        "x": 56,
+        "y": 198,
+        "w": 334,
+        "h": 76,
+        "mark": 1,
+        "box": true
+      },
+      "progreso": {
+        "x": 48,
+        "y": 298,
+        "w": 684,
+        "h": 232,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "A3": {
+    "title": "Mi tratamiento",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "adher": {
+        "x": 48,
+        "y": 1088,
+        "w": 684,
+        "h": 646,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "A3b": {
+    "title": "Marcar suplemento como tomado",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "marcar": {
+        "x": 96,
+        "y": 1074,
+        "w": 588,
+        "h": 108,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "A4": {
+    "title": "Chat con mi obstetra",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "enviar": {
+        "x": 668,
+        "y": 1432,
+        "w": 88,
+        "h": 88,
+        "mark": 3,
+        "box": false
+      }
+    }
+  },
+  "A5": {
+    "title": "Educación",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "buscar": {
+        "x": 48,
+        "y": 340,
+        "w": 684,
+        "h": 376,
+        "mark": 1,
+        "box": true
+      },
+      "semanas": {
+        "x": 48,
+        "y": 180,
+        "w": 251,
+        "h": 64,
+        "mark": 2,
+        "box": true
+      },
+      "signos": {
+        "x": 315,
+        "y": 180,
+        "w": 299,
+        "h": 64,
+        "mark": 3,
+        "box": true
+      }
+    }
+  },
+  "A5b": {
+    "title": "Calculadora de semanas",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "titulo": {
+        "x": 48,
+        "y": 473,
+        "w": 684,
+        "h": 742,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "A7": {
+    "title": "Mi perfil",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "datos": {
+        "x": 96,
+        "y": 668,
+        "w": 544,
+        "h": 48,
+        "mark": 1,
+        "box": true
+      },
+      "notif": {
+        "x": 96,
+        "y": 814,
+        "w": 279,
+        "h": 48,
+        "mark": 2,
+        "box": true
+      },
+      "tour": {
+        "x": 96,
+        "y": 1106,
+        "w": 282,
+        "h": 48,
+        "mark": 3,
+        "box": true
+      }
+    }
+  },
+  "A7b": {
+    "title": "Editar datos y FUM",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "titulo": {
+        "x": 50,
+        "y": 169,
+        "w": 680,
+        "h": 132,
+        "mark": 1,
+        "box": true
+      },
+      "fum": {
+        "x": 98,
+        "y": 1245,
+        "w": 584,
+        "h": 252,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "A7c": {
+    "title": "Preferencias de notificación",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "titulo": {
+        "x": 48,
+        "y": 307,
+        "w": 684,
+        "h": 1074,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "A6": {
+    "title": "Reportar signos de alarma",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "enviar": {
+        "x": 0,
+        "y": 288,
+        "w": 780,
+        "h": 1400,
+        "mark": 1,
+        "box": true
+      }
+    }
+  }
+}

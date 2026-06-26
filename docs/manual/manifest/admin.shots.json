@@ -1,0 +1,55 @@
+{
+  "comment": "Manual admin. nav: url:/tab:/drawer:. Targets medidos por texto/aria.",
+  "shots": [
+    {
+      "id": "C1", "title": "Panel de control", "nav": "home",
+      "targets": [
+        { "key": "pend", "label": "por aprobar", "mode": "contains", "up": 2, "mark": 1, "box": true },
+        { "key": "kpis", "label": "Gestantes activas", "mode": "contains", "up": 1, "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "C1b", "title": "Estado del sistema y gestión", "nav": "home", "scrollTo": "Estado del sistema",
+      "targets": [
+        { "key": "estado", "label": "Estado del sistema", "mode": "exact", "up": 1, "mark": 1, "box": true },
+        { "key": "gestion", "label": "Gestión", "mode": "exact", "up": 1, "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "C2", "title": "Gestión de usuarios", "nav": "url:usuarios",
+      "targets": [
+        { "key": "buscar", "label": "Buscar por nombre o DNI...", "mode": "aria", "up": 2, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "C3", "title": "Contenido educativo", "nav": "url:contenido",
+      "targets": [
+        { "key": "buscar", "label": "Buscar recurso…", "mode": "aria", "up": 2, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "C4", "title": "Canales de notificación", "nav": "url:notificaciones",
+      "targets": [
+        { "key": "sms", "label": "SMS (Twilio)", "mode": "contains", "up": 3, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "C5", "title": "Configuración del sistema", "nav": "url:config",
+      "targets": [
+        { "key": "limites", "label": "Límites y Accesos", "mode": "contains", "up": 1, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "C6", "title": "Establecimientos de salud", "nav": "url:sedes",
+      "targets": [
+        { "key": "crear", "label": "Crear establecimiento", "mode": "aria", "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "C7", "title": "Auditoría y backup", "nav": "url:auditoria",
+      "targets": [
+        { "key": "backup", "label": "Exportar Backup BD", "mode": "contains", "mark": 1, "box": true }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "B1": {
+    "title": "Panel de inicio",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "kpis": {
+        "x": 48,
+        "y": 238,
+        "w": 684,
+        "h": 828,
+        "mark": 1,
+        "box": true
+      },
+      "riesgo": {
+        "x": 48,
+        "y": 238,
+        "w": 684,
+        "h": 828,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "B1b": {
+    "title": "Citas de hoy en el inicio",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "citas": {
+        "x": 48,
+        "y": 948,
+        "w": 684,
+        "h": 36,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "B2": {
+    "title": "Lista de gestantes",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "buscar": {
+        "x": 0,
+        "y": 224,
+        "w": 780,
+        "h": 124,
+        "mark": 1,
+        "box": true
+      },
+      "filtros": {
+        "x": 40,
+        "y": 380,
+        "w": 119,
+        "h": 64,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "B2b": {
+    "title": "Registrar nueva gestante",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "nueva": {
+        "x": 604,
+        "y": 1208,
+        "w": 128,
+        "h": 128,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "B3": {
+    "title": "Agenda de citas",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "buscar": {
+        "x": 48,
+        "y": 190,
+        "w": 684,
+        "h": 1354,
+        "mark": 1,
+        "box": true
+      },
+      "hoy": {
+        "x": 48,
+        "y": 346,
+        "w": 168,
+        "h": 64,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "B4": {
+    "title": "Reportes e indicadores",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "kpis": {
+        "x": 48,
+        "y": 238,
+        "w": 684,
+        "h": 552,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "B4b": {
+    "title": "Exportar reportes",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "excel": {
+        "x": 283,
+        "y": 45,
+        "w": 164,
+        "h": 68,
+        "mark": 1,
+        "box": true
+      },
+      "pdf": {
+        "x": 464,
+        "y": 45,
+        "w": 165,
+        "h": 68,
+        "mark": 2,
+        "box": true
+      }
+    }
+  },
+  "B5": {
+    "title": "Chat con gestantes",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "buscar": {
+        "x": 0,
+        "y": 172,
+        "w": 780,
+        "h": 124,
+        "mark": 1,
+        "box": true
+      }
+    }
+  },
+  "B6": {
+    "title": "Mi perfil",
+    "dpr": 2,
+    "vw": 390,
+    "vh": 844,
+    "rects": {
+      "tour": {
+        "x": 90,
+        "y": 1248,
+        "w": 322,
+        "h": 80,
+        "mark": 1,
+        "box": true
+      }
+    }
+  }
+}

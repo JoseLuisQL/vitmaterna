@@ -1,0 +1,117 @@
+{
+  "comment": "Manual gestante. Cada 'shot' navega a una pantalla (nav), opcionalmente abre un modal (open), y mide elementos reales por su texto/aria para anotar marcas ①②③ y recuadros. 'box' usa el mismo target como recuadro de realce; 'mark' pone marca numerada en el centro del elemento. up = subir N niveles desde el texto para envolver la tarjeta.",
+  "shots": [
+    {
+      "id": "A1", "title": "Pantalla de inicio", "nav": "home",
+      "targets": [
+        { "key": "ribbon", "label": "Tu embarazo", "mode": "contains", "up": 4, "mark": 1, "box": true },
+        { "key": "cita", "label": "Próxima Cita", "mode": "contains", "up": 4, "mark": 2, "box": true },
+        { "key": "trat", "label": "Tratamiento del Día", "mode": "contains", "up": 1, "mark": 3, "box": true },
+        { "key": "menu", "label": "Abrir menú", "mode": "aria", "mark": 4 }
+      ]
+    },
+    {
+      "id": "A1b", "title": "Acciones rápidas del inicio", "nav": "home", "scrollTo": "Acciones Rápidas",
+      "targets": [
+        { "key": "reportar", "label": "Reportar", "mode": "exact", "up": 2, "mark": 1, "box": true },
+        { "key": "emergencia", "label": "Emergencia", "mode": "exact", "up": 2, "mark": 2, "box": true },
+        { "key": "educacion", "label": "Educación", "mode": "exact", "up": 2, "mark": 3, "box": true }
+      ]
+    },
+    {
+      "id": "A1c", "title": "Confirmar asistencia a la cita", "nav": "home",
+      "targets": [
+        { "key": "confirmar", "label": "Confirmar asistencia", "mode": "aria", "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "MENU", "title": "Menú lateral", "nav": "home", "open": "menu",
+      "targets": [
+        { "key": "educacion", "label": "Educación", "mode": "exact", "mark": 1, "box": true },
+        { "key": "signos", "label": "Signos de alarma", "mode": "exact", "mark": 2, "box": true },
+        { "key": "visitas", "label": "Visitas domiciliarias", "mode": "exact", "mark": 3, "box": true },
+        { "key": "perfil", "label": "Mi perfil", "mode": "exact", "mark": 4, "box": true }
+      ]
+    },
+    {
+      "id": "EMER", "title": "Modal de emergencia", "nav": "home", "open": "emergencia",
+      "targets": [
+        { "key": "enviar", "label": "Enviar alerta ahora", "mode": "aria", "mark": 1, "box": true },
+        { "key": "cancelar", "label": "Cancelar", "mode": "aria", "mark": 2 }
+      ]
+    },
+    {
+      "id": "A2", "title": "Mis citas", "nav": "citas",
+      "targets": [
+        { "key": "tabs", "label": "Próximas", "mode": "contains", "up": 1, "mark": 1, "box": true },
+        { "key": "progreso", "label": "Controles prenatales", "mode": "contains", "up": 3, "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "A2b", "title": "Detalle de la cita", "nav": "citas", "open": "cita_detalle",
+      "targets": [
+        { "key": "titulo", "label": "Detalle de la cita", "mode": "contains", "up": 2, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "A3", "title": "Mi tratamiento", "nav": "tratamiento",
+      "targets": [
+        { "key": "adher", "label": "Mi adherencia", "mode": "contains", "up": 2, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "A3b", "title": "Marcar suplemento como tomado", "nav": "tratamiento", "scrollTo": "Mis medicamentos",
+      "targets": [
+        { "key": "marcar", "label": "Marcar como tomado", "mode": "contains", "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "A4", "title": "Chat con mi obstetra", "nav": "chat",
+      "targets": [
+        { "key": "input", "label": "Escribe un mensaje...", "mode": "aria", "mark": 2, "box": true },
+        { "key": "enviar", "label": "Enviar mensaje", "mode": "aria", "mark": 3 }
+      ]
+    },
+    {
+      "id": "A5", "title": "Educación", "nav": "educacion",
+      "targets": [
+        { "key": "buscar", "label": "Buscar en educación…", "mode": "aria", "up": 2, "mark": 1, "box": true },
+        { "key": "semanas", "label": "Mis semanas", "mode": "contains", "mark": 2, "box": true },
+        { "key": "signos", "label": "Signos de alarma", "mode": "contains", "mark": 3, "box": true }
+      ]
+    },
+    {
+      "id": "A5b", "title": "Calculadora de semanas", "nav": "educacion", "open": "calculadora",
+      "targets": [
+        { "key": "titulo", "label": "En qué semana estoy", "mode": "contains", "up": 3, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "A7", "title": "Mi perfil", "nav": "perfil",
+      "targets": [
+        { "key": "datos", "label": "Mis datos y fecha de última regla", "mode": "contains", "up": 1, "mark": 1, "box": true },
+        { "key": "notif", "label": "Notificaciones", "mode": "exact", "up": 1, "mark": 2, "box": true },
+        { "key": "tour", "label": "Conoce tu app", "mode": "exact", "up": 1, "mark": 3, "box": true }
+      ]
+    },
+    {
+      "id": "A7b", "title": "Editar datos y FUM", "nav": "perfil", "open": "editar_perfil",
+      "targets": [
+        { "key": "titulo", "label": "Modificar Perfil y FUM", "mode": "contains", "up": 1, "mark": 1, "box": true },
+        { "key": "fum", "label": "Fecha de tu última regla (FUM)", "mode": "contains", "up": 1, "mark": 2, "box": true }
+      ]
+    },
+    {
+      "id": "A7c", "title": "Preferencias de notificación", "nav": "perfil", "open": "prefs_notif",
+      "targets": [
+        { "key": "titulo", "label": "Preferencias de notificación", "mode": "contains", "up": 3, "mark": 1, "box": true }
+      ]
+    },
+    {
+      "id": "A6", "title": "Reportar signos de alarma", "nav": "alarmas",
+      "targets": [
+        { "key": "enviar", "label": "Enviar alerta a mi obstetra", "mode": "contains", "mark": 1, "box": true }
+      ]
+    }
+  ]
+}

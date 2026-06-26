@@ -1,0 +1,397 @@
+#!/usr/bin/env python3
+"""
+VITMATERNA — Generador del Manual de Usuario (Gestante) en DOCX.
+
+Cobertura completa: pantallas principales + modales + formularios, con pasos
+numerados que se corresponden con las marcas ①②③ de las capturas (medidas
+pixel-perfect). Estructura profesional: portada, créditos, índice, intro,
+requisitos, convenciones, acceso, secciones por tarea, troubleshooting, FAQ,
+glosario, contacto.
+
+Reproducible: `python3 03_build_docx.py`.
+"""
+import os
+from docx import Document
+from docx.shared import Pt, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.dirname(os.path.dirname(BASE))
+IMG = os.path.join(BASE, "assets", "screens_annotated")
+LOGO = os.path.join(REPO, "vitmaterna_logo.png")
+OUT = os.path.join(BASE, "build", "manual_usuario_gestante_vitmaterna_movil.docx")
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+
+TEAL = RGBColor(0x0C, 0x81, 0x74)
+INK = RGBColor(0x16, 0x24, 0x2B)
+GRAY = RGBColor(0x56, 0x68, 0x73)
+RED = RGBColor(0xD6, 0x45, 0x45)
+AMBER = RGBColor(0xB0, 0x7A, 0x14)
+FIG = {"n": 0}
+
+
+def set_cell_bg(cell, hexc):
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd"); shd.set(qn("w:val"), "clear"); shd.set(qn("w:fill"), hexc)
+    tcPr.append(shd)
+
+
+def add_toc(doc):
+    # Marcador que 07_build_toc.py reemplaza por una tabla de índice con números
+    # de página reales (dos pasadas de render).
+    doc.add_paragraph("[[TOC]]")
+
+
+def style_base(doc):
+    st = doc.styles["Normal"]; st.font.name = "Calibri"; st.font.size = Pt(11); st.font.color.rgb = INK
+    for name, size, color in [("Heading 1", 17, TEAL), ("Heading 2", 13, INK), ("Heading 3", 11, TEAL)]:
+        s = doc.styles[name]; s.font.name = "Calibri"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True
+
+
+def caption(doc, title):
+    FIG["n"] += 1
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run(f"Figura A-{FIG['n']}. {title}"); r.italic = True; r.font.size = Pt(9); r.font.color.rgb = GRAY
+
+
+def shot(doc, fid, cap, height=11.3):
+    path = os.path.join(IMG, f"{fid}.png")
+    if not os.path.exists(path):
+        doc.add_paragraph(f"[Captura {fid} no encontrada]"); return
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run().add_picture(path, height=Cm(height))
+    caption(doc, cap)
+
+
+def note(doc, text, kind="nota"):
+    colors = {"nota": ("E7F4F2", TEAL, "Nota"), "aviso": ("FBF4E5", AMBER, "Importante"),
+              "alerta": ("FBEDED", RED, "Atención")}
+    fill, fg, label = colors[kind]
+    tbl = doc.add_table(rows=1, cols=1); tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    c = tbl.cell(0, 0); set_cell_bg(c, fill)
+    p = c.paragraphs[0]
+    r = p.add_run(f"{label}: "); r.bold = True; r.font.color.rgb = fg; r.font.size = Pt(10)
+    r2 = p.add_run(text); r2.font.size = Pt(10); r2.font.color.rgb = INK
+
+
+def steps(doc, items):
+    for it in items:
+        doc.add_paragraph(style="List Number").add_run(it)
+
+
+def h1(doc, t): doc.add_heading(t, level=1)
+def h2(doc, t): doc.add_heading(t, level=2)
+def h3(doc, t): doc.add_heading(t, level=3)
+
+
+def para(doc, t, size=11):
+    p = doc.add_paragraph(); p.add_run(t).font.size = Pt(size); return p
+
+
+def pb(doc): doc.add_page_break()
+
+
+def cover(doc):
+    if os.path.exists(LOGO):
+        p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.add_run().add_picture(LOGO, width=Cm(5))
+    doc.add_paragraph()
+    for txt, sz, col, bold in [
+        ("VITMATERNA", 40, TEAL, True),
+        ("Manual de Usuario · Aplicación Móvil", 20, INK, False),
+        ("Guía para la Gestante", 16, GRAY, False),
+    ]:
+        p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run(txt); r.font.size = Pt(sz); r.font.color.rgb = col; r.bold = bold
+    for _ in range(6):
+        doc.add_paragraph()
+    for txt, sz, col in [
+        ("Plataforma de Salud Prenatal", 13, INK),
+        ("Centro de Salud Talavera — Andahuaylas, Apurímac", 12, GRAY),
+        ("Versión 1.0 · 2026", 11, GRAY),
+    ]:
+        p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run(txt); r.font.size = Pt(sz); r.font.color.rgb = col
+    pb(doc)
+
+
+def footer(doc):
+    p = doc.sections[0].footer.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run("VITMATERNA · Manual de Usuario (Gestante) · Página "); r.font.size = Pt(8); r.font.color.rgb = GRAY
+    fld = OxmlElement("w:fldSimple"); fld.set(qn("w:instr"), "PAGE"); rr = p.add_run(); rr._r.append(fld)
+
+
+def header(doc):
+    # Encabezado discreto con el nombre del producto + acento de marca.
+    p = doc.sections[0].header.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r = p.add_run("VITMATERNA"); r.font.size = Pt(9); r.bold = True; r.font.color.rgb = TEAL
+    r2 = p.add_run("  ·  Salud Prenatal"); r2.font.size = Pt(9); r2.font.color.rgb = GRAY
+
+
+def build():
+    doc = Document()
+    for s in doc.sections:
+        s.left_margin = s.right_margin = Cm(2.2); s.top_margin = s.bottom_margin = Cm(2.0)
+    style_base(doc); footer(doc); header(doc); cover(doc)
+
+    # Créditos
+    h1(doc, "Créditos y confidencialidad")
+    para(doc, "Este documento es el manual de usuario oficial de la aplicación móvil VITMATERNA, plataforma "
+              "de seguimiento de salud prenatal, propiedad del Centro de Salud Talavera. Se entrega con fines "
+              "de capacitación y uso del sistema.")
+    para(doc, "La información de pacientes que aparece en las capturas corresponde a datos de demostración y "
+              "no representa a personas reales. El manejo de datos de salud se realiza conforme a la normativa "
+              "de protección de datos personales vigente.")
+    note(doc, "Este manual es una guía de consulta. Usa el índice para ir directo a la tarea que necesites.")
+    pb(doc)
+
+    # Índice
+    h1(doc, "Índice de contenidos"); add_toc(doc); pb(doc)
+
+    # 1. Introducción
+    h1(doc, "1. Introducción")
+    h2(doc, "1.1 ¿Qué es VITMATERNA?")
+    para(doc, "VITMATERNA es una aplicación móvil que te acompaña durante todo tu embarazo. Con ella puedes "
+              "seguir tus semanas de gestación, conocer tus próximas citas de control prenatal, registrar la "
+              "toma de tus vitaminas, conversar con tu obstetra, aprender sobre tu embarazo y pedir ayuda si "
+              "te sientes mal.")
+    h2(doc, "1.2 ¿A quién está dirigido?")
+    para(doc, "A las gestantes que usan la aplicación en su teléfono. Está escrita en lenguaje sencillo y no "
+              "requiere conocimientos técnicos.")
+    h2(doc, "1.3 Alcance")
+    para(doc, "Explica, paso a paso y con imágenes, cómo usar cada función: inicio, citas, tratamiento, chat, "
+              "educación, signos de alarma, perfil y los formularios y ventanas (modales) de cada uno.")
+
+    # 2. Antes de empezar
+    h1(doc, "2. Antes de empezar")
+    h2(doc, "2.1 Requisitos")
+    para(doc, "• Un teléfono con Android o iPhone (iOS).\n• Conexión a internet (datos móviles o wifi).\n"
+              "• Tu número de DNI y la contraseña que te entregó tu obstetra.")
+    h2(doc, "2.2 Instalación")
+    para(doc, "Descarga la aplicación «VITMATERNA» desde la tienda de tu teléfono (Play Store en Android o "
+              "App Store en iPhone) e instálala. Al terminar, toca el ícono para abrirla.")
+    h2(doc, "2.3 Convenciones de este manual")
+    para(doc, "En las imágenes verás marcas numeradas y recuadros que indican exactamente de qué elemento se "
+              "habla y en qué orden usarlo:")
+    tbl = doc.add_table(rows=3, cols=2); tbl.style = "Light Grid Accent 1"
+    for i, (a, b) in enumerate([
+        ("① ② ③", "Marca de paso: el número indica el orden en que debes tocar cada elemento de la pantalla."),
+        ("Recuadro rojo", "Resalta el botón, la tarjeta o el campo que se está explicando."),
+        ("Nota / Importante / Atención", "Avisos con información útil o advertencias a tener en cuenta."),
+    ]):
+        tbl.cell(i, 0).paragraphs[0].add_run(a).bold = True
+        tbl.cell(i, 1).paragraphs[0].add_run(b)
+    pb(doc)
+
+    # 3. Acceso
+    h1(doc, "3. Acceso al sistema")
+    h2(doc, "3.1 Iniciar sesión")
+    steps(doc, [
+        "Abre la aplicación VITMATERNA en tu teléfono.",
+        "Escribe tu número de DNI en el primer campo.",
+        "Escribe tu contraseña en el segundo campo.",
+        "Toca el botón «Iniciar Sesión».",
+    ])
+    note(doc, "Si olvidaste tu contraseña, toca «¿Olvidaste tu contraseña?» o pídele ayuda a tu obstetra.")
+    h2(doc, "3.2 El recorrido guiado «Conoce tu app»")
+    para(doc, "La primera vez que entras, la app te ofrece un recorrido que te muestra para qué sirve cada "
+              "parte. Puedes verlo otra vez desde «Mi perfil» → «Conoce tu app».")
+    pb(doc)
+
+    # 4. Inicio
+    h1(doc, "4. Pantalla de inicio")
+    para(doc, "Es la primera pantalla al entrar. Te muestra un resumen de tu embarazo del día.")
+    steps(doc, [
+        "① «Tu embarazo»: la cinta muestra tu semana de gestación, el trimestre y tu nivel de riesgo.",
+        "② «Próxima Cita»: el día, la hora y el estado de tu siguiente control.",
+        "③ «Tratamiento del Día»: cuántas vitaminas o pastillas debes tomar hoy y tu avance.",
+        "④ Botón de menú (☰): abre el menú lateral para ir a Educación, Perfil y más.",
+    ])
+    shot(doc, "A1", "Pantalla de inicio de la gestante.")
+    note(doc, "La semana de embarazo y el avance se calculan solos a partir de tu fecha de última regla (FUM).")
+
+    h2(doc, "4.1 Confirmar la asistencia a tu cita")
+    steps(doc, ["① En la tarjeta «Próxima Cita», toca «Confirmar asistencia» para avisar que asistirás. "
+                "Tu obstetra recibirá la confirmación."])
+    shot(doc, "A1c", "Botón para confirmar la asistencia a la próxima cita.")
+
+    h2(doc, "4.2 Acciones rápidas")
+    para(doc, "En la parte inferior del inicio tienes tres accesos directos:")
+    steps(doc, [
+        "① «Reportar»: informa un signo de alarma (síntoma) a tu obstetra.",
+        "② «Emergencia»: envía una alerta de auxilio con tu ubicación.",
+        "③ «Educación»: abre la biblioteca de contenido para tu embarazo.",
+    ])
+    shot(doc, "A1b", "Acciones rápidas del inicio.")
+    note(doc, "Al tocar «Emergencia» se abre una ventana de confirmación con el botón «Enviar ahora». Solo se "
+              "envía la alerta cuando lo confirmas; también puedes «Cancelar».", "alerta")
+
+    h2(doc, "4.3 El menú lateral")
+    para(doc, "Toca el botón de menú (☰) del inicio para abrir el menú lateral, desde donde llegas al resto "
+              "de funciones:")
+    steps(doc, [
+        "① «Educación»: contenido para tu embarazo.",
+        "② «Signos de alarma»: reportar síntomas.",
+        "③ «Visitas domiciliarias»: historial de visitas a tu domicilio.",
+        "④ «Mi perfil»: tus datos, tu FUM y tus preferencias.",
+    ])
+    shot(doc, "MENU", "Menú lateral de navegación.")
+    pb(doc)
+
+    # 5. Citas
+    h1(doc, "5. Mis citas")
+    para(doc, "Aquí llevas el control de tus citas de control prenatal (la meta son 8 controles).")
+    steps(doc, [
+        "① Pestañas «Próximas» e «Historial» para alternar entre tus citas futuras y las ya realizadas.",
+        "② «Controles prenatales»: muestra cuántos controles llevas de la meta de 8.",
+    ])
+    shot(doc, "A2", "Listado de citas de control prenatal.")
+
+    h2(doc, "5.1 Ver el detalle de una cita")
+    para(doc, "Toca cualquier cita de la lista para abrir su detalle. En esa ventana puedes ver la fecha, la "
+              "hora, el profesional, el número de control y las indicaciones.")
+    shot(doc, "A2b", "Ventana de detalle de la cita.") if os.path.exists(os.path.join(IMG, "A2b.png")) else None
+    para(doc, "Desde el detalle, según el estado de la cita, puedes:")
+    steps(doc, [
+        "Tocar «Confirmar» para confirmar tu asistencia.",
+        "Tocar «Reprogramar» o «Solicitar reprogramación» para pedir un cambio de día. Se abrirá una ventana "
+        "donde eliges la nueva fecha, un horario disponible y escribes el motivo (mínimo 5 caracteres). "
+        "Tu obstetra debe aprobar la solicitud; te avisaremos cuando lo haga.",
+    ])
+    note(doc, "Una solicitud de reprogramación queda pendiente hasta que tu obstetra la apruebe. Mientras "
+              "tanto, tu cita original sigue vigente.")
+    pb(doc)
+
+    # 6. Tratamiento
+    h1(doc, "6. Mi tratamiento")
+    para(doc, "En esta pantalla registras la toma de tus vitaminas y pastillas, y ves tu constancia.")
+    steps(doc, ["① «Mi adherencia»: muestra tu porcentaje de cumplimiento y las dosis tomadas de los últimos días."])
+    shot(doc, "A3", "Resumen de adherencia al tratamiento.")
+    h2(doc, "6.1 Marcar un medicamento como tomado")
+    steps(doc, ["① Cuando tomes una vitamina o pastilla, toca «Marcar como tomado». El botón cambiará a "
+                "«Tomado hoy» y tu porcentaje de cumplimiento se actualizará."])
+    shot(doc, "A3b", "Botón «Marcar como tomado» en cada medicamento.")
+    note(doc, "Tu obstetra puede ver tu constancia. Tomar tus suplementos a diario ayuda a prevenir la anemia "
+              "y cuida a tu bebé.")
+    pb(doc)
+
+    # 7. Chat
+    h1(doc, "7. Chat con mi obstetra")
+    para(doc, "Puedes escribirle a tu obstetra para hacer preguntas o contarle cómo te sientes.")
+    steps(doc, [
+        "① Toca «Chat» en la barra inferior para abrir la conversación con tu obstetra.",
+        "② Escribe tu mensaje en el campo inferior. ③ Toca el botón de enviar. Con el clip puedes adjuntar una foto.",
+    ])
+    shot(doc, "A4", "Conversación con la obstetra.")
+    pb(doc)
+
+    # 8. Educación
+    h1(doc, "8. Educación")
+    para(doc, "Encuentra artículos y recursos sencillos, elegidos según tu mes de embarazo.")
+    steps(doc, [
+        "① Buscador: escribe un tema para encontrar contenido.",
+        "② «Mis semanas»: abre la calculadora de semanas de embarazo.",
+        "③ «Signos de alarma»: acceso directo para reportar síntomas.",
+    ])
+    shot(doc, "A5", "Biblioteca de contenido educativo.")
+    h2(doc, "8.1 Calcular mis semanas de embarazo")
+    para(doc, "Al tocar «Mis semanas» se abre una calculadora. Elige la fecha de tu última regla (FUM) y toca "
+              "«Ver mis semanas de embarazo»; verás tu semana actual, el trimestre y la fecha probable de parto.")
+    shot(doc, "A5b", "Calculadora «¿En qué semana estoy?».")
+    pb(doc)
+
+    # 9. Signos de alarma
+    h1(doc, "9. Signos de alarma y emergencia")
+    para(doc, "Si algo te preocupa, puedes reportar uno o varios síntomas a tu obstetra.")
+    steps(doc, [
+        "Marca los síntomas que presentas (están agrupados en «Durante el Embarazo», «Durante el Parto» y "
+        "«Después del Parto»).",
+        "Si quieres, escribe más detalles en «Información adicional».",
+        "① Toca «Enviar alerta a mi obstetra». Recibirás una confirmación y tu obstetra será notificada.",
+    ])
+    shot(doc, "A6", "Pantalla para reportar signos de alarma.")
+    note(doc, "Si tienes sangrado, dolor de cabeza muy fuerte, pérdida de líquido, fiebre o tu bebé se mueve "
+              "menos, usa el botón de Emergencia del inicio y acude de inmediato al establecimiento de salud. "
+              "Teléfono: 083 – 421800.", "alerta")
+    pb(doc)
+
+    # 10. Perfil
+    h1(doc, "10. Mi perfil")
+    para(doc, "Desde tu perfil editas tus datos, eliges cómo recibir avisos y puedes repetir el recorrido guiado.")
+    steps(doc, [
+        "① «Mis datos y fecha de última regla»: edita tu información y registra tu FUM.",
+        "② «Notificaciones»: elige por qué canales recibir avisos.",
+        "③ «Conoce tu app»: repite el recorrido guiado cuando quieras.",
+    ])
+    shot(doc, "A7", "Pantalla de perfil de la gestante.")
+
+    h2(doc, "10.1 Editar mis datos y mi FUM")
+    para(doc, "Al tocar «Mis datos y fecha de última regla» se abre un formulario con tus datos. Los campos "
+              "con asterisco (*) son obligatorios:")
+    steps(doc, [
+        "Completa «Nombres *», «Apellidos *», «Teléfono» y «Correo Electrónico».",
+        "Elige tu «Fecha de Nacimiento *».",
+        "Elige tu «Fecha de tu última regla (FUM) *»: es el primer día de tu última menstruación. Con ella se "
+        "calculan tus semanas y tu cronograma de 8 controles.",
+        "① Toca «Guardar Datos» para confirmar (o «Cancelar» para salir sin cambios).",
+    ])
+    shot(doc, "A7b", "Formulario «Modificar Perfil y FUM».")
+
+    h2(doc, "10.2 Preferencias de notificación")
+    para(doc, "Al tocar «Notificaciones» eliges por qué canales quieres recibir recordatorios y alertas:")
+    steps(doc, [
+        "Activa o desactiva «Notificaciones en la app», «SMS» y «WhatsApp» según prefieras.",
+        "① Toca «Guardar» para confirmar tus preferencias.",
+    ])
+    shot(doc, "A7c", "Ventana «Preferencias de notificación».")
+    note(doc, "Las alertas clínicas urgentes siempre se enviarán por seguridad, aunque desactives algún canal.")
+    pb(doc)
+
+    # 11. Troubleshooting
+    h1(doc, "11. Solución de problemas")
+    for q, a in [
+        ("No puedo iniciar sesión", "Verifica que tu DNI y contraseña sean correctos. Si los olvidaste, usa «¿Olvidaste tu contraseña?» o pide ayuda a tu obstetra."),
+        ("No veo mi semana de embarazo", "Asegúrate de haber registrado tu fecha de última regla (FUM) en «Mi perfil» → «Mis datos y fecha de última regla»."),
+        ("La app no carga o se ve en blanco", "Revisa tu conexión a internet, cierra la aplicación y vuelve a abrirla."),
+        ("No recibo los recordatorios", "Entra a «Mi perfil» → «Notificaciones» y activa los canales que prefieras."),
+    ]:
+        h3(doc, q); para(doc, a)
+
+    # 12. FAQ
+    h1(doc, "12. Preguntas frecuentes")
+    for q, a in [
+        ("¿Cuántos controles prenatales debo tener?", "La meta son 8 controles durante el embarazo. La app te ayuda a llevar la cuenta."),
+        ("¿Para qué sirve marcar mis pastillas?", "Para llevar tu constancia y que tu obstetra sepa que las estás tomando bien."),
+        ("¿Puedo usar la app sin internet?", "Algunas acciones se guardan y se sincronizan cuando recuperas la conexión, pero se recomienda usarla con internet."),
+        ("¿Mis datos están seguros?", "Sí. Tu información de salud solo es visible para el personal de salud autorizado."),
+    ]:
+        h3(doc, q); para(doc, a)
+
+    # 13. Glosario
+    h1(doc, "13. Glosario")
+    for t, d in [
+        ("FUM", "Fecha de la Última Menstruación. Con ella se calculan las semanas de tu embarazo."),
+        ("FPP", "Fecha Probable de Parto."),
+        ("Control prenatal", "Cita médica para revisar tu salud y la de tu bebé durante el embarazo."),
+        ("Adherencia", "Qué tan constante eres tomando tus vitaminas y pastillas."),
+        ("Signo de alarma", "Síntoma que puede indicar un problema y por el que debes buscar atención."),
+        ("Modal / ventana", "Una ventana que se abre sobre la pantalla para una tarea concreta (por ejemplo, editar tus datos)."),
+    ]:
+        p = doc.add_paragraph(); p.add_run(f"{t}: ").bold = True; p.add_run(d)
+
+    # 14. Contacto
+    h1(doc, "14. Soporte y contacto")
+    para(doc, "Si necesitas ayuda con la aplicación, comunícate con tu obstetra desde el chat de la app. Para "
+              "consultas presenciales o emergencias, acude a tu establecimiento de salud.")
+    p = doc.add_paragraph(); p.add_run("Centro de Salud Talavera\n").bold = True
+    p.add_run("Andahuaylas, Apurímac\nTeléfono: 083 – 421800")
+
+    doc.save(OUT)
+    print(f"✅ DOCX: {OUT}  ·  figuras: {FIG['n']}")
+
+
+if __name__ == "__main__":
+    build()

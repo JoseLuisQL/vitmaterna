@@ -1,0 +1,84 @@
+{
+  "role": "admin",
+  "accent": "3C5168",
+  "title": "Guía para el Administrador",
+  "intro_que": "VITMATERNA es la plataforma cuyo panel de administración te permite controlar todo el sistema: aprobar y gestionar usuarios, publicar contenido educativo, configurar los canales de notificación (SMS y WhatsApp), ajustar parámetros del sistema, administrar las sedes y revisar la auditoría.",
+  "intro_quien": "Al personal administrador que gestiona el sistema VITMATERNA.",
+  "intro_alcance": "Explica, paso a paso y con imágenes, cada función del panel: inicio, usuarios, contenido, canales de notificación, configuración, sedes y auditoría.",
+  "sections": [
+    {
+      "h": "4. Panel de control",
+      "p": "Es la primera pantalla al entrar. Resume el estado del sistema.",
+      "steps": [
+        "① «Cuentas por aprobar»: si hay obstetras o gestantes esperando aprobación, aparecen aquí para resolverlo.",
+        "② «Resumen»: las cifras clave (usuarios, gestantes activas, alto riesgo y citas del día)."
+      ],
+      "shot": "C1", "cap": "Panel de control del administrador."
+    },
+    {
+      "h": "4.1 Estado del sistema y gestión",
+      "p": "Más abajo en el inicio encuentras:",
+      "steps": [
+        "① «Estado del sistema»: alertas, contenido publicado y si los canales SMS/WhatsApp están activos.",
+        "② «Gestión»: accesos rápidos a Usuarios, Contenido y Reportes."
+      ],
+      "shot": "C1b", "cap": "Estado del sistema y accesos de gestión."
+    },
+    {
+      "h": "5. Gestión de usuarios",
+      "p": "Administra todas las cuentas del sistema.",
+      "steps": ["① Buscador por nombre o DNI. En cada usuario puedes ver su ficha, aprobar la cuenta, activarla o desactivarla, editar sus datos, cambiar la contraseña o eliminarlo. Para crear una cuenta nueva usa el botón «+» (o «Nuevo usuario» en el portal web) y elige el rol."],
+      "shot": "C2", "cap": "Gestión de usuarios.",
+      "note": "Las cuentas de obstetra recién registradas quedan pendientes de aprobación hasta que las apruebes desde aquí."
+    },
+    {
+      "h": "6. Contenido educativo",
+      "p": "Crea y administra los recursos que verán las gestantes.",
+      "steps": ["① Busca y filtra por categoría. Usa el botón de crear para publicar un nuevo artículo, infografía, video o audio (con su categoría y trimestre). En cada elemento puedes editar o eliminar, y ver las estadísticas de lectura."],
+      "shot": "C3", "cap": "Gestión de contenido educativo."
+    },
+    {
+      "h": "7. Canales de notificación",
+      "p": "Configura los canales para enviar mensajes reales a las gestantes.",
+      "steps": ["① «SMS (Twilio)»: activa el canal y guarda las credenciales; puedes enviar un mensaje de prueba. Más abajo, «WhatsApp (Cloud API)» se configura de forma similar."],
+      "shot": "C4", "cap": "Canales de notificación SMS y WhatsApp.",
+      "note": "Mientras un canal no esté configurado, el sistema opera en «modo prueba» y no envía mensajes reales."
+    },
+    {
+      "h": "8. Configuración del sistema",
+      "p": "Ajusta los parámetros generales.",
+      "steps": ["① «Límites y Accesos»: máximo de pacientes por obstetra y si se permiten nuevos registros. Más abajo: parámetros clínicos (altitud para corregir la hemoglobina), generación automática de cronogramas y el modo mantenimiento."],
+      "shot": "C5", "cap": "Configuración del sistema.",
+      "note": "El «modo mantenimiento» bloquea el acceso a gestantes y obstetras (tú conservas el acceso). Úsalo solo durante actualizaciones."
+    },
+    {
+      "h": "9. Establecimientos de salud (Sedes)",
+      "p": "Administra las sedes del centro de salud.",
+      "steps": ["① Toca el botón «Crear establecimiento» para registrar una sede nueva (nombre, código, dirección, teléfono, altitud y servicios). En cada sede puedes editar o eliminar."],
+      "shot": "C6", "cap": "Establecimientos de salud."
+    },
+    {
+      "h": "10. Auditoría y backup",
+      "p": "Revisa la actividad del sistema y respalda la base de datos.",
+      "steps": ["① «Exportar Backup BD»: descarga un respaldo completo de la base de datos. Más abajo se muestra el registro de auditoría (quién hizo qué y cuándo)."],
+      "shot": "C7", "cap": "Auditoría y backup del sistema."
+    }
+  ],
+  "troubleshooting": [
+    ["No aparecen cuentas por aprobar", "Significa que no hay registros pendientes. Las nuevas solicitudes de obstetra aparecerán automáticamente en el inicio."],
+    ["Los canales siguen en «modo prueba»", "Verifica que guardaste las credenciales correctas de Twilio (SMS) o WhatsApp Cloud API y usa el botón de prueba."],
+    ["No puedo activar el modo mantenimiento", "Confirma el cuadro de diálogo de advertencia. Recuerda que bloqueará a gestantes y obstetras."]
+  ],
+  "faq": [
+    ["¿Cómo apruebo a una obstetra?", "Desde el inicio o desde «Usuarios», abre la cuenta pendiente y toca «Aprobar»."],
+    ["¿Cómo publico contenido educativo?", "En «Contenido», usa el botón de crear, completa los datos y guárdalo."],
+    ["¿Cómo respaldo la información?", "En «Auditoría y backup», usa «Exportar Backup BD»."]
+  ],
+  "glossary": [
+    ["Rol", "Tipo de cuenta: gestante, obstetra o administrador."],
+    ["Modo mantenimiento", "Estado que bloquea temporalmente el acceso a usuarios no administradores."],
+    ["Twilio / WhatsApp Cloud API", "Servicios externos para enviar SMS y mensajes de WhatsApp."],
+    ["Auditoría", "Registro de las acciones realizadas en el sistema."],
+    ["Backup", "Copia de respaldo de la base de datos."]
+  ]
+}
