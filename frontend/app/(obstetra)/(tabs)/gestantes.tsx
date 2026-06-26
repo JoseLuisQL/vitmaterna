@@ -39,6 +39,7 @@ export default function GestantesScreen(): React.ReactElement {
   const router = useRouter();
   const { webShell } = useResponsive();
   const gestantesTourTarget = useTourTarget(TOUR_TARGETS.obstetraGestantes);
+  const filtrosTourTarget = useTourTarget(TOUR_TARGETS.obstetraGestantesFiltros);
   const nuevaGestanteTourTarget = useTourTarget(TOUR_TARGETS.obstetraNuevaGestante);
 
   const debouncedSearch = useDebouncedValue(search, 400);
@@ -90,7 +91,7 @@ export default function GestantesScreen(): React.ReactElement {
         />
       </View>
 
-      <View style={styles.filtersScrollWrapper}>
+      <View ref={!webShell ? filtrosTourTarget : undefined} collapsable={false} style={styles.filtersScrollWrapper}>
         <View style={styles.tabsWrapper}>
           <TouchableOpacity
             style={[styles.tabButton, filterMode === 'todas' && styles.tabButtonActive]}
@@ -297,7 +298,7 @@ export default function GestantesScreen(): React.ReactElement {
               placeholder="Buscar por nombre o DNI..."
               containerStyle={styles.webSearchBox}
             />
-            <View style={styles.webFilterRow}>
+            <View ref={webShell ? filtrosTourTarget : undefined} collapsable={false} style={styles.webFilterRow}>
               {WEB_FILTERS.map((f) => (
                 <TouchableOpacity key={f.key} style={[styles.webChip, filterMode === f.key && styles.webChipActive]} onPress={() => setFilterMode(f.key as any)}>
                   <Text style={[styles.webChipText, filterMode === f.key && styles.webChipTextActive]}>{f.label}</Text>

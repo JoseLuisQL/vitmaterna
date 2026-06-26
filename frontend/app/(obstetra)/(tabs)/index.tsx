@@ -71,6 +71,7 @@ export default function ObstetraDashboard(): React.ReactElement {
   // Objetivos del tour guiado.
   const kpisTarget = useTourTarget(TOUR_TARGETS.obstetraKpis);
   const riskTarget = useTourTarget(TOUR_TARGETS.obstetraRisk);
+  const citasHoyTarget = useTourTarget(TOUR_TARGETS.obstetraCitasHoy);
   const totalRisk = (riskDistribution.low || 0) + (riskDistribution.medium || 0) + (riskDistribution.high || 0);
 
   const renderHeader = () => (
@@ -127,7 +128,7 @@ export default function ObstetraDashboard(): React.ReactElement {
       </View>
 
       {/* Citas de hoy */}
-      <View style={styles.sectionHeader}>
+      <View ref={!webShell ? citasHoyTarget : undefined} collapsable={false} style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Citas de hoy</Text>
         <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} accessibilityRole="button">
           <Text style={styles.sectionLink}>Ver todas</Text>
@@ -220,7 +221,7 @@ export default function ObstetraDashboard(): React.ReactElement {
             </View>
 
             <View style={styles.col}>
-              <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+              <View ref={webShell ? citasHoyTarget : undefined} collapsable={false} style={[styles.sectionHeader, { marginTop: 0 }]}>
                 <Text style={styles.sectionTitle}>Citas de hoy</Text>
                 <TouchableOpacity onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} accessibilityRole="button">
                   <Text style={styles.sectionLink}>Ver todas</Text>

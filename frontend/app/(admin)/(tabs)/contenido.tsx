@@ -102,6 +102,7 @@ export default function ContenidoScreen(): React.ReactElement {
   const { open: openSidebar } = useSidebar();
   const { webShell } = useResponsive();
   const contenidoTourTarget = useTourTarget(TOUR_TARGETS.adminContenido);
+  const statsTourTarget = useTourTarget(TOUR_TARGETS.adminContenidoStats);
   const { data: items = [], isLoading, refetch, isRefetching } = useEducationContent();
   const createMut = useCreateEducationContent();
   const updateMut = useUpdateEducationContent();
@@ -289,7 +290,7 @@ export default function ContenidoScreen(): React.ReactElement {
   const renderListHeader = () => (
     <View>
       {/* Resumen de lecturas */}
-      <View style={styles.statsCard}>
+      <View ref={statsTourTarget} collapsable={false} style={styles.statsCard}>
         <View style={styles.statsHeaderRow}>
           <TrendingUp size={16} color={BRAND} />
           <Text style={styles.statsTitle}>Estadísticas de lectura</Text>

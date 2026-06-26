@@ -8,6 +8,8 @@ import { useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
 import { Building2, Plus, Trash2, Pencil, Phone, MapPin, Mountain, ArrowLeft } from 'lucide-react-native';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
 import { confirmAction } from '../../../src/utils/confirm';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
@@ -41,6 +43,7 @@ export default function SedesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
+  const sedesTourTarget = useTourTarget(TOUR_TARGETS.adminSedes);
   const { data: facilities, isLoading } = useFacilities();
   const createMut = useCreateFacility();
   const updateMut = useUpdateFacility();
@@ -219,7 +222,7 @@ export default function SedesScreen(): React.ReactElement {
       width="full"
       scroll={webShell}
       actions={
-        <TouchableOpacity style={[styles.addBtn, webShell && ({ cursor: 'pointer', outlineStyle: 'none' } as any)]} onPress={openCreate} accessibilityRole="button" accessibilityLabel="Crear establecimiento">
+        <TouchableOpacity ref={sedesTourTarget as any} style={[styles.addBtn, webShell && ({ cursor: 'pointer', outlineStyle: 'none' } as any)]} onPress={openCreate} accessibilityRole="button" accessibilityLabel="Crear establecimiento">
           <Plus size={18} color={commonColors.white} />
         </TouchableOpacity>
       }

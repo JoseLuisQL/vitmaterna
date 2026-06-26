@@ -47,6 +47,7 @@ export default function ObstetraChatScreen() {
   const router = useRouter();
   const { webShell } = useResponsive();
   const chatTourTarget = useTourTarget(TOUR_TARGETS.obstetraChat);
+  const masivoTourTarget = useTourTarget(TOUR_TARGETS.obstetraMasivo);
   const { user } = useAuthStore();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -328,10 +329,12 @@ export default function ObstetraChatScreen() {
               <Text style={styles.webListTitle}>Bandeja de Consultas</Text>
               <Text style={styles.webListSubtitle}>Tus gestantes</Text>
             </View>
-            <TouchableOpacity style={styles.broadcastBtn} onPress={() => router.push('/(obstetra)/mensaje-masivo')} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
-              <Megaphone size={16} color={commonColors.white} />
-              <Text style={styles.broadcastBtnText}>Masivo</Text>
-            </TouchableOpacity>
+            <View ref={webShell ? masivoTourTarget : undefined} collapsable={false}>
+              <TouchableOpacity style={styles.broadcastBtn} onPress={() => router.push('/(obstetra)/mensaje-masivo')} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
+                <Megaphone size={16} color={commonColors.white} />
+                <Text style={styles.broadcastBtnText}>Masivo</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={styles.webSearchWrap}>{SearchBar}</View>
           {isLoadingConvs ? (
@@ -383,7 +386,7 @@ export default function ObstetraChatScreen() {
         renderList(false)
       )}
 
-      <TouchableOpacity style={styles.broadcastFab} onPress={() => router.push('/(obstetra)/mensaje-masivo')} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
+      <TouchableOpacity ref={!webShell ? (masivoTourTarget as any) : undefined} style={styles.broadcastFab} onPress={() => router.push('/(obstetra)/mensaje-masivo')} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
         <Megaphone size={20} color={commonColors.white} />
         <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
       </TouchableOpacity>

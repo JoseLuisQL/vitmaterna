@@ -42,6 +42,7 @@ export default function ConfigScreen(): React.ReactElement {
   const toast = useToast();
   const { webShell } = useResponsive();
   const configTourTarget = useTourTarget(TOUR_TARGETS.adminConfig);
+  const mantenimientoTourTarget = useTourTarget(TOUR_TARGETS.adminConfigMantenimiento);
   const { data: config, isLoading } = useSystemConfig();
   const updateConfigMutation = useUpdateSystemConfig();
 
@@ -197,7 +198,7 @@ export default function ConfigScreen(): React.ReactElement {
             </View>
           </View>
 
-          <View style={[styles.section, webShell && styles.col]}>
+          <View ref={mantenimientoTourTarget} collapsable={false} style={[styles.section, webShell && styles.col]}>
             <Text style={styles.sectionTitle}>Sistema</Text>
             <View style={styles.switchRow}>
               <View>

@@ -59,6 +59,8 @@ export default function ReportesScreen(): React.ReactElement {
   const toast = useToast();
   const { webShell } = useResponsive();
   const reportesTourTarget = useTourTarget(TOUR_TARGETS.obstetraReportes);
+  const exportTourTarget = useTourTarget(TOUR_TARGETS.obstetraReportesExport);
+  const minsaTourTarget = useTourTarget(TOUR_TARGETS.obstetraReportesMinsa);
   const { user } = useAuthStore();
   const [exporting, setExporting] = React.useState(false);
   const [exportingXlsx, setExportingXlsx] = React.useState(false);
@@ -198,7 +200,7 @@ export default function ReportesScreen(): React.ReactElement {
         width="full"
         actions={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={[styles.exportRow, { marginTop: 0 }]}>
+            <View ref={exportTourTarget} collapsable={false} style={[styles.exportRow, { marginTop: 0 }]}>
               <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
                 {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
                 <Text style={styles.expBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
@@ -234,7 +236,7 @@ export default function ReportesScreen(): React.ReactElement {
           <View style={webShell ? styles.col : undefined}>
             {/* Indicadores MINSA */}
             <Text style={styles.sectionTitle}>Indicadores MINSA / ENDES</Text>
-            <View style={styles.card}>
+            <View ref={minsaTourTarget} collapsable={false} style={styles.card}>
               <Text style={styles.cardCaption}>Cada barra es el avance actual; la marca vertical es la meta.</Text>
               {data?.kpisMinsa.map((kpi, idx) => {
                 const ok = kpi.pct >= kpi.meta;

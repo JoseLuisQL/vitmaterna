@@ -67,6 +67,7 @@ export default function CronogramaScreen(): React.ReactElement {
   const toast = useToast();
   const { webShell } = useResponsive();
   const agendaTourTarget = useTourTarget(TOUR_TARGETS.obstetraAgenda);
+  const nuevaCitaTourTarget = useTourTarget(TOUR_TARGETS.obstetraNuevaCita);
   const [scope, setScope] = useState<Scope>('hoy');
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput, 350);
@@ -380,10 +381,12 @@ export default function CronogramaScreen(): React.ReactElement {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity style={styles.webCreateBtn} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
-              <Plus size={18} color={commonColors.white} />
-              <Text style={styles.webCreateText}>Nueva cita</Text>
-            </TouchableOpacity>
+            <View ref={webShell ? nuevaCitaTourTarget : undefined} collapsable={false}>
+              <TouchableOpacity style={styles.webCreateBtn} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
+                <Plus size={18} color={commonColors.white} />
+                <Text style={styles.webCreateText}>Nueva cita</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <DataTable
@@ -476,7 +479,7 @@ export default function CronogramaScreen(): React.ReactElement {
         />
       )}
 
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => setModalVisible(true)} accessibilityLabel="Nueva cita">
+      <TouchableOpacity ref={!webShell ? (nuevaCitaTourTarget as any) : undefined} style={styles.fab} activeOpacity={0.85} onPress={() => setModalVisible(true)} accessibilityLabel="Nueva cita">
         <Plus size={26} color={obstetraColors.onPrimary} />
       </TouchableOpacity>
 

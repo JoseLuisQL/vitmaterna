@@ -14,6 +14,8 @@ import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { exportTextFile } from '../../../src/utils/exportFile';
 import { useToast } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { DataTable } from '../../../src/components/web';
 import { commonColors, obstetraColors, adminColors, semanticColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
@@ -46,6 +48,7 @@ export default function AuditoriaScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
   const { webShell } = useResponsive();
+  const auditoriaTourTarget = useTourTarget(TOUR_TARGETS.adminAuditoria);
   const { data: logs, isLoading, refetch } = useAuditLogs();
   const exportMutation = useExportBackup();
 
@@ -187,7 +190,7 @@ export default function AuditoriaScreen(): React.ReactElement {
       width="full"
     >
       {webShell ? (
-        <View style={{ marginTop: spacing.md }}>
+        <View ref={auditoriaTourTarget} collapsable={false} style={{ marginTop: spacing.md }}>
           <DataTable
             columns={webColumns}
             data={logs || []}

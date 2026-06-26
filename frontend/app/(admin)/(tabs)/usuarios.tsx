@@ -101,6 +101,7 @@ export default function UsuariosScreen(): React.ReactElement {
   const { user: authUser } = useAuthStore();
   const { webShell } = useResponsive();
   const usuariosTourTarget = useTourTarget(TOUR_TARGETS.adminUsuarios);
+  const nuevoUsuarioTourTarget = useTourTarget(TOUR_TARGETS.adminNuevoUsuario);
 
   // Edición / reset / baja
   const [isEditVisible, setIsEditVisible] = useState(false);
@@ -641,10 +642,12 @@ export default function UsuariosScreen(): React.ReactElement {
           placeholder="Buscar por nombre o DNI..."
           containerStyle={styles.webSearchBox}
         />
-        <TouchableOpacity style={styles.webCreateBtn} onPress={() => setIsCreateModalVisible(true)} activeOpacity={0.85}>
-          <Plus size={18} color={commonColors.white} />
-          <Text style={styles.webCreateText}>Nuevo usuario</Text>
-        </TouchableOpacity>
+        <View ref={webShell ? nuevoUsuarioTourTarget : undefined} collapsable={false}>
+          <TouchableOpacity style={styles.webCreateBtn} onPress={() => setIsCreateModalVisible(true)} activeOpacity={0.85}>
+            <Plus size={18} color={commonColors.white} />
+            <Text style={styles.webCreateText}>Nuevo usuario</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <DataTable
@@ -702,6 +705,7 @@ export default function UsuariosScreen(): React.ReactElement {
       {/* FAB Button at the bottom right (solo móvil; en web está en la toolbar) */}
       {!webShell && (
       <TouchableOpacity 
+        ref={nuevoUsuarioTourTarget as any}
         style={styles.fab} 
         onPress={() => setIsCreateModalVisible(true)}
         activeOpacity={0.8}

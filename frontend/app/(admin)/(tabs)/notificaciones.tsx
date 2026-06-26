@@ -54,6 +54,8 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   const toast = useToast();
   const { webShell } = useResponsive();
   const notifTourTarget = useTourTarget(TOUR_TARGETS.adminNotif);
+  const smsTourTarget = useTourTarget(TOUR_TARGETS.adminNotifSms);
+  const waTourTarget = useTourTarget(TOUR_TARGETS.adminNotifWa);
   const { data: status, isLoading } = useChannelsConfig();
   const updateSms = useUpdateSmsConfig();
   const updateWa = useUpdateWhatsAppConfig();
@@ -181,7 +183,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
         <View style={webShell ? styles.twoCol : undefined}>
           {/* ─── SMS (Twilio) ─── */}
-          <View style={[styles.card, webShell && { flex: 1 }]}>
+          <View ref={smsTourTarget} collapsable={false} style={[styles.card, webShell && { flex: 1 }]}>
             <View style={styles.cardHead}>
               <View style={[styles.cardIcon, { backgroundColor: semanticColors.infoLight }]}>
                 <MessageSquare size={20} color={semanticColors.info} />
@@ -238,7 +240,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           </View>
 
           {/* ─── WhatsApp (Cloud API) ─── */}
-          <View style={[styles.card, webShell && { flex: 1 }]}>
+          <View ref={waTourTarget} collapsable={false} style={[styles.card, webShell && { flex: 1 }]}>
             <View style={styles.cardHead}>
               <View style={[styles.cardIcon, { backgroundColor: accentColors.whatsappLight }]}>
                 <Phone size={20} color={accentColors.whatsapp} />

@@ -71,6 +71,8 @@ export default function AdminInicioScreen(): React.ReactElement {
   // Objetivos del tour guiado.
   const pendingTarget = useTourTarget(TOUR_TARGETS.adminPending);
   const kpisTarget = useTourTarget(TOUR_TARGETS.adminKpis);
+  const estadoTarget = useTourTarget(TOUR_TARGETS.adminEstado);
+  const gestionTarget = useTourTarget(TOUR_TARGETS.adminGestion);
 
   return (
     <ScreenLayout
@@ -125,7 +127,7 @@ export default function AdminInicioScreen(): React.ReactElement {
       {/* En el portal web, "Estado del sistema" y "Gestión" comparten fila
           (2 columnas) para aprovechar el ancho. En móvil van apilados. */}
       <View style={webShell ? styles.twoCol : undefined}>
-        <View style={webShell ? styles.col : undefined}>
+        <View ref={estadoTarget} collapsable={false} style={webShell ? styles.col : undefined}>
           {/* Estado del sistema: lo informativo, compacto */}
           <Text style={styles.sectionTitle}>Estado del sistema</Text>
           {/* Cuando NO hay cuentas pendientes, este bloque hace de objetivo del
@@ -162,7 +164,7 @@ export default function AdminInicioScreen(): React.ReactElement {
         <View style={webShell ? styles.col : undefined}>
           {/* Accesos rápidos (3) */}
           <Text style={styles.sectionTitle}>Gestión</Text>
-          <View style={styles.quickGrid}>
+          <View ref={gestionTarget} collapsable={false} style={styles.quickGrid}>
             <PressableScale style={styles.quickBtn} onPress={() => router.push('/(admin)/(tabs)/usuarios')}>
               <Users size={22} color={BRAND} /><Text style={styles.quickText}>Usuarios</Text>
             </PressableScale>
