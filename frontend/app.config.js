@@ -36,6 +36,7 @@ module.exports = ({ config }) => ({
   },
   plugins: [
     ...(config.plugins || []),
+    'expo-image',
     [
       'expo-build-properties',
       {

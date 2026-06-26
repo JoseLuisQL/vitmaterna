@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@blazejkustra/react-native-onboarding": "^1.0.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/metro-runtime": "~56.0.14",
     "@expo/ui": "^56.0.16",
@@ -26,6 +27,7 @@
     "expo-device": "^56.0.4",
     "expo-file-system": "~56.0.7",
     "expo-haptics": "~56.0.3",
+    "expo-image": "~56.0.11",
     "expo-image-picker": "^56.0.17",
     "expo-linear-gradient": "~56.0.4",
     "expo-linking": "~56.0.13",
