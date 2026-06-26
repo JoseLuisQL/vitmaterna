@@ -13,7 +13,7 @@ Reproducible: `python3 03_build_docx.py`.
 import os
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -47,14 +47,38 @@ def add_toc(doc):
 
 
 def style_base(doc):
-    st = doc.styles["Normal"]; st.font.name = "Calibri"; st.font.size = Pt(11); st.font.color.rgb = INK
-    for name, size, color in [("Heading 1", 17, TEAL), ("Heading 2", 13, INK), ("Heading 3", 11, TEAL)]:
-        s = doc.styles[name]; s.font.name = "Calibri"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True
+    # Cuerpo: interlineado 1.4, espacio entre párrafos, lectura cómoda.
+    st = doc.styles["Normal"]
+    st.font.name = "Calibri"; st.font.size = Pt(11); st.font.color.rgb = INK
+    pf = st.paragraph_format
+    pf.line_spacing = 1.4
+    pf.space_after = Pt(8)
+    pf.space_before = Pt(0)
+    # Títulos: jerarquía clara con espacios de respiración y separación visual.
+    specs = {
+        "Heading 1": (16, TEAL, 18, 8, True),
+        "Heading 2": (13, INK, 14, 4, True),
+        "Heading 3": (11.5, TEAL, 10, 2, True),
+    }
+    for name, (size, color, before, after, keep) in specs.items():
+        s = doc.styles[name]
+        s.font.name = "Calibri"; s.font.size = Pt(size); s.font.color.rgb = color; s.font.bold = True
+        s.font.italic = False
+        pfh = s.paragraph_format
+        pfh.space_before = Pt(before); pfh.space_after = Pt(after)
+        pfh.line_spacing = 1.15; pfh.keep_with_next = True
+    # Lista numerada: un poco más de aire entre pasos.
+    try:
+        ln = doc.styles["List Number"]
+        ln.font.size = Pt(11); ln.paragraph_format.space_after = Pt(6); ln.paragraph_format.line_spacing = 1.3
+    except KeyError:
+        pass
 
 
 def caption(doc, title):
     FIG["n"] += 1
     p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(2); p.paragraph_format.space_after = Pt(12)
     r = p.add_run(f"Figura A-{FIG['n']}. {title}"); r.italic = True; r.font.size = Pt(9); r.font.color.rgb = GRAY
 
 
@@ -67,29 +91,62 @@ def shot(doc, fid, cap, height=11.3):
     caption(doc, cap)
 
 
+def _cell_pad(cell, top=80, bottom=80, left=120, right=120):
+    """Padding interno de una celda (en twips) para que el cuadro respire."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    m = OxmlElement("w:tcMar")
+    for side, val in (("top", top), ("bottom", bottom), ("start", left), ("end", right)):
+        e = OxmlElement(f"w:{side}"); e.set(qn("w:w"), str(val)); e.set(qn("w:type"), "dxa"); m.append(e)
+    tcPr.append(m)
+
+
 def note(doc, text, kind="nota"):
     colors = {"nota": ("E7F4F2", TEAL, "Nota"), "aviso": ("FBF4E5", AMBER, "Importante"),
               "alerta": ("FBEDED", RED, "Atención")}
     fill, fg, label = colors[kind]
     tbl = doc.add_table(rows=1, cols=1); tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-    c = tbl.cell(0, 0); set_cell_bg(c, fill)
+    tbl.autofit = False
+    c = tbl.cell(0, 0); set_cell_bg(c, fill); _cell_pad(c)
+    try:
+        c.width = Cm(16.6)
+    except Exception:
+        pass
     p = c.paragraphs[0]
-    r = p.add_run(f"{label}: "); r.bold = True; r.font.color.rgb = fg; r.font.size = Pt(10)
+    p.paragraph_format.space_after = Pt(0); p.paragraph_format.line_spacing = 1.3
+    r = p.add_run(f"{label}.  "); r.bold = True; r.font.color.rgb = fg; r.font.size = Pt(10)
     r2 = p.add_run(text); r2.font.size = Pt(10); r2.font.color.rgb = INK
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)  # respiro tras el cuadro
 
 
 def steps(doc, items):
     for it in items:
-        doc.add_paragraph(style="List Number").add_run(it)
+        p = doc.add_paragraph(style="List Number")
+        p.paragraph_format.space_after = Pt(6); p.paragraph_format.line_spacing = 1.3
+        p.add_run(it)
 
 
-def h1(doc, t): doc.add_heading(t, level=1)
-def h2(doc, t): doc.add_heading(t, level=2)
-def h3(doc, t): doc.add_heading(t, level=3)
+def _accent_rule(p, color=None):
+    """Línea fina de color bajo un título (borde inferior del párrafo)."""
+    color = color or "0C8174"
+    pPr = p._p.get_or_add_pPr()
+    pbdr = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single"); bottom.set(qn("w:sz"), "8")
+    bottom.set(qn("w:space"), "4"); bottom.set(qn("w:color"), color)
+    pbdr.append(bottom); pPr.append(pbdr)
+
+
+def h1(doc, t):
+    p = doc.add_heading(t, level=1)
+    _accent_rule(p, "0C8174")
+    return p
+def h2(doc, t): return doc.add_heading(t, level=2)
+def h3(doc, t): return doc.add_heading(t, level=3)
 
 
 def para(doc, t, size=11):
-    p = doc.add_paragraph(); p.add_run(t).font.size = Pt(size); return p
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p.add_run(t).font.size = Pt(size); return p
 
 
 def pb(doc): doc.add_page_break()
@@ -144,10 +201,10 @@ def build():
 
     # Créditos
     h1(doc, "Créditos y confidencialidad")
-    pa = doc.add_paragraph(); pa.add_run("Autor del manual: ").bold = True; pa.add_run(AUTHOR)
+    pa = doc.add_paragraph(); pa.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    pa.add_run("Autor del manual: ").bold = True; pa.add_run(AUTHOR)
     para(doc, "Este documento es el manual de usuario oficial de la aplicación móvil VITMATERNA, plataforma "
-              "de seguimiento de salud prenatal, propiedad del Centro de Salud Talavera. Se entrega con fines "
-              "de capacitación y uso del sistema.")
+              "de seguimiento de salud prenatal. Se entrega con fines de capacitación y uso del sistema.")
     para(doc, "La información de pacientes que aparece en las capturas corresponde a datos de demostración y "
               "no representa a personas reales. El manejo de datos de salud se realiza conforme a la normativa "
               "de protección de datos personales vigente.")
