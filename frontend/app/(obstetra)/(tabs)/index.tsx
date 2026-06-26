@@ -20,6 +20,8 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useObstetraDashboard, useTodayAppointments } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -65,6 +67,10 @@ export default function ObstetraDashboard(): React.ReactElement {
 
   const { totalPatients = 0, alerts = 0, appointmentsToday = 0, riskDistribution = { low: 0, medium: 0, high: 0 } } = stats || {};
   const isRefetching = isRefetchingStats || isRefetchingAppts;
+
+  // Objetivos del tour guiado.
+  const kpisTarget = useTourTarget(TOUR_TARGETS.obstetraKpis);
+  const riskTarget = useTourTarget(TOUR_TARGETS.obstetraRisk);
   const totalRisk = (riskDistribution.low || 0) + (riskDistribution.medium || 0) + (riskDistribution.high || 0);
 
   const renderHeader = () => (
@@ -74,7 +80,7 @@ export default function ObstetraDashboard(): React.ReactElement {
       <Text style={styles.todayDate} numberOfLines={1}>{fecha}</Text>
 
       {/* 3 KPIs accionables, sobrios */}
-      <View style={styles.kpiRow}>
+      <View ref={kpisTarget} collapsable={false} style={styles.kpiRow}>
         <Kpi icon={Calendar} value={appointmentsToday} label="Citas hoy" onPress={() => router.push('/(obstetra)/(tabs)/cronograma')} />
         <Kpi icon={Users} value={totalPatients} label="Pacientes" onPress={() => router.push('/(obstetra)/(tabs)/gestantes')} />
         <Kpi icon={AlertTriangle} value={alerts} label="Alertas" alert onPress={() => router.push('/(obstetra)/notificaciones')} />
@@ -87,7 +93,7 @@ export default function ObstetraDashboard(): React.ReactElement {
           <Text style={styles.sectionLink}>Ver reportes</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.riskCard}>
+      <View ref={riskTarget} collapsable={false} style={styles.riskCard}>
         <View style={styles.riskRow}>
           <View style={styles.riskItem}>
             <Text style={styles.riskCount}>{riskDistribution.low || 0}</Text>

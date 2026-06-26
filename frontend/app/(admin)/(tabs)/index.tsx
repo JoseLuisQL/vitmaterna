@@ -24,6 +24,8 @@ import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
 import { useResponsive } from '../../../src/theme/responsive';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 
 const BRAND = adminColors.primary;
 
@@ -66,6 +68,10 @@ export default function AdminInicioScreen(): React.ReactElement {
   const pendientes = d?.usuarios.pendientes ?? d?.usuarios.obstetrasPendientes ?? 0;
   const fecha = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  // Objetivos del tour guiado.
+  const pendingTarget = useTourTarget(TOUR_TARGETS.adminPending);
+  const kpisTarget = useTourTarget(TOUR_TARGETS.adminKpis);
+
   return (
     <ScreenLayout
       role="admin"
@@ -87,6 +93,7 @@ export default function AdminInicioScreen(): React.ReactElement {
     >
       {/* Acción directa: usuarios pendientes de aprobación (cualquier rol) */}
       {pendientes > 0 && (
+        <View ref={pendingTarget} collapsable={false}>
         <TouchableOpacity
           style={styles.alertCard}
           onPress={() => router.push('/(admin)/(tabs)/usuarios')}
@@ -101,16 +108,19 @@ export default function AdminInicioScreen(): React.ReactElement {
           </View>
           <ChevronRight size={20} color={commonColors.textTertiary} />
         </TouchableOpacity>
+        </View>
       )}
 
       {/* Resumen ejecutivo: 4 cifras clave */}
       <Text style={styles.sectionTitle}>Resumen</Text>
+      <View ref={kpisTarget} collapsable={false}>
       <AutoGrid minColumnWidth={150} maxColumns={4}>
         <Kpi icon={Users} label="Usuarios" value={d?.usuarios.total ?? 0} color={BRAND} bg={adminColors.primaryLight} />
         <Kpi icon={Baby} label="Gestantes activas" value={d?.gestantes.activas ?? 0} color={semanticColors.success} bg={semanticColors.successLight} />
         <Kpi icon={AlertTriangle} label="Alto riesgo" value={d?.gestantes.altoRiesgo ?? 0} color={semanticColors.danger} bg={semanticColors.dangerLight} />
         <Kpi icon={Calendar} label="Citas hoy" value={d?.citas.hoy ?? 0} color={semanticColors.info} bg={semanticColors.infoLight} />
       </AutoGrid>
+      </View>
 
       {/* En el portal web, "Estado del sistema" y "Gestión" comparten fila
           (2 columnas) para aprovechar el ancho. En móvil van apilados. */}
