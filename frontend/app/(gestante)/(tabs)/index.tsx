@@ -25,6 +25,8 @@ import { NotificationBell } from '../../../src/components/shared/NotificationBel
 import { useAuthStore } from '../../../src/store/authStore';
 import { useGestanteDashboard, useConfirmAppointment } from '../../../src/services/api-queries';
 import { useRefetchOnFocus } from '../../../src/hooks/useRefetchOnFocus';
+import { useTourTarget } from '../../../src/components/tour/tourTargets';
+import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import api from '../../../src/services/api';
 import { gestanteColors, commonColors, semanticColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -49,6 +51,12 @@ export default function GestanteDashboard(): React.ReactElement {
   const confirmMutation = useConfirmAppointment();
 
   const [emergencyVisible, setEmergencyVisible] = React.useState(false);
+
+  // Objetivos del tour guiado (se resaltan en el recorrido del primer ingreso).
+  const ribbonTarget = useTourTarget(TOUR_TARGETS.gestanteHomeRibbon);
+  const appointmentTarget = useTourTarget(TOUR_TARGETS.gestanteNextAppointment);
+  const treatmentTarget = useTourTarget(TOUR_TARGETS.gestanteTreatment);
+  const quickActionsTarget = useTourTarget(TOUR_TARGETS.gestanteQuickActions);
 
   // El envío real de la alerta. El modal EmergencyAlert gestiona GPS, estados
   // y errores; aquí solo se hace la llamada (debe lanzar si falla).
@@ -165,20 +173,23 @@ export default function GestanteDashboard(): React.ReactElement {
 
           {/* Tu embarazo — la cinta prenatal es la firma de la app: muestra el
               avance real semana a semana, los trimestres y el "hoy" que late. */}
-          <AppCard style={styles.progressCard}>
-            <View style={styles.progressHeader}>
-              <View>
-                <Text style={styles.progressTitle}>Tu embarazo</Text>
-                <Text style={styles.progressSubtitle}>{progressText}</Text>
+          <View ref={ribbonTarget} collapsable={false}>
+            <AppCard style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <View>
+                  <Text style={styles.progressTitle}>Tu embarazo</Text>
+                  <Text style={styles.progressSubtitle}>{progressText}</Text>
+                </View>
+                <AppBadge label={getRiskLabel(riskLevel)} variant={getRiskVariant(riskLevel) as any} />
               </View>
-              <AppBadge label={getRiskLabel(riskLevel)} variant={getRiskVariant(riskLevel) as any} />
-            </View>
-            <PrenatalRibbon week={weeks} colors={gestanteColors.gradient} milestones={ribbonMilestones} />
-          </AppCard>
+              <PrenatalRibbon week={weeks} colors={gestanteColors.gradient} milestones={ribbonMilestones} />
+            </AppCard>
+          </View>
 
           {/* Next Appointment — sin onPress en la tarjeta para evitar botón
               anidado (contiene el botón "Confirmar asistencia"). La navegación
               a Citas se hace desde la fila de cabecera. */}
+          <View ref={appointmentTarget} collapsable={false}>
           <AppCard style={styles.sectionCard}>
             <TouchableOpacity
               style={styles.cardHeader}
@@ -229,8 +240,10 @@ export default function GestanteDashboard(): React.ReactElement {
               )}
             </View>
           </AppCard>
+          </View>
 
           {/* Today's Treatment */}
+          <View ref={treatmentTarget} collapsable={false}>
           <AppCard style={styles.sectionCard} onPress={() => router.push('/(gestante)/(tabs)/tratamiento')}>
             <View style={styles.cardHeader}>
               <View style={styles.cardIconCircle}>
@@ -261,12 +274,14 @@ export default function GestanteDashboard(): React.ReactElement {
                   </Text>
                 </View>
               </View>
-            )}
+             )}
           </AppCard>
+          </View>
 
           {/* Quick Actions — iconos limpios (minimalistas). Solo emergencia y
               signos de alarma conservan color semántico por criticidad clínica. */}
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+          <View ref={quickActionsTarget} collapsable={false}>
           <AutoGrid minColumnWidth={100} maxColumns={4}>
             <AppCard style={styles.quickActionCard} onPress={() => router.push('/(gestante)/alarmas')}>
               <View style={styles.quickActionIcon}>
@@ -292,6 +307,7 @@ export default function GestanteDashboard(): React.ReactElement {
               <Text style={styles.quickActionSubtitle} numberOfLines={1}>Aprende más</Text>
             </AppCard>
           </AutoGrid>
+          </View>
       </ScreenLayout>
 
       <EmergencyAlert

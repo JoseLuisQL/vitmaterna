@@ -17,6 +17,9 @@ import { View, StyleSheet } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { WelcomeScreen } from './WelcomeScreen';
+import { startTour } from '../tour/tourController';
+import { tourStepsForRole } from '../tour/steps';
+import type { UserRole } from '../../types/user';
 
 export function OnboardingGate({ children }: { children: React.ReactNode }): React.ReactElement {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -25,10 +28,11 @@ export function OnboardingGate({ children }: { children: React.ReactNode }): Rea
   const { loaded, welcomeSeen, markWelcomeSeen, markTourDone } = useOnboarding();
 
   const handleStartTour = useCallback(() => {
-    // El tour guiado se conecta en una fase posterior. Por ahora, empezar el
-    // recorrido marca la bienvenida como vista.
+    // Marca la bienvenida como vista y lanza el tour guiado por rol. El tour se
+    // dará por terminado (markTourDone) cuando el usuario lo finalice u omita.
     markWelcomeSeen();
-  }, [markWelcomeSeen]);
+    startTour(tourStepsForRole(role as UserRole | undefined));
+  }, [markWelcomeSeen, role]);
 
   const handleSkip = useCallback(() => {
     markWelcomeSeen();
