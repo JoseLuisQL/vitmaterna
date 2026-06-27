@@ -26,10 +26,13 @@ Internet ──▶ Caddy (80/443, HTTPS automático) ──▶ api (Node 22, :30
 
 | Archivo | Propósito |
 |---|---|
-| `backend/Dockerfile` | Imagen multi-stage (deps → build → migrator → runtime) |
-| `backend/.dockerignore` | Mantiene el contexto de build limpio |
-| `docker-compose.prod.yml` | Orquestación de producción |
-| `Caddyfile` | Reverse proxy + HTTPS |
+| `backend/Dockerfile` | Imagen backend multi-stage (deps → build → migrator → runtime) |
+| `backend/.dockerignore` | Mantiene el contexto de build del backend limpio |
+| `frontend/Dockerfile.web` | Build del frontend web (Expo export → Caddy estático) |
+| `frontend/.dockerignore` | Mantiene el contexto de build del frontend limpio |
+| `docker-compose.prod.yml` | Orquestación de producción (backend + web + datos) |
+| `Caddyfile.web` | Edge proxy: sirve el frontend + COOP/COEP + proxy `/api` |
+| `Caddyfile` | (Alternativa) proxy solo-API para arquitectura de subdominios |
 | `.env.production.example` | Plantilla de variables (cópiala a `.env`) |
 
 ## Requisitos en el VPS
@@ -161,14 +164,36 @@ psql -v ON_ERROR_STOP=1 -h <host> -U <user> -d <db_destino> -f vitmaterna-....sq
 
 ## El frontend (Expo)
 
-El frontend de `frontend/` es una app Expo / React Native. **No** se despliega en
-este stack Docker (que es solo el backend/API). Opciones:
+El frontend de `frontend/` es una app Expo / React Native. **No** corre con
+`expo start` en producción: se **exporta a un sitio estático** (`expo export -p
+web` → carpeta `dist/`) y se sirve con un servidor web.
 
-- **App móvil:** compila el APK/AAB con EAS (`eas build`) — ver `GUIA_APK.md`.
-- **Web:** `expo export -p web` genera estáticos que puedes servir con Caddy/Nginx
-  o un hosting estático (Vercel, Netlify, Cloudflare Pages).
+### Web — incluido en este stack (mismo dominio)
 
-En ambos casos, apunta `EXPO_PUBLIC_API_URL` a `https://TU_DOMINIO/v1`.
+El stack ya incluye el servicio **`web`** (`frontend/Dockerfile.web` +
+`Caddyfile.web`). Es el proxy de borde con HTTPS y:
+
+- Sirve el `dist/` estático en `https://APP_DOMAIN/`.
+- Hace reverse proxy de `https://APP_DOMAIN/api/*` al backend → **mismo origen,
+  sin CORS**.
+- Envía las cabeceras **COOP/COEP** que `expo-sqlite` (WASM + SharedArrayBuffer)
+  necesita; sin ellas la app carga pero crashea al iniciar su base local.
+- Fallback **SPA** (rutas desconocidas → `index.html`) y MIME `application/wasm`.
+
+`EXPO_PUBLIC_API_URL` se "hornea" en el bundle en tiempo de build (como
+`--build-arg`); el compose lo fija a `https://APP_DOMAIN/api/v1`
+automáticamente. Si cambias de dominio, **reconstruye** la imagen `web`.
+
+Verificar tras desplegar:
+
+```bash
+curl -skI https://APP_DOMAIN/ | grep -i cross-origin   # COOP + COEP presentes
+# En la consola del navegador, sobre el sitio desplegado:
+#   window.crossOriginIsolated === true
+```
+
+> **App móvil (APK/AAB):** se compila aparte con EAS (`eas build`) — ver
+> `GUIA_APK.md`. Ahí `EXPO_PUBLIC_API_URL` debe apuntar a `https://APP_DOMAIN/api/v1`.
 
 ## Notas de seguridad y hardening
 

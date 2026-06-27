@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1.7
+# ============================================================================
+# VITMATERNA Frontend (web) — build estático de Expo servido por Caddy.
+#
+# La app web NO corre con `expo start` en producción: se exporta a un sitio
+# estático (HTML/JS/CSS + WASM) con `expo export -p web` y se sirve con Caddy.
+#
+# Caddy aquí cumple TRES funciones:
+#   1. Sirve el dist/ estático con las cabeceras COOP/COEP requeridas por
+#      expo-sqlite (SharedArrayBuffer), que de lo contrario hace crashear la app.
+#   2. Fallback SPA: cualquier ruta desconocida devuelve index.html.
+#   3. Reverse proxy de /api/* al backend (mismo origen → sin CORS) y, además,
+#      HTTPS automático (Let's Encrypt) como proxy de borde.
+#
+# EXPO_PUBLIC_API_URL se "hornea" en el JS en tiempo de BUILD: hay que pasarlo
+# como build-arg. Con la arquitectura de mismo origen apunta a /api del dominio.
+# ============================================================================
+
+ARG NODE_VERSION=22
+
+# ----------------------------------------------------------------------------
+# Stage 1 — build: exporta el sitio web estático de Expo
+# ----------------------------------------------------------------------------
+FROM node:${NODE_VERSION}-bookworm-slim AS build
+WORKDIR /app
+
+# Variables que se inlinean en el bundle en tiempo de build.
+ARG EXPO_PUBLIC_API_URL=https://app.vitmaterna.pe/api/v1
+ARG APP_ENV=production
+ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL} \
+    APP_ENV=${APP_ENV}
+
+# Instalación reproducible desde el lockfile.
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# Código fuente y export web → genera dist/
+COPY . .
+RUN npx expo export -p web
+
+# ----------------------------------------------------------------------------
+# Stage 2 — runtime: Caddy sirviendo dist/ (estático + COOP/COEP + SPA + proxy)
+# ----------------------------------------------------------------------------
+FROM caddy:2 AS runtime
+COPY --from=build /app/dist /srv/www
+# El Caddyfile se monta desde el compose (./Caddyfile.web) para poder ajustarlo
+# sin reconstruir la imagen.
+EXPOSE 80 443

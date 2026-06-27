@@ -1,0 +1,54 @@
+# ============================================================================
+# Caddy — Frontend web (estático) + proxy del API en el MISMO dominio.
+#
+# Arquitectura de mismo origen:
+#   https://{$APP_DOMAIN}/         → sitio estático de Expo (dist/)
+#   https://{$APP_DOMAIN}/api/*    → reverse proxy al backend (sin CORS)
+#
+# Caddy gestiona HTTPS automático (Let's Encrypt) y renueva solo. Requisito:
+# el DNS de APP_DOMAIN debe apuntar (A/AAAA) a la IP del VPS y los puertos
+# 80/443 abiertos en el firewall.
+#
+# Cabeceras COOP/COEP: imprescindibles para que expo-sqlite (WASM +
+# SharedArrayBuffer) funcione. Sin ellas la app carga pero crashea al iniciar
+# la base de datos local.
+# ============================================================================
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# --- API en el mismo origen → proxy al backend interno --------------------
+	# Quita el prefijo /api antes de reenviar (el backend escucha en /v1, /health…).
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+
+	# --- Sitio estático del frontend -----------------------------------------
+	handle {
+		root * /srv/www
+
+		# Aislamiento de origen cruzado (requerido por expo-sqlite/WASM).
+		header {
+			Cross-Origin-Opener-Policy "same-origin"
+			Cross-Origin-Embedder-Policy "require-corp"
+			Cross-Origin-Resource-Policy "same-origin"
+			X-Content-Type-Options "nosniff"
+		}
+
+		# Los assets con hash (inmutables) se cachean un año.
+		@hashed path /_expo/* /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+		# index.html nunca se cachea, para que cada deploy tome efecto.
+		@html path / /index.html
+		header @html Cache-Control "no-cache"
+
+		# MIME correcto para WebAssembly (compilación por streaming).
+		@wasm path *.wasm
+		header @wasm Content-Type "application/wasm"
+
+		# Fallback SPA: rutas desconocidas → index.html (deep links / refresh).
+		try_files {path} /index.html
+		file_server
+	}
+}

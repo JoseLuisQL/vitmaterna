@@ -165,20 +165,30 @@ services:
           memory: 512M
 
   # --------------------------------------------------------------------------
-  # Caddy — único servicio con puertos públicos (80/443). HTTPS automático y
-  # proxy transparente de WebSockets (Socket.io) sin configuración extra.
+  # WEB — frontend Expo (estático) + proxy de borde. ÚNICO servicio con puertos
+  # públicos (80/443). Sirve el dist/ con cabeceras COOP/COEP (expo-sqlite/WASM),
+  # fallback SPA, y hace reverse proxy de /api/* al backend (mismo origen, sin
+  # CORS). HTTPS automático (Let's Encrypt) y WebSockets (Socket.io) transparentes.
+  #
+  # EXPO_PUBLIC_API_URL se inlinea en el build → /api en el mismo dominio.
   # --------------------------------------------------------------------------
-  caddy:
-    image: caddy:2
-    container_name: vitmaterna_caddy
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.web
+      args:
+        EXPO_PUBLIC_API_URL: https://${APP_DOMAIN}/api${API_PREFIX:-/v1}
+        APP_ENV: production
+    image: vitmaterna-web:latest
+    container_name: vitmaterna_web
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     environment:
-      API_DOMAIN: ${API_DOMAIN}
+      APP_DOMAIN: ${APP_DOMAIN}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.web:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -196,6 +206,6 @@ networks:
   # Red privada: postgres/redis/migrate/seed/api. Sin acceso desde el host.
   internal:
     driver: bridge
-  # Red de borde: solo caddy + api.
+  # Red de borde: solo web (proxy) + api.
   web:
     driver: bridge

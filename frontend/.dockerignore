@@ -1,0 +1,38 @@
+# Contexto de build del frontend web — mantener mínimo. Todo se reconstruye
+# dentro del contenedor (npm ci + expo export).
+
+node_modules
+dist
+.expo
+web-build
+
+# Secretos / entorno local (las vars de build se pasan como --build-arg)
+.env
+.env.*
+!.env.example
+
+# Git y metadatos
+.git
+.gitignore
+.githooks
+
+# Builds nativos / artefactos
+android
+ios
+*.apk
+*.aab
+
+# Docs, tests y logs (no necesarios para el export web)
+*.md
+__tests__
+coverage
+*.log
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+
+# Docker
+Dockerfile*
+.dockerignore
