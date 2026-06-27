@@ -29,6 +29,7 @@ Centro de Salud Talavera · Andahuaylas, Apurímac, Perú · 2.926 msnm
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Puesta en marcha](#puesta-en-marcha)
 - [Generar el APK (Android)](#generar-el-apk-android)
+- [Despliegue en producción (Docker / VPS)](#despliegue-en-producción-docker--vps)
 - [Variables de entorno](#variables-de-entorno)
 - [Roles y flujos de usuario](#roles-y-flujos-de-usuario)
 - [Motor de alertas proactivas](#motor-de-alertas-proactivas)
@@ -206,6 +207,9 @@ vitmaterna/
 
 ## Puesta en marcha
 
+> Esta sección es para **desarrollo local**. Para desplegar en un servidor con
+> Docker, ve a **[Despliegue en producción (Docker / VPS)](#despliegue-en-producción-docker--vps)**.
+
 ### Requisitos
 
 - **Node.js ≥ 22**
@@ -328,6 +332,136 @@ npm run build:aab:prod     # .aab para subir a Google Play
 
 > Añade el sufijo `:here` (`build:apk:local:here`, `build:apk:prod:here`) para
 > compilar en tu propia PC (requiere Android Studio + JDK 17) en vez de la nube.
+
+---
+
+## Despliegue en producción (Docker / VPS)
+
+Un solo comando levanta **todo** el sistema en tu VPS: frontend web + API +
+PostgreSQL + Redis + HTTPS automático + migraciones. La guía detallada (backups,
+operación diaria, hardening) está en **[DEPLOY_DOCKER.md](DEPLOY_DOCKER.md)**.
+
+### Qué se levanta
+
+Todo se orquesta con `docker-compose.prod.yml` (6 servicios, en orden automático
+gracias a `depends_on` + healthchecks):
+
+```
+Internet ─▶ web/Caddy (80/443, HTTPS automático)
+              ├─ /        → frontend web estático (Expo export)
+              └─ /api/*   → reverse proxy ─▶ api (Node 22, :3000)
+                                               │  (red privada, sin puerto público)
+                                  ┌────────────┼────────────┐
+                                  ▼            ▼            ▼
+                              postgres:16   redis:7     migrate (job 1 sola vez)
+```
+
+| Servicio | Función | Arranque |
+|---|---|---|
+| `postgres` | Base de datos (privada, sin puerto al host) | automático |
+| `redis` | Cache/colas BullMQ (privado, con contraseña) | automático |
+| `migrate` | `prisma migrate deploy` (corre y termina) | automático |
+| `api` | Backend Node 22 (detrás de Caddy) | automático |
+| `web` | **Frontend web + Caddy (HTTPS, proxy `/api`)** | automático |
+| `seed` | Crea **solo** el usuario admin (sin datos demo) | **manual, 1ª vez** |
+
+> El **frontend web sí queda corriendo** con el mismo `docker compose up`. La app
+> Android (`.apk`/`.aab`) **no** se construye con Docker: se compila aparte con EAS
+> (ver [Generar el APK](#generar-el-apk-android)).
+
+### Requisitos en el VPS
+
+- **Docker Engine 24+** con el plugin **Docker Compose v2** (`docker compose`).
+  Instalación en Ubuntu/Debian: `curl -fsSL https://get.docker.com | sh`
+- Un **dominio** (cualquiera que controles) con un registro DNS **A/AAAA**
+  apuntando a la IP pública del VPS.
+- Puertos **80** y **443** abiertos en el firewall: `ufw allow 80,443/tcp`
+
+### El dominio es configurable
+
+No está fijado a `vitmaterna.pe`. Se define en **una sola variable**, `APP_DOMAIN`,
+de tu archivo `.env`. Úsalo con el dominio o subdominio que quieras
+(p. ej. `app.midominio.com`). Ese valor:
+
+- Caddy lo usa para emitir el **certificado HTTPS** (Let's Encrypt) de ese dominio.
+- Se **"hornea" en el bundle web** en tiempo de build como
+  `EXPO_PUBLIC_API_URL=https://APP_DOMAIN/api/v1`.
+
+> **El DNS debe apuntar antes de levantar**, o Caddy no podrá emitir el certificado
+> HTTPS. Si **cambias de dominio** más adelante, **reconstruye la imagen web**
+> (`docker compose -f docker-compose.prod.yml up -d --build web`); no basta con
+> reiniciar, porque el dominio queda incrustado en el JS del frontend.
+
+### Pasos de despliegue
+
+```bash
+# 1. Clona el repo en el VPS
+git clone https://github.com/JoseLuisQL/vitmaterna.git
+cd vitmaterna
+
+# 2. Crea el archivo de entorno a partir de la plantilla
+cp .env.production.example .env
+
+# 3. Edita .env con valores REALES (ver tabla abajo)
+#    Genera secretos fuertes con:  openssl rand -base64 36
+nano .env
+
+# 4. Construye las imágenes y levanta TODO el stack
+#    (postgres/redis sanos → migrate → api → web, gestionado automáticamente)
+docker compose -f docker-compose.prod.yml up -d --build
+
+# 5. SOLO la primera vez: crea el usuario admin (seed de producción, idempotente)
+docker compose -f docker-compose.prod.yml --profile seed run --rm seed
+```
+
+### Variables mínimas a rellenar en `.env`
+
+| Variable | Qué poner |
+|---|---|
+| `APP_DOMAIN` | Tu dominio real (con DNS ya apuntando al VPS) |
+| `POSTGRES_PASSWORD` | Contraseña fuerte (`openssl rand -base64 36`) |
+| `REDIS_PASSWORD` | Contraseña fuerte (`openssl rand -base64 36`) |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Secretos distintos, **≥ 32 caracteres** cada uno |
+| `CORS_ORIGINS` | `https://APP_DOMAIN` (mismo origen) |
+| `ADMIN_PASSWORD` | Contraseña fuerte del admin **antes** de sembrar |
+
+> Los canales SMS/WhatsApp vienen en `mock` (solo registran en consola). Para envío
+> real, completa las credenciales de Twilio/WhatsApp en `.env` o actívalos en
+> caliente desde el panel de admin. El resto de variables tienen valores por defecto
+> sensatos.
+
+### Verificar el despliegue
+
+```bash
+docker compose -f docker-compose.prod.yml ps           # todo "Up"/"healthy"
+docker compose -f docker-compose.prod.yml logs -f api   # logs de la API
+curl https://TU_DOMINIO/health                          # {"success":true,...}
+```
+
+- **Frontend web** → `https://TU_DOMINIO/`
+- **API** → `https://TU_DOMINIO/api/v1`
+- **Swagger** → `https://TU_DOMINIO/docs`
+
+### Operación diaria
+
+```bash
+# Aplicar una nueva versión del código (reconstruye y re-migra)
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Reiniciar solo la API
+docker compose -f docker-compose.prod.yml restart api
+
+# Apagar todo (los datos persisten en los volúmenes)
+docker compose -f docker-compose.prod.yml down
+
+# Backup de la base de datos
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup_$(date +%F).sql
+```
+
+> Más detalle (restore, backup desde el panel de admin, hardening, build en
+> Apple Silicon para VPS x86) en **[DEPLOY_DOCKER.md](DEPLOY_DOCKER.md)**.
 
 ---
 
