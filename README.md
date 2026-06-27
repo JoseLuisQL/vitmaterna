@@ -316,8 +316,9 @@ npm run build:apk:local
 ### APK de producción (backend público por HTTPS)
 
 ```bash
-# Pon tu dominio en frontend/eas.json, perfiles "production-apk" / "production":
-#   "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+# El backend de producción ya está fijado en frontend/eas.json (mismo origen que
+# el despliegue Docker): "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
+# Si cambias de dominio, edítalo en los perfiles "production-apk" / "production".
 cd frontend
 npm run build:apk:prod     # APK para repartir directamente
 npm run build:aab:prod     # .aab para subir a Google Play
@@ -332,6 +333,20 @@ npm run build:aab:prod     # .aab para subir a Google Play
 
 > Añade el sufijo `:here` (`build:apk:local:here`, `build:apk:prod:here`) para
 > compilar en tu propia PC (requiere Android Studio + JDK 17) en vez de la nube.
+
+### Actualizaciones OTA (sin reinstalar el APK)
+
+La app usa **EAS Update**: los cambios de código JS/TS llegan a los dispositivos
+ya instalados sin regenerar el APK. Solo necesitas un APK nuevo cuando cambias algo
+**nativo** (nueva librería nativa, permisos, Expo SDK).
+
+```bash
+cd frontend
+eas update --branch production --message "describe tu cambio"
+```
+
+Setup inicial (una vez): `eas init && eas update:configure`. Detalle completo en
+**[GUIA_APK.md](GUIA_APK.md)** (sección "Actualizaciones OTA").
 
 ---
 

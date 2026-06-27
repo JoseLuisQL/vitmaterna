@@ -31,35 +31,38 @@
 
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "android": {
         "buildType": "apk"
       },
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+        "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
       }
     },
 
     "production-apk": {
       "distribution": "internal",
+      "channel": "production",
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
       },
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+        "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
       }
     },
 
     "production": {
+      "channel": "production",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
       },
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+        "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
       }
     }
   },

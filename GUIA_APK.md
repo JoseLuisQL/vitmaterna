@@ -19,8 +19,9 @@ tanto para **pruebas con backend local** como para **producción**.
 4. [Opción B — APK 100% local (sin nube)](#4-opción-b--apk-100-local-sin-nube)
 5. [Configurar para LOCAL (backend en tu PC)](#5-configurar-para-local-backend-en-tu-pc)
 6. [Configurar para PRODUCCIÓN](#6-configurar-para-producción)
-7. [Instalar el APK en el celular](#7-instalar-el-apk-en-el-celular)
-8. [Solución de problemas](#8-solución-de-problemas)
+7. [Actualizaciones OTA (EAS Update) — sin reinstalar el APK](#7-actualizaciones-ota-eas-update--sin-reinstalar-el-apk)
+8. [Instalar el APK en el celular](#8-instalar-el-apk-en-el-celular)
+9. [Solución de problemas](#9-solución-de-problemas)
 
 ---
 
@@ -64,12 +65,18 @@ En tu PC necesitas:
 > con el SDK de Android y **JDK 17**. Para la Opción A (nube) NO hace falta nada
 > de Android instalado.
 
-La **primera vez** vincula el proyecto a tu cuenta Expo (crea el `projectId`):
+La **primera vez** vincula el proyecto a tu cuenta Expo (crea el `projectId`) y
+configura las actualizaciones OTA (rellena `updates.url` en `app.json`):
 
 ```bash
 cd frontend
-eas init
+eas init                # crea el projectId y lo guarda en app.json
+eas update:configure    # configura EAS Update (OTA) para este proyecto
 ```
+
+> `eas update:configure` completa automáticamente el `updates.url` en `app.json`.
+> El bloque `updates` y el `runtimeVersion` (policy `appVersion`) ya vienen
+> preparados en el repo — ver [sección 7](#7-actualizaciones-ota-eas-update--sin-reinstalar-el-apk).
 
 ---
 
@@ -193,23 +200,28 @@ cualquier red (no depende de tu PC).
 ### Paso 1 — Ten el backend publicado por HTTPS
 
 El backend debe estar desplegado en un servidor con dominio y certificado
-(ej. `https://api.vitmaterna.pe`). En producción **es obligatorio HTTPS**.
+(ej. `https://vitmaterna.qware.me`). En producción **es obligatorio HTTPS**.
 
-### Paso 2 — Pon tu dominio en `frontend/eas.json` (perfiles `production-apk` y `production`)
+> Con el despliegue Docker de este repo, la API vive en el **mismo dominio** bajo
+> `/api` (`https://vitmaterna.qware.me/api/v1`). Ver `DEPLOY_DOCKER.md`.
+
+### Paso 2 — El dominio ya está en `frontend/eas.json` (perfiles `production-apk` y `production`)
 
 ```json
 "production-apk": {
   "distribution": "internal",
+  "channel": "production",
   "autoIncrement": true,
   "android": { "buildType": "apk" },
   "env": {
     "APP_ENV": "production",
-    "EXPO_PUBLIC_API_URL": "https://api.vitmaterna.pe/v1"
+    "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
   }
 }
 ```
 
-> Reemplaza `https://api.vitmaterna.pe/v1` por tu dominio real.
+> Si **cambias de dominio**, reemplaza `https://vitmaterna.qware.me/api/v1` por el
+> nuevo en ambos perfiles (`production-apk` y `production`) y reconstruye el APK.
 
 ### Paso 3 — Construye
 
@@ -222,7 +234,73 @@ npm run build:aab:prod     # genera el .aab que se sube a Play Console
 
 ---
 
-## 7. Instalar el APK en el celular
+## 7. Actualizaciones OTA (EAS Update) — sin reinstalar el APK
+
+Una vez que un usuario tiene el APK instalado, **no necesitas regenerar ni
+reinstalar el APK cada vez que cambias código**. VITMATERNA usa **EAS Update**
+(actualizaciones "Over The Air"): publicas la nueva versión del JavaScript y los
+dispositivos la descargan solos al abrir la app.
+
+### ¿Qué se actualiza por OTA y qué necesita un APK nuevo?
+
+| Tipo de cambio | ¿Cómo se entrega? |
+|---|---|
+| Pantallas, componentes, hooks, lógica, llamadas a la API, estilos, textos, **fix de bugs** | ✅ **OTA** — `eas update`, sin reinstalar |
+| Imágenes/assets empaquetados en el bundle JS | ✅ **OTA** |
+| Nueva **librería con código nativo**, subir de **Expo SDK** / React Native | 🔁 **Rebuild + reinstalar** APK |
+| Cambiar **permisos**, ícono, `package`, `usesCleartextTraffic`, plugins nativos | 🔁 **Rebuild + reinstalar** APK |
+
+> **Regla práctica:** tocaste solo archivos `.ts`/`.tsx` → OTA. Tocaste dependencias
+> nativas o configuración nativa (`app.json`) → APK nuevo.
+
+### Cómo está configurado (ya viene listo en el repo)
+
+- `app.json` → bloque `updates` (`enabled: true`, `checkAutomatically: ON_LOAD`)
+  y `runtimeVersion` con **policy `appVersion`**.
+- `eas.json` → cada perfil de producción declara su **canal**:
+  `preview` → canal `preview`, `production-apk` y `production` → canal `production`.
+
+El **`runtimeVersion = appVersion`** es la pieza de seguridad clave: ata cada OTA
+a la `version` del APK (hoy `1.0.0`). Un dispositivo solo recibe updates compatibles
+con su binario nativo. Cuando cambies algo **nativo**, sube la `version` en
+`app.json`, reconstruye el APK, y los nuevos OTAs irán a esa versión.
+
+### Publicar una actualización OTA
+
+```bash
+cd frontend
+
+# Publica al canal de PRODUCCIÓN (lo que usan los APK de producción ya instalados)
+eas update --branch production --message "fix: corrige cálculo en pantalla de citas"
+
+# Publica al canal de PRUEBA (APK del perfil preview)
+eas update --branch preview --message "prueba: nueva pantalla de educación"
+```
+
+Los dispositivos con la app abierta verifican el canal al iniciar
+(`checkAutomatically: ON_LOAD`): descargan el update en segundo plano y lo aplican
+en el **siguiente arranque** de la app.
+
+### Flujo de trabajo recomendado
+
+```
+1. Programas una función nueva (solo JS/TS).
+2. eas update --branch production --message "..."
+3. Los usuarios reciben el cambio al reabrir la app. (sin reinstalar)
+
+   ─── pero si tocaste algo NATIVO ───
+1. Sube "version" en app.json (p.ej. 1.0.0 → 1.1.0).
+2. npm run build:apk:prod   (APK nuevo)
+3. Los usuarios reinstalan ese APK una vez; a partir de ahí, OTAs de nuevo.
+```
+
+> **Importante:** EAS Update solo funciona en builds hechos con EAS que incluyen
+> `expo-updates` (los perfiles `preview`/`production*`). En desarrollo con Metro
+> (`npm start`) o en el perfil `apk-local` no aplica — ahí el código se recarga solo.
+
+---
+
+## 8. Instalar el APK en el celular
 
 1. Descarga el `.apk` (desde el enlace de EAS o cópialo por USB).
 2. En el celular: **Ajustes → Seguridad → "Instalar apps de fuentes
@@ -232,7 +310,7 @@ npm run build:aab:prod     # genera el .aab que se sube a Play Console
 
 ---
 
-## 8. Solución de problemas
+## 9. Solución de problemas
 
 | Síntoma | Causa probable | Solución |
 |---|---|---|
@@ -243,6 +321,8 @@ npm run build:aab:prod     # genera el .aab que se sube a Play Console
 | `eas: command not found` | EAS CLI no instalado | `npm install -g eas-cli` |
 | Pide `projectId` | Proyecto no vinculado | `cd frontend && eas init` |
 | Build local falla por SDK/JDK | Falta Android Studio o JDK 17 | Instálalos, o usa la **Opción A** (nube) |
+| `eas update` no llega a la app | El APK no se construyó con `expo-updates`, o canal distinto | Reconstruye con un perfil de producción; verifica que el `--branch` coincide con el `channel` del perfil |
+| El OTA se publica pero la app sigue igual | `runtimeVersion` distinto (cambió la `version` nativa) | El OTA solo llega a APKs con la misma `version`; reconstruye el APK o publica al runtime correcto |
 
 ---
 
@@ -251,11 +331,14 @@ npm run build:aab:prod     # genera el .aab que se sube a Play Console
 ```bash
 # 1. Preparar (una vez)
 npm install -g eas-cli && eas login
-cd frontend && npm install && eas init
+cd frontend && npm install && eas init && eas update:configure
 
 # 2. LOCAL: pon tu IP en eas.json (perfil apk-local) y:
 npm run build:apk:local
 
-# 3. PRODUCCIÓN: pon tu dominio HTTPS en eas.json y:
+# 3. PRODUCCIÓN: el dominio HTTPS ya está en eas.json (https://vitmaterna.qware.me/api/v1)
 npm run build:apk:prod
+
+# 4. Cambiaste solo código JS/TS → actualización OTA (sin reinstalar):
+eas update --branch production --message "describe el cambio"
 ```
