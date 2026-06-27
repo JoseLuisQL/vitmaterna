@@ -17,6 +17,8 @@ router.get('/channels/status', notificationController.getChannelsAvailability);
 router.get('/channels/config', rbac('admin'), notificationController.getChannelsConfig);
 router.put('/channels/sms', rbac('admin'), validate(notificationSchema.smsConfigSchema), notificationController.updateSmsConfig);
 router.put('/channels/whatsapp', rbac('admin'), validate(notificationSchema.whatsappConfigSchema), notificationController.updateWhatsAppConfig);
+// Interruptor global de canales de pago (SMS/WhatsApp): { enabled: boolean }.
+router.put('/channels/paid-enabled', rbac('admin'), notificationController.setPaidChannelsEnabled);
 router.post('/channels/test', rbac('admin'), validate(notificationSchema.testChannelSchema), notificationController.testChannel);
 
 /**

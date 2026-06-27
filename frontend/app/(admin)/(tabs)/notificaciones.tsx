@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
-import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info } from 'lucide-react-native';
+import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info, Wallet } from 'lucide-react-native';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useTourTarget } from '../../../src/components/tour/tourTargets';
 import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
@@ -26,6 +26,7 @@ import { useToast } from '../../../src/components/ui';
 import { useResponsive } from '../../../src/theme/responsive';
 import {
   useChannelsConfig, useUpdateSmsConfig, useUpdateWhatsAppConfig, useTestChannel,
+  useSetPaidChannelsEnabled,
 } from '../../../src/services/admin-queries';
 import { commonColors, adminColors, semanticColors, accentColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -60,6 +61,20 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   const updateSms = useUpdateSmsConfig();
   const updateWa = useUpdateWhatsAppConfig();
   const testChannel = useTestChannel();
+  const setPaidEnabled = useSetPaidChannelsEnabled();
+
+  // Interruptor global de gasto (SMS/WhatsApp). Por defecto activado.
+  const paidEnabled = status?.paidEnabled !== false;
+
+  const togglePaid = (next: boolean) => {
+    setPaidEnabled.mutate(next, {
+      onSuccess: () =>
+        next
+          ? toast.success('Canales de pago activados', 'Los mensajes esenciales se enviarán por SMS/WhatsApp.')
+          : toast.success('Canales de pago apagados', 'No se enviará ningún SMS ni WhatsApp. Push e in-app siguen activos.'),
+      onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo cambiar el interruptor.'),
+    });
+  };
 
   // SMS (Twilio)
   const [smsOn, setSmsOn] = useState(false);
@@ -178,6 +193,34 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
             </View>
             <Text style={styles.summaryLabel}>WhatsApp</Text>
             <StatusBadge configured={waConfigured} />
+          </View>
+        </View>
+
+        {/* ─── Interruptor global de gasto (SMS/WhatsApp) ─── */}
+        <View style={[styles.card, styles.paidCard]}>
+          <View style={styles.cardHead}>
+            <View style={[styles.cardIcon, { backgroundColor: semanticColors.warningLight }]}>
+              <Wallet size={20} color={semanticColors.warning} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Envíos de pago (SMS/WhatsApp)</Text>
+              <Text style={styles.cardHint}>Controla el gasto de créditos. Push e in-app nunca cuestan.</Text>
+            </View>
+            <Switch
+              value={paidEnabled}
+              onValueChange={togglePaid}
+              disabled={setPaidEnabled.isPending}
+              trackColor={{ false: commonColors.border, true: semanticColors.success }}
+              thumbColor={commonColors.white}
+            />
+          </View>
+          <View style={styles.helpBox}>
+            <Info size={14} color={commonColors.textSecondary} />
+            <Text style={styles.helpText}>
+              {paidEnabled
+                ? 'Activado: solo se envían por SMS/WhatsApp los mensajes esenciales (código de recuperación de contraseña y recordatorio de cita a 1 día). El resto va solo por push e in-app, sin costo.'
+                : 'Apagado: no se envía ningún SMS ni WhatsApp (cero gasto de créditos). Las gestantes y obstetras seguirán recibiendo avisos por push e in-app.'}
+            </Text>
           </View>
         </View>
 
@@ -312,6 +355,7 @@ const styles = StyleSheet.create({
   summaryIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   summaryLabel: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600' },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.border },
+  paidCard: { borderColor: semanticColors.warning, borderWidth: 1.5 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   cardIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { ...typography.h3, color: commonColors.text },

@@ -219,6 +219,18 @@ export async function updateWhatsAppConfig(req: Request, res: Response): Promise
   res.json(successResponse(status));
 }
 
+/**
+ * Activa o desactiva el interruptor GLOBAL de los canales de pago (SMS/WhatsApp).
+ * En `false` apaga al instante todo envío que consume créditos, sin tocar push
+ * ni in-app. Body: { enabled: boolean }.
+ */
+export async function setPaidChannelsEnabled(req: Request, res: Response): Promise<void> {
+  const enabled = (req.body as { enabled?: unknown }).enabled === true;
+  await setConfigValue('paidChannelsEnabled', enabled, req.user?.userId, 'Interruptor global de canales de pago (SMS/WhatsApp)');
+  const status = await getChannelsStatus();
+  res.json(successResponse(status));
+}
+
 /** Prueba la conexión enviando un mensaje real al destino indicado. */
 export async function testChannel(req: Request, res: Response): Promise<void> {
   const { canal, destino, mensaje: customMensaje } = req.body as {

@@ -788,6 +788,7 @@ async function main(): Promise<void> {
     { clave: 'auto_generate_schedule', valor: true, desc: 'Generar automáticamente el cronograma de controles' },
     { clave: 'maintenance_mode', valor: false, desc: 'Modo mantenimiento del sistema' },
     { clave: 'support_email', valor: 'soporte@vitmaterna.pe', desc: 'Correo de soporte' },
+    { clave: 'paidChannelsEnabled', valor: true, desc: 'Interruptor global de canales de PAGO (SMS/WhatsApp). En false apaga todo envío que consume créditos.' },
   ];
   for (const c of configs) {
     await prisma.systemConfig.upsert({

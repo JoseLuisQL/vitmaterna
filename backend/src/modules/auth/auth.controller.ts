@@ -4,7 +4,8 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import * as authService from './auth.service.js';
 import type { LoginInput, RegisterInput, RefreshInput, UpdateProfileInput } from './auth.schema.js';
 import { prisma } from '../../config/database.js';
-import { sendSmsMock, sendWhatsApp, notifyAdmins } from '../notifications/notification.service.js';
+import { notifyAdmins } from '../notifications/notification.service.js';
+import { sendPaidNotification } from '../notifications/channels.js';
 
 /**
  * POST /v1/auth/register
@@ -267,10 +268,9 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   if (user && user.phone) {
     const code = await authService.createPasswordResetToken(user.id);
     const mensaje = `VITMATERNA: tu código para restablecer tu contraseña es ${code}. Vence en 30 minutos. No lo compartas.`;
-    // Enviar por SMS y WhatsApp (en modo mock si no hay credenciales).
-    // Se pasa el userId para registrar la entrega en el log de auditoría.
-    sendSmsMock(user.phone, mensaje, user.id);
-    sendWhatsApp(user.phone, mensaje, user.id);
+    // Evento de PAGO (crítico de seguridad): se envía por UN solo canal
+    // (WhatsApp→SMS), respetando el kill-switch global. No bloquea la respuesta.
+    void sendPaidNotification(user.phone, mensaje, user.notificationPreferences as any, user.id);
   }
 
   res.json(

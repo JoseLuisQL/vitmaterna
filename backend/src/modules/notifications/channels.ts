@@ -195,14 +195,17 @@ export async function logDelivery(userId: string | null, result: DeliveryResult,
 }
 
 /**
- * Envía un mensaje por SMS y WhatsApp al número indicado, respetando las
- * preferencias de canal del usuario (si se proporcionan). Por defecto (sin
- * `prefs`) envía por ambos canales para mantener compatibilidad.
+ * Envía un mensaje de pago al número indicado.
+ *
+ * CONTROL DE GASTO: ya NO envía por ambos canales a la vez. Delega en
+ * `sendPaidNotification`, que usa un solo canal (WhatsApp primero, SMS de
+ * respaldo) y respeta el kill-switch global `paidChannelsEnabled`. Se mantiene
+ * el nombre por compatibilidad con la cola (`queue.ts`) y llamadas existentes.
  *
  * @param userId  si se indica, cada envío real/fallido se registra en el log de
  *                entregas (auditoría). Para destinatarios sin cuenta (acompañante)
  *                puede omitirse.
- * @returns los resultados de cada canal intentado.
+ * @returns los resultados de los intentos realizados.
  */
 export async function sendSmsAndWhatsApp(
   phone: string,
@@ -210,22 +213,84 @@ export async function sendSmsAndWhatsApp(
   prefs?: { sms?: boolean; whatsapp?: boolean } | null,
   userId?: string | null,
 ): Promise<DeliveryResult[]> {
-  const smsEnabled = prefs?.sms !== false;
-  const whatsappEnabled = prefs?.whatsapp !== false;
-  const tasks: Promise<DeliveryResult>[] = [];
-  if (smsEnabled) tasks.push(smsChannel.send(phone, message));
-  if (whatsappEnabled) tasks.push(whatsappChannel.send(phone, message));
-  const results = await Promise.all(tasks);
-  // Registrar entregas (no bloquea el flujo principal).
-  await Promise.all(results.map((r) => logDelivery(userId ?? null, r, message)));
-  return results;
+  return sendPaidNotification(phone, message, prefs, userId);
 }
 
 /** Estado de configuración de cada canal (para mostrar en el panel admin). */
 export async function getChannelsStatus() {
-  const [sms, wa] = await Promise.all([resolveSmsCredentials(), resolveWhatsAppCredentials()]);
+  const [sms, wa, paidEnabled] = await Promise.all([
+    resolveSmsCredentials(),
+    resolveWhatsAppCredentials(),
+    arePaidChannelsEnabled(),
+  ]);
   return {
     sms: { provider: sms.provider, configured: smsConfigured(sms), fromNumber: sms.fromNumber || null },
     whatsapp: { provider: wa.provider, configured: whatsappConfigured(wa), phoneNumberId: wa.phoneNumberId || null },
+    paidEnabled,
   };
+}
+
+// ─── Control de gasto (kill-switch + envío de canal único) ───────────────────────
+
+/**
+ * Kill-switch global de los canales de PAGO (SMS y WhatsApp). Controlado por el
+ * admin desde SystemConfig (clave `paidChannelsEnabled`). Por defecto ACTIVADO
+ * (true) para no romper instalaciones existentes; ponerlo en `false` apaga al
+ * instante TODO envío que cueste créditos, sin tocar push ni in-app.
+ */
+export async function arePaidChannelsEnabled(): Promise<boolean> {
+  const v = await getConfigValue('paidChannelsEnabled').catch(() => undefined);
+  // Solo se considera apagado si está explícitamente en false.
+  return v !== false;
+}
+
+/**
+ * Envía UNA sola notificación de pago por el canal más barato disponible:
+ * WhatsApp primero y, si no está configurado o falla, SMS como respaldo.
+ * Nunca envía por ambos canales a la vez (control de gasto).
+ *
+ * Respeta:
+ *  - el kill-switch global `paidChannelsEnabled`;
+ *  - las preferencias de canal del usuario (`prefs.sms` / `prefs.whatsapp`):
+ *    un canal desactivado en preferencias no se usa.
+ *
+ * Devuelve los resultados de los intentos realizados (puede ser vacío si todo
+ * está apagado). Cada intento real/fallido queda en el log de entregas.
+ */
+export async function sendPaidNotification(
+  phone: string,
+  message: string,
+  prefs?: { sms?: boolean; whatsapp?: boolean } | null,
+  userId?: string | null,
+): Promise<DeliveryResult[]> {
+  if (!(await arePaidChannelsEnabled())) {
+    console.log('[PAID OFF] Envío SMS/WhatsApp omitido (canales de pago desactivados por el admin).');
+    return [];
+  }
+
+  const whatsappAllowed = prefs?.whatsapp !== false;
+  const smsAllowed = prefs?.sms !== false;
+  const results: DeliveryResult[] = [];
+
+  // 1) WhatsApp primero (más barato), si está permitido y configurado.
+  if (whatsappAllowed && whatsappConfigured(await resolveWhatsAppCredentials())) {
+    const wa = await whatsappChannel.send(phone, message);
+    results.push(wa);
+    await logDelivery(userId ?? null, wa, message);
+    if (wa.status === 'sent') return results; // entregado: no usar SMS.
+  }
+
+  // 2) SMS como respaldo, si está permitido y configurado.
+  if (smsAllowed && smsConfigured(await resolveSmsCredentials())) {
+    const sms = await smsChannel.send(phone, message);
+    results.push(sms);
+    await logDelivery(userId ?? null, sms, message);
+    return results;
+  }
+
+  // 3) Nada configurado: registrar en consola (mock) para trazabilidad en dev.
+  if (results.length === 0) {
+    console.log(`[PAID MOCK] (sin canal de pago configurado) Para ${phone}: ${message}`);
+  }
+  return results;
 }

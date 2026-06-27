@@ -223,6 +223,8 @@ export const useDeleteFacility = () => {
 export interface ChannelsStatus {
   sms: { provider: string; configured: boolean; fromNumber: string | null };
   whatsapp: { provider: string; configured: boolean; phoneNumberId: string | null };
+  /** Interruptor global de canales de pago (SMS/WhatsApp). */
+  paidEnabled?: boolean;
 }
 
 export const fetchChannelsConfig = async (): Promise<ChannelsStatus> => {
@@ -262,6 +264,22 @@ export const useTestChannel = () =>
       return res.data;
     },
   });
+
+/**
+ * Activa o desactiva el interruptor GLOBAL de los canales de pago (SMS/WhatsApp).
+ * En `false` apaga al instante todo envío que consume créditos, sin tocar push
+ * ni in-app.
+ */
+export const useSetPaidChannelsEnabled = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await api.put('/notifications/channels/paid-enabled', { enabled });
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['channelsConfig'] }),
+  });
+};
 
 // --- Admin Dashboard (resumen global) ---
 export interface AdminDashboard {
