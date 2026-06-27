@@ -58,6 +58,21 @@ async function main(): Promise<void> {
   console.log(`   ID:    ${admin.id}`);
   console.log(`   DNI:   ${dni}`);
   console.log(`   Email: ${email}`);
+
+  // Interruptor global de canales de PAGO (SMS/WhatsApp). Por defecto ACTIVADO.
+  // Se registra explícitamente para que aparezca en el panel de admin desde el
+  // primer arranque. Idempotente: si ya existe, no se toca su valor.
+  await prisma.systemConfig.upsert({
+    where: { clave: 'paidChannelsEnabled' },
+    update: {},
+    create: {
+      clave: 'paidChannelsEnabled',
+      valor: true,
+      descripcion: 'Interruptor global de canales de PAGO (SMS/WhatsApp). En false apaga todo envío que consume créditos.',
+      updatedBy: admin.id,
+    },
+  });
+  console.log('✅ Config: paidChannelsEnabled (activado por defecto).');
   if (password === 'Admin@2026') {
     console.warn(
       '⚠️  Estás usando la contraseña por defecto (Admin@2026). ' +
