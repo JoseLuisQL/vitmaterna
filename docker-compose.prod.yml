@@ -1,0 +1,192 @@
+# ============================================================================
+# VITMATERNA — Orquestación de PRODUCCIÓN (VPS)
+#
+# Servicios:
+#   postgres  → base de datos (privada, sin puertos al host)
+#   redis     → cache/colas BullMQ (privada, con contraseña)
+#   migrate   → job de un solo uso: `prisma migrate deploy` (corre y termina)
+#   seed      → job manual (perfil "seed"): siembra inicial idempotente
+#   api       → backend Node 22 (detrás de Caddy, sin puerto público directo)
+#   caddy     → reverse proxy con HTTPS automático (Let's Encrypt) + WebSockets
+#
+# Arranque:   docker compose -f docker-compose.prod.yml up -d --build
+# Seed (1ª vez): docker compose -f docker-compose.prod.yml --profile seed run --rm seed
+#
+# Las contraseñas/dominios se definen en .env (junto a este archivo).
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # PostgreSQL 16 — privado: solo accesible dentro de la red "internal".
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-bookworm
+    container_name: vitmaterna_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Redis 7 — privado + contraseña (defensa en profundidad). AOF persistente.
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-bookworm
+    container_name: vitmaterna_redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # --------------------------------------------------------------------------
+  # Migraciones — job de un solo uso. Aplica SOLO migraciones ya commiteadas
+  # (`migrate deploy`, nunca `migrate dev`). El api espera a que termine bien.
+  # --------------------------------------------------------------------------
+  migrate:
+    build:
+      context: ./backend
+      target: migrator
+    image: vitmaterna-backend:migrator
+    restart: "no"
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # --------------------------------------------------------------------------
+  # Seed — job MANUAL (no arranca solo). Idempotente. Solo la primera vez o
+  # bajo demanda:  docker compose ... --profile seed run --rm seed
+  # --------------------------------------------------------------------------
+  seed:
+    build:
+      context: ./backend
+      target: migrator
+    image: vitmaterna-backend:migrator
+    profiles: ["seed"]
+    restart: "no"
+    command: ["node", "dist/prisma/seed.js"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # --------------------------------------------------------------------------
+  # API — backend. No publica puerto al host; Caddy lo alcanza por red interna.
+  # --------------------------------------------------------------------------
+  api:
+    build:
+      context: ./backend
+      target: runtime
+    image: vitmaterna-backend:latest
+    container_name: vitmaterna_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: ${API_PREFIX:-/v1}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      RATE_LIMIT_GLOBAL_MAX: ${RATE_LIMIT_GLOBAL_MAX:-1000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEFAULT_ALTITUDE_MSNM: ${DEFAULT_ALTITUDE_MSNM:-2926}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
+      # Canales de notificación (mock por defecto; rellena para producción real)
+      SMS_PROVIDER: ${SMS_PROVIDER:-mock}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-mock}
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_API_VERSION: ${WHATSAPP_API_VERSION:-v21.0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+      - web
+    # Límites de memoria para una VPS modesta (Node + BullMQ pueden crecer).
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # --------------------------------------------------------------------------
+  # Caddy — único servicio con puertos públicos (80/443). HTTPS automático y
+  # proxy transparente de WebSockets (Socket.io) sin configuración extra.
+  # --------------------------------------------------------------------------
+  caddy:
+    image: caddy:2
+    container_name: vitmaterna_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    networks:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  # Red privada: postgres/redis/migrate/seed/api. Sin acceso desde el host.
+  internal:
+    driver: bridge
+  # Red de borde: solo caddy + api.
+  web:
+    driver: bridge

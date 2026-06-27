@@ -558,7 +558,7 @@ async function main(): Promise<void> {
   });
 
   // ── Sedes
-  const facilities = [];
+  const facilities: Awaited<ReturnType<typeof prisma.healthFacility.upsert>>[] = [];
   for (const s of SEDES) {
     const f = await prisma.healthFacility.upsert({
       where: { id: `00000000-0000-0000-0000-0000000000${(SEDES.indexOf(s) + 10)}` },

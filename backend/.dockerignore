@@ -1,0 +1,45 @@
+# ============================================================================
+# Contexto de build de Docker — mantener mínimo y NUNCA copiar artefactos del
+# host (node_modules trae engines de Prisma / binarios bcrypt de la plataforma
+# equivocada; dist puede estar desactualizado). Todo se reconstruye dentro.
+# ============================================================================
+
+# Dependencias y artefactos de build (se regeneran en el contenedor)
+node_modules
+dist
+coverage
+.nyc_output
+
+# Secretos y entorno local (se inyectan vía env_file / variables en runtime)
+.env
+.env.*
+!.env.example
+
+# Git y metadatos
+.git
+.gitignore
+.gitattributes
+.githooks
+
+# Logs y temporales
+*.log
+npm-debug.log*
+tmp
+.tmp
+.cache
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+
+# Docker (no necesita copiarse dentro del contexto)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Documentación y tests (no necesarios para el runtime)
+*.md
+docs
+tests
+manuales

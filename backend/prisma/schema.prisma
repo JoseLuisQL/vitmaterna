@@ -2,7 +2,10 @@
 // Based on the PRD database design (PostgreSQL 16)
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" cubre el entorno de desarrollo local (Linux/macOS).
+  // "debian-openssl-3.0.x" es el target del runtime Docker (node:22-bookworm-slim, OpenSSL 3).
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

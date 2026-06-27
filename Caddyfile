@@ -1,0 +1,28 @@
+# ============================================================================
+# Caddy — reverse proxy para VITMATERNA API
+#
+# Caddy gestiona automáticamente los certificados TLS (Let's Encrypt) y renueva
+# solo. Proxya WebSockets (Socket.io) de forma transparente: detecta el header
+# Upgrade y lo reenvía sin configuración adicional.
+#
+# {$API_DOMAIN} se sustituye por la variable de entorno API_DOMAIN del compose.
+# Requisito: el DNS de tu dominio debe apuntar (registro A/AAAA) a la IP del VPS,
+# y los puertos 80 y 443 deben estar abiertos en el firewall.
+# ============================================================================
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# Cabeceras de seguridad básicas.
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# HSTS (descomenta cuando confirmes que todo va por HTTPS estable):
+		# Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	# Proxy a la API interna. Caddy maneja el Upgrade de WebSocket (Socket.io)
+	# automáticamente; no hace falta bloque especial para /socket.io/.
+	reverse_proxy api:3000
+}
