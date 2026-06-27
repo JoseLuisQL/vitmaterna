@@ -24,7 +24,7 @@ import { AppModal } from '../../../src/components/ui/AppModal';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { useToast, RichText } from '../../../src/components/ui';
+import { useToast, RichText, RichTextEditor } from '../../../src/components/ui';
 import { SearchField } from '../../../src/components/ui/Field';
 import { DataTable, type DataTableColumn } from '../../../src/components/web';
 import { categoryMeta, typeMeta, readingTime } from '../../../src/utils/educationMeta';
@@ -540,10 +540,10 @@ export default function ContenidoScreen(): React.ReactElement {
         ) : null}
 
         <AppInput name="titulo" control={control} label="Título" placeholder="Ej. Cuidados en el primer trimestre" error={errors.titulo?.message} themeColor={BRAND} />
-        <AppInput name="contenido" control={control} label="Contenido" placeholder={'Escribe el artículo. Puedes usar formato:\n## Título de sección\n- viñeta\n**negrita**\n> cita destacada'} error={errors.contenido?.message} themeColor={BRAND} multiline numberOfLines={8} containerStyle={{ minHeight: 180 }} />
+        <RichTextEditor name="contenido" control={control} label="Contenido" placeholder={'Escribe el artículo. Selecciona texto y usa la barra de arriba para dar formato (título, negrita, listas, citas).'} error={errors.contenido?.message} themeColor={BRAND} numberOfLines={9} />
         <View style={styles.formatHintRow}>
           <Text style={styles.formatHint}>
-            Formato: <Text style={styles.formatCode}>## Sección</Text> · <Text style={styles.formatCode}>### Subtítulo</Text> · <Text style={styles.formatCode}>- viñeta</Text> · <Text style={styles.formatCode}>1. lista</Text> · <Text style={styles.formatCode}>**negrita**</Text> · <Text style={styles.formatCode}>&gt; cita</Text>
+            Usa la barra para dar formato: selecciona el texto y pulsa un botón.
           </Text>
           <TouchableOpacity
             style={styles.previewBtn}
@@ -674,7 +674,6 @@ const styles = StyleSheet.create({
   // Editor: ayuda de formato + botón de previsualización
   formatHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.md },
   formatHint: { ...typography.caption, color: commonColors.textTertiary, flex: 1, lineHeight: 16 },
-  formatCode: { ...typography.caption, color: commonColors.textSecondary, fontWeight: '700' },
   previewBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: spacing.sm2, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: obstetraColors.primaryLight },
   previewBtnText: { ...typography.caption, fontWeight: '700', color: BRAND },
   // Vista previa

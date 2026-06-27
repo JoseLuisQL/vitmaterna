@@ -43,6 +43,7 @@ export { BottomSheet } from './BottomSheet';
 export { SectionHeader } from './SectionHeader';
 export { Accordion } from './Accordion';
 export { RichText } from './RichText';
+export { RichTextEditor } from './RichTextEditor';
 
 // Data display
 export { KpiCard } from './KpiCard';
