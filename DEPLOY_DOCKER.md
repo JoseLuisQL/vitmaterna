@@ -67,9 +67,15 @@ nano .env
 #    postgres/redis sanos → migrate corre y termina → api arranca → caddy arranca
 docker compose -f docker-compose.prod.yml up -d --build
 
-# 5. SOLO la primera vez: siembra datos iniciales (idempotente)
+# 5. SOLO la primera vez: crea el usuario admin (seed de producción).
+#    Este seed NO inserta datos demo; crea únicamente el admin. Es idempotente.
 docker compose -f docker-compose.prod.yml --profile seed run --rm seed
 ```
+
+> El seed de producción usa las variables `ADMIN_*` del `.env`. Define
+> `ADMIN_PASSWORD` con una contraseña fuerte **antes** de sembrar (o cámbiala
+> tras el primer login). Credenciales por defecto: DNI `99999999` /
+> contraseña `Admin@2026`.
 
 Verifica:
 
@@ -125,6 +131,33 @@ cat backup_2026-06-27.sql | docker compose -f docker-compose.prod.yml exec -T po
 ```
 
 Programa el backup con un cron en el host.
+
+### Backup desde el panel de admin (descarga `.sql`)
+
+El backend expone un endpoint que genera y descarga una copia de seguridad
+**completa y restaurable** de la base de datos en formato `.sql`:
+
+```
+GET /v1/admin/backup
+```
+
+- **Solo accesible para el usuario admin** (requiere token JWT con rol `admin`;
+  cualquier otro rol recibe `403`).
+- Internamente ejecuta `pg_dump --format=plain --clean --if-exists --no-owner
+  --no-privileges` y transmite el resultado en streaming (sin cargar todo en
+  memoria), por lo que funciona también con bases de datos grandes.
+- Cada descarga queda registrada en el log de la API (`backup.start` /
+  `backup.success` con el ID del admin, sin exponer credenciales).
+- El archivo se descarga como `vitmaterna-<db>-<timestamp>.sql`.
+
+Restaurar ese archivo en una base limpia:
+
+```bash
+psql -v ON_ERROR_STOP=1 -h <host> -U <user> -d <db_destino> -f vitmaterna-....sql
+```
+
+> Requiere `postgresql-client-16` dentro de la imagen (ya incluido en el
+> `Dockerfile`), que coincide con el servidor Postgres 16.
 
 ## El frontend (Expo)
 

@@ -82,8 +82,9 @@ services:
       - internal
 
   # --------------------------------------------------------------------------
-  # Seed — job MANUAL (no arranca solo). Idempotente. Solo la primera vez o
-  # bajo demanda:  docker compose ... --profile seed run --rm seed
+  # Seed de PRODUCCIÓN — job MANUAL (no arranca solo). Crea SOLO el usuario
+  # admin (sin datos demo). Idempotente. Solo la primera vez o bajo demanda:
+  #   docker compose -f docker-compose.prod.yml --profile seed run --rm seed
   # --------------------------------------------------------------------------
   seed:
     build:
@@ -92,9 +93,17 @@ services:
     image: vitmaterna-backend:migrator
     profiles: ["seed"]
     restart: "no"
-    command: ["node", "dist/prisma/seed.js"]
+    command: ["node", "dist/prisma/seed.prod.js"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
+      # Credenciales del admin (opcionales; tienen valores por defecto).
+      ADMIN_DNI: ${ADMIN_DNI:-99999999}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@2026}
+      ADMIN_FIRST_NAME: ${ADMIN_FIRST_NAME:-Administrador}
+      ADMIN_LAST_NAME: ${ADMIN_LAST_NAME:-Sistema}
+      ADMIN_PHONE: ${ADMIN_PHONE:-+51999999999}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@vitmaterna.pe}
     depends_on:
       postgres:
         condition: service_healthy

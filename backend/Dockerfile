@@ -84,6 +84,23 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000
 
+# pg_dump (cliente PostgreSQL 16) para el backup SQL desde el panel de admin.
+# Debian bookworm trae el cliente 15 por defecto; añadimos el repo oficial PGDG
+# para instalar postgresql-client-16 (debe coincidir con el servidor Postgres 16).
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends curl gnupg; \
+    install -d /usr/share/postgresql-common/pgdg; \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc; \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends postgresql-client-16; \
+    pg_dump --version; \
+    apt-get purge -y --auto-remove curl gnupg; \
+    rm -rf /var/lib/apt/lists/*
+
 # Solo lo imprescindible para ejecutar, con dueño node:node.
 COPY --chown=node:node --from=build /app/node_modules ./node_modules
 COPY --chown=node:node --from=build /app/dist ./dist

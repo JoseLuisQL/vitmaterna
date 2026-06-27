@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
+import { pipeline } from 'node:stream/promises';
 import { adminService } from './admin.service.js';
+import { backupService } from './backup.service.js';
 import { successResponse } from '../../utils/responseHelper.js';
+import { logger } from '../../middleware/requestLogger.middleware.js';
 
 export class AdminController {
   async listUsers(req: Request, res: Response) {
@@ -106,9 +109,65 @@ export class AdminController {
     }));
   }
 
+  /**
+   * Exporta una copia de seguridad COMPLETA de la base de datos como archivo
+   * `.sql` restaurable (vía pg_dump). Solo admin (gateado en las rutas).
+   *
+   * Restauración:
+   *   psql -v ON_ERROR_STOP=1 -h <host> -U <user> -d <db> -f backup.sql
+   */
   async getBackup(req: Request, res: Response) {
-    const backup = await adminService.generateBackup();
-    return res.status(200).json(successResponse(backup));
+    const actor = req.user?.userId ?? 'desconocido';
+    const startedAt = Date.now();
+
+    const { stdout, filename, done, abort } = backupService.startSqlDump();
+
+    // Si el cliente corta la descarga, matamos pg_dump (no dejar procesos huérfanos).
+    res.on('close', () => {
+      if (!res.writableEnded) abort();
+    });
+
+    // Solo enviamos cabeceras 200 cuando empiezan a fluir los primeros bytes:
+    // así un fallo inmediato de pg_dump devuelve un 500 JSON limpio.
+    let headersSent = false;
+    const sendHeaders = () => {
+      if (headersSent) return;
+      headersSent = true;
+      res.status(200);
+      res.setHeader('Content-Type', 'application/sql; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-store, private');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    };
+    stdout.once('data', sendHeaders);
+
+    logger.info({ actor, event: 'backup.start', filename }, 'Backup SQL iniciado');
+
+    try {
+      // pipeline gestiona la contrapresión y propaga errores del stream.
+      await Promise.all([pipeline(stdout, res), done]);
+      logger.info(
+        { actor, event: 'backup.success', filename, ms: Date.now() - startedAt },
+        'Backup SQL completado',
+      );
+    } catch (err) {
+      abort();
+      logger.error(
+        { actor, event: 'backup.failure', err: (err as Error).message },
+        'Backup SQL falló',
+      );
+
+      if (!headersSent) {
+        // Aún no se envió nada → error JSON limpio.
+        return res.status(500).json({
+          success: false,
+          error: { code: 'BACKUP_FAILED', message: 'No se pudo generar la copia de seguridad' },
+        });
+      }
+      // Ya comprometimos un 200 + attachment: destruimos la conexión para que
+      // el cliente vea una descarga TRUNCADA y nunca tome un .sql parcial como válido.
+      return res.destroy();
+    }
   }
 
   async updateAllConfigs(req: Request, res: Response) {
