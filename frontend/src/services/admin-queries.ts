@@ -231,6 +231,8 @@ export interface ChannelsStatus {
     baseUrl?: string | null;
     /** OpenWA: ID de la sesión (dato público). */
     sessionId?: string | null;
+    /** OpenWA: indica solo SI hay secreto de webhook configurado (no lo expone). */
+    webhookConfigured?: boolean;
   };
   /** Interruptor global de canales de pago (SMS/WhatsApp). */
   paidEnabled?: boolean;
@@ -293,6 +295,109 @@ export const useSetPaidChannelsEnabled = () => {
       return res.data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['channelsConfig'] }),
+  });
+};
+
+// --- Panel de gestión OpenWA (estado/reconexión/entregas del gateway) ---
+
+/** Estado de la sesión OpenWA (datos públicos; nunca incluye la apiKey). */
+export interface OpenWAStatus {
+  id: string;
+  name: string | null;
+  status: string; // ready | disconnected | initializing | failed | …
+  phone: string | null;
+  pushName: string | null;
+  connectedAt: string | null;
+  lastActive: string | null;
+  lastError: string | null;
+}
+
+/** Resultado de la reconexión: QR (si hace falta) o aviso de ya-autenticada. */
+export interface OpenWAConnectResult {
+  needsQr: boolean;
+  qr: string | null;
+  pairingCode: string | null;
+  message: string | null;
+}
+
+export interface OpenWAMessage {
+  id: string;
+  body: string;
+  from: string | null;
+  to: string | null;
+  type: string | null;
+  direction: string | null;
+  status: string | null;
+  timestamp: number | null;
+  createdAt: string | null;
+}
+
+/**
+ * Estado de la sesión del gateway OpenWA. Hace polling solo mientras el panel
+ * esté visible y el proveedor sea OpenWA (`enabled`). Refresca cada 8 s para
+ * reflejar reconexiones sin recargar.
+ */
+export const useOpenWAStatus = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['openwaStatus'],
+    queryFn: async (): Promise<OpenWAStatus> => {
+      const res = await api.get('/notifications/openwa/status');
+      return res.data?.data;
+    },
+    enabled,
+    refetchInterval: enabled ? 8000 : false,
+    retry: false,
+  });
+
+/** Inicia/reconecta la sesión (devuelve QR si hace falta vincular). */
+export const useOpenWAConnect = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (): Promise<OpenWAConnectResult> => {
+      const res = await api.post('/notifications/openwa/connect');
+      return res.data?.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['openwaStatus'] }),
+  });
+};
+
+/** Detiene (desvincula) la sesión del gateway. */
+export const useOpenWADisconnect = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post('/notifications/openwa/disconnect');
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['openwaStatus'] }),
+  });
+};
+
+/** Historial saliente reciente del gateway (para la tarjeta de entregas). */
+export const useOpenWAMessages = (enabled: boolean, limit = 15) =>
+  useQuery({
+    queryKey: ['openwaMessages', limit],
+    queryFn: async (): Promise<OpenWAMessage[]> => {
+      const res = await api.get(`/notifications/openwa/messages?limit=${limit}`);
+      return res.data?.data?.messages || [];
+    },
+    enabled,
+    retry: false,
+  });
+
+/**
+ * Registra en OpenWA el webhook entrante (respuestas de la gestante por WhatsApp
+ * → su chat con el obstetra). `webhookUrl` debe ser pública y apuntar a
+ * `/v1/webhooks/openwa` del backend.
+ */
+export const useRegisterOpenWAWebhook = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (webhookUrl: string) => {
+      const res = await api.post('/notifications/channels/openwa/register-webhook', { webhookUrl });
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['channelsConfig'] }),
   });
 };
 

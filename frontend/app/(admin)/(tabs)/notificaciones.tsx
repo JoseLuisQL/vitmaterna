@@ -12,11 +12,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TextInput, TouchableOpacity, Switch, ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
-import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info, Wallet } from 'lucide-react-native';
+import { MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info, Wallet, Server, RefreshCw, QrCode, Webhook } from 'lucide-react-native';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useTourTarget } from '../../../src/components/tour/tourTargets';
 import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
@@ -27,6 +28,7 @@ import { useResponsive } from '../../../src/theme/responsive';
 import {
   useChannelsConfig, useUpdateSmsConfig, useUpdateWhatsAppConfig, useTestChannel,
   useSetPaidChannelsEnabled,
+  useOpenWAStatus, useOpenWAConnect, useOpenWADisconnect, useOpenWAMessages, useRegisterOpenWAWebhook,
 } from '../../../src/services/admin-queries';
 import { commonColors, adminColors, semanticColors, accentColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
@@ -50,6 +52,29 @@ function StatusBadge({ configured }: { configured: boolean }) {
   );
 }
 
+/** Chip de estado en vivo de la sesión OpenWA (verde ready / ámbar / rojo). */
+function OpenWAStatusChip({ status, loading }: { status?: string; loading?: boolean }) {
+  if (loading && !status) {
+    return (
+      <View style={[styles.badge, { backgroundColor: commonColors.surfaceAlt }]}>
+        <ActivityIndicator size="small" color={commonColors.textSecondary} />
+        <Text style={[styles.badgeText, { color: commonColors.textSecondary }]}>Cargando…</Text>
+      </View>
+    );
+  }
+  const ready = status === 'ready';
+  const transitional = status === 'initializing' || status === 'connecting' || status === 'qr';
+  const color = ready ? semanticColors.success : transitional ? semanticColors.warning : semanticColors.danger;
+  const bg = ready ? semanticColors.successLight : transitional ? semanticColors.warningLight : semanticColors.dangerLight;
+  const label = ready ? 'En línea' : transitional ? 'Conectando…' : status === 'disconnected' ? 'Desconectado' : (status || 'Sin estado');
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      {ready ? <CheckCircle2 size={13} color={color} /> : <AlertCircle size={13} color={color} />}
+      <Text style={[styles.badgeText, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
 export default function AdminNotificacionesScreen(): React.ReactElement {
   const router = useRouter();
   const toast = useToast();
@@ -65,6 +90,52 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
   // Interruptor global de gasto (SMS/WhatsApp). Por defecto activado.
   const paidEnabled = status?.paidEnabled !== false;
+
+  // ─── Panel de gestión OpenWA (solo cuando el proveedor activo es OpenWA) ───
+  const openwaActive = status?.whatsapp.provider === 'openwa' && !!status?.whatsapp.configured;
+  const openwaStatus = useOpenWAStatus(openwaActive);
+  const openwaMessages = useOpenWAMessages(openwaActive);
+  const openwaConnect = useOpenWAConnect();
+  const openwaDisconnect = useOpenWADisconnect();
+  const registerWebhook = useRegisterOpenWAWebhook();
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [qrShown, setQrShown] = useState<string | null>(null);
+
+  const sessionReady = openwaStatus.data?.status === 'ready';
+
+  const onConnect = () => {
+    openwaConnect.mutate(undefined, {
+      onSuccess: (r) => {
+        if (r?.needsQr && r.qr) {
+          setQrShown(r.qr);
+          toast.info('Escanea el código', 'Abre WhatsApp en el teléfono y escanea el QR para vincular la sesión.');
+        } else {
+          setQrShown(null);
+          toast.success('Sesión iniciada', r?.message || 'La sesión ya está autenticada.');
+        }
+      },
+      onError: (e: any) => toast.error('No se pudo reconectar', e?.response?.data?.error?.message || 'Revisa el servidor OpenWA.'),
+    });
+  };
+
+  const onDisconnect = () => {
+    openwaDisconnect.mutate(undefined, {
+      onSuccess: () => { setQrShown(null); toast.success('Sesión detenida', 'La sesión de WhatsApp se desvinculó.'); },
+      onError: (e: any) => toast.error('No se pudo detener', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
+    });
+  };
+
+  const onRegisterWebhook = () => {
+    const url = webhookUrl.trim();
+    if (!isHttpUrl(url)) {
+      toast.error('URL inválida', 'Indica una URL pública https:// que apunte a /v1/webhooks/openwa de tu backend.');
+      return;
+    }
+    registerWebhook.mutate(url, {
+      onSuccess: () => toast.success('Webhook registrado', 'Las respuestas de las gestantes por WhatsApp llegarán a su chat.'),
+      onError: (e: any) => toast.error('No se pudo registrar', e?.response?.data?.error?.message || 'Revisa la URL y el secreto del webhook.'),
+    });
+  };
 
   const togglePaid = (next: boolean) => {
     setPaidEnabled.mutate(next, {
@@ -410,6 +481,147 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
           </View>
         </View>
 
+        {/* ─── Gestión del servidor OpenWA (solo si el proveedor activo es OpenWA) ─── */}
+        {openwaActive && (
+          <View style={styles.card}>
+            <View style={styles.cardHead}>
+              <View style={[styles.cardIcon, { backgroundColor: accentColors.whatsappLight }]}>
+                <Server size={20} color={accentColors.whatsapp} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>Gestión del servidor OpenWA</Text>
+                <Text style={styles.cardHint}>Estado, reconexión y entregas del gateway</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => { openwaStatus.refetch(); openwaMessages.refetch(); }}
+                accessibilityRole="button"
+                accessibilityLabel="Actualizar estado de OpenWA"
+                style={styles.refreshBtn}
+                activeOpacity={0.7}
+              >
+                <RefreshCw size={16} color={commonColors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Tarjeta Estado */}
+            <View style={styles.owaStatusRow}>
+              <OpenWAStatusChip status={openwaStatus.data?.status} loading={openwaStatus.isLoading} />
+              {!!openwaStatus.data?.phone && (
+                <Text style={styles.owaMeta}>Número {openwaStatus.data.phone}</Text>
+              )}
+            </View>
+            {openwaStatus.isError ? (
+              <Text style={styles.owaError}>No se pudo leer el estado del servidor. Revisa la URL, la API key y el Session ID.</Text>
+            ) : (
+              <View style={styles.owaMetaGrid}>
+                {!!openwaStatus.data?.pushName && <Text style={styles.owaMetaSmall}>Cuenta: {openwaStatus.data.pushName}</Text>}
+                {!!openwaStatus.data?.lastActive && (
+                  <Text style={styles.owaMetaSmall}>Última actividad: {new Date(openwaStatus.data.lastActive).toLocaleString()}</Text>
+                )}
+                {!!openwaStatus.data?.lastError && <Text style={styles.owaError}>Último error: {openwaStatus.data.lastError}</Text>}
+              </View>
+            )}
+
+            {/* Tarjeta Conexión: QR / reconectar / desconectar */}
+            <View style={styles.owaActions}>
+              {!sessionReady && (
+                <TouchableOpacity
+                  style={styles.owaActionBtn}
+                  onPress={onConnect}
+                  disabled={openwaConnect.isPending}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reconectar la sesión de WhatsApp"
+                >
+                  {openwaConnect.isPending ? <ActivityIndicator size="small" color={commonColors.white} /> : <QrCode size={16} color={commonColors.white} />}
+                  <Text style={styles.owaActionText}>Reconectar</Text>
+                </TouchableOpacity>
+              )}
+              {sessionReady && (
+                <TouchableOpacity
+                  style={[styles.owaActionBtn, styles.owaActionDanger]}
+                  onPress={onDisconnect}
+                  disabled={openwaDisconnect.isPending}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Desconectar la sesión de WhatsApp"
+                >
+                  {openwaDisconnect.isPending ? <ActivityIndicator size="small" color={commonColors.white} /> : <Phone size={16} color={commonColors.white} />}
+                  <Text style={styles.owaActionText}>Desconectar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* QR de vinculación (cuando la sesión lo requiere) */}
+            {qrShown && (
+              <View style={styles.qrBox}>
+                <Image source={{ uri: qrShown }} style={styles.qrImage} resizeMode="contain" accessibilityLabel="Código QR para vincular WhatsApp" />
+                <Text style={styles.helpText}>Abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo, y escanea este código.</Text>
+              </View>
+            )}
+
+            {/* Tarjeta Webhook entrante (chat unificado) */}
+            <View style={styles.testBlock}>
+              <Text style={styles.testTitle}>Webhook entrante (respuestas de la gestante)</Text>
+              <View style={styles.helpBox}>
+                <Webhook size={14} color={commonColors.textSecondary} />
+                <Text style={styles.helpText}>
+                  {status?.whatsapp.webhookConfigured
+                    ? 'Secreto del webhook configurado. Registra la URL pública para que lo que la gestante responda por WhatsApp aparezca en su chat con el obstetra.'
+                    : 'Configura primero el secreto del webhook (webhookSecret) al guardar WhatsApp/OpenWA, luego registra la URL pública aquí.'}
+                </Text>
+              </View>
+              <Text style={styles.label}>URL pública del webhook</Text>
+              <View style={styles.testRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginTop: 0 }]}
+                  value={webhookUrl}
+                  onChangeText={setWebhookUrl}
+                  placeholder="https://tu-backend/v1/webhooks/openwa"
+                  placeholderTextColor={commonColors.textTertiary}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+                <TouchableOpacity
+                  style={[styles.testBtn, registerWebhook.isPending && { opacity: 0.7 }]}
+                  onPress={onRegisterWebhook}
+                  disabled={registerWebhook.isPending}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Registrar el webhook entrante de OpenWA"
+                >
+                  {registerWebhook.isPending ? <ActivityIndicator size="small" color={commonColors.white} /> : <Webhook size={16} color={commonColors.white} />}
+                  <Text style={styles.testBtnText}>Registrar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Tarjeta Entregas recientes */}
+            <View style={styles.testBlock}>
+              <Text style={styles.testTitle}>Mensajes recientes del gateway</Text>
+              {openwaMessages.isLoading ? (
+                <ActivityIndicator size="small" color={accentColors.whatsapp} style={{ marginTop: spacing.sm }} />
+              ) : !openwaMessages.data?.length ? (
+                <Text style={styles.testDisabledHint}>Aún no hay mensajes registrados en el servidor.</Text>
+              ) : (
+                openwaMessages.data.slice(0, 8).map((m) => (
+                  <View key={m.id} style={styles.owaMsgRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.owaMsgBody} numberOfLines={1}>{m.body || '(sin texto)'}</Text>
+                      <Text style={styles.owaMsgMeta}>
+                        {m.direction === 'outgoing' ? 'Enviado' : 'Recibido'}
+                        {m.to ? ` · ${m.to.replace('@c.us', '')}` : ''}
+                        {m.timestamp ? ` · ${new Date(m.timestamp * 1000).toLocaleString()}` : ''}
+                      </Text>
+                    </View>
+                    {!!m.status && <Text style={styles.owaMsgStatus}>{m.status}</Text>}
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
+
         <Text style={styles.note}>
           En modo prueba los mensajes solo se registran en el servidor. Al activar un proveedor y
           guardar credenciales válidas, las notificaciones se envían de forma real. Los números se
@@ -467,4 +679,21 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  // Panel de gestión OpenWA
+  refreshBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.surfaceAlt },
+  owaStatusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs2 },
+  owaMeta: { ...typography.caption, color: commonColors.text, fontWeight: '600' },
+  owaMetaGrid: { marginTop: spacing.sm, gap: 2 },
+  owaMetaSmall: { ...typography.caption, color: commonColors.textSecondary },
+  owaError: { ...typography.caption, color: semanticColors.danger, marginTop: 4 },
+  owaActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  owaActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: accentColors.whatsapp, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
+  owaActionDanger: { backgroundColor: semanticColors.danger },
+  owaActionText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
+  qrBox: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, padding: spacing.md, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md },
+  qrImage: { width: 220, height: 220, borderRadius: borderRadius.sm, backgroundColor: commonColors.white },
+  owaMsgRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  owaMsgBody: { ...typography.bodyMd, color: commonColors.text },
+  owaMsgMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  owaMsgStatus: { ...typography.overline, color: commonColors.textSecondary, fontWeight: '700', textTransform: 'uppercase' },
 });

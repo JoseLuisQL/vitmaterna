@@ -193,6 +193,35 @@ export async function sendOpenWALocation(
   }
 }
 
+/**
+ * Envía una IMAGEN por OpenWA usando su URL pública (send-image). Útil para que
+ * una foto del chat llegue a la gestante por WhatsApp cuando está offline.
+ * `imageUrl` debe ser http(s) accesible por el gateway. Lanza si no es 2xx.
+ *
+ * @param to número en dígitos, sin '+'.
+ */
+export async function sendOpenWAImage(
+  c: WhatsAppCredentials,
+  to: string,
+  imageUrl: string,
+  caption?: string,
+): Promise<void> {
+  const url = `${c.baseUrl}/api/sessions/${encodeURIComponent(c.sessionId!)}/messages/send-image`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'X-API-Key': c.apiKey!, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chatId: `${to}@c.us`,
+      url: imageUrl,
+      ...(caption ? { caption: caption.slice(0, 1024) } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`OpenWA image ${res.status}: ${detail.slice(0, 200)}`);
+  }
+}
+
 // ─── Canales (resuelven credenciales en cada envío) ──────────────────────────────
 
 export const smsChannel: NotificationChannel = {
@@ -334,8 +363,9 @@ export async function registerOpenWAWebhook(webhookUrl: string, secret: string):
     method: 'POST',
     headers,
     body: JSON.stringify({
+      // message.received → chat unificado / comandos; message.ack → acuses (#1.3).
       url: webhookUrl,
-      events: ['message.received'],
+      events: ['message.received', 'message.ack'],
       secret,
       retryCount: 3,
     }),
@@ -490,5 +520,59 @@ export async function notifyUserViaWhatsAppWithLocation(
     await sendOpenWALocation(c, e164.replace(/^\+/, ''), latitude, longitude, 'Ubicación de la gestante');
   } catch (e) {
     console.error('[NOTIFY WHATSAPP LOC] No se pudo enviar la ubicación por WhatsApp:', (e as Error).message);
+  }
+}
+
+/** Construye una URL absoluta y pública para un archivo de /uploads (o null). */
+export function publicMediaUrl(relativeOrAbsolute: string | null | undefined): string | null {
+  if (!relativeOrAbsolute) return null;
+  if (/^https?:\/\//i.test(relativeOrAbsolute)) return relativeOrAbsolute;
+  const base = trimTrailingSlash(env.PUBLIC_BASE_URL);
+  if (!base) return null; // sin URL pública no se puede enviar el medio por WhatsApp
+  return `${base}${relativeOrAbsolute.startsWith('/') ? '' : '/'}${relativeOrAbsolute}`;
+}
+
+/**
+ * PUENTE DE CHAT → WHATSAPP (OPORTUNIDADES #1.2): reenvía a un usuario, por
+ * WhatsApp, un mensaje de chat que NO pudo ver en tiempo real (está offline).
+ * Pensado para que un mensaje del obstetra llegue a la gestante aunque no abra
+ * la app. Best-effort: nunca lanza ni bloquea el flujo de chat.
+ *
+ * - Respeta el kill-switch de pago y las preferencias del usuario (vía
+ *   `notifyUserViaWhatsApp` / `sendPaidNotification`).
+ * - Si es una imagen y hay `PUBLIC_BASE_URL` + proveedor OpenWA, la envía como
+ *   imagen (send-image) con caption; si no, manda un texto avisando de la foto.
+ */
+export async function deliverChatViaWhatsApp(
+  userId: string,
+  opts: { senderName?: string; text?: string; tipo?: string; mediaUrl?: string | null },
+): Promise<void> {
+  try {
+    const prefix = opts.senderName ? `${opts.senderName} (VitMaterna): ` : 'VitMaterna: ';
+
+    if (opts.tipo === 'imagen' && opts.mediaUrl) {
+      const c = await resolveWhatsAppCredentials();
+      const imageUrl = publicMediaUrl(opts.mediaUrl);
+      if (c.provider === 'openwa' && whatsappConfigured(c) && imageUrl && (await arePaidChannelsEnabled())) {
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true, notificationPreferences: true } });
+        const prefs = (user?.notificationPreferences ?? null) as { whatsapp?: boolean } | null;
+        const e164 = toE164PE(user?.phone);
+        if (e164 && prefs?.whatsapp !== false) {
+          const caption = opts.text?.trim() ? `${prefix}${opts.text.trim()}` : `${prefix}te envió una foto.`;
+          await sendOpenWAImage(c, e164.replace(/^\+/, ''), imageUrl, caption);
+          return;
+        }
+      }
+      // Respaldo: aviso de texto (sin URL cruda) por el canal de pago habitual.
+      const fallback = opts.text?.trim() ? `${prefix}${opts.text.trim()}` : `${prefix}te envió una foto. Ábrela en la app de VitMaterna.`;
+      await notifyUserViaWhatsApp(userId, fallback);
+      return;
+    }
+
+    const text = (opts.text || '').trim();
+    if (!text) return;
+    await notifyUserViaWhatsApp(userId, `${prefix}${text}`);
+  } catch (e) {
+    console.error('[CHAT→WHATSAPP] No se pudo reenviar el mensaje por WhatsApp:', (e as Error).message);
   }
 }

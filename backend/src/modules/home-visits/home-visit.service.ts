@@ -40,6 +40,7 @@ export class HomeVisitService {
     const gestante = await prisma.gestante.findUnique({
       where: { id: data.gestanteId },
       include: { user: { select: { id: true, firstName: true } } },
+      // acompanantePhone para el aviso opcional al acompañante (OPORTUNIDADES #8).
     });
     if (!gestante) {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Gestante no encontrada');
@@ -91,15 +92,54 @@ export class HomeVisitService {
       });
     }
 
+    // ¿La visita es a FUTURO (programada) o ya ocurrió (acta del día)?
+    const visitDate = new Date(`${data.fecha}T00:00:00.000Z`);
+    const hoyMidnight = new Date(`${new Date().toISOString().split('T')[0]}T00:00:00.000Z`);
+    const esFutura = visitDate.getTime() > hoyMidnight.getTime();
+
     // Notificar a la gestante.
     if (gestante.user?.id) {
       await notifyUser(
         gestante.user.id,
         'visita_domiciliaria',
-        'Visita domiciliaria registrada',
-        `Tu obstetra registró la visita domiciliaria N°${numeroVisita}.`,
+        esFutura ? 'Visita domiciliaria programada' : 'Visita domiciliaria registrada',
+        esFutura
+          ? `Tu obstetra te visitará en tu domicilio el ${visitDate.toLocaleDateString()}.`
+          : `Tu obstetra registró la visita domiciliaria N°${numeroVisita}.`,
         { homeVisitId: visit.id, numeroVisita },
       );
+
+      // OPORTUNIDADES #7: si la visita es a futuro, avisar también por WhatsApp
+      // (el personal de campo y muchas gestantes rurales viven en WhatsApp).
+      // Best-effort, respeta gasto/preferencias.
+      if (esFutura) {
+        try {
+          const { notifyUserViaWhatsApp } = await import('../notifications/channels.js');
+          await notifyUserViaWhatsApp(
+            gestante.user.id,
+            `VitMaterna: tu obstetra realizará una visita domiciliaria el ${visitDate.toLocaleDateString()}. Por favor, mantente disponible. ¡Gracias!`,
+          );
+        } catch (e) {
+          console.error('[VISITA WHATSAPP] No se pudo avisar por WhatsApp:', (e as Error).message);
+        }
+      }
+    }
+
+    // OPORTUNIDADES #8: reactivar avisos al ACOMPAÑANTE por WhatsApp (gratis con
+    // OpenWA). Para una visita futura, se le avisa también (red de apoyo). El
+    // acompañante no tiene cuenta: se envía por número, sin log de entrega.
+    if (esFutura && gestante.acompanantePhone) {
+      try {
+        const { sendPaidNotification } = await import('../notifications/channels.js');
+        await sendPaidNotification(
+          gestante.acompanantePhone,
+          `VitMaterna: el ${visitDate.toLocaleDateString()} habrá una visita domiciliaria para ${gestante.user?.firstName ?? 'la gestante'}. Tu apoyo es importante.`,
+          null,
+          null,
+        );
+      } catch (e) {
+        console.error('[VISITA ACOMPAÑANTE] No se pudo avisar al acompañante:', (e as Error).message);
+      }
     }
 
     return visit;
