@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import { sendOpenWA, sendOpenWALocation, type WhatsAppCredentials } from '../../src/modules/notifications/channels.js';
+import { sendOpenWA, sendOpenWALocation, sendOpenWAImage, type WhatsAppCredentials } from '../../src/modules/notifications/channels.js';
 
 /**
  * Pruebas de `sendOpenWA`: arma correctamente la petición al gateway OpenWA
@@ -107,5 +107,33 @@ describe('sendOpenWALocation (pin de ubicación para emergencias)', () => {
     })) as unknown as typeof fetch;
 
     await expect(sendOpenWALocation(creds, '51950328511', 1, 2)).rejects.toThrow(/OpenWA location 409/);
+  });
+});
+
+describe('sendOpenWAImage (imagen del chat por WhatsApp, #1.2/#6)', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('hace POST a send-image con chatId, url y caption', async () => {
+    const fetchMock = jest.fn(async () => ({ ok: true, status: 201, text: async () => '{}' })) as unknown as typeof fetch;
+    global.fetch = fetchMock;
+
+    await sendOpenWAImage(creds, '51950328511', 'https://api.example.pe/uploads/chat/x.jpg', 'Mira esto');
+
+    const [url, init] = (fetchMock as jest.Mock).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://openwa.qware.me/api/sessions/e934e1c3-82c6-4b48-9226-c8ffaf9fc293/messages/send-image',
+    );
+    const body = JSON.parse(init.body as string);
+    expect(body.chatId).toBe('51950328511@c.us');
+    expect(body.url).toBe('https://api.example.pe/uploads/chat/x.jpg');
+    expect(body.caption).toBe('Mira esto');
+  });
+
+  it('lanza un Error legible cuando la respuesta no es 2xx', async () => {
+    global.fetch = jest.fn(async () => ({ ok: false, status: 400, text: async () => 'bad' })) as unknown as typeof fetch;
+    await expect(sendOpenWAImage(creds, '51950328511', 'https://x/y.jpg')).rejects.toThrow(/OpenWA image 400/);
   });
 });

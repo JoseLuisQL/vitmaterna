@@ -63,6 +63,10 @@ const envSchema = z.object({
   // Secreto para firmar/verificar los webhooks entrantes de OpenWA (HMAC-SHA256).
   // Debe coincidir con el `secret` registrado en el webhook de OpenWA.
   OPENWA_WEBHOOK_SECRET: z.string().optional().default(''),
+  // URL pública del backend (https://...), para construir URLs absolutas de los
+  // archivos servidos en /uploads (p. ej. imágenes del chat enviadas por WhatsApp,
+  // o thumbnails del contenido educativo). Vacío = no se envían medios por URL.
+  PUBLIC_BASE_URL: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

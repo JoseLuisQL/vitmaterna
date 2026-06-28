@@ -40,6 +40,15 @@ function isOnline(userId: string): boolean {
   return (onlineCounts.get(userId) ?? 0) > 0;
 }
 
+/**
+ * Presencia global (estilo WhatsApp) consultable fuera del socket: `true` si el
+ * usuario tiene al menos un socket conectado. La usa el puente a WhatsApp para
+ * decidir si reenviar un mensaje de chat a quien está OFFLINE (OPORTUNIDADES #1.2).
+ */
+export function isUserOnline(userId: string): boolean {
+  return isOnline(userId);
+}
+
 function isViewingConversation(userId: string, conversationId: string): boolean {
   return viewingConversation.get(userId) === conversationId;
 }
@@ -253,6 +262,24 @@ export const setupChatSockets = (io: Server) => {
                 );
               } catch (e) {
                 console.error('No se pudo crear la notificación de chat:', e);
+              }
+
+              // ── PUENTE A WHATSAPP (OPORTUNIDADES #1.2) ──
+              // Si el destinatario está completamente OFFLINE (sin ningún socket),
+              // el push puede no llegar (token caducado). Reenviamos el mensaje por
+              // WhatsApp como red de seguridad. Best-effort, respeta gasto y prefs.
+              if (!isOnline(recipientId)) {
+                try {
+                  const { deliverChatViaWhatsApp } = await import('../modules/notifications/channels.js');
+                  await deliverChatViaWhatsApp(recipientId, {
+                    senderName,
+                    text: content,
+                    tipo: type,
+                    mediaUrl: mediaUrl ?? null,
+                  });
+                } catch (e) {
+                  console.error('No se pudo reenviar el mensaje por WhatsApp:', e);
+                }
               }
             }
           }

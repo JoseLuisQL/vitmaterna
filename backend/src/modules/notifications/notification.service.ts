@@ -181,6 +181,18 @@ export async function scanAndSendReminders() {
           prefs: user.notificationPreferences as any,
           userId: user.id,
         });
+
+        // OPORTUNIDADES #8: avisar también al ACOMPAÑANTE (gratis con OpenWA).
+        // Sin cuenta → sin log; respeta el kill-switch global vía la cola.
+        const acompanantePhone = appt.gestante?.acompanantePhone;
+        if (acompanantePhone) {
+          await enqueueDelivery({
+            phone: acompanantePhone,
+            message: `VitMaterna: ${user.firstName} tiene su control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. Acompáñala, tu apoyo es importante.`,
+            prefs: null,
+            userId: null,
+          });
+        }
       }
 
       const prefs = user.notificationPreferences as Record<string, any>;

@@ -502,6 +502,24 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
     console.error('[EMERGENCIA WHATSAPP] No se pudo enviar el respaldo por WhatsApp:', (e as Error).message);
   }
 
+  // OPORTUNIDADES #8: en una emergencia, avisar también al ACOMPAÑANTE por
+  // WhatsApp (gratis con OpenWA) con la ubicación de la gestante. Red de apoyo
+  // inmediata. Best-effort; el acompañante no tiene cuenta (sin log de entrega).
+  try {
+    if (gestante.acompanantePhone) {
+      const { sendPaidNotification } = await import('../notifications/channels.js');
+      const acompMsg = [
+        'EMERGENCIA - VitMaterna',
+        `${nombre} activó el botón de auxilio y necesita ayuda inmediata.`,
+        `Ubicación: ${mapsUrl}`,
+        'Acude o contáctala de inmediato.',
+      ].join('\n');
+      await sendPaidNotification(gestante.acompanantePhone, acompMsg, null, null);
+    }
+  } catch (e) {
+    console.error('[EMERGENCIA ACOMPAÑANTE] No se pudo avisar al acompañante:', (e as Error).message);
+  }
+
   return message;
 };
 
@@ -624,6 +642,24 @@ export const recommendContent = async (
       content.titulo,
       { conversationId: conversation.id, contentId: content.id, tipo: 'educacion' },
     );
+
+    // OPORTUNIDADES #6: si la gestante está OFFLINE, el contenido educativo llega
+    // también por WhatsApp (título + miniatura si hay), no se pierde en la campana.
+    // Best-effort, respeta gasto/preferencias; con OpenWA + thumbnail va como imagen.
+    try {
+      const { isUserOnline } = await import('../../sockets/chat.socket.js');
+      if (!isUserOnline(gestante.userId)) {
+        const { deliverChatViaWhatsApp } = await import('../notifications/channels.js');
+        const texto = `Tu obstetra te recomienda el contenido educativo: "${content.titulo}". Ábrelo en la app de VitMaterna.`;
+        if (content.thumbnailUrl) {
+          await deliverChatViaWhatsApp(gestante.userId, { text: texto, tipo: 'imagen', mediaUrl: content.thumbnailUrl });
+        } else {
+          await deliverChatViaWhatsApp(gestante.userId, { text: texto });
+        }
+      }
+    } catch (e) {
+      console.error('[EDUCACION WHATSAPP] No se pudo reenviar el contenido por WhatsApp:', (e as Error).message);
+    }
   }
 
   return { conversationId: conversation.id, messageId: message.id };

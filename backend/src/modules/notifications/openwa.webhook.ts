@@ -19,7 +19,7 @@ import { getConfigValue } from '../../utils/systemSettings.js';
 import { handleInboundWhatsAppMessage } from './openwa.inbound.js';
 
 /** Eventos que nos interesan procesar (el resto se acepta y se ignora). */
-const HANDLED_EVENTS = new Set(['message.received']);
+const HANDLED_EVENTS = new Set(['message.received', 'message.ack']);
 
 export interface OpenWAWebhookPayload {
   event: string;
@@ -38,6 +38,9 @@ export interface OpenWAWebhookPayload {
     fromMe?: boolean;
     isGroup?: boolean;
     author?: string;
+    // message.ack: estado de entrega (numérico de WhatsApp o texto del gateway).
+    ack?: number;
+    status?: string;
   };
 }
 
@@ -93,6 +96,17 @@ export async function processOpenWAWebhook(payload: OpenWAWebhookPayload): Promi
   const data = payload.data;
   if (!data) return;
 
+  // OPORTUNIDADES #1.3: acuses de entrega/lectura (message.ack) de un mensaje
+  // que ENVIAMOS. Actualiza el estado del log de entrega para auditoría real.
+  if (payload.event === 'message.ack') {
+    try {
+      await handleAckEvent(data);
+    } catch (e) {
+      console.error('[OPENWA WEBHOOK] Error procesando acuse (ack):', (e as Error).message);
+    }
+    return;
+  }
+
   // Ignorar mensajes salientes (los que envía el propio sistema) y los de grupo.
   if (data.fromMe === true || data.isGroup === true) return;
   // Solo texto entrante en esta fase.
@@ -107,4 +121,50 @@ export async function processOpenWAWebhook(payload: OpenWAWebhookPayload): Promi
   } catch (e) {
     console.error('[OPENWA WEBHOOK] Error procesando mensaje entrante:', (e as Error).message);
   }
+}
+
+/** Mapea el ack de WhatsApp (numérico) o el status textual a una etiqueta legible. */
+function ackLabel(data: NonNullable<OpenWAWebhookPayload['data']>): string | null {
+  if (typeof data.status === 'string' && data.status) return data.status.toLowerCase();
+  // Convención de WhatsApp: 1=enviado, 2=entregado, 3=leído, 4=reproducido.
+  switch (data.ack) {
+    case 1:
+      return 'sent';
+    case 2:
+      return 'delivered';
+    case 3:
+      return 'read';
+    case 4:
+      return 'played';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Registra el acuse (entregado/leído) en el log de entrega WhatsApp más reciente
+ * del número destino. Guarda el estado en `datos.ack` del registro `entrega_whatsapp`
+ * (auditoría clínica: saber si el recordatorio llegó/se leyó). Best-effort.
+ */
+async function handleAckEvent(data: NonNullable<OpenWAWebhookPayload['data']>): Promise<void> {
+  const label = ackLabel(data);
+  const toRaw = (data.to || data.chatId || '').split('@')[0].replace(/\D+/g, '');
+  if (!label || !toRaw) return;
+
+  // Últimos 9 dígitos (nacional) para casar con el `datos.to` guardado en logDelivery.
+  const nat = toRaw.slice(-9);
+  const recientes = await prisma.notification.findMany({
+    where: { tipo: 'entrega_whatsapp', createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+    select: { id: true, datos: true },
+  });
+  const match = recientes.find((n) => {
+    const to = (n.datos as Record<string, unknown> | null)?.to;
+    return typeof to === 'string' && to.replace(/\D+/g, '').endsWith(nat);
+  });
+  if (!match) return;
+
+  const datos = { ...((match.datos as Record<string, unknown> | null) ?? {}), ack: label, ackAt: new Date().toISOString() };
+  await prisma.notification.update({ where: { id: match.id }, data: { datos: datos as object } });
 }
