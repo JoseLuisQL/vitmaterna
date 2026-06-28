@@ -60,6 +60,9 @@ const envSchema = z.object({
   OPENWA_BASE_URL: z.string().optional().default(''), // ej. https://openwa.qware.me
   OPENWA_API_KEY: z.string().optional().default(''),
   OPENWA_SESSION_ID: z.string().optional().default(''), // ID (uuid) de la sesión, NO el nombre
+  // Secreto para firmar/verificar los webhooks entrantes de OpenWA (HMAC-SHA256).
+  // Debe coincidir con el `secret` registrado en el webhook de OpenWA.
+  OPENWA_WEBHOOK_SECRET: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

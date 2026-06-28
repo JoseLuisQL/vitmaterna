@@ -11,6 +11,7 @@ import { errorHandler } from '../middleware/errorHandler.middleware.js';
 import { globalRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import { auditLogger } from '../middleware/auditLogger.middleware.js';
 import { apiRouter } from '../routes/index.js';
+import { openwaWebhookRouter } from '../modules/notifications/openwa.webhook.routes.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -34,6 +35,13 @@ export function createApp(): express.Express {
   // Permite que cada usuario abra su manual desde la app (Perfil → Manual de
   // usuario). Sin autenticación, igual que /uploads.
   app.use('/manuales', express.static(path.resolve(process.cwd(), 'manuales')));
+
+  // ---- Webhooks entrantes (OpenWA) ----
+  // Se monta ANTES del express.json() global: el handler usa express.raw para
+  // verificar la firma HMAC sobre los bytes EXACTOS del cuerpo. Ruta pública
+  // (la autenticidad la da la firma, no el JWT).
+  app.use('/v1/webhooks', openwaWebhookRouter);
+  app.use('/api/v1/webhooks', openwaWebhookRouter);
 
   // ---- Body Parsing ----
   app.use(express.json({ limit: '10mb' }));

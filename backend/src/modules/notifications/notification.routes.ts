@@ -20,6 +20,8 @@ router.put('/channels/whatsapp', rbac('admin'), validate(notificationSchema.what
 // Interruptor global de canales de pago (SMS/WhatsApp): { enabled: boolean }.
 router.put('/channels/paid-enabled', rbac('admin'), notificationController.setPaidChannelsEnabled);
 router.post('/channels/test', rbac('admin'), validate(notificationSchema.testChannelSchema), notificationController.testChannel);
+// Registra el webhook entrante de OpenWA (respuestas de la gestante → chat): { webhookUrl }.
+router.post('/channels/openwa/register-webhook', rbac('admin'), notificationController.registerOpenWAWebhookEndpoint);
 
 /**
  * @swagger

@@ -306,12 +306,56 @@ export async function sendSmsAndWhatsApp(
   return sendPaidNotification(phone, message, prefs, userId);
 }
 
+/**
+ * Registra (o reutiliza) en OpenWA un webhook que apunta a nuestro endpoint
+ * público para recibir los mensajes entrantes de la gestante. Idempotente: si ya
+ * existe un webhook con la misma URL, no crea otro. Requiere proveedor `openwa`
+ * configurado y un `webhookUrl` público accesible por OpenWA.
+ *
+ * @returns el id del webhook en OpenWA.
+ */
+export async function registerOpenWAWebhook(webhookUrl: string, secret: string): Promise<string> {
+  const c = await resolveWhatsAppCredentials();
+  if (c.provider !== 'openwa' || !c.baseUrl || !c.apiKey || !c.sessionId) {
+    throw new Error('OpenWA no está configurado como proveedor de WhatsApp.');
+  }
+  const base = `${c.baseUrl}/api/sessions/${encodeURIComponent(c.sessionId)}/webhooks`;
+  const headers = { 'X-API-Key': c.apiKey, 'Content-Type': 'application/json' };
+
+  // ¿Ya existe uno con esa URL? (idempotencia)
+  const listRes = await fetch(base, { headers });
+  if (listRes.ok) {
+    const existing = (await listRes.json().catch(() => [])) as Array<{ id: string; url: string }>;
+    const found = Array.isArray(existing) ? existing.find((w) => w.url === webhookUrl) : undefined;
+    if (found) return found.id;
+  }
+
+  const res = await fetch(base, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      url: webhookUrl,
+      events: ['message.received'],
+      secret,
+      retryCount: 3,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`OpenWA webhook ${res.status}: ${detail.slice(0, 200)}`);
+  }
+  const created = (await res.json()) as { id: string };
+  return created.id;
+}
+
 /** Estado de configuración de cada canal (para mostrar en el panel admin). */
 export async function getChannelsStatus() {
-  const [sms, wa, paidEnabled] = await Promise.all([
+  const { resolveWebhookSecret } = await import('./openwa.webhook.js');
+  const [sms, wa, paidEnabled, webhookSecret] = await Promise.all([
     resolveSmsCredentials(),
     resolveWhatsAppCredentials(),
     arePaidChannelsEnabled(),
+    resolveWebhookSecret(),
   ]);
   return {
     sms: { provider: sms.provider, configured: smsConfigured(sms), fromNumber: sms.fromNumber || null },
@@ -322,6 +366,8 @@ export async function getChannelsStatus() {
       phoneNumberId: wa.phoneNumberId || null,
       baseUrl: wa.baseUrl || null,
       sessionId: wa.sessionId || null,
+      // Indica solo SI hay secreto de webhook configurado (no lo expone).
+      webhookConfigured: !!webhookSecret,
     },
     paidEnabled,
   };

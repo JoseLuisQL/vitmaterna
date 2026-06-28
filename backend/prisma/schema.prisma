@@ -937,3 +937,25 @@ model SystemConfig {
 
   @@map("system_config")
 }
+
+// ============================================
+// Module 10: Webhooks entrantes (OpenWA)
+// ============================================
+
+/**
+ * Registro de eventos de webhook entrantes (OpenWA) para DEDUPLICACIÓN.
+ * La entrega es "at-least-once": el mismo evento puede llegar más de una vez.
+ * Se deduplica por `idempotencyKey` (header X-OpenWA-Idempotency-Key, estable
+ * entre reintentos). Antes de procesar un evento, se intenta insertar su clave;
+ * si ya existe, se ignora (ya fue procesado).
+ */
+model WebhookEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  idempotencyKey String   @unique @map("idempotency_key") @db.VarChar(255)
+  source         String   @default("openwa") @db.VarChar(30)
+  event          String   @db.VarChar(50)
+  processedAt    DateTime @default(now()) @map("processed_at") @db.Timestamptz()
+
+  @@index([processedAt(sort: Desc)], map: "idx_webhook_events_processed")
+  @@map("webhook_events")
+}

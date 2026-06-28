@@ -38,6 +38,8 @@ export const whatsappConfigSchema = {
     baseUrl: httpUrlOptional,
     apiKey: z.string().optional().nullable(),
     sessionId: z.string().optional().nullable(),
+    // Secreto HMAC del webhook entrante (respuestas de la gestante por WhatsApp).
+    webhookSecret: z.string().optional().nullable(),
   }),
 };
 

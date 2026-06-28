@@ -231,6 +231,31 @@ export async function setPaidChannelsEnabled(req: Request, res: Response): Promi
   res.json(successResponse(status));
 }
 
+/**
+ * Registra en OpenWA el webhook entrante (respuestas de la gestante por WhatsApp
+ * → chat). Body: { webhookUrl: string }. La URL debe ser pública y accesible por
+ * OpenWA, y apuntar a `/v1/webhooks/openwa` de este backend. Usa el secreto HMAC
+ * ya configurado (whatsappConfig.webhookSecret / OPENWA_WEBHOOK_SECRET).
+ */
+export async function registerOpenWAWebhookEndpoint(req: Request, res: Response): Promise<void> {
+  const { webhookUrl } = req.body as { webhookUrl?: string };
+  if (!webhookUrl || !/^https?:\/\/.+/i.test(webhookUrl)) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Indica una webhookUrl pública válida (https://...).');
+  }
+  const { resolveWebhookSecret } = await import('./openwa.webhook.js');
+  const secret = await resolveWebhookSecret();
+  if (!secret) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Configura primero el secreto del webhook (webhookSecret) en WhatsApp/OpenWA.');
+  }
+  try {
+    const { registerOpenWAWebhook } = await import('./channels.js');
+    const id = await registerOpenWAWebhook(webhookUrl, secret);
+    res.json(successResponse({ ok: true, webhookId: id, url: webhookUrl }));
+  } catch (error) {
+    throw new AppError(502, ErrorCodes.EXTERNAL_SERVICE_ERROR, `No se pudo registrar el webhook en OpenWA: ${(error as Error).message}`);
+  }
+}
+
 /** Prueba la conexión enviando un mensaje real al destino indicado. */
 export async function testChannel(req: Request, res: Response): Promise<void> {
   const { canal, destino, mensaje: customMensaje } = req.body as {
