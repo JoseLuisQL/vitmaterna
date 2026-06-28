@@ -4,7 +4,7 @@ import { successResponse, buildPaginationMeta } from '../../utils/responseHelper
 
 export const getPatients = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { total, gestantes, page, limit } = await patientService.findAll(req.query as any);
+    const { total, gestantes, page, limit } = await patientService.findAll(req.query as any, req.user);
     const meta = buildPaginationMeta(total, page, limit);
     res.json(successResponse(gestantes, meta));
   } catch (error) {
@@ -14,7 +14,7 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
 
 export const getPatientStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await patientService.getStats(req.query as any);
+    const data = await patientService.getStats(req.query as any, req.user);
     res.json(successResponse(data));
   } catch (error) {
     next(error);

@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../../config/database.js';
 import { AppError, ErrorCodes } from '../../types/index.js';
+import type { RequestUser } from '../../types/index.js';
 import { classifyImc } from '../../utils/imcClassification.js';
 import { calculateFPP } from '../../utils/dateCalc.js';
 import { calcularAdherencia } from '../../utils/adherence.js';
@@ -30,7 +31,7 @@ export class PatientService {
     nivelRiesgo?: string;
     page?: number;
     limit?: number;
-  }) {
+  }, userContext?: RequestUser) {
     const page = filters.page ? Number(filters.page) : 1;
     const limit = filters.limit ? Number(filters.limit) : 10;
     const skip = (page - 1) * limit;
@@ -40,7 +41,24 @@ export class PatientService {
     if (filters.estado) where.estado = filters.estado;
     if (filters.nivelRiesgo) where.nivelRiesgo = filters.nivelRiesgo;
 
-    if (filters.obstetraId) {
+    if (userContext?.role === 'gestante') {
+      const gestante = await prisma.gestante.findUnique({
+        where: { userId: userContext.userId },
+      });
+      where.id = gestante?.id || 'non-existent-uuid';
+    } else if (userContext?.role === 'obstetra') {
+      const obstetra = await prisma.obstetra.findUnique({
+        where: { userId: userContext.userId },
+      });
+      if (obstetra) {
+        where.OR = [
+          { appointments: { some: { obstetraId: obstetra.id } } },
+          { prenatalControls: { some: { obstetraId: obstetra.id } } },
+        ];
+      } else {
+        where.id = 'non-existent-uuid';
+      }
+    } else if (filters.obstetraId) {
       // Find patients that have at least one appointment or control with this obstetra
       where.OR = [
         { appointments: { some: { obstetraId: filters.obstetraId } } },
@@ -111,10 +129,27 @@ export class PatientService {
    * Acepta los mismos filtros de alcance que `findAll` (obstetraId, estado) para
    * poder acotar a las pacientes de una obstetra si se desea.
    */
-  async getStats(filters: { obstetraId?: string; estado?: string } = {}) {
+  async getStats(filters: { obstetraId?: string; estado?: string } = {}, userContext?: RequestUser) {
     const where: any = {};
     if (filters.estado) where.estado = filters.estado;
-    if (filters.obstetraId) {
+    if (userContext?.role === 'gestante') {
+      const gestante = await prisma.gestante.findUnique({
+        where: { userId: userContext.userId },
+      });
+      where.id = gestante?.id || 'non-existent-uuid';
+    } else if (userContext?.role === 'obstetra') {
+      const obstetra = await prisma.obstetra.findUnique({
+        where: { userId: userContext.userId },
+      });
+      if (obstetra) {
+        where.OR = [
+          { appointments: { some: { obstetraId: obstetra.id } } },
+          { prenatalControls: { some: { obstetraId: obstetra.id } } },
+        ];
+      } else {
+        where.id = 'non-existent-uuid';
+      }
+    } else if (filters.obstetraId) {
       where.OR = [
         { appointments: { some: { obstetraId: filters.obstetraId } } },
         { prenatalControls: { some: { obstetraId: filters.obstetraId } } },

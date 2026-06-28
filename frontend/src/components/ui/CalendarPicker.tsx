@@ -1,13 +1,12 @@
 /**
- * VITMATERNA — CalendarPicker (calendario mensual de marca)
+ * VITMATERNA — CalendarPicker (calendario mensual de marca con selector de año/mes)
  *
- * Calendario propio (no el <input type="date"> del navegador) para una
- * experiencia idéntica y profesional en web y móvil. Navegación por mes,
- * cuadrícula de 7 columnas, día de hoy marcado, selección con acento de rol,
- * y respeto de min/max. Solo tokens del tema.
+ * Calendario propio para una experiencia profesional en web y móvil.
+ * Incluye navegación rápida por año y mes para facilitar el registro de fechas
+ * de nacimiento o fechas lejanas en un solo clic (soluciona issue #16).
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -43,9 +42,44 @@ export function CalendarPicker({
   const today = startOfDay(new Date());
   const initial = value ?? today;
   const [cursor, setCursor] = useState(new Date(initial.getFullYear(), initial.getMonth(), 1));
+  const [viewMode, setViewMode] = useState<'calendar' | 'year' | 'month'>('calendar');
 
   const min = minimumDate ? startOfDay(minimumDate) : null;
   const max = maximumDate ? startOfDay(maximumDate) : null;
+
+  const minYear = min ? min.getFullYear() : today.getFullYear() - 90;
+  const maxYear = max ? max.getFullYear() : today.getFullYear() + 10;
+  const years = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = maxYear; y >= minYear; y--) {
+      arr.push(y);
+    }
+    return arr;
+  }, [minYear, maxYear]);
+
+  const handleSelectYear = (y: number) => {
+    let m = cursor.getMonth();
+    if (max && y === max.getFullYear() && m > max.getMonth()) {
+      m = max.getMonth();
+    }
+    if (min && y === min.getFullYear() && m < min.getMonth()) {
+      m = min.getMonth();
+    }
+    setCursor(new Date(y, m, 1));
+    setViewMode('calendar');
+  };
+
+  const handleSelectMonth = (m: number) => {
+    let y = cursor.getFullYear();
+    if (max && y === max.getFullYear() && m > max.getMonth()) {
+      m = max.getMonth();
+    }
+    if (min && y === min.getFullYear() && m < min.getMonth()) {
+      m = min.getMonth();
+    }
+    setCursor(new Date(y, m, 1));
+    setViewMode('calendar');
+  };
 
   // Celdas del mes: huecos iniciales (lunes-first) + días.
   const cells = useMemo(() => {
@@ -71,75 +105,134 @@ export function CalendarPicker({
       <View style={styles.navRow}>
         <Pressable
           onPress={() => canPrev && setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          disabled={!canPrev}
+          disabled={!canPrev || viewMode !== 'calendar'}
           hitSlop={8}
-          style={[styles.navBtn, !canPrev && styles.navBtnDisabled, IS_WEB && ({ cursor: canPrev ? 'pointer' : 'default' } as any)]}
+          style={[styles.navBtn, (!canPrev || viewMode !== 'calendar') && styles.navBtnDisabled, IS_WEB && ({ cursor: canPrev && viewMode === 'calendar' ? 'pointer' : 'default' } as any)]}
           accessibilityRole="button"
           accessibilityLabel="Mes anterior"
         >
-          <ChevronLeft size={20} color={canPrev ? commonColors.text : commonColors.disabled} />
+          <ChevronLeft size={20} color={canPrev && viewMode === 'calendar' ? commonColors.text : commonColors.disabled} />
         </Pressable>
-        <Text style={styles.monthLabel}>
-          {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
-        </Text>
+
+        <View style={styles.headerSelector}>
+          <Pressable
+            onPress={() => setViewMode(viewMode === 'month' ? 'calendar' : 'month')}
+            style={[styles.modeBtn, IS_WEB && ({ cursor: 'pointer' } as any)]}
+          >
+            <Text style={[styles.monthLabel, viewMode === 'month' && { color: accentColor, textDecorationLine: 'underline' }]}>
+              {MONTHS[cursor.getMonth()]}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setViewMode(viewMode === 'year' ? 'calendar' : 'year')}
+            style={[styles.modeBtn, IS_WEB && ({ cursor: 'pointer' } as any)]}
+          >
+            <Text style={[styles.monthLabel, viewMode === 'year' && { color: accentColor, textDecorationLine: 'underline' }]}>
+              {cursor.getFullYear()}
+            </Text>
+          </Pressable>
+        </View>
+
         <Pressable
           onPress={() => canNext && setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          disabled={!canNext}
+          disabled={!canNext || viewMode !== 'calendar'}
           hitSlop={8}
-          style={[styles.navBtn, !canNext && styles.navBtnDisabled, IS_WEB && ({ cursor: canNext ? 'pointer' : 'default' } as any)]}
+          style={[styles.navBtn, (!canNext || viewMode !== 'calendar') && styles.navBtnDisabled, IS_WEB && ({ cursor: canNext && viewMode === 'calendar' ? 'pointer' : 'default' } as any)]}
           accessibilityRole="button"
           accessibilityLabel="Mes siguiente"
         >
-          <ChevronRight size={20} color={canNext ? commonColors.text : commonColors.disabled} />
+          <ChevronRight size={20} color={canNext && viewMode === 'calendar' ? commonColors.text : commonColors.disabled} />
         </Pressable>
       </View>
 
-      {/* Cabecera de días de la semana */}
-      <View style={styles.dowRow}>
-        {DOW.map((d, i) => (
-          <View key={i} style={styles.cell}>
-            <Text style={styles.dowText}>{d}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Cuadrícula de días */}
-      <View style={styles.grid}>
-        {cells.map((d, i) => {
-          if (!d) return <View key={i} style={styles.cell} />;
-          const selected = value && sameDay(d, value);
-          const isToday = sameDay(d, today);
-          const disabled = isDisabled(d);
-          return (
-            <View key={i} style={styles.cell}>
+      {viewMode === 'year' && (
+        <ScrollView style={styles.selectorScroll} contentContainerStyle={styles.yearGrid} showsVerticalScrollIndicator={true}>
+          {years.map((y) => {
+            const selected = y === cursor.getFullYear();
+            return (
               <Pressable
-                onPress={() => !disabled && onSelect(d)}
-                disabled={!!disabled}
-                style={[
-                  styles.day,
-                  selected && { backgroundColor: accentColor },
-                  !selected && isToday && { borderWidth: 1.5, borderColor: accentColor },
-                  IS_WEB && !disabled && ({ cursor: 'pointer' } as any),
-                ]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: !!selected, disabled: !!disabled }}
-                accessibilityLabel={`${d.getDate()} de ${MONTHS[d.getMonth()]}`}
+                key={y}
+                onPress={() => handleSelectYear(y)}
+                style={[styles.yearItem, selected && { backgroundColor: accentColor }, IS_WEB && ({ cursor: 'pointer' } as any)]}
               >
-                <Text
-                  style={[
-                    styles.dayText,
-                    selected && styles.dayTextSelected,
-                    !selected && isToday && { color: accentColor, fontFamily: typography.label.fontFamily },
-                    disabled && styles.dayTextDisabled,
-                  ]}
-                >
-                  {d.getDate()}
+                <Text style={[styles.yearText, selected && styles.yearTextSelected]}>
+                  {y}
                 </Text>
               </Pressable>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {viewMode === 'month' && (
+        <View style={styles.monthGrid}>
+          {MONTHS.map((m, i) => {
+            const selected = i === cursor.getMonth();
+            return (
+              <Pressable
+                key={m}
+                onPress={() => handleSelectMonth(i)}
+                style={[styles.monthItem, selected && { backgroundColor: accentColor }, IS_WEB && ({ cursor: 'pointer' } as any)]}
+              >
+                <Text style={[styles.monthText, selected && styles.yearTextSelected]}>
+                  {m.slice(0, 3)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {viewMode === 'calendar' && (
+        <>
+          {/* Cabecera de días de la semana */}
+          <View style={styles.dowRow}>
+            {DOW.map((d, i) => (
+              <View key={i} style={styles.cell}>
+                <Text style={styles.dowText}>{d}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Cuadrícula de días */}
+          <View style={styles.grid}>
+            {cells.map((d, i) => {
+              if (!d) return <View key={i} style={styles.cell} />;
+              const selected = value && sameDay(d, value);
+              const isToday = sameDay(d, today);
+              const disabled = isDisabled(d);
+              return (
+                <View key={i} style={styles.cell}>
+                  <Pressable
+                    onPress={() => !disabled && onSelect(d)}
+                    disabled={!!disabled}
+                    style={[
+                      styles.day,
+                      selected && { backgroundColor: accentColor },
+                      !selected && isToday && { borderWidth: 1.5, borderColor: accentColor },
+                      IS_WEB && !disabled && ({ cursor: 'pointer' } as any),
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+                    accessibilityLabel={`${d.getDate()} de ${MONTHS[d.getMonth()]}`}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        selected && styles.dayTextSelected,
+                        !selected && isToday && { color: accentColor, fontFamily: typography.label.fontFamily },
+                        disabled && styles.dayTextDisabled,
+                      ]}
+                    >
+                      {d.getDate()}
+                    </Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -153,7 +246,17 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surfaceAlt,
   },
   navBtnDisabled: { opacity: 0.4 },
+  headerSelector: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  modeBtn: { paddingHorizontal: spacing.xs, paddingVertical: 2 },
   monthLabel: { ...typography.h4, color: commonColors.text, textTransform: 'capitalize' },
+  selectorScroll: { maxHeight: 260 },
+  yearGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingBottom: spacing.md },
+  yearItem: { width: '23%', paddingVertical: spacing.sm, borderRadius: borderRadius.sm, alignItems: 'center', backgroundColor: commonColors.surfaceAlt },
+  yearText: { ...typography.body, color: commonColors.text },
+  yearTextSelected: { color: commonColors.white, fontFamily: typography.label.fontFamily, fontWeight: '700' },
+  monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingVertical: spacing.md },
+  monthItem: { width: '30%', paddingVertical: spacing.md, borderRadius: borderRadius.sm, alignItems: 'center', backgroundColor: commonColors.surfaceAlt },
+  monthText: { ...typography.body, color: commonColors.text, textTransform: 'capitalize' },
   dowRow: { flexDirection: 'row' },
   dowText: { ...typography.caption, color: commonColors.textTertiary, fontFamily: typography.label.fontFamily },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

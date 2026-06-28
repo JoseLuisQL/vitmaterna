@@ -8,7 +8,7 @@ export const apiRouter = Router();
 // ---- Estado del sistema (público; debe ir antes del guard de mantenimiento) ----
 apiRouter.use('/system', systemRoutes);
 
-// ---- Modo mantenimiento: bloquea a no-admin cuando está activo ----
+// ---- Modo mantenimiento: bloquea a no-admin cuando está activo ---- 
 apiRouter.use(maintenanceGuard);
 
 // ---- Auth Module ----
