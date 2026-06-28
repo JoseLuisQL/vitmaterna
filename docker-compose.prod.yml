@@ -158,12 +158,14 @@ services:
     networks:
       - internal
       - web
+      - proxy
     ports:
       - "${BACKEND_BIND_IP:-127.0.0.1}:${BACKEND_PORT:-3000}:3000"
     expose:
       - "3000"
     labels:
       - traefik.enable=true
+      - traefik.docker.network=sivac_net
       - traefik.http.middlewares.vitmaterna-api-https-redirect.redirectscheme.scheme=https
       - traefik.http.routers.vitmaterna-api-http.rule=Host(`${APP_DOMAIN:-vitmaterna.qware.me}`) && (PathPrefix(`/api`) || Path(`/health`) || PathPrefix(`/uploads`) || PathPrefix(`/manuales`) || PathPrefix(`/docs`) || PathPrefix(`/socket.io`))
       - traefik.http.routers.vitmaterna-api-http.entrypoints=web
@@ -210,8 +212,10 @@ services:
       - api
     networks:
       - web
+      - proxy
     labels:
       - traefik.enable=true
+      - traefik.docker.network=sivac_net
       - traefik.http.middlewares.vitmaterna-web-https-redirect.redirectscheme.scheme=https
       - traefik.http.routers.vitmaterna-web-http.rule=Host(`${APP_DOMAIN:-vitmaterna.qware.me}`)
       - traefik.http.routers.vitmaterna-web-http.entrypoints=web
@@ -237,3 +241,6 @@ networks:
   # Red de borde: solo web (proxy) + api.
   web:
     driver: bridge
+  proxy:
+    external: true
+    name: sivac_net
