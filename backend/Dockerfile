@@ -107,6 +107,9 @@ COPY --chown=node:node --from=build /app/dist ./dist
 COPY --chown=node:node --from=build /app/package.json ./package.json
 # Schema + migraciones por si se quiere inspeccionar/depurar desde el contenedor.
 COPY --chown=node:node --from=build /app/prisma ./prisma
+# Manuales de usuario PDF y carpeta de uploads para archivos estáticos.
+COPY --chown=node:node manuales ./manuales
+RUN mkdir -p uploads && chown node:node uploads
 
 USER node
 EXPOSE 3000

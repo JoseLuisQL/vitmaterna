@@ -159,6 +159,8 @@ services:
       - internal
       - web
       - proxy
+    volumes:
+      - uploads_data:/app/uploads
     ports:
       - "${BACKEND_BIND_IP:-127.0.0.1}:${BACKEND_PORT:-3000}:3000"
     expose:
@@ -233,6 +235,7 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
+  uploads_data:
 
 networks:
   # Red privada: postgres/redis/migrate/seed/api. Sin acceso desde el host.
