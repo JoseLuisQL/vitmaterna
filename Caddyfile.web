@@ -1,20 +1,17 @@
 # ============================================================================
 # Caddy — Frontend web (estático) + proxy del API en el MISMO dominio.
 #
-# Arquitectura de mismo origen:
-#   https://{$APP_DOMAIN}/         → sitio estático de Expo (dist/)
-#   https://{$APP_DOMAIN}/api/*    → reverse proxy al backend (sin CORS)
-#
-# Caddy gestiona HTTPS automático (Let's Encrypt) y renueva solo. Requisito:
-# el DNS de APP_DOMAIN debe apuntar (A/AAAA) a la IP del VPS y los puertos
-# 80/443 abiertos en el firewall.
-#
-# Cabeceras COOP/COEP: imprescindibles para que expo-sqlite (WASM +
-# SharedArrayBuffer) funcione. Sin ellas la app carga pero crashea al iniciar
-# la base de datos local.
+# Arquitectura detrás de reverse proxy externo (Traefik en VPS):
+#   - Traefik gestiona Let's Encrypt exteriormente (HTTPS).
+#   - Caddy corre en puerto 80 interno en texto claro (sin ACME/SSL).
+#   - Sirve el frontend estático de Expo y cabeceras COOP/COEP (expo-sqlite).
 # ============================================================================
 
-{$APP_DOMAIN} {
+{
+	auto_https off
+}
+
+:80 {
 	encode zstd gzip
 
 	# --- API en el mismo origen → proxy al backend interno --------------------
