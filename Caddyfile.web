@@ -20,20 +20,6 @@
 		reverse_proxy api:3000
 	}
 
-	# --- Rutas directas del backend (PDFs, subidas, docs, salud) -------------
-	handle /manuales/* {
-		reverse_proxy api:3000
-	}
-	handle /uploads/* {
-		reverse_proxy api:3000
-	}
-	handle /docs* {
-		reverse_proxy api:3000
-	}
-	handle /health {
-		reverse_proxy api:3000
-	}
-
 	# --- Sitio estático del frontend -----------------------------------------
 	handle {
 		root * /srv/www
