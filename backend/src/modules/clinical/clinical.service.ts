@@ -470,6 +470,23 @@ export class ClinicalService {
       // en la conversación gestante↔obstetra para que quede en el chat clínico.
       if (esGrave) {
         await this.postSystemChatAlert(gestanteId, obstetraUserId, nombre, data.tipo_signo);
+
+        // RESPALDO POR WHATSAPP (best-effort): un signo de alarma GRAVE no puede
+        // depender solo del push. Se avisa al obstetra responsable por WhatsApp.
+        try {
+          const { notifyUserViaWhatsApp } = await import('../notifications/channels.js');
+          await notifyUserViaWhatsApp(
+            obstetraUserId,
+            [
+              'SIGNO DE ALARMA GRAVE',
+              `Paciente: ${nombre}`,
+              `Síntoma: ${data.tipo_signo}`,
+              'Requiere atención inmediata. Contáctala de inmediato.',
+            ].join('\n'),
+          );
+        } catch {
+          /* best-effort: la notificación in-app/push ya quedó registrada */
+        }
       }
     }
 

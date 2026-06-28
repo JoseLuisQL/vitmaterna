@@ -162,6 +162,37 @@ export async function sendOpenWA(c: WhatsAppCredentials, to: string, message: st
   }
 }
 
+/**
+ * Envía una UBICACIÓN (pin de mapa) por OpenWA. Útil para emergencias: el
+ * obstetra recibe la ubicación de la gestante directamente en WhatsApp,
+ * accionable desde el teléfono. Solo disponible con el proveedor `openwa`.
+ *
+ * @param to número en dígitos, sin '+'.
+ */
+export async function sendOpenWALocation(
+  c: WhatsAppCredentials,
+  to: string,
+  latitude: number,
+  longitude: number,
+  description?: string,
+): Promise<void> {
+  const url = `${c.baseUrl}/api/sessions/${encodeURIComponent(c.sessionId!)}/messages/send-location`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'X-API-Key': c.apiKey!, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chatId: `${to}@c.us`,
+      latitude,
+      longitude,
+      ...(description ? { description: description.slice(0, 200) } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`OpenWA location ${res.status}: ${detail.slice(0, 200)}`);
+  }
+}
+
 // ─── Canales (resuelven credenciales en cada envío) ──────────────────────────────
 
 export const smsChannel: NotificationChannel = {
@@ -359,4 +390,59 @@ export async function sendPaidNotification(
     console.log(`[PAID MOCK] (sin canal de pago configurado) Para ${phone}: ${message}`);
   }
   return results;
+}
+
+// ─── Avisos clínicos por WhatsApp (respaldo del push, por userId) ─────────────────
+
+/**
+ * Envía un aviso clínico por WhatsApp/SMS a un USUARIO (resuelto por su id):
+ * lee su teléfono y sus preferencias de canal, respeta el kill-switch global y
+ * delega en `sendPaidNotification` (canal único WhatsApp→SMS, con cola y log).
+ *
+ * Pensado como RESPALDO del push para eventos críticos (emergencia, signo de
+ * alarma grave): si el push falla (token caducado), el mensaje igual llega por
+ * WhatsApp. Best-effort: nunca lanza, no bloquea el flujo que lo invoca.
+ */
+export async function notifyUserViaWhatsApp(userId: string, message: string): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true, notificationPreferences: true },
+    });
+    if (!user?.phone) return;
+    const prefs = (user.notificationPreferences ?? null) as { sms?: boolean; whatsapp?: boolean } | null;
+    await sendPaidNotification(user.phone, message, prefs, userId);
+  } catch (e) {
+    console.error('[NOTIFY WHATSAPP] No se pudo enviar el aviso por WhatsApp:', (e as Error).message);
+  }
+}
+
+/**
+ * Como `notifyUserViaWhatsApp`, pero además envía un PIN DE UBICACIÓN cuando el
+ * proveedor activo es OpenWA (la Cloud API de Meta no expone ubicación por este
+ * camino; en ese caso el enlace de mapa ya viaja dentro del texto). Best-effort.
+ *
+ * Se usa en el botón de auxilio: el obstetra recibe en WhatsApp el aviso y la
+ * ubicación de la gestante, accionable desde su teléfono.
+ */
+export async function notifyUserViaWhatsAppWithLocation(
+  userId: string,
+  message: string,
+  latitude: number,
+  longitude: number,
+): Promise<void> {
+  await notifyUserViaWhatsApp(userId, message);
+  // El pin de ubicación es un extra solo en OpenWA y solo si el canal de pago
+  // está activo y el destinatario tiene teléfono. No bloquea ni revierte el texto.
+  try {
+    if (!(await arePaidChannelsEnabled())) return;
+    const c = await resolveWhatsAppCredentials();
+    if (c.provider !== 'openwa' || !whatsappConfigured(c)) return;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
+    const e164 = toE164PE(user?.phone);
+    if (!e164) return;
+    await sendOpenWALocation(c, e164.replace(/^\+/, ''), latitude, longitude, 'Ubicación de la gestante');
+  } catch (e) {
+    console.error('[NOTIFY WHATSAPP LOC] No se pudo enviar la ubicación por WhatsApp:', (e as Error).message);
+  }
 }

@@ -477,6 +477,31 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
     /* el mensaje ya quedó persistido; la emisión es best-effort */
   }
 
+  // RESPALDO POR WHATSAPP (fuera de la transacción y best-effort): una emergencia
+  // NO puede depender solo del push (el token caduca). Se avisa al obstetra
+  // responsable por WhatsApp con la ubicación de la gestante (pin accionable en
+  // OpenWA; en otros proveedores el enlace de mapa ya viaja en el texto).
+  try {
+    const obstetra = await prisma.obstetra.findUnique({
+      where: { id: conversation.obstetraId },
+      select: { userId: true },
+    });
+    if (obstetra?.userId) {
+      const { notifyUserViaWhatsAppWithLocation } = await import('../notifications/channels.js');
+      const waMsg = [
+        'EMERGENCIA - Botón de auxilio',
+        `Paciente: ${nombre}${egTexto}`,
+        `Riesgo: ${gestante.nivelRiesgo || 'no definido'}`,
+        `Teléfono: ${telefono}`,
+        `Ubicación: ${mapsUrl}`,
+        'Contáctala de inmediato.',
+      ].join('\n');
+      await notifyUserViaWhatsAppWithLocation(obstetra.userId, waMsg, latitude, longitude);
+    }
+  } catch (e) {
+    console.error('[EMERGENCIA WHATSAPP] No se pudo enviar el respaldo por WhatsApp:', (e as Error).message);
+  }
+
   return message;
 };
 

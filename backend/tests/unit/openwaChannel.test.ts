@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import { sendOpenWA, type WhatsAppCredentials } from '../../src/modules/notifications/channels.js';
+import { sendOpenWA, sendOpenWALocation, type WhatsAppCredentials } from '../../src/modules/notifications/channels.js';
 
 /**
  * Pruebas de `sendOpenWA`: arma correctamente la petición al gateway OpenWA
@@ -73,5 +73,39 @@ describe('sendOpenWA (gateway WhatsApp self-hosted)', () => {
     const [, init] = (fetchMock as jest.Mock).mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
     expect(body.text.length).toBe(4096);
+  });
+});
+
+describe('sendOpenWALocation (pin de ubicación para emergencias)', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('hace POST a send-location con chatId, latitude, longitude y description', async () => {
+    const fetchMock = jest.fn(async () => ({ ok: true, status: 201, text: async () => '{}' })) as unknown as typeof fetch;
+    global.fetch = fetchMock;
+
+    await sendOpenWALocation(creds, '51950328511', -13.16, -73.79, 'Ubicación de la gestante');
+
+    const [url, init] = (fetchMock as jest.Mock).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://openwa.qware.me/api/sessions/e934e1c3-82c6-4b48-9226-c8ffaf9fc293/messages/send-location',
+    );
+    const body = JSON.parse(init.body as string);
+    expect(body.chatId).toBe('51950328511@c.us');
+    expect(body.latitude).toBe(-13.16);
+    expect(body.longitude).toBe(-73.79);
+    expect(body.description).toBe('Ubicación de la gestante');
+  });
+
+  it('lanza un Error legible cuando la respuesta no es 2xx', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 409,
+      text: async () => '{"statusCode":409,"message":"engine not ready"}',
+    })) as unknown as typeof fetch;
+
+    await expect(sendOpenWALocation(creds, '51950328511', 1, 2)).rejects.toThrow(/OpenWA location 409/);
   });
 });
