@@ -19,11 +19,25 @@ export const smsConfigSchema = {
   }),
 };
 
+// URL del gateway OpenWA (https://...). Se permite vacío/nulo (para "no cambiar").
+const httpUrlOptional = z
+  .string()
+  .trim()
+  .url('La URL del servidor OpenWA debe ser válida (ej. https://openwa.qware.me)')
+  .optional()
+  .nullable()
+  .or(z.literal(''));
+
 export const whatsappConfigSchema = {
   body: z.object({
-    provider: z.enum(['whatsapp_cloud', 'mock']),
+    provider: z.enum(['whatsapp_cloud', 'openwa', 'mock']),
+    // WhatsApp Business Cloud API (Meta)
     apiToken: z.string().optional().nullable(),
     phoneNumberId: z.string().optional().nullable(),
+    // OpenWA (gateway self-hosted)
+    baseUrl: httpUrlOptional,
+    apiKey: z.string().optional().nullable(),
+    sessionId: z.string().optional().nullable(),
   }),
 };
 

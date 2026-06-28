@@ -45,12 +45,21 @@ const envSchema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional().default(''),
   TWILIO_AUTH_TOKEN: z.string().optional().default(''),
   TWILIO_PHONE_NUMBER: z.string().optional().default(''),
-  // WhatsApp (WhatsApp Business Cloud API)
-  WHATSAPP_PROVIDER: z.enum(['mock', 'whatsapp_cloud']).default('mock'),
+  // WhatsApp: proveedor seleccionable.
+  //  - whatsapp_cloud: WhatsApp Business Cloud API de Meta.
+  //  - openwa: gateway WhatsApp self-hosted y gratuito (open-wa.org). No exige
+  //    plantillas HSM, así que los mensajes proactivos (recordatorios) funcionan
+  //    con texto libre.
+  WHATSAPP_PROVIDER: z.enum(['mock', 'whatsapp_cloud', 'openwa']).default('mock'),
   WHATSAPP_API_TOKEN: z.string().optional().default(''),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional().default(''),
   // Versión de la Graph API de Meta para WhatsApp (configurable para migraciones).
   WHATSAPP_API_VERSION: z.string().optional().default('v21.0'),
+  // OpenWA (WhatsApp self-hosted). Respaldo de entorno; el admin también puede
+  // configurarlo desde la app (SystemConfig['whatsappConfig']).
+  OPENWA_BASE_URL: z.string().optional().default(''), // ej. https://openwa.qware.me
+  OPENWA_API_KEY: z.string().optional().default(''),
+  OPENWA_SESSION_ID: z.string().optional().default(''), // ID (uuid) de la sesión, NO el nombre
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -181,7 +181,7 @@ export async function saveToken(req: Request, res: Response): Promise<void> {
 
 import {
   getChannelsStatus, resolveSmsCredentials, resolveWhatsAppCredentials,
-  sendTwilioSms, sendWhatsAppCloud,
+  sendTwilioSms, sendWhatsAppCloud, sendOpenWA,
 } from './channels.js';
 import { setConfigValue } from '../../utils/systemSettings.js';
 
@@ -250,10 +250,18 @@ export async function testChannel(req: Request, res: Response): Promise<void> {
       await sendTwilioSms(c, destino, mensaje);
     } else {
       const c = await resolveWhatsAppCredentials();
-      if (c.provider !== 'whatsapp_cloud' || !c.apiToken || !c.phoneNumberId) {
+      // Ambos proveedores esperan el número sin el "+" inicial.
+      const digits = destino.replace(/^\+/, '');
+      if (c.provider === 'openwa') {
+        if (!c.baseUrl || !c.apiKey || !c.sessionId) {
+          throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Configura el servidor, la API key y el Session ID de OpenWA antes de probar.');
+        }
+        await sendOpenWA(c, digits, mensaje);
+      } else if (c.provider === 'whatsapp_cloud' && c.apiToken && c.phoneNumberId) {
+        await sendWhatsAppCloud(c, digits, mensaje);
+      } else {
         throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Configura las credenciales de WhatsApp antes de probar.');
       }
-      await sendWhatsAppCloud(c, destino, mensaje);
     }
     res.json(successResponse({ ok: true, mensaje: 'Mensaje de prueba enviado correctamente.' }));
   } catch (error) {

@@ -222,10 +222,25 @@ export const useDeleteFacility = () => {
 // --- Notification Channels (SMS / WhatsApp) ---
 export interface ChannelsStatus {
   sms: { provider: string; configured: boolean; fromNumber: string | null };
-  whatsapp: { provider: string; configured: boolean; phoneNumberId: string | null };
+  whatsapp: {
+    /** 'whatsapp_cloud' (Meta), 'openwa' (self-hosted) o 'mock'. */
+    provider: string;
+    configured: boolean;
+    phoneNumberId: string | null;
+    /** OpenWA: URL del gateway (dato público, sin secretos). */
+    baseUrl?: string | null;
+    /** OpenWA: ID de la sesión (dato público). */
+    sessionId?: string | null;
+  };
   /** Interruptor global de canales de pago (SMS/WhatsApp). */
   paidEnabled?: boolean;
 }
+
+/** Payload para configurar el canal WhatsApp según el proveedor elegido. */
+export type WhatsAppConfigPayload =
+  | { provider: 'whatsapp_cloud'; apiToken?: string; phoneNumberId?: string }
+  | { provider: 'openwa'; baseUrl?: string; apiKey?: string; sessionId?: string }
+  | { provider: 'mock' };
 
 export const fetchChannelsConfig = async (): Promise<ChannelsStatus> => {
   const res = await api.get('/notifications/channels/config');
@@ -249,7 +264,7 @@ export const useUpdateSmsConfig = () => {
 export const useUpdateWhatsAppConfig = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { provider: 'whatsapp_cloud' | 'mock'; apiToken?: string; phoneNumberId?: string }) => {
+    mutationFn: async (data: WhatsAppConfigPayload) => {
       const res = await api.put('/notifications/channels/whatsapp', data);
       return res.data;
     },

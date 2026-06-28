@@ -40,9 +40,14 @@ export interface SmsCredentials {
 }
 
 export interface WhatsAppCredentials {
-  provider: 'whatsapp_cloud' | 'mock';
+  provider: 'whatsapp_cloud' | 'openwa' | 'mock';
+  // WhatsApp Business Cloud API (Meta)
   apiToken?: string;
   phoneNumberId?: string;
+  // OpenWA (gateway self-hosted, open-wa.org)
+  baseUrl?: string;
+  apiKey?: string;
+  sessionId?: string;
 }
 
 const str = (v: unknown): string | undefined => {
@@ -63,21 +68,39 @@ export async function resolveSmsCredentials(): Promise<SmsCredentials> {
   };
 }
 
+/** Normaliza el provider de WhatsApp a uno de los valores soportados. */
+function normalizeWhatsAppProvider(raw: string | undefined): WhatsAppCredentials['provider'] {
+  if (raw === 'whatsapp_cloud') return 'whatsapp_cloud';
+  if (raw === 'openwa') return 'openwa';
+  return 'mock';
+}
+
+/** Quita una posible barra final de la URL base (para no duplicar '/'). */
+function trimTrailingSlash(url: string | undefined): string | undefined {
+  return url ? url.replace(/\/+$/, '') : url;
+}
+
 /** Resuelve credenciales WhatsApp: SystemConfig (clave 'whatsappConfig') con respaldo en env. */
 export async function resolveWhatsAppCredentials(): Promise<WhatsAppCredentials> {
   const cfg = (await getConfigValue('whatsappConfig').catch(() => undefined)) as Record<string, unknown> | undefined;
-  const provider = (str(cfg?.provider) || env.WHATSAPP_PROVIDER || 'mock') as WhatsAppCredentials['provider'];
+  const provider = normalizeWhatsAppProvider(str(cfg?.provider) || env.WHATSAPP_PROVIDER || 'mock');
   return {
-    provider: provider === 'whatsapp_cloud' ? 'whatsapp_cloud' : 'mock',
+    provider,
+    // Meta Cloud API
     apiToken: str(cfg?.apiToken) || env.WHATSAPP_API_TOKEN,
     phoneNumberId: str(cfg?.phoneNumberId) || env.WHATSAPP_PHONE_NUMBER_ID,
+    // OpenWA (self-hosted)
+    baseUrl: trimTrailingSlash(str(cfg?.baseUrl) || env.OPENWA_BASE_URL),
+    apiKey: str(cfg?.apiKey) || env.OPENWA_API_KEY,
+    sessionId: str(cfg?.sessionId) || env.OPENWA_SESSION_ID,
   };
 }
 
 const smsConfigured = (c: SmsCredentials) =>
   c.provider === 'twilio' && !!c.accountSid && !!c.authToken && !!c.fromNumber;
 const whatsappConfigured = (c: WhatsAppCredentials) =>
-  c.provider === 'whatsapp_cloud' && !!c.apiToken && !!c.phoneNumberId;
+  (c.provider === 'whatsapp_cloud' && !!c.apiToken && !!c.phoneNumberId) ||
+  (c.provider === 'openwa' && !!c.baseUrl && !!c.apiKey && !!c.sessionId);
 
 // ─── Envío real ────────────────────────────────────────────────────────────────
 
@@ -106,6 +129,36 @@ export async function sendWhatsAppCloud(c: WhatsAppCredentials, to: string, mess
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     throw new Error(`WhatsApp ${res.status}: ${detail.slice(0, 200)}`);
+  }
+}
+
+/**
+ * Tope de caracteres del endpoint send-text de OpenWA (v0.7.7). Se trunca de
+ * forma defensiva; nuestros mensajes son cortos, pero evita un 400 por longitud.
+ */
+const OPENWA_TEXT_MAX = 4096;
+
+/**
+ * Envía un WhatsApp a través de un gateway OpenWA self-hosted (open-wa.org v0.7.7).
+ * La sesión se direcciona por su ID (uuid), NO por su nombre. El `chatId` es el
+ * número en dígitos (con código de país, sin '+') seguido de '@c.us'.
+ * Lanza un Error legible si la respuesta no es 2xx (para la prueba de conexión).
+ *
+ * @param to número en dígitos, sin '+' (ej. "51950328511").
+ */
+export async function sendOpenWA(c: WhatsAppCredentials, to: string, message: string): Promise<void> {
+  const url = `${c.baseUrl}/api/sessions/${encodeURIComponent(c.sessionId!)}/messages/send-text`;
+  const text = message.length > OPENWA_TEXT_MAX ? message.slice(0, OPENWA_TEXT_MAX) : message;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'X-API-Key': c.apiKey!, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId: `${to}@c.us`, text }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    // 400 = sesión no iniciada/inexistente; 409 = engine no listo (escanea el QR);
+    // 401 = API key inválida; 429 = rate limit. El detalle viene en el cuerpo NestJS.
+    throw new Error(`OpenWA ${res.status}: ${detail.slice(0, 200)}`);
   }
 }
 
@@ -148,13 +201,19 @@ export const whatsappChannel: NotificationChannel = {
       console.log(`[WHATSAPP MOCK] Para ${e164}: ${message}`);
       return { channel: 'whatsapp', to: e164, status: 'mock' };
     }
+    // Ambos proveedores esperan el número SIN el "+" inicial.
+    const digits = e164.replace(/^\+/, '');
     try {
-      // La Cloud API espera el número SIN el "+" inicial.
-      await sendWhatsAppCloud(c, e164.replace(/^\+/, ''), message);
+      if (c.provider === 'openwa') {
+        await sendOpenWA(c, digits, message);
+      } else {
+        await sendWhatsAppCloud(c, digits, message);
+      }
       return { channel: 'whatsapp', to: e164, status: 'sent' };
     } catch (error) {
       const msg = (error as Error).message;
-      console.error('[WHATSAPP CLOUD] Error al enviar WhatsApp:', msg);
+      const label = c.provider === 'openwa' ? 'WHATSAPP OPENWA' : 'WHATSAPP CLOUD';
+      console.error(`[${label}] Error al enviar WhatsApp:`, msg);
       return { channel: 'whatsapp', to: e164, status: 'failed', error: msg };
     }
   },
@@ -225,7 +284,14 @@ export async function getChannelsStatus() {
   ]);
   return {
     sms: { provider: sms.provider, configured: smsConfigured(sms), fromNumber: sms.fromNumber || null },
-    whatsapp: { provider: wa.provider, configured: whatsappConfigured(wa), phoneNumberId: wa.phoneNumberId || null },
+    whatsapp: {
+      provider: wa.provider,
+      configured: whatsappConfigured(wa),
+      // Datos públicos (NO secretos): la apiKey/apiToken nunca se exponen.
+      phoneNumberId: wa.phoneNumberId || null,
+      baseUrl: wa.baseUrl || null,
+      sessionId: wa.sessionId || null,
+    },
     paidEnabled,
   };
 }

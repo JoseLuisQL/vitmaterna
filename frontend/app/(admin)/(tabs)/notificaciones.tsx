@@ -82,10 +82,16 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   const [authToken, setAuthToken] = useState('');
   const [fromNumber, setFromNumber] = useState('');
 
-  // WhatsApp (Cloud API)
+  // WhatsApp: proveedor seleccionable (Meta Cloud API u OpenWA self-hosted).
   const [waOn, setWaOn] = useState(false);
+  const [waProvider, setWaProvider] = useState<'whatsapp_cloud' | 'openwa'>('whatsapp_cloud');
+  // Meta Cloud API
   const [apiToken, setApiToken] = useState('');
   const [phoneNumberId, setPhoneNumberId] = useState('');
+  // OpenWA (gateway self-hosted)
+  const [openwaUrl, setOpenwaUrl] = useState('');
+  const [openwaApiKey, setOpenwaApiKey] = useState('');
+  const [openwaSessionId, setOpenwaSessionId] = useState('');
 
   // Prueba
   const [smsTest, setSmsTest] = useState('');
@@ -99,8 +105,13 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
     if (status) {
       setSmsOn(status.sms.provider === 'twilio');
       setFromNumber(status.sms.fromNumber || '');
-      setWaOn(status.whatsapp.provider === 'whatsapp_cloud');
+      const prov = status.whatsapp.provider;
+      setWaOn(prov === 'whatsapp_cloud' || prov === 'openwa');
+      if (prov === 'openwa') setWaProvider('openwa');
+      else if (prov === 'whatsapp_cloud') setWaProvider('whatsapp_cloud');
       setPhoneNumberId(status.whatsapp.phoneNumberId || '');
+      setOpenwaUrl(status.whatsapp.baseUrl || '');
+      setOpenwaSessionId(status.whatsapp.sessionId || '');
     }
   }, [status]);
 
@@ -123,16 +134,36 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
     );
   };
 
+  /** Valida que sea una URL http(s). Vacío = aún no validado. */
+  const isHttpUrl = (v: string): boolean => /^https?:\/\/.+/i.test(v.trim());
+
   const saveWa = () => {
-    updateWa.mutate(
-      waOn
-        ? { provider: 'whatsapp_cloud', apiToken: apiToken || undefined, phoneNumberId: phoneNumberId || undefined }
-        : { provider: 'mock' },
-      {
-        onSuccess: () => { toast.success('WhatsApp guardado', waOn ? 'Credenciales de WhatsApp actualizadas.' : 'WhatsApp en modo prueba.'); setApiToken(''); },
-        onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo guardar.'),
+    let payload: Parameters<typeof updateWa.mutate>[0];
+    if (!waOn) {
+      payload = { provider: 'mock' };
+    } else if (waProvider === 'openwa') {
+      if (openwaUrl.trim() && !isHttpUrl(openwaUrl)) {
+        toast.error('URL inválida', 'La URL del servidor OpenWA debe empezar con https:// (ej. https://openwa.qware.me).');
+        return;
+      }
+      payload = {
+        provider: 'openwa',
+        baseUrl: openwaUrl.trim() || undefined,
+        apiKey: openwaApiKey || undefined,
+        sessionId: openwaSessionId.trim() || undefined,
+      };
+    } else {
+      payload = { provider: 'whatsapp_cloud', apiToken: apiToken || undefined, phoneNumberId: phoneNumberId || undefined };
+    }
+    updateWa.mutate(payload, {
+      onSuccess: () => {
+        toast.success('WhatsApp guardado', waOn ? 'Configuración de WhatsApp actualizada.' : 'WhatsApp en modo prueba.');
+        // Limpia los campos secretos del formulario tras guardar.
+        setApiToken('');
+        setOpenwaApiKey('');
       },
-    );
+      onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo guardar.'),
+    });
   };
 
   const runTest = (canal: 'sms' | 'whatsapp') => {
@@ -295,20 +326,63 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
             </View>
 
             <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Activar WhatsApp Business</Text>
+              <Text style={styles.switchLabel}>Activar WhatsApp</Text>
               <Switch value={waOn} onValueChange={setWaOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
             </View>
 
             {waOn && (
               <>
-                <View style={styles.helpBox}>
-                  <Info size={14} color={commonColors.textSecondary} />
-                  <Text style={styles.helpText}>Desde Meta for Developers: token permanente de la app y el Phone Number ID del número de WhatsApp Business.</Text>
+                {/* Selector de proveedor: Meta Cloud API u OpenWA self-hosted. */}
+                <Text style={styles.label}>Proveedor</Text>
+                <View style={styles.segment}>
+                  <TouchableOpacity
+                    style={[styles.segmentBtn, waProvider === 'whatsapp_cloud' && styles.segmentBtnActive]}
+                    onPress={() => setWaProvider('whatsapp_cloud')}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: waProvider === 'whatsapp_cloud' }}
+                    accessibilityLabel="Usar Meta Cloud API"
+                  >
+                    <Text style={[styles.segmentText, waProvider === 'whatsapp_cloud' && styles.segmentTextActive]}>Meta Cloud API</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.segmentBtn, waProvider === 'openwa' && styles.segmentBtnActive]}
+                    onPress={() => setWaProvider('openwa')}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: waProvider === 'openwa' }}
+                    accessibilityLabel="Usar OpenWA, servidor propio"
+                  >
+                    <Text style={[styles.segmentText, waProvider === 'openwa' && styles.segmentTextActive]}>OpenWA (servidor propio)</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.label}>API Token</Text>
-                <TextInput style={styles.input} value={apiToken} onChangeText={setApiToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
-                <Text style={styles.label}>Phone Number ID</Text>
-                <TextInput style={styles.input} value={phoneNumberId} onChangeText={setPhoneNumberId} placeholder="ID del número de WhatsApp" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
+
+                {waProvider === 'whatsapp_cloud' ? (
+                  <>
+                    <View style={styles.helpBox}>
+                      <Info size={14} color={commonColors.textSecondary} />
+                      <Text style={styles.helpText}>Desde Meta for Developers: token permanente de la app y el Phone Number ID del número de WhatsApp Business. Los mensajes proactivos requieren plantillas aprobadas.</Text>
+                    </View>
+                    <Text style={styles.label}>API Token</Text>
+                    <TextInput style={styles.input} value={apiToken} onChangeText={setApiToken} placeholder="Token (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
+                    <Text style={styles.label}>Phone Number ID</Text>
+                    <TextInput style={styles.input} value={phoneNumberId} onChangeText={setPhoneNumberId} placeholder="ID del número de WhatsApp" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.helpBox}>
+                      <Info size={14} color={commonColors.textSecondary} />
+                      <Text style={styles.helpText}>OpenWA es un servidor de WhatsApp propio y gratuito (open-wa.org). No requiere plantillas, así que los recordatorios proactivos funcionan con texto libre. El Session ID es el identificador (no el nombre) de la sesión conectada.</Text>
+                    </View>
+                    <Text style={styles.label}>URL del servidor</Text>
+                    <TextInput style={[styles.input, openwaUrl.trim() !== '' && !isHttpUrl(openwaUrl) && styles.inputError]} value={openwaUrl} onChangeText={setOpenwaUrl} placeholder="https://openwa.qware.me" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" keyboardType="url" />
+                    {openwaUrl.trim() !== '' && !isHttpUrl(openwaUrl) && <Text style={styles.errorHint}>Debe empezar con https://</Text>}
+                    <Text style={styles.label}>API Key</Text>
+                    <TextInput style={styles.input} value={openwaApiKey} onChangeText={setOpenwaApiKey} placeholder="owa_k1_… (dejar vacío para no cambiar)" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" secureTextEntry />
+                    <Text style={styles.label}>Session ID</Text>
+                    <TextInput style={styles.input} value={openwaSessionId} onChangeText={setOpenwaSessionId} placeholder="ID (uuid) de la sesión conectada" placeholderTextColor={commonColors.textTertiary} autoCapitalize="none" />
+                  </>
+                )}
               </>
             )}
 
@@ -364,6 +438,12 @@ const styles = StyleSheet.create({
   badgeText: { ...typography.overline, letterSpacing: 0, fontWeight: '700' },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
   switchLabel: { ...typography.bodyMd, color: commonColors.text },
+  // Selector de proveedor (segmented control sencillo con tokens del sistema).
+  segment: { flexDirection: 'row', gap: spacing.xs2, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: 4, marginTop: 4 },
+  segmentBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.sm, borderRadius: borderRadius.sm },
+  segmentBtnActive: { backgroundColor: commonColors.surface, borderWidth: 1, borderColor: BRAND },
+  segmentText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
+  segmentTextActive: { color: BRAND },
   helpBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: spacing.sm2, marginTop: spacing.sm },
   helpText: { ...typography.caption, color: commonColors.textSecondary, flex: 1, lineHeight: 17 },
   label: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary, marginTop: spacing.md, marginBottom: 4 },
