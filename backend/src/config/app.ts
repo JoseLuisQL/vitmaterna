@@ -71,9 +71,11 @@ export function createApp(): express.Express {
 
   // ---- Auditoría automática de mutaciones (RF-10.04) ----
   app.use('/v1', auditLogger);
+  app.use('/api/v1', auditLogger);
 
   // ---- API Routes ----
   app.use('/v1', apiRouter);
+  app.use('/api/v1', apiRouter);
 
   // ---- 404 Handler ----
   app.use((_req, res) => {

@@ -158,6 +158,23 @@ services:
     networks:
       - internal
       - web
+    ports:
+      - "${BACKEND_BIND_IP:-127.0.0.1}:${BACKEND_PORT:-3000}:3000"
+    expose:
+      - "3000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.vitmaterna-api-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.vitmaterna-api-http.rule=Host(`${APP_DOMAIN:-vitmaterna.qware.me}`) && (PathPrefix(`/api`) || Path(`/health`) || PathPrefix(`/uploads`) || PathPrefix(`/manuales`) || PathPrefix(`/docs`) || PathPrefix(`/socket.io`))
+      - traefik.http.routers.vitmaterna-api-http.entrypoints=web
+      - traefik.http.routers.vitmaterna-api-http.middlewares=vitmaterna-api-https-redirect
+      - traefik.http.routers.vitmaterna-api-http.service=noop@internal
+      - traefik.http.routers.vitmaterna-api.rule=Host(`${APP_DOMAIN:-vitmaterna.qware.me}`) && (PathPrefix(`/api`) || Path(`/health`) || PathPrefix(`/uploads`) || PathPrefix(`/manuales`) || PathPrefix(`/docs`) || PathPrefix(`/socket.io`))
+      - traefik.http.routers.vitmaterna-api.entrypoints=websecure
+      - traefik.http.routers.vitmaterna-api.tls=true
+      - traefik.http.routers.vitmaterna-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.routers.vitmaterna-api.priority=100
+      - traefik.http.services.vitmaterna-api.loadbalancer.server.port=3000
     # Límites de memoria para una VPS modesta (Node + BullMQ pueden crecer).
     deploy:
       resources:
@@ -165,12 +182,9 @@ services:
           memory: 512M
 
   # --------------------------------------------------------------------------
-  # WEB — frontend Expo (estático) + proxy de borde. ÚNICO servicio con puertos
-  # públicos (80/443). Sirve el dist/ con cabeceras COOP/COEP (expo-sqlite/WASM),
-  # fallback SPA, y hace reverse proxy de /api/* al backend (mismo origen, sin
-  # CORS). HTTPS automático (Let's Encrypt) y WebSockets (Socket.io) transparentes.
-  #
-  # EXPO_PUBLIC_API_URL se inlinea en el build → /api en el mismo dominio.
+  # WEB — frontend Expo (estático) servido con Caddy + etiquetas para Traefik.
+  # El reverse proxy exterior (Traefik en el VPS) gestiona Let's Encrypt y
+  # enruta el tráfico hacia este contenedor (prio 10) o al API (prio 100).
   # --------------------------------------------------------------------------
   web:
     build:
@@ -183,8 +197,9 @@ services:
     container_name: vitmaterna_web
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "${FRONTEND_BIND_IP:-127.0.0.1}:${FRONTEND_PORT:-8080}:80"
+    expose:
+      - "80"
     environment:
       APP_DOMAIN: ${APP_DOMAIN}
     volumes:
@@ -195,6 +210,19 @@ services:
       - api
     networks:
       - web
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.vitmaterna-web-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.vitmaterna-web-http.rule=Host(`${APP_DOMAIN:-vitmaterna.qware.me}`)
+      - traefik.http.routers.vitmaterna-web-http.entrypoints=web
+      - traefik.http.routers.vitmaterna-web-http.middlewares=vitmaterna-web-https-redirect
+      - traefik.http.routers.vitmaterna-web-http.service=noop@internal
+      - traefik.http.routers.vitmaterna-web.rule=Host(`${APP_DOMAIN:-vitmaterna.qware.me}`)
+      - traefik.http.routers.vitmaterna-web.entrypoints=websecure
+      - traefik.http.routers.vitmaterna-web.tls=true
+      - traefik.http.routers.vitmaterna-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.routers.vitmaterna-web.priority=10
+      - traefik.http.services.vitmaterna-web.loadbalancer.server.port=80
 
 volumes:
   postgres_data:
