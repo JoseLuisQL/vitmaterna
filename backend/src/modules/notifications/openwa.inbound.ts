@@ -68,6 +68,28 @@ export async function handleInboundWhatsAppMessage(from: string, body: string): 
     return;
   }
 
+  // 1) ¿Es una RESPUESTA a un recordatorio (confirmar cita 1/2, "SÍ" suplemento)?
+  // Si encaja con un contexto pendiente, se procesa y se responde por WhatsApp,
+  // SIN volcarlo al chat (es una acción, no un mensaje de conversación).
+  try {
+    const { routeInboundCommand } = await import('./openwa.commands.js');
+    const result = await routeInboundCommand(gestante.id, body);
+    if (result.handled) {
+      console.log(`[OPENWA INBOUND] Comando de ${from} procesado (cita/suplemento).`);
+      if (result.reply) {
+        try {
+          const { whatsappChannel } = await import('./channels.js');
+          await whatsappChannel.send(from, result.reply);
+        } catch {
+          /* la acción ya se aplicó; el acuse es best-effort */
+        }
+      }
+      return;
+    }
+  } catch (e) {
+    console.error('[OPENWA INBOUND] Error en el enrutado de comandos:', (e as Error).message);
+  }
+
   // Obstetra a cargo (último control/cita, o el primero disponible).
   const obstetraUserId = await findObstetraUserIdForGestante(gestante.id);
   const obstetra = obstetraUserId

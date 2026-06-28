@@ -171,9 +171,13 @@ export async function scanAndSendReminders() {
       // a 1 día a la GESTANTE. Va por un solo canal (WhatsApp→SMS) vía la cola.
       // El acompañante ya NO recibe SMS/WhatsApp (control de gasto).
       if (user.phone) {
+        // OPORTUNIDADES #4: el recordatorio invita a CONFIRMAR por WhatsApp. Si
+        // el proveedor es OpenWA (webhook entrante activo), la respuesta "1"/"2"
+        // actualiza la cita sola (confirmar / reprogramar). En otros canales el
+        // texto es solo informativo (no rompe nada).
         await enqueueDelivery({
           phone: user.phone,
-          message: `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. ¡Tu asistencia es muy importante!`,
+          message: `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. Responde 1 para CONFIRMAR o 2 para REPROGRAMAR. ¡Tu asistencia es muy importante!`,
           prefs: user.notificationPreferences as any,
           userId: user.id,
         });
