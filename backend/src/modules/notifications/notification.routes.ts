@@ -4,6 +4,7 @@ import { rbac } from '../../middleware/rbac.middleware.js';
 import { validate } from '../../middleware/validate.middleware.js';
 import * as notificationController from './notification.controller.js';
 import * as notificationSchema from './notification.schema.js';
+import * as openwaAdminController from './openwa.admin.controller.js';
 
 const router = Router();
 
@@ -22,6 +23,13 @@ router.put('/channels/paid-enabled', rbac('admin'), notificationController.setPa
 router.post('/channels/test', rbac('admin'), validate(notificationSchema.testChannelSchema), notificationController.testChannel);
 // Registra el webhook entrante de OpenWA (respuestas de la gestante → chat): { webhookUrl }.
 router.post('/channels/openwa/register-webhook', rbac('admin'), notificationController.registerOpenWAWebhookEndpoint);
+
+// ─── Panel de gestión OpenWA (solo admin): estado, reconexión y entregas ───────
+// Observa/opera la sesión del gateway sin entrar al dashboard de OpenWA.
+router.get('/openwa/status', rbac('admin'), openwaAdminController.getOpenWAStatus);
+router.post('/openwa/connect', rbac('admin'), openwaAdminController.connectOpenWA);
+router.post('/openwa/disconnect', rbac('admin'), openwaAdminController.disconnectOpenWA);
+router.get('/openwa/messages', rbac('admin'), openwaAdminController.getOpenWAMessages);
 
 /**
  * @swagger
