@@ -15,9 +15,9 @@
       },
       "env": {
         "APP_ENV": "local"
-      }
+      },
+      "channel": "development"
     },
-
     "apk-local": {
       "distribution": "internal",
       "android": {
@@ -26,9 +26,9 @@
       "env": {
         "APP_ENV": "local",
         "EXPO_PUBLIC_API_URL": "http://192.168.18.21:3000/v1"
-      }
+      },
+      "channel": "apk-local"
     },
-
     "preview": {
       "distribution": "internal",
       "channel": "preview",
@@ -40,7 +40,6 @@
         "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
       }
     },
-
     "production-apk": {
       "distribution": "internal",
       "channel": "production",
@@ -53,7 +52,6 @@
         "EXPO_PUBLIC_API_URL": "https://vitmaterna.qware.me/api/v1"
       }
     },
-
     "production": {
       "channel": "production",
       "autoIncrement": true,

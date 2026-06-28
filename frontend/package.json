@@ -81,12 +81,12 @@
     "audit:design:strict": "node scripts/audit-design.mjs --strict",
     "verify": "npm run tsc && npm run audit:design:strict && npm run test",
     "setup:hooks": "git -C .. config core.hooksPath .githooks && echo 'Hooks de git activados (.githooks).'",
-    "build:apk:local": "eas build -p android --profile apk-local",
-    "build:apk:preview": "eas build -p android --profile preview",
-    "build:apk:prod": "eas build -p android --profile production-apk",
-    "build:aab:prod": "eas build -p android --profile production",
-    "build:apk:local:here": "eas build -p android --profile apk-local --local",
-    "build:apk:prod:here": "eas build -p android --profile production-apk --local"
+    "build:apk:local": "npx eas build -p android --profile apk-local",
+    "build:apk:preview": "npx eas build -p android --profile preview",
+    "build:apk:prod": "npx eas build -p android --profile production-apk",
+    "build:aab:prod": "npx eas build -p android --profile production",
+    "build:apk:local:here": "npx eas build -p android --profile apk-local --local",
+    "build:apk:prod:here": "npx eas build -p android --profile production-apk --local"
   },
   "jest": {
     "preset": "jest-expo",

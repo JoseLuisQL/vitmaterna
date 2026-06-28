@@ -13,7 +13,8 @@
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/737c7d16-a7de-44ed-a35d-1b77cfd320c6"
     },
     "ios": {
       "supportsTablet": true,
@@ -27,7 +28,15 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.vitmaterna.app",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -64,6 +73,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "apiUrl": "http://localhost:3000/v1",
+      "appEnv": "local",
+      "eas": {
+        "projectId": "737c7d16-a7de-44ed-a35d-1b77cfd320c6"
+      },
+      "router": {}
+    },
+    "owner": "luisdkbb"
   }
 }
