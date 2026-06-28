@@ -3,7 +3,7 @@
  * Zustand store for authentication state management.
  */
 import { create } from 'zustand';
-import api, { storeTokens, clearStoredTokens, getStoredToken } from '../services/api';
+import api, { storeTokens, clearStoredTokens, getStoredToken, storeUser, getStoredUser } from '../services/api';
 import type { User, LoginRequest, RegisterRequest, AuthResponse } from '../types/user';
 import type { ApiResponse } from '../types/api';
 import * as Device from 'expo-device';
@@ -49,6 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const { user, accessToken, refreshToken } = response.data.data;
       await storeTokens(accessToken, refreshToken);
+      await storeUser(user);
 
       set({
         user,
@@ -89,6 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       await storeTokens(accessToken, refreshToken);
+      await storeUser(user);
 
       set({
         user,
@@ -151,19 +153,50 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      // Validate token by fetching user profile
-      const response = await api.get<ApiResponse<any>>('/auth/me');
-      set({
-        user: response.data.data.user,
-        token,
-        isAuthenticated: true,
-        isInitialized: true,
-      });
+      const storedUser = await getStoredUser();
 
-      // Register push notifications
-      await get().registerPushToken();
+      if (storedUser) {
+        set({
+          user: storedUser,
+          token,
+          isAuthenticated: true,
+          isInitialized: true,
+        });
+      }
+
+      try {
+        const response = await api.get<ApiResponse<any>>('/auth/me');
+        const freshUser = response.data.data.user;
+        await storeUser(freshUser);
+        set({
+          user: freshUser,
+          token,
+          isAuthenticated: true,
+          isInitialized: true,
+        });
+
+        await get().registerPushToken();
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          await clearStoredTokens();
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isInitialized: true,
+          });
+        } else if (!storedUser) {
+          await clearStoredTokens();
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isInitialized: true,
+          });
+        }
+      }
     } catch {
-      // Token is invalid or expired, clear storage
       await clearStoredTokens();
       set({
         user: null,
@@ -182,9 +215,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { accessToken, refreshToken } = response.data.data;
       await storeTokens(accessToken, refreshToken);
       set({ token: accessToken });
-    } catch {
-      const { logout } = get();
-      await logout();
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403 || status === 400) {
+        const { logout } = get();
+        await logout();
+      }
     }
   },
 
@@ -193,6 +229,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setUser: (user: User): void => {
+    storeUser(user).catch(() => {});
     set({ user });
   },
 
@@ -201,7 +238,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await api.post('/auth/change-password', { currentPassword, newPassword, confirmPassword });
       // Limpiar la bandera localmente para liberar el guard de cambio obligatorio.
       const current = get().user;
-      if (current) set({ user: { ...current, mustChangePassword: false } });
+      if (current) {
+        const updatedUser = { ...current, mustChangePassword: false };
+        await storeUser(updatedUser);
+        set({ user: updatedUser });
+      }
     } catch (error: unknown) {
       throw new Error(getApiErrorMessage(error, 'No se pudo cambiar la contraseña. Inténtalo de nuevo.'));
     }

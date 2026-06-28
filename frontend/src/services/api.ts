@@ -12,6 +12,7 @@ const BASE_URL = API_URL;
 const STORAGE_KEYS = {
   TOKEN: 'vitmaterna_token',
   REFRESH_TOKEN: 'vitmaterna_refresh_token',
+  USER: 'vitmaterna_user',
 } as const;
 
 /** Create the Axios instance */
@@ -116,9 +117,12 @@ api.interceptors.response.use(
         }
 
         return api(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         processQueue(refreshError, null);
-        await clearStoredTokens();
+        const status = refreshError?.response?.status;
+        if (status === 401 || status === 403 || status === 400) {
+          await clearStoredTokens();
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -166,14 +170,47 @@ export const getStoredRefreshToken = async (): Promise<string | null> => {
   return SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
 };
 
-/** Clear all stored tokens */
+/** Clear all stored tokens and user data */
 export const clearStoredTokens = async (): Promise<void> => {
   if (Platform.OS === 'web') {
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
   } else {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKEN);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+    await Promise.all([
+      SecureStore.deleteItemAsync(STORAGE_KEYS.TOKEN).catch(() => {}),
+      SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {}),
+      SecureStore.deleteItemAsync(STORAGE_KEYS.USER).catch(() => {}),
+    ]);
+  }
+};
+
+/** Store user securely/persistently */
+export const storeUser = async (user: any): Promise<void> => {
+  const uStr = typeof user === 'string' ? user : (user ? JSON.stringify(user) : null);
+  try {
+    if (Platform.OS === 'web') {
+      if (uStr) localStorage.setItem(STORAGE_KEYS.USER, uStr);
+      else localStorage.removeItem(STORAGE_KEYS.USER);
+    } else {
+      if (uStr) await SecureStore.setItemAsync(STORAGE_KEYS.USER, uStr);
+      else await SecureStore.deleteItemAsync(STORAGE_KEYS.USER).catch(() => {});
+    }
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+/** Get stored user */
+export const getStoredUser = async (): Promise<any | null> => {
+  try {
+    const uStr = Platform.OS === 'web'
+      ? localStorage.getItem(STORAGE_KEYS.USER)
+      : await SecureStore.getItemAsync(STORAGE_KEYS.USER);
+    if (!uStr) return null;
+    return JSON.parse(uStr);
+  } catch {
+    return null;
   }
 };
 
