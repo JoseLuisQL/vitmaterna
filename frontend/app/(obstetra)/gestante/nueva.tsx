@@ -84,6 +84,77 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+// Opciones de los datos sociales (MINSA). El valor '' representa "sin especificar".
+const NIVEL_ESTUDIOS_OPTS: { value: string; label: string }[] = [
+  { value: 'analfabeta', label: 'Analfabeta' },
+  { value: 'primaria', label: 'Primaria' },
+  { value: 'secundaria', label: 'Secundaria' },
+  { value: 'no_universitario', label: 'Superior no univ.' },
+  { value: 'superior', label: 'Superior' },
+];
+const ESTADO_CIVIL_OPTS: { value: string; label: string }[] = [
+  { value: 'soltera', label: 'Soltera' },
+  { value: 'conviviente', label: 'Conviviente' },
+  { value: 'casada', label: 'Casada' },
+  { value: 'otro', label: 'Otro' },
+];
+
+/**
+ * Campo de elección por "pills" (controlado por react-hook-form). Para datos
+ * sociales opcionales con pocas opciones: evita abrir un selector aparte y se ve
+ * igual en web y móvil. Tocar la opción activa la deselecciona (vuelve a '').
+ */
+function ChoiceField({
+  control, name, label, options,
+}: {
+  control: any; name: keyof FormData; label: string;
+  options: { value: string; label: string }[];
+}): React.ReactElement {
+  return (
+    <Controller
+      control={control}
+      name={name as any}
+      render={({ field: { value, onChange } }) => (
+        <View style={choiceStyles.wrap}>
+          <Text style={choiceStyles.label}>{label}</Text>
+          <View style={choiceStyles.row}>
+            {options.map((opt) => {
+              const active = value === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => onChange(active ? '' : opt.value)}
+                  style={[choiceStyles.pill, active && choiceStyles.pillActive]}
+                  activeOpacity={0.7}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${label}: ${opt.label}`}
+                >
+                  <Text style={[choiceStyles.pillText, active && choiceStyles.pillTextActive]}>{opt.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
+    />
+  );
+}
+
+const choiceStyles = StyleSheet.create({
+  wrap: { marginBottom: spacing.md },
+  label: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  pill: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full, borderWidth: 1, borderColor: commonColors.border,
+    backgroundColor: commonColors.surface,
+  },
+  pillActive: { borderColor: BRAND, backgroundColor: obstetraColors.primaryLight },
+  pillText: { ...typography.bodySm, color: commonColors.textSecondary },
+  pillTextActive: { color: BRAND, fontWeight: '700' },
+});
+
 // Campos a validar en cada paso (para no avanzar con datos inválidos/incompletos).
 const STEP_FIELDS: Record<number, (keyof FormData)[]> = {
   1: ['firstName', 'lastName', 'dni', 'fechaNacimiento'],
@@ -198,7 +269,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
 
       toast.success(
         'Gestante registrada',
-        'Su cronograma de controles se generó a partir de la FUM. El usuario inicial es su propio DNI.',
+        'Se programaron sus citas prenatales a partir de la FUM. Su usuario inicial es su propio DNI.',
       );
       goBack(router, '/(obstetra)/(tabs)/gestantes' as any);
     } catch (err: any) {
@@ -372,7 +443,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                     <Text style={styles.sectionTitle}>Embarazo actual</Text>
                     <Text style={styles.sectionHint}>
                       La FUM es obligatoria: con ella se calcula la fecha probable de parto, la edad
-                      gestacional y se genera automáticamente el cronograma de controles.
+                      gestacional y se programan automáticamente sus citas prenatales.
                     </Text>
                     <Controller
                       control={control}
@@ -451,6 +522,8 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                     <AppInput name="localidad" control={control} label="Localidad" themeColor={BRAND} />
                     <AppInput name="codigoSis" control={control} label="Código SIS" themeColor={BRAND} />
                     <AppInput name="ocupacion" control={control} label="Ocupación" themeColor={BRAND} />
+                    <ChoiceField control={control} name="nivelEstudios" label="Nivel de estudios" options={NIVEL_ESTUDIOS_OPTS} />
+                    <ChoiceField control={control} name="estadoCivil" label="Estado civil" options={ESTADO_CIVIL_OPTS} />
                   </View>
                 )}
 
@@ -574,7 +647,7 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                 <Text style={styles.sectionTitle}>Embarazo actual</Text>
                 <Text style={styles.sectionHint}>
                   La FUM es obligatoria: con ella se calcula la fecha probable de parto, la edad
-                  gestacional y se genera automáticamente el cronograma de controles.
+                  gestacional y se programan automáticamente sus citas prenatales.
                 </Text>
                 <Controller
                   control={control}
@@ -653,6 +726,8 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                 <AppInput name="localidad" control={control} label="Localidad" themeColor={BRAND} />
                 <AppInput name="codigoSis" control={control} label="Código SIS" themeColor={BRAND} />
                 <AppInput name="ocupacion" control={control} label="Ocupación" themeColor={BRAND} />
+                <ChoiceField control={control} name="nivelEstudios" label="Nivel de estudios" options={NIVEL_ESTUDIOS_OPTS} />
+                <ChoiceField control={control} name="estadoCivil" label="Estado civil" options={ESTADO_CIVIL_OPTS} />
               </View>
             )}
 
