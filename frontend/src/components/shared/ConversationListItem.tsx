@@ -96,7 +96,7 @@ export function ConversationListItem({
         selected && { backgroundColor: accent + '12' },
         hovered && !selected && { backgroundColor: commonColors.surfaceHover },
         pressed && !selected && { backgroundColor: commonColors.surfaceAlt },
-        IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+        IS_WEB && ({ cursor: 'pointer' } as any),
       ]}
     >
       <View style={[styles.avatar, { backgroundColor: avatarColor }]}>

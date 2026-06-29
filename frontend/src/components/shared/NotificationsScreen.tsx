@@ -305,7 +305,6 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
           onPress={() => handlePress(item)}
           style={({ pressed }: any) => [
             styles.card,
-            borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : null,
             urgent && unread ? styles.cardUrgent : null,
             !unread && !urgent ? styles.cardRead : null,
             pressed && { opacity: 0.7 },

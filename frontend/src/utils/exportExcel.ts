@@ -19,7 +19,12 @@
  *   ]);
  */
 import { Platform } from 'react-native';
-import * as XLSX from 'xlsx-js-style';
+
+// xlsx-js-style es la librería más pesada del bundle (~1MB+). Se carga de
+// forma diferida (dynamic import) solo cuando alguien exporta un reporte,
+// para no penalizar el initial bundle de gestantes/obstetras que nunca
+// exportan. En web Metro/code-split genera un chunk separado.
+type XLSXModule = typeof import('xlsx-js-style');
 
 export interface ExcelSheet {
   /** Nombre de la pestaña (máx. 31 caracteres; se recorta). */
@@ -72,6 +77,9 @@ function looksLikePercentHeader(h: unknown): boolean {
  */
 export async function exportExcel(fileName: string, sheets: ExcelSheet[]): Promise<boolean> {
   try {
+    // Carga diferida de xlsx-js-style (chunk separado en web; no carga si no
+    // se exporta). En nativo el require es síncrono pero igual se difiere.
+    const XLSX: XLSXModule = await import('xlsx-js-style');
     const wb = XLSX.utils.book_new();
 
     for (const sheet of sheets) {

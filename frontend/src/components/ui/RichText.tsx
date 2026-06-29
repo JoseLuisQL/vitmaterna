@@ -80,7 +80,7 @@ export function RichText({ content, accentColor = obstetraColors.primary, baseSt
     if (line.startsWith('> ')) {
       flushParagraph(`${key}-p`);
       blocks.push(
-        <View key={key} style={[styles.quote, { borderLeftColor: accentColor }]}>
+        <View key={key} style={styles.quote}>
           <Text style={[styles.quoteText, baseStyle]}>{renderInline(line.slice(2), key, [styles.quoteText, baseStyle] as any)}</Text>
         </View>,
       );
@@ -123,10 +123,11 @@ const styles = StyleSheet.create({
   h2: { ...typography.h3, marginTop: spacing.md, marginBottom: spacing.sm },
   h3: { ...typography.bodyMd, fontWeight: '700', marginTop: spacing.sm2, marginBottom: spacing.xs },
   quote: {
-    borderLeftWidth: 3,
     paddingLeft: spacing.md,
     paddingVertical: spacing.xs,
     marginBottom: spacing.sm2,
+    backgroundColor: commonColors.surfaceAlt,
+    borderRadius: borderRadius.sm,
   },
   quoteText: { ...typography.body, color: commonColors.textSecondary, fontStyle: 'italic', lineHeight: 22 },
   listItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.xs2 + 4 },

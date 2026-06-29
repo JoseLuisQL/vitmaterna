@@ -1317,7 +1317,7 @@ export default function PatientProfileScreen(): React.ReactElement {
                   const pendiente = s.estado === 'pendiente';
                   const estadoLabel = s.estado === 'atendido' ? 'Atendido' : s.estado === 'derivado' ? 'Derivado' : 'Pendiente';
                   return (
-                    <View key={s.id} style={[styles.card, designTokens.cardShadow, { borderLeftWidth: 4, borderLeftColor: color }]}>
+                    <View key={s.id} style={[styles.card, designTokens.cardShadow]}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
                           <AlertTriangle size={16} color={color} />
@@ -2324,8 +2324,6 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surfaceAlt,
     borderRadius: 12,
     padding: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: obstetraColors.primary,
   },
   ctrlObsText: { ...typography.bodySm, color: commonColors.text, lineHeight: 20 },
   ctrlNextRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
@@ -2415,8 +2413,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md2,
     marginTop: spacing.sm,
     alignItems: 'flex-start',
-    borderLeftWidth: 4,
-    borderLeftColor: semanticColors.danger,
   },
   alertBannerTextWrap: {
     marginLeft: 12,

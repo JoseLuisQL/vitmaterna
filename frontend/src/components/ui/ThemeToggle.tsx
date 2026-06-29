@@ -50,7 +50,7 @@ export function ThemeToggle({ accentColor = obstetraColors.primary }: { accentCo
               styles.seg,
               active && { backgroundColor: accentColor },
               disabled && { opacity: 0.4 },
-              { cursor: disabled ? 'not-allowed' : 'pointer', outlineStyle: 'none' } as any
+              { cursor: disabled ? 'not-allowed' : 'pointer' } as any
             ]}
             accessibilityRole="button"
             accessibilityState={{ selected: active, disabled }}

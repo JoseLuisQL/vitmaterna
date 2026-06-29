@@ -45,7 +45,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   useEffect(() => {
     if (reduceMotion) return; // estático: no animar
     translateX.value = withRepeat(
-      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
       false,
     );

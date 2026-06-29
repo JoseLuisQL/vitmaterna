@@ -415,10 +415,10 @@ export default function ContenidoScreen(): React.ReactElement {
       align: 'right',
       render: (u) => (
         <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any} accessibilityRole="button" accessibilityLabel={`Editar ${u.titulo}`}>
+          <TouchableOpacity onPress={() => openEdit(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer' } as any} accessibilityRole="button" accessibilityLabel={`Editar ${u.titulo}`}>
             <Pencil size={18} color={commonColors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer', outlineStyle: 'none' } as any} accessibilityRole="button" accessibilityLabel={`Eliminar ${u.titulo}`}>
+          <TouchableOpacity onPress={() => confirmDelete(u)} hitSlop={8} style={{ padding: 4, cursor: 'pointer' } as any} accessibilityRole="button" accessibilityLabel={`Eliminar ${u.titulo}`}>
             <Trash2 size={18} color={semanticColors.danger} />
           </TouchableOpacity>
         </View>

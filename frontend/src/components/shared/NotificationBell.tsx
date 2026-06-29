@@ -39,7 +39,7 @@ export function NotificationBell({
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={`Notificaciones${count > 0 ? `, ${count} sin leer` : ''}`}
-      style={[styles.btn, variant === 'glass' && styles.glass, { cursor: 'pointer', outlineStyle: 'none' } as any]}
+      style={[styles.btn, variant === 'glass' && styles.glass, { cursor: 'pointer' } as any]}
       activeOpacity={0.7}
     >
       <Bell size={size} color={iconColor} />

@@ -127,7 +127,7 @@ export function Breadcrumb({ role }: BreadcrumbProps): React.ReactElement {
                 onPress={() => router.push(crumb.href!)}
                 accessibilityRole="link"
                 accessibilityLabel={crumb.label}
-                style={{ cursor: 'pointer', outlineStyle: 'none' } as any}
+                style={{ cursor: 'pointer' } as any}
               >
                 <Text style={[styles.crumb, { color: colors.textSecondary }]}>{crumb.label}</Text>
               </Pressable>

@@ -165,10 +165,10 @@ export default function SedesScreen(): React.ReactElement {
       align: 'right' as const,
       render: (row: any) => (
         <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
-          <TouchableOpacity onPress={() => openEdit(row)} hitSlop={8} style={[styles.actionBtn, { width: 32, height: 32, cursor: 'pointer', outlineStyle: 'none' } as any]} accessibilityRole="button" accessibilityLabel={`Editar ${row.nombre}`}>
+          <TouchableOpacity onPress={() => openEdit(row)} hitSlop={8} style={[styles.actionBtn, { width: 32, height: 32, cursor: 'pointer' } as any]} accessibilityRole="button" accessibilityLabel={`Editar ${row.nombre}`}>
             <Pencil size={16} color={BRAND} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => confirmDelete(row)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn, { width: 32, height: 32, cursor: 'pointer', outlineStyle: 'none' } as any]} accessibilityRole="button" accessibilityLabel={`Eliminar ${row.nombre}`}>
+          <TouchableOpacity onPress={() => confirmDelete(row)} hitSlop={8} style={[styles.actionBtn, styles.deleteBtn, { width: 32, height: 32, cursor: 'pointer' } as any]} accessibilityRole="button" accessibilityLabel={`Eliminar ${row.nombre}`}>
             <Trash2 size={16} color={semanticColors.danger} />
           </TouchableOpacity>
         </View>
@@ -220,7 +220,7 @@ export default function SedesScreen(): React.ReactElement {
       width="full"
       scroll={webShell}
       actions={
-        <TouchableOpacity ref={sedesTourTarget as any} style={[styles.addBtn, webShell && ({ cursor: 'pointer', outlineStyle: 'none' } as any)]} onPress={openCreate} accessibilityRole="button" accessibilityLabel="Crear establecimiento">
+        <TouchableOpacity ref={sedesTourTarget as any} style={[styles.addBtn, webShell && ({ cursor: 'pointer' } as any)]} onPress={openCreate} accessibilityRole="button" accessibilityLabel="Crear establecimiento">
           <Plus size={18} color={commonColors.white} />
         </TouchableOpacity>
       }

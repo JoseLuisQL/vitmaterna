@@ -222,7 +222,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
       style={[
         animatedStyle,
         ...containerStyle,
-        !isDisabled && IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+        !isDisabled && IS_WEB && ({ cursor: 'pointer' } as any),
       ]}
       accessibilityRole="button"
       accessibilityLabel={title}

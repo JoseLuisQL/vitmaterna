@@ -131,7 +131,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
       <TouchableOpacity
         style={[
           styles.collapseBtn,
-          { backgroundColor: colors.surface, borderColor: colors.border, cursor: 'pointer', outlineStyle: 'none' } as any
+          { backgroundColor: colors.surface, borderColor: colors.border, cursor: 'pointer' } as any
         ]}
         onPress={onToggleCollapsed}
         hitSlop={8}
@@ -173,7 +173,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
             { backgroundColor: accent + '12' },
             hovered && { backgroundColor: accent + '1F' },
             pressed && { backgroundColor: accent + '26' },
-            IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s', outlineStyle: 'none' } as any),
+            IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s' } as any),
           ]}
           accessibilityRole="button"
           accessibilityLabel="Conoce tu app: ver el recorrido guiado"
@@ -191,7 +191,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
             { backgroundColor: accent + '12' },
             hovered && { backgroundColor: accent + '1F' },
             pressed && { backgroundColor: accent + '26' },
-            IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s', outlineStyle: 'none' } as any),
+            IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.15s' } as any),
           ]}
           accessibilityRole="button"
           accessibilityLabel="Abrir el manual de usuario en PDF"
@@ -208,7 +208,7 @@ export function WebSidebar({ role, collapsed, onToggleCollapsed }: WebSidebarPro
 
         <Pressable
           onPress={handleLogout}
-          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed, IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s', outlineStyle: 'none' } as any)]}
+          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed, IS_WEB && ({ cursor: 'pointer', transition: 'background-color 0.2s' } as any)]}
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
         >
@@ -245,7 +245,7 @@ function NavRow({ item, accent, collapsed, active, badge = 0, onPress }: NavRowP
         active && { backgroundColor: accent + '10' },
         hovered && !active && { backgroundColor: colors.surfaceAlt },
         pressed && !active && { backgroundColor: colors.borderLight },
-        IS_WEB && ({ cursor: 'pointer', transition: 'all 0.15s ease-in-out', outlineStyle: 'none' } as any),
+        IS_WEB && ({ cursor: 'pointer', transition: 'all 0.15s ease-in-out' } as any),
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}

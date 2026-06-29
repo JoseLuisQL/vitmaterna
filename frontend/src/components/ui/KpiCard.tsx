@@ -11,6 +11,7 @@ import { commonColors, semanticColors, withAlpha } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
+import { useCountUp } from '../../hooks/useCountUp';
 
 type DeltaTone = 'positive' | 'negative' | 'neutral';
 
@@ -53,6 +54,11 @@ export function KpiCard({
   const tone = TONE[badgeTone];
   const accent = accentColor ?? commonColors.text;
   const compact = variant === 'compact';
+  // Si el valor es numérico, anima con count-up; si es string, lo muestra tal cual.
+  const numericValue = typeof value === 'number' ? value : Number(value);
+  const isNumeric = !Number.isNaN(numericValue);
+  const animated = useCountUp(isNumeric ? numericValue : 0, 900);
+  const displayValue = isNumeric ? animated : value;
 
   return (
     <View style={[styles.card, compact && styles.cardCompact, style]}>
@@ -72,7 +78,7 @@ export function KpiCard({
           numberOfLines={1}
           adjustsFontSizeToFit
         >
-          {value}
+          {displayValue}
         </Text>
         {badge ? (
           <View style={[styles.badge, { backgroundColor: tone.bg }]}>

@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     ...typography.body,
     color: commonColors.text,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}),
+    
   },
   send: {
     width: 44,

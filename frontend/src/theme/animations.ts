@@ -25,11 +25,14 @@ export const animations = {
     normal: 250,
     slow: 400,
   },
-  /** Easings para la Animated API nativa */
+  /** Easings para la Animated API nativa.
+   *  `smooth` usa cubic-bezier(0.16, 1, 0.3, 1) — easeOutExpo, suave y
+   *  responsivo (el estándar para entradas de UI modernas). */
   easing: {
-    enter: Easing.out(Easing.cubic),
-    exit: Easing.in(Easing.cubic),
+    enter: Easing.bezier(0.16, 1, 0.3, 1),
+    exit: Easing.bezier(0.7, 0, 0.84, 0),
     inOut: Easing.inOut(Easing.cubic),
+    smooth: Easing.bezier(0.16, 1, 0.3, 1),
   },
 } as const;
 

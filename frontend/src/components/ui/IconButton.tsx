@@ -90,7 +90,7 @@ export function IconButton({
         hovered && variant !== 'plain' && { opacity: 0.9 },
         pressed && { opacity: 0.7 },
         disabled && { opacity: 0.4 },
-        IS_WEB && ({ cursor: disabled ? 'default' : 'pointer', outlineStyle: 'none', transition: 'opacity 0.15s' } as any),
+        IS_WEB && ({ cursor: disabled ? 'default' : 'pointer', transition: 'opacity 0.15s' } as any),
         style,
       ]}
     >

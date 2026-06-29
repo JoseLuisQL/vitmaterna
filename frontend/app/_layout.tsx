@@ -53,6 +53,28 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       ::-webkit-scrollbar-thumb { background-color: #384A50; }
       ::-webkit-scrollbar-thumb:hover { background-color: #6E8088; }
     }
+    /* Foco visible para navegación por teclado en web (WCAG 2.4.7). Un ring
+       consistente para todos los elementos focuseables. Eliminado por
+       outlineStyle:'none' en los componentes; aquí se restaura globalmente
+       solo para :focus-visible (no interfiere con el toque/click). */
+    :focus-visible {
+      outline: 2px solid #2C6EA8;
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+    /* Prefers-reduced-motion: las animaciones de barrido/spring se respetan en
+       cada componente; aquí desactivamos las transiciones CSS globales. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+    /* content-visibility para listas largas en web (perf): las filas fuera de
+       pantalla no se renderizan hasta entrar al viewport. */
+    .cv-auto { content-visibility: auto; contain-intrinsic-size: 80px; }
   `;
   document.head.appendChild(style);
 }

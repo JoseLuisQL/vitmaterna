@@ -142,7 +142,7 @@ export function ListScreen<T>({
                 style={[
                   styles.chip,
                   active && { backgroundColor: accentColor, borderColor: accentColor },
-                  IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+                  IS_WEB && ({ cursor: 'pointer' } as any),
                 ]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}

@@ -51,7 +51,7 @@ export function LinkButton({
         pressed && { opacity: 0.6 },
         hovered && { opacity: 0.85 },
         disabled && { opacity: 0.4 },
-        IS_WEB && ({ cursor: disabled ? 'default' : 'pointer', outlineStyle: 'none' } as any),
+        IS_WEB && ({ cursor: disabled ? 'default' : 'pointer' } as any),
         style,
       ]}
     >

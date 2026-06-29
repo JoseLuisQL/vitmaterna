@@ -147,7 +147,7 @@ export function TextField({
           accessibilityLabel={label}
           accessibilityState={{ disabled }}
           testID={testID}
-          style={[styles.input, IS_WEB && ({ outlineStyle: 'none' } as any)]}
+          style={[styles.input, ]}
           {...rest}
         />
         {secureTextEntry ? (
@@ -193,7 +193,7 @@ export function TextAreaField({
           placeholderTextColor={commonColors.textTertiary}
           accessibilityLabel={label}
           testID={testID}
-          style={[styles.input, styles.inputMultiline, IS_WEB && ({ outlineStyle: 'none' } as any)]}
+          style={[styles.input, styles.inputMultiline, ]}
           {...rest}
         />
       </View>
@@ -225,7 +225,7 @@ export function SearchField({
         placeholderTextColor={commonColors.textTertiary}
         accessibilityLabel={placeholder}
         testID={testID}
-        style={[styles.searchInput, IS_WEB && ({ outlineStyle: 'none' } as any)]}
+        style={[styles.searchInput, ]}
         {...rest}
       />
       {value?.length ? (
@@ -287,7 +287,7 @@ export function SelectField({
           { borderColor: error ? semanticColors.danger : commonColors.border },
           pressed && !disabled && { backgroundColor: commonColors.surfaceHover },
           disabled && styles.controlDisabled,
-          IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+          IS_WEB && ({ cursor: 'pointer' } as any),
         ]}
       >
         {LeftIcon ? <LeftIcon size={20} color={commonColors.textSecondary} style={styles.iconLeft} /> : null}

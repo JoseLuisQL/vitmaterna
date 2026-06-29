@@ -376,7 +376,7 @@ export default function AppointmentsScreen() {
         key: 'acciones', header: '', width: 100, align: 'right',
         render: (p: Appointment) => (
           <TouchableOpacity
-            style={{ backgroundColor: commonColors.surfaceAlt, paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.full, cursor: 'pointer', outlineStyle: 'none' } as any}
+            style={{ backgroundColor: commonColors.surfaceAlt, paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.full, cursor: 'pointer' } as any}
             onPress={() => openDetail(p)}
           >
             <Text style={{ ...typography.caption, fontWeight: '600', color: BRAND }}>Ver</Text>
@@ -846,8 +846,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: borderRadius.md,
     backgroundColor: semanticColors.warningLight,
-    borderLeftWidth: 3,
-    borderLeftColor: semanticColors.warning,
   },
   pendingTitle: { ...typography.label, color: semanticColors.warning, marginBottom: 4 },
   pendingText: { ...typography.bodySm, color: commonColors.textSecondary },

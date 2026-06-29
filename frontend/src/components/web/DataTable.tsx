@@ -139,7 +139,7 @@ export function DataTable<T>({
                     styles.headerCell,
                     colStyle(col),
                     { justifyContent: cellAlign(col.align) },
-                    col.sortValue && IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+                    col.sortValue && IS_WEB && ({ cursor: 'pointer' } as any),
                   ]}
                 >
                   <Text style={[styles.headerText, { color: colors.textSecondary }]} numberOfLines={1}>{col.header}</Text>
@@ -164,6 +164,7 @@ export function DataTable<T>({
                 styles.row,
                 i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight },
               ]}
+              {...(IS_WEB ? { className: 'cv-auto' } : {})}
             >
               {columns.map((col) => {
                 const content =
@@ -187,7 +188,7 @@ export function DataTable<T>({
                     style={({ pressed }: { pressed?: boolean }) => [
                       ...cellStyle,
                       pressed && { backgroundColor: colors.surfaceAlt },
-                      IS_WEB && ({ cursor: 'pointer', outlineStyle: 'none' } as any),
+                      IS_WEB && ({ cursor: 'pointer' } as any),
                     ]}
                   >
                     {content}

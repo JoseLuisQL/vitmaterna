@@ -79,10 +79,6 @@ export default function LoginScreen(): React.ReactElement {
 
   return (
     <View style={styles.container}>
-      {/* Blobs de color decorativos */}
-      <View style={styles.blobTop} />
-      <View style={styles.blobBottom} />
-
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -170,26 +166,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background, overflow: 'hidden' },
   safeArea: { flex: 1 },
   flex: { flex: 1 },
-  blobTop: {
-    position: 'absolute',
-    top: -120,
-    right: -80,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: obstetraColors.primaryLight,
-    opacity: 0.7,
-  },
-  blobBottom: {
-    position: 'absolute',
-    bottom: -140,
-    left: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: gestanteColors.primaryLight,
-    opacity: 0.8,
-  },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
