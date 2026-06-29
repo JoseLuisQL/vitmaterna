@@ -1,210 +1,138 @@
 /**
  * VITMATERNA - Admin: Supervisión de Gestantes (solo lectura)
  * Lista global de gestantes del sistema con buscador y filtro de riesgo.
+ *
+ * Fase 2: migrada a `ListScreen` (tabla web ↔ tarjetas móvil en un solo
+ * componente). Elimina el header manual duplicado y unifica estados.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Baby } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Baby } from 'lucide-react-native';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { PrenatalRibbon } from '../../../src/components/ui/PrenatalRibbon';
-import { SearchField } from '../../../src/components/ui/Field';
-import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
-import { DataTable, type DataTableColumn } from '../../../src/components/web';
+import { ListScreen, type ListFilter } from '../../../src/components/patterns/ListScreen';
 import { usePatients } from '../../../src/services/api-queries';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
-import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, adminColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
+import type { DataTableColumn } from '../../../src/components/web';
 
 const BRAND = adminColors.primary;
-const RISKS = [
-  { key: null, label: 'Todas' },
+const RISKS: ListFilter[] = [
+  { key: 'todas', label: 'Todas' },
   { key: 'Bajo', label: 'Bajo' },
   { key: 'Medio', label: 'Medio' },
   { key: 'Alto', label: 'Alto' },
-] as const;
+];
+
+interface GestanteRow {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  documentNumber?: string;
+  currentWeek?: string | number;
+  currentTrimester?: string | number;
+  riskLevel?: string;
+}
+
+const initials = (p: GestanteRow) => `${p.firstName?.[0] || ''}${p.lastName?.[0] || ''}`;
+const riskVariant = (lvl?: string) =>
+  lvl === 'Alto' ? 'danger' : lvl === 'Medio' ? 'warning' : 'success';
 
 export default function AdminGestantesScreen(): React.ReactElement {
-  const router = useRouter();
-  const { webShell } = useResponsive();
   const [search, setSearch] = useState('');
-  const [risk, setRisk] = useState<string | null>(null);
+  const [riskFilter, setRiskFilter] = useState<string>('todas');
   const { data: patients = [], isLoading } = usePatients();
   const debouncedSearch = useDebouncedValue(search, 400);
 
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    return (patients as any[]).filter((p) => {
-      if (risk && p.riskLevel !== risk) return false;
-      if (q && !(`${p.firstName} ${p.lastName} ${p.documentNumber || ''}`.toLowerCase().includes(q))) return false;
+    return (patients as GestanteRow[]).filter((p) => {
+      if (riskFilter !== 'todas' && p.riskLevel !== riskFilter) return false;
+      if (q && !`${p.firstName} ${p.lastName} ${p.documentNumber || ''}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [patients, debouncedSearch, risk]);
+  }, [patients, debouncedSearch, riskFilter]);
 
-  const riskBadge = (lvl?: string) => (
-    <AppBadge label={lvl || 'Bajo'} variant={lvl === 'Alto' ? 'danger' : lvl === 'Medio' ? 'warning' : 'success'} size="sm" />
+  const columns: DataTableColumn<GestanteRow>[] = [
+    {
+      key: 'nombre',
+      header: 'Gestante',
+      flex: 2,
+      sortValue: (p) => `${p.firstName} ${p.lastName}`.toLowerCase(),
+      render: (p) => (
+        <View style={styles.tableUserCell}>
+          <View style={styles.tableAvatar}><Text style={styles.avatarText}>{initials(p)}</Text></View>
+          <Text style={styles.tableName} numberOfLines={1}>{p.firstName} {p.lastName}</Text>
+        </View>
+      ),
+    },
+    { key: 'dni', header: 'DNI', width: 120, sortValue: (p) => p.documentNumber || '', render: (p) => p.documentNumber || '—' },
+    {
+      key: 'sem',
+      header: 'Avance',
+      width: 200,
+      sortValue: (p) => Number(p.currentWeek) || 0,
+      render: (p) =>
+        p.currentWeek ? (
+          <View style={styles.tableRibbonCell}>
+            <Text style={styles.tableRibbonLabel} numberOfLines={1}>
+              Sem {p.currentWeek}{p.currentTrimester ? ` · ${p.currentTrimester}° trim` : ''}
+            </Text>
+            <PrenatalRibbon week={Number(p.currentWeek)} colors={adminColors.gradient} showCaption={false} animated={false} />
+          </View>
+        ) : (
+          '—'
+        ),
+    },
+    { key: 'riesgo', header: 'Riesgo', width: 120, align: 'center', sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => <AppBadge label={p.riskLevel || 'Bajo'} variant={riskVariant(p.riskLevel)} size="sm" /> },
+  ];
+
+  const renderCard = (p: GestanteRow) => (
+    <View style={styles.card}>
+      <View style={styles.cardRow}>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{initials(p)}</Text></View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name} numberOfLines={1}>{p.firstName} {p.lastName}</Text>
+          <Text style={styles.meta}>DNI: {p.documentNumber || '—'}{p.currentWeek ? ` · ${p.currentWeek} sem` : ''}</Text>
+        </View>
+        <AppBadge label={p.riskLevel || 'Bajo'} variant={riskVariant(p.riskLevel)} />
+      </View>
+      {p.currentWeek ? (
+        <PrenatalRibbon week={Number(p.currentWeek)} colors={adminColors.gradient} showCaption={false} animated={false} style={styles.cardRibbon} />
+      ) : null}
+    </View>
   );
 
-  // ── PORTAL WEB: tabla densa ──
-  if (webShell) {
-    const columns: DataTableColumn<any>[] = [
-      {
-        key: 'nombre', header: 'Gestante', flex: 2,
-        sortValue: (p) => `${p.firstName} ${p.lastName}`.toLowerCase(),
-        render: (p) => (
-          <View style={styles.tableUserCell}>
-            <View style={styles.tableAvatar}><Text style={styles.avatarText}>{(p.firstName?.[0] || '') + (p.lastName?.[0] || '')}</Text></View>
-            <Text style={styles.tableName} numberOfLines={1}>{p.firstName} {p.lastName}</Text>
-          </View>
-        ),
-      },
-      { key: 'dni', header: 'DNI', width: 120, sortValue: (p) => p.documentNumber || '', render: (p) => p.documentNumber || '—' },
-      {
-        key: 'sem', header: 'Avance', width: 200, sortValue: (p) => Number(p.currentWeek) || 0,
-        render: (p) =>
-          p.currentWeek ? (
-            <View style={styles.tableRibbonCell}>
-              <Text style={styles.tableRibbonLabel} numberOfLines={1}>
-                Sem {p.currentWeek}{p.currentTrimester ? ` · ${p.currentTrimester}° trim` : ''}
-              </Text>
-              <PrenatalRibbon week={Number(p.currentWeek)} colors={adminColors.gradient} showCaption={false} animated={false} />
-            </View>
-          ) : (
-            '—'
-          ),
-      },
-      { key: 'riesgo', header: 'Riesgo', width: 120, align: 'center', sortValue: (p) => p.riskLevel || 'Bajo', render: (p) => riskBadge(p.riskLevel) },
-    ];
-
-    return (
-      <View style={styles.container}>
-        <ScreenLayout
-          role="admin"
-          title="Gestantes"
-          subtitle={`${patients.length} registradas · solo lectura`}
-          showBack
-          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
-          width="full"
-          accentColor={BRAND}
-          scroll={false}
-        >
-          <View style={styles.webToolbar}>
-            <SearchField
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Buscar por nombre o DNI…"
-              containerStyle={styles.webSearchBox}
-            />
-            <View style={styles.filterRow}>
-              {RISKS.map((r) => (
-                <TouchableOpacity key={String(r.key)} style={[styles.filterChip, risk === r.key && styles.filterChipActive]} onPress={() => setRisk(r.key)}>
-                  <Text style={[styles.filterChipText, risk === r.key && styles.filterChipTextActive]}>{r.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <DataTable
-            columns={columns}
-            data={isLoading ? [] : filtered}
-            keyExtractor={(p) => p.id}
-            loading={isLoading}
-            emptyIcon={Baby}
-            emptyTitle="Sin gestantes"
-            emptyMessage={search || risk ? 'No hay gestantes con ese filtro.' : 'Aún no hay gestantes registradas.'}
-            emptyAccent={BRAND}
-          />
-        </ScreenLayout>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Volver" accessibilityRole="button">
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Gestantes</Text>
-              <Text style={styles.subtitle}>{patients.length} registradas · solo lectura</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <FlashList
-        data={isLoading ? [] : filtered}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View>
-            <SearchField
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Buscar por nombre o DNI…"
-              containerStyle={styles.searchBox}
-            />
-            <View style={styles.filterRow}>
-              {RISKS.map((r) => (
-                <TouchableOpacity key={String(r.key)} style={[styles.filterChip, risk === r.key && styles.filterChipActive]} onPress={() => setRisk(r.key)}>
-                  <Text style={[styles.filterChipText, risk === r.key && styles.filterChipTextActive]}>{r.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardRow}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>{(item.firstName?.[0] || '') + (item.lastName?.[0] || '')}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
-                <Text style={styles.meta}>DNI: {item.documentNumber || '—'}{item.currentWeek ? ` · ${item.currentWeek} sem` : ''}</Text>
-              </View>
-              <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
-            </View>
-            {item.currentWeek ? (
-              <PrenatalRibbon week={Number(item.currentWeek)} colors={adminColors.gradient} showCaption={false} animated={false} style={styles.cardRibbon} />
-            ) : null}
-          </View>
-        )}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          isLoading ? <View style={{ paddingTop: spacing.lg }}><ListSkeleton count={6} /></View>
-            : <View style={{ marginTop: 60 }}><EmptyState icon={Baby} title="Sin gestantes" description={search || risk ? 'No hay gestantes con ese filtro.' : 'Aún no hay gestantes registradas.'} themeColor={BRAND} /></View>
-        }
-      />
-    </View>
+    <ListScreen<GestanteRow>
+      role="admin"
+      title="Gestantes"
+      subtitle={`${patients.length} registradas · solo lectura`}
+      showBack
+      accentColor={BRAND}
+      width="full"
+      data={filtered}
+      keyExtractor={(p) => p.id}
+      columns={columns}
+      renderCard={renderCard}
+      loading={isLoading}
+      search={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="Buscar por nombre o DNI…"
+      filters={RISKS}
+      activeFilter={riskFilter}
+      onFilterChange={setRiskFilter}
+      emptyIcon={Baby}
+      emptyTitle="Sin gestantes"
+      emptyMessage={search || riskFilter !== 'todas' ? 'No hay gestantes con ese filtro.' : 'Aún no hay gestantes registradas.'}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  safeAreaHeader: {},
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
-  title: { ...typography.h1, color: commonColors.white },
-  subtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: layout.tabBarSpace },
-  searchBox: { marginBottom: spacing.md },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  filterChip: { paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
-  filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },
-  filterChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
-  filterChipTextActive: { color: commonColors.white },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, ...shadows.card },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardRibbon: { marginTop: spacing.sm2 },
@@ -212,10 +140,6 @@ const styles = StyleSheet.create({
   avatarText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
   name: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-
-  // ── Portal web ──
-  webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
-  webSearchBox: { flex: 1, minWidth: 220 },
   tableUserCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tableAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: adminColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },

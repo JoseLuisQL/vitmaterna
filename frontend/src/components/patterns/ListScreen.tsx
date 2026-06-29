@@ -37,6 +37,11 @@ interface ListScreenProps<T> {
   title: string;
   subtitle?: string;
   accentColor: string;
+  /** Muestra botón de retroceso en el header (pantallas de detalle/supervisión). */
+  showBack?: boolean;
+  onBack?: () => void;
+  /** Ancho del contenido (default 'full'). */
+  width?: 'readable' | 'wide' | 'full';
 
   /** Datos ya aplanados/listos para pintar. */
   data: T[];
@@ -85,6 +90,9 @@ export function ListScreen<T>({
   title,
   subtitle,
   accentColor,
+  showBack = false,
+  onBack,
+  width = 'full',
   data,
   keyExtractor,
   renderCard,
@@ -164,7 +172,7 @@ export function ListScreen<T>({
   // ── WEB: tabla densa ──
   if (webShell) {
     return (
-      <ScreenLayout role={role} title={title} subtitle={subtitle} width="full" accentColor={accentColor} scroll={false}>
+      <ScreenLayout role={role} title={title} subtitle={subtitle} showBack={showBack} onBack={onBack} width={width} accentColor={accentColor} scroll={false}>
         {Toolbar}
         {loading ? (
           <TableSkeleton rows={8} cols={columns.length} />

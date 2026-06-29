@@ -1,31 +1,30 @@
 /**
  * VITMATERNA - Admin: Supervisión de Citas (solo lectura)
  * Agenda global del sistema con filtro por estado.
+ *
+ * Fase 2: migrada a `ListScreen` (tabla web ↔ tarjetas móvil en un solo
+ * componente). Elimina el header manual duplicado (LinearGradient +
+ * SafeAreaView) de la rama móvil y unifica los 4 estados.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Calendar } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Calendar } from 'lucide-react-native';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
-import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
-import { DataTable, type DataTableColumn } from '../../../src/components/web';
+import { ListScreen, type ListFilter } from '../../../src/components/patterns/ListScreen';
 import { useAppointments } from '../../../src/services/api-queries';
-import { useResponsive } from '../../../src/theme/responsive';
 import { commonColors, adminColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
-import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { spacing, borderRadius } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
+import type { DataTableColumn } from '../../../src/components/web';
 
 const BRAND = adminColors.primary;
-const FILTERS = [
+
+const FILTERS: ListFilter[] = [
   { key: 'todas', label: 'Todas' },
   { key: 'proximas', label: 'Próximas' },
   { key: 'hoy', label: 'Hoy' },
-] as const;
+];
 
 const STATUS_VARIANT: Record<string, any> = {
   asistida: 'success', confirmada: 'success', programada: 'info',
@@ -38,15 +37,26 @@ const STATUS_LABEL: Record<string, string> = {
   no_asistida: 'No asistió', cancelada: 'Cancelada',
 };
 
+interface CitaRow {
+  id: string;
+  date: string;
+  patientName?: string;
+  type?: string;
+  status: string;
+}
+
+const fmt = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+};
+
 export default function AdminCitasScreen(): React.ReactElement {
-  const router = useRouter();
-  const { webShell } = useResponsive();
-  const [filter, setFilter] = useState<'todas' | 'proximas' | 'hoy'>('todas');
+  const [filter, setFilter] = useState<string>('todas');
   const { data: appointments = [], isLoading } = useAppointments();
 
   const filtered = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    return (appointments as any[])
+    return (appointments as CitaRow[])
       .filter((a) => {
         const d = new Date(a.date).toISOString().split('T')[0];
         if (filter === 'hoy') return d === today;
@@ -56,134 +66,99 @@ export default function AdminCitasScreen(): React.ReactElement {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [appointments, filter]);
 
-  const fmt = (iso: string) => {
-    const d = new Date(iso);
-    return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-  };
+  const columns: DataTableColumn<CitaRow>[] = [
+    {
+      key: 'fecha',
+      header: 'Fecha y hora',
+      width: 150,
+      sortValue: (a) => new Date(a.date).getTime(),
+      render: (a) => (
+        <View style={styles.tableDateCell}>
+          <Calendar size={16} color={BRAND} />
+          <Text style={styles.dateText}>{fmt(a.date)}</Text>
+        </View>
+      ),
+    },
+    {
+      key: 'paciente',
+      header: 'Paciente',
+      flex: 2,
+      sortValue: (a) => (a.patientName || '').toLowerCase(),
+      render: (a) => (
+        <Text style={styles.tableName} numberOfLines={1}>{a.patientName || 'Paciente'}</Text>
+      ),
+    },
+    {
+      key: 'tipo',
+      header: 'Tipo',
+      flex: 1,
+      sortValue: (a) => a.type || '',
+      render: (a) => a.type || 'Control Prenatal',
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      width: 150,
+      align: 'center',
+      sortValue: (a) => a.status || '',
+      render: (a) => (
+        <AppBadge label={STATUS_LABEL[a.status] || a.status} variant={STATUS_VARIANT[a.status] || 'default'} size="sm" />
+      ),
+    },
+  ];
 
-  const filterRow = (
-    <View style={styles.filterRow}>
-      {FILTERS.map((f) => (
-        <TouchableOpacity key={f.key} style={[styles.filterChip, filter === f.key && styles.filterChipActive]} onPress={() => setFilter(f.key)}>
-          <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
-        </TouchableOpacity>
-      ))}
+  const renderCard = (a: CitaRow) => (
+    <View style={styles.card}>
+      <View style={styles.dateBox}>
+        <Calendar size={18} color={BRAND} />
+        <Text style={styles.dateText}>{fmt(a.date)}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name} numberOfLines={1}>{a.patientName || 'Paciente'}</Text>
+        <Text style={styles.meta}>{a.type || 'Control Prenatal'}</Text>
+      </View>
+      <AppBadge label={STATUS_LABEL[a.status] || a.status} variant={STATUS_VARIANT[a.status] || 'default'} />
     </View>
   );
 
-  // ── PORTAL WEB: tabla densa ──
-  if (webShell) {
-    const columns: DataTableColumn<any>[] = [
-      { key: 'fecha', header: 'Fecha y hora', width: 150, sortValue: (a) => new Date(a.date).getTime(), render: (a) => (
-        <View style={styles.tableDateCell}><Calendar size={16} color={BRAND} /><Text style={styles.dateText}>{fmt(a.date)}</Text></View>
-      ) },
-      { key: 'paciente', header: 'Paciente', flex: 2, sortValue: (a) => (a.patientName || '').toLowerCase(), render: (a) => (
-        <Text style={styles.tableName} numberOfLines={1}>{a.patientName || 'Paciente'}</Text>
-      ) },
-      { key: 'tipo', header: 'Tipo', flex: 1, sortValue: (a) => a.type || '', render: (a) => a.type || 'Control Prenatal' },
-      { key: 'estado', header: 'Estado', width: 150, align: 'center', sortValue: (a) => a.status || '', render: (a) => (
-        <AppBadge label={STATUS_LABEL[a.status] || a.status} variant={STATUS_VARIANT[a.status] || 'default'} size="sm" />
-      ) },
-    ];
-
-    return (
-      <View style={styles.container}>
-        <ScreenLayout
-          role="admin"
-          title="Citas"
-          subtitle="Agenda global · solo lectura"
-          showBack
-          onBack={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))}
-          width="full"
-          accentColor={BRAND}
-          scroll={false}
-        >
-          <View style={{ marginBottom: spacing.sm }}>{filterRow}</View>
-          <DataTable
-            columns={columns}
-            data={isLoading ? [] : filtered}
-            keyExtractor={(a) => a.id}
-            loading={isLoading}
-            emptyIcon={Calendar}
-            emptyTitle="Sin citas"
-            emptyMessage="No hay citas con ese filtro."
-            emptyAccent={BRAND}
-          />
-        </ScreenLayout>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient colors={adminColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)'))} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Volver" accessibilityRole="button">
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Citas</Text>
-              <Text style={styles.subtitle}>Agenda global · solo lectura</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <FlatList
-        data={isLoading ? [] : filtered}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={styles.filterRow}>
-            {FILTERS.map((f) => (
-              <TouchableOpacity key={f.key} style={[styles.filterChip, filter === f.key && styles.filterChipActive]} onPress={() => setFilter(f.key)}>
-                <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.dateBox}><Calendar size={18} color={BRAND} /><Text style={styles.dateText}>{fmt(item.date)}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
-              <Text style={styles.meta}>{item.type || 'Control Prenatal'}</Text>
-            </View>
-            <AppBadge label={STATUS_LABEL[item.status] || item.status} variant={STATUS_VARIANT[item.status] || 'default'} />
-          </View>
-        )}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          isLoading ? <View style={{ paddingTop: spacing.lg }}><ListSkeleton count={6} /></View>
-            : <View style={{ marginTop: 60 }}><EmptyState icon={Calendar} title="Sin citas" description="No hay citas con ese filtro." themeColor={BRAND} /></View>
-        }
-      />
-    </View>
+    <ListScreen<CitaRow>
+      role="admin"
+      title="Citas"
+      subtitle="Agenda global · solo lectura"
+      showBack
+      accentColor={BRAND}
+      width="full"
+      data={filtered}
+      keyExtractor={(a) => a.id}
+      columns={columns}
+      renderCard={renderCard}
+      loading={isLoading}
+      filters={FILTERS}
+      activeFilter={filter}
+      onFilterChange={setFilter}
+      emptyIcon={Calendar}
+      emptyTitle="Sin citas"
+      emptyMessage="No hay citas con ese filtro."
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
-  title: { ...typography.h1, color: commonColors.white },
-  subtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: layout.tabBarSpace },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  filterChip: { paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
-  filterChipActive: { backgroundColor: BRAND, borderColor: BRAND },
-  filterChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
-  filterChipTextActive: { color: commonColors.white },
-  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm2, ...shadows.card },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    marginBottom: spacing.sm2,
+    ...shadows.card,
+  },
   dateBox: { alignItems: 'center', gap: 2, minWidth: 64 },
   dateText: { ...typography.caption, fontWeight: '700', color: BRAND },
   name: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
   meta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-
-  // ── Portal web ──
   tableDateCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   tableName: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, minWidth: 0 },
 });
