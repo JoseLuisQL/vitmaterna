@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  TextInput, Switch, StatusBar,
+  TextInput, Switch,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
 import {
-  ChevronLeft, Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale, Activity, Smile,
+  Plus, Brain, ShieldAlert, Stethoscope, Apple, Scale, Activity, Smile,
 } from 'lucide-react-native';
 import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import {
   useCreatePathology,
   useCreateMentalHealthScreening,
@@ -251,26 +250,15 @@ export default function TamizajesScreen(): React.ReactElement {
   const CARDS = ALL_CARDS.filter((c) => flags[FORM_FLAG[c.key]]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient
-        colors={obstetraColors.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
-      >
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerNav}>
-            <TouchableOpacity onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)} style={styles.iconBtnGlass} accessibilityRole="button" accessibilityLabel="Volver">
-              <ChevronLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Tamizajes y registros</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          {nombre ? <Text style={styles.headerPatient}>{nombre}</Text> : null}
-        </SafeAreaView>
-      </LinearGradient>
-
+    <ScreenLayout
+      role="obstetra"
+      title="Tamizajes y registros"
+      subtitle={nombre}
+      showBack
+      onBack={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)}
+      scroll={false}
+      width="full"
+    >
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <WebMaxWidth width="full">
         <Text style={styles.subtitle}>Selecciona el registro clínico que deseas añadir.</Text>
@@ -456,7 +444,7 @@ export default function TamizajesScreen(): React.ReactElement {
           )}
         </View>
       </AppModal>
-    </View>
+    </ScreenLayout>
   );
 }
 
@@ -471,11 +459,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  headerWrapper: { paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm2 },
-  iconBtnGlass: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.onColorSurface },
-  headerTitle: { ...typography.h3, color: commonColors.white },
-  headerPatient: { ...typography.h2, color: commonColors.white, paddingHorizontal: spacing.lg, marginTop: spacing.xs },
   scroll: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 48 },
   subtitle: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.md2 },

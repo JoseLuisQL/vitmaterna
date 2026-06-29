@@ -4,7 +4,6 @@
  */
 import React from 'react';
 import { View, StyleSheet, Text, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ShieldAlert, Download, ArrowLeft, Plus, Pencil, Trash2, RefreshCw } from 'lucide-react-native';
 import { AppCard } from '../../../src/components/ui/AppCard';

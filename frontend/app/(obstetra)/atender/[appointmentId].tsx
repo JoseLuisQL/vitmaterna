@@ -9,16 +9,15 @@
  * como asistida.
  */
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import {
-  ArrowLeft, Stethoscope, FlaskConical, ClipboardList, Pill,
+  Stethoscope, FlaskConical, ClipboardList, Pill,
   CheckCircle2, Circle, ChevronRight, CalendarCheck,
 } from 'lucide-react-native';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
+import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { confirmAction } from '../../../src/utils/confirm';
 import { useAppointments, useUpdateAppointmentStatus } from '../../../src/services/api-queries';
 import { useFeatureFlags } from '../../../src/hooks/useFeatureFlags';
@@ -145,36 +144,23 @@ export default function AtenderCitaScreen(): React.ReactElement {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)/cronograma'))}
-              style={styles.backBtn}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Volver"
-              accessibilityRole="button"
-            >
-              <ArrowLeft size={24} color={commonColors.white} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Atender cita</Text>
-              <Text style={styles.headerSubtitle} numberOfLines={1}>{nombre} · {motivo}</Text>
-            </View>
-          </View>
-          <View style={styles.progressPill}>
-            <Text style={styles.progressText}>{completedCount} de {visibleSteps.length} registros</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${(completedCount / visibleSteps.length) * 100}%` }]} />
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
+    <ScreenLayout
+      role="obstetra"
+      title="Atender cita"
+      subtitle={`${nombre} · ${motivo}`}
+      showBack
+      onBack={() => (router.canGoBack() ? router.back() : router.replace('/(obstetra)/(tabs)/cronograma'))}
+      scroll={false}
+      width="full"
+    >
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <WebMaxWidth width="full">
+          <View style={styles.progressBar}>
+            <Text style={styles.progressText}>{completedCount} de {visibleSteps.length} registros</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${(completedCount / visibleSteps.length) * 100}%` }]} />
+            </View>
+          </View>
           <View style={webShell ? styles.twoCol : undefined}>
             <View style={webShell ? styles.col : undefined}>
               <Text style={styles.intro}>
@@ -239,22 +225,16 @@ export default function AtenderCitaScreen(): React.ReactElement {
           </View>
         </WebMaxWidth>
       </ScrollView>
-    </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  header: { borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl, paddingBottom: spacing.lg },
-  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
-  headerTitle: { ...typography.h1, color: commonColors.white },
-  headerSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
-  progressPill: { alignSelf: 'flex-start', backgroundColor: commonColors.onColorSurfaceStrong, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 5, marginTop: spacing.md },
-  progressText: { ...typography.caption, color: commonColors.white, fontWeight: '700' },
-  progressTrack: { height: 6, borderRadius: borderRadius.full, backgroundColor: commonColors.onColorTrack, overflow: 'hidden', marginTop: spacing.sm },
-  progressFill: { height: '100%', borderRadius: borderRadius.full, backgroundColor: commonColors.white },
+  progressBar: { marginBottom: spacing.md },
+  progressText: { ...typography.caption, color: commonColors.textSecondary, fontWeight: '700' },
+  progressTrack: { height: 6, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, overflow: 'hidden', marginTop: spacing.xs },
+  progressFill: { height: '100%', borderRadius: borderRadius.full, backgroundColor: BRAND },
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   intro: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },

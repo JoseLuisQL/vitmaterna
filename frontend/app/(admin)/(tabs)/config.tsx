@@ -4,7 +4,6 @@
  */
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Text, ScrollView, Switch, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Settings, Save, ArrowLeft } from 'lucide-react-native';
 import { useForm, Controller } from 'react-hook-form';
