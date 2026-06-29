@@ -782,6 +782,18 @@ export default function PatientProfileScreen(): React.ReactElement {
                       <Text style={styles.resumenAlertaText}>{a}</Text>
                     </View>
                   ))}
+                  {/* CTA: si falta registrar controles, ofrecer la acción directa. */}
+                  {(controls.length === 0 || accionableAlertas.some((a) => /control/i.test(a))) && (
+                    <TouchableOpacity
+                      style={styles.alertaCtaBtn}
+                      onPress={() => router.push({ pathname: '/(obstetra)/control/nuevo', params: { patientId: patient.id } } as any)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Registrar un control prenatal"
+                    >
+                      <Plus size={15} color={obstetraColors.onPrimary} />
+                      <Text style={styles.alertaCtaText}>Registrar control</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               ) : (
                 <View style={[styles.okCard, designTokens.cardShadow]}>
@@ -2123,7 +2135,9 @@ const styles = StyleSheet.create({
   },
   scrollAreaWeb: { width: '100%' },
   dataTabContainer: {
-    marginTop: -4,
+    // Separación uniforme entre tarjetas (antes los márgenes sueltos hacían
+    // que algunas quedaran pegadas y otras no).
+    gap: spacing.md,
   },
 
   // Banner de estado clínico (lo crítico siempre arriba)
@@ -2142,9 +2156,17 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    marginBottom: spacing.md,
     gap: 8,
   },
+  // CTA dentro de la tarjeta de alertas (p. ej. "Registrar control").
+  alertaCtaBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: obstetraColors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.sm,
+    marginTop: 2,
+  },
+  alertaCtaText: { ...typography.buttonSm, color: obstetraColors.onPrimary },
   alertasTitle: { ...typography.label, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4 },
   // Subtítulo de grupo para separar lo clínico de lo administrativo.
   groupLabel: {
