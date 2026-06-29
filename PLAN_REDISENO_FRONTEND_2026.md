@@ -195,8 +195,7 @@ carga cognitiva baja, salud-literacy-first) y en ISO 9241-110 (diálogo):
 3. **Progressive disclosure.** Lo crítico arriba y a la vista; lo secundario en
    acordeones o sub-pestañas. La gestante y el obstetra ven lo que importa sin
    scrollear.
-4. **Estados estándar, siempre.** Cargando → skeleton 1:1. Vacío → CTA. Error
-   → reintento. Nunca spiners sueltos ni "no hay datos" sin acción.
+4. **Estados de carga compactos y minimalistas (NO basura visual).** Ver §3.1.
 5. **Fluides y micro-interacciones.** `PressableScale` (spring) en todo lo
    táctil, `useReducedMotion` respetado, transiciones de pantalla suaves.
 6. **Salud-literacy.** Cuerpo ≥15px, voz activa y minúscula, copy sin
@@ -204,6 +203,89 @@ carga cognitiva baja, salud-literacy-first) y en ISO 9241-110 (diálogo):
 7. **Accesibilidad no negociable.** WCAG 2.2 AA + WCAG2Mobile: contraste 4.5:1
    (3:1 texto grande), targets ≥24×24 CSS px (ideal 44×44 / 48dp), foco visible,
    `accessibilityRole`/`Label`, gestos simples.
+
+### 3.1 Estados de carga — compactos, minimalistas, 1:1 (prioridad)
+
+> **Cero spinners sueltos para cargar pantallas.** El spinner (círculo girando)
+> es "basura visual": no dice qué viene ni cuánto, y se siente lento. La carga
+> moderna es el **skeleton 1:1**: un placeholder con la misma forma del contenido
+> real, que se reemplaza sin salto cuando llegan los datos.
+
+**Diagnóstico actual:**
+- `SkeletonLoader.tsx` ya existe y es bueno (CardSkeleton, ListSkeleton,
+  DashboardSkeleton, TableSkeleton, ChatSkeleton, FormSkeleton,
+  DetailHeaderSkeleton, KpiRowSkeleton).
+- **Problema 1:** el shimmer es **solo opacidad** (`withRepeat` de `withTiming`
+  de 0.5→1). Es estático. El shimmer moderno es un **barrido de luz de
+  izquierda a derecha** (linear-gradient animado), más fluido y "vivo".
+- **Problema 2:** 17 archivos usan `ActivityIndicator` (spinner). Algunos son
+  correctos (micro-carga de botón enviando, "cargar más" al final de una lista),
+  pero otros cargan pantallas/listas con spinner en vez de skeleton 1:1.
+- **Problema 3:** no todas las pantallas tienen su skeleton 1:1 dedicado —
+  algunas caen al `DashboardSkeleton` genérico, que no coincide con su layout
+  real y produce un salto visual al cargar.
+
+**Acciones (Fase 0 + Fase 5):**
+- **0.7** Reescribir el `Skeleton` base con **shimmer de barrido**
+  (linear-gradient animado de 1.2s, izquierda→derecha, respetando
+  `useReducedMotion` → sin animación, solo el placeholder estático). Color del
+  barrido: blanco translúcido sobre `surfaceHover` (no un color nuevo).
+- **0.8** Auditar y eliminar `ActivityIndicator` en cargas de pantalla/lista;
+  reservarlo **solo** para: botón enviando, "cargar más" en infinite scroll,
+  refresco de pull-to-refresh (donde ya es nativo). Regla: si carga una pantalla
+  o reemplaza contenido, es skeleton; si es un estado transitorio dentro de una
+  acción, es spinner.
+- **5.7** Garantizar skeleton **1:1** por pantalla: cada pantalla del sistema
+  tiene un skeleton que coincide con su layout real (mismo número de KPIs,
+  mismas tarjetas, misma jerarquía). `ScreenLayout` ya acepta `loading` y
+  muestra `DashboardSkeleton` — ampliar para que acepte un `skeleton` prop
+  personalizado por pantalla.
+
+### 3.2 Cero contaminación visual — paleta sobria y consistente
+
+> **No más colores ruidosos ni fondos de color arbitrarios.** El sistema ya
+> tiene la paleta "Clinical Calm" (neutro frío, tarjetas blancas, sombra suave,
+> acento por rol). El rediseño la aplica sin excepciones.
+
+**Diagnóstico actual:**
+- 7 archivos usan `rgba()` hardcoded para "vidrio" sobre gradientes
+  (`rgba(255,255,255,0.18)` etc.) en vez de los tokens `onColorSurface*` que
+  ya existen en `theme/colors.ts`.
+- No hay paleta nueva que añadir — la existente es correcta. El problema es que
+  no se usa en todas partes.
+
+**Acciones (Fase 5):**
+- **5.8** Reemplazar todos los `rgba()` hardcoded de "vidrio/overlay" por los
+  tokens `onColorSurface` / `onColorSurfaceStrong` / `onColorSurfaceFaint`
+  (ya definidos en `commonColors`). Un solo lugar, un solo valor.
+- **5.9** Auditar y eliminar fondos de color decorativos en tarjetas: una
+  tarjeta debe ser blanca (`commonColors.surface`) con sombra, o con un fondo
+  `*Light` del semáforo **solo si** comunica estado clínico (riesgo/urgencia).
+  Sin fondos de color "para adornar".
+- **5.10** Regla "sombra **O** borde, nunca ambos" (auditar y aplicar):
+  si una tarjeta tiene `...shadows.card`, quitarle `borderWidth`.
+- **5.11** Reducir saturación donde aboute: los `*Mid` (chips/badges) ya son
+  suaves; verificar que ningún chip use un color sólido brillante.
+
+### 3.3 Compacidad y fluidez moderna
+
+> **Compacto no significa apretado.** Significa denso pero con aire, sin
+> "basura" entre elementos, con transiciones que se sientan fluidas.
+
+**Acciones (Fase 5):**
+- **5.12** Densidad consistente: usar `stack.element` (12) entre elementos
+  relacionados, `stack.group` (16) entre grupos, `stack.section` (24) entre
+  secciones. Eliminar los `marginBottom: 14/18/22` arbitrarios que aún quedan.
+- **5.13** Micro-interacciones coherentes: `PressableScale` (spring 0.98)
+  en toda tarjeta/fila clickeable; `motion.press` (springFast) en botones;
+  `motion.surface` (scale 0.96→1 + fade, 180ms) en apertura de
+  modales/bottom-sheets. Todo respeta `useReducedMotion`.
+- **5.14** Transiciones de pantalla: ya configuradas (`slide_from_right` en el
+  `Stack` raíz). Verificar que no haya pantallas con animación propia
+  inconsistente.
+- **5.15** "Sense of flow": al reemplazar skeleton por contenido, usar un
+  `fade-in` corto (150ms) en vez de aparición brusca. Al cambiar de tab, el
+  contenido entra con un cross-fade suave (no recarga visible).
 
 ---
 
@@ -282,6 +364,13 @@ de pantallas tenga a dónde migrar.
 - [ ] **0.6** Foco visible en web: añadir `:focus-visible` ring (2px, color del
   rol, contraste 3:1) a todos los `Pressable`/`TouchableOpacity` vía un hook
   `useWebFocusRing()` aplicado en primitivas.
+- [ ] **0.7** Reescribir `Skeleton` base con **shimmer de barrido**
+  (linear-gradient animado izquierda→derecha, 1.2s, respetando
+  `useReducedMotion` → placeholder estático). Color del barrido: blanco
+  translúcido sobre `surfaceHover` (sin color nuevo).
+- [ ] **0.8** Auditar `ActivityIndicator`: eliminar en cargas de
+  pantalla/lista; reservar solo para botón enviando, "cargar más" y
+  pull-to-refresh nativo.
 
 ### Fase 1 — Migración de los 10 dashboards/listas a `ScreenLayout` (2-3 días)
 
@@ -344,10 +433,10 @@ delegar header + estados + safe-area a `ScreenLayout`.
 - [ ] **4.5** `(gestante)/(tabs)/perfil.tsx` (567 líneas, 13 `useState`) →
   extraer formularios a hooks.
 
-### Fase 5 — Refinamiento visual minimalista y fluidez (2 días)
+### Fase 5 — Refinamiento visual minimalista y fluidez (2-3 días)
 
-**Objetivo:** llevar el "se siente minimalista, limpio y fluido" de intención a
-realidad. Sobre la base ya consistente, afinar:
+**Objetivo:** llevar el "se siente minimalista, limpio, compacto y fluido" de
+intención a realidad. Sobre la base ya consistente, afinar:
 
 - [ ] **5.1** Aire y respiración — revisar `stack` (tight/element/group/section/
   block) en cada pantalla; aumentar respiración entre secciones (`stack.section`
@@ -363,6 +452,21 @@ realidad. Sobre la base ya consistente, afinar:
   `:focus-visible` en todo interactivo.
 - [ ] **5.6** Modo oscuro — auditar contraste en todas las pantallas migradas
   (no solo tokens). Corregir pares texto/fondo que se vean mal en dark.
+- [ ] **5.7** Skeleton 1:1 por pantalla — `ScreenLayout` acepta `skeleton` prop
+  personalizado; cada pantalla usa el skeleton que coincide con su layout real.
+- [ ] **5.8** Reemplazar `rgba()` hardcoded de vidrio/overlay por tokens
+  `onColorSurface*` (7 archivos identificados).
+- [ ] **5.9** Eliminar fondos de color decorativos en tarjetas (blanco o
+  `*Light` solo si comunica estado clínico).
+- [ ] **5.10** Aplicar regla "sombra O borde, nunca ambos" en todas las tarjetas.
+- [ ] **5.11** Verificar que ningún chip/badge use color sólido brillante.
+- [ ] **5.12** Densidad consistente con `stack` (eliminar `marginBottom`
+  arbitrarios).
+- [ ] **5.13** Micro-interacciones coherentes: `motion.press` en botones,
+  `motion.surface` en modales, `PressableScale` en tarjetas.
+- [ ] **5.14** Transiciones de pantalla consistentes (`slide_from_right`).
+- [ ] **5.15** "Sense of flow": fade-in (150ms) al reemplazar skeleton por
+  contenido; cross-fade suave al cambiar de tab.
 
 ### Fase 6 — Accesibilidad y compliance final (1 día)
 
@@ -517,6 +621,13 @@ El rediseño está completo cuando:
 8. ✅ `bash scripts/qa-visual.sh` sin hallazgos bloqueantes
 9. ✅ Auditoría a11y: 0 interactivos sin `accessibilityLabel`, 0 targets <24px
 10. ✅ Capturas antes/después documentan consistencia en móvil y escritorio
+11. ✅ **Cargas:** 0 `ActivityIndicator` en cargas de pantalla/lista; el shimmer
+    es de barrido (no solo opacidad); cada pantalla tiene skeleton 1:1
+12. ✅ **Contaminación:** 0 `rgba()` hardcoded de vidrio/overlay (usan tokens
+    `onColorSurface*`); 0 tarjetas con sombra Y borde a la vez; 0 fondos de
+    color decorativos (solo `*Light` para estado clínico)
+13. ✅ **Fluidez:** `PressableScale` en toda tarjeta/fila clickeable;
+    `motion.surface` en modales; fade-in al reemplazar skeleton por contenido
 
 ---
 
