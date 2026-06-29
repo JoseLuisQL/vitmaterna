@@ -582,6 +582,12 @@ export default function PatientProfileScreen(): React.ReactElement {
 
   // Datos para el banner de estado clínico (lo crítico de un vistazo).
   const pendingDangerCount = dangerSigns.filter((s: any) => s.estado === 'pendiente').length;
+
+  // Alertas accionables: se descartan las que solo reiteran el nivel de riesgo
+  // (ya visible en el chip), para no mostrar "Riesgo alto" varias veces.
+  const accionableAlertas = ((patient.resumenClinico?.alertas as string[] | undefined) || []).filter(
+    (a) => !/\b(alto|medio|bajo)\s+riesgo\b|\briesgo\s+(alto|medio|bajo)\b/i.test(a),
+  );
   const nextAppointment = (patient.appointments || [])
     .filter((a: any) => ['programada', 'confirmada'].includes(a.estado) && new Date(a.fecha) >= new Date())
     .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0];
@@ -679,14 +685,13 @@ export default function PatientProfileScreen(): React.ReactElement {
           de estado clínico del tab Resumen (issue #2/#3). El estado glanceable
           vive ahora en un solo lugar (statusBanner), con mejor jerarquía. */}
 
-      {/* ── PANTALLA PRINCIPAL CON TABS ── */}
+      {/* ── PANTALLA PRINCIPAL CON TABS ──
+          Fila de ancho fijo que reparte los 4 tabs por igual (flex:1). Antes era
+          un scroll horizontal donde "Tratamiento"/"Clínico" se cortaban en el
+          borde sin indicio de scroll. En móvil se oculta el ícono para dar todo
+          el ancho al texto y que ningún tab se trunque. */}
       <View style={styles.mainContent}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsScrollContent}
-          style={styles.tabsWrapper}
-        >
+        <View style={styles.tabsRow}>
           {visibleTabs.map(({ id: tid, label, icon: Icon }) => {
             const isActive = activeTab === tid;
             return (
@@ -695,15 +700,20 @@ export default function PatientProfileScreen(): React.ReactElement {
                 onPress={() => setActiveTab(tid)}
                 style={[styles.tabPill, isActive && styles.tabPillActive]}
                 activeOpacity={0.8}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={label}
               >
-                <Icon size={16} color={isActive ? commonColors.white : commonColors.textSecondary} strokeWidth={isActive ? 2.5 : 2} />
-                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                {webShell ? (
+                  <Icon size={16} color={isActive ? commonColors.white : commonColors.textSecondary} strokeWidth={isActive ? 2.5 : 2} />
+                ) : null}
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]} numberOfLines={1}>
                   {label}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
 
         <ScrollView 
           style={styles.scrollAreaWrapper}
@@ -768,14 +778,15 @@ export default function PatientProfileScreen(): React.ReactElement {
                     </View>
                   </View>
                 </View>
-                {/* Cinta prenatal: continuidad del embarazo a la vista, con el
-                    acento del obstetra. Es la misma firma que ve la gestante. */}
+                {/* Cinta prenatal: continuidad del embarazo a la vista. Se muestra
+                    el caption (semana/trimestre) para que la barra tenga contexto
+                    y no se lea como un control sin etiqueta. */}
                 {Number(patient.currentWeek) > 0 ? (
                   <View style={styles.statusRibbon}>
                     <PrenatalRibbon
                       week={Number(patient.currentWeek)}
                       colors={obstetraColors.gradient}
-                      showCaption={false}
+                      showCaption
                       milestones={ribbonMilestones}
                     />
                   </View>
@@ -783,12 +794,13 @@ export default function PatientProfileScreen(): React.ReactElement {
               </View>
 
               {/* 2. ALERTAS ACCIONABLES — lo único que requiere atención.
-                  Se quitó la tarjeta "destacados" y el párrafo auto-generado, que
-                  repetían estos mismos datos (anemia/riesgo/adherencia). */}
-              {(patient.resumenClinico?.alertas?.length ?? 0) > 0 && (
+                  Se filtran las que solo repiten el nivel de riesgo ya visible en
+                  el chip de arriba (evita ver "Riesgo alto" hasta 3 veces); se
+                  conservan las accionables (p. ej. "Sin controles registrados"). */}
+              {accionableAlertas.length > 0 && (
                 <View style={[styles.alertasCard, designTokens.cardShadow]}>
                   <Text style={styles.alertasTitle}>Requiere atención</Text>
-                  {patient.resumenClinico!.alertas!.map((a: string, i: number) => (
+                  {accionableAlertas.map((a: string, i: number) => (
                     <View key={i} style={styles.resumenAlertaRow}>
                       <AlertTriangle size={14} color={riskColors.riskRed} />
                       <Text style={styles.resumenAlertaText}>{a}</Text>
@@ -807,9 +819,10 @@ export default function PatientProfileScreen(): React.ReactElement {
                   </TouchableOpacity>
                 )}
               >
+                {/* FPP y Semanas NO se repiten aquí: ya están en el grid de
+                    métricas de arriba. Este bloque guarda solo el detalle que no
+                    aparece en las métricas. */}
                 <Fila label="FUM" value={patient.fum} />
-                <Fila label="FPP" value={patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE') : undefined} />
-                <Fila label="Semanas" value={patient.currentWeek ? `${patient.currentWeek} semanas` : undefined} />
                 <Fila label="Peso habitual" value={patient.pesoHabitual ? `${patient.pesoHabitual} kg` : undefined} />
                 <Fila label="Talla" value={patient.talla ? `${patient.talla} m` : undefined} />
                 <Fila label="Grupo sanguíneo" value={patient.bloodType} isLast />
@@ -2018,20 +2031,20 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 8,
   },
-  tabsWrapper: {
-    maxHeight: 56,
-  },
-  tabsScrollContent: {
+  tabsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs2,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm2,
-    gap: spacing.sm,
   },
   tabPill: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     paddingVertical: 9,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.full,
     backgroundColor: commonColors.surfaceAlt,
   },
