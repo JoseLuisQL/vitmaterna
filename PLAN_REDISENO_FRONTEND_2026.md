@@ -4,6 +4,42 @@
 > comercial y cumplimiento estricto de estándares ISO (9241-210, 9241-110,
 > 9241-125, 9241-143) y de accesibilidad (WCAG 2.2 AA + WCAG2Mobile).
 
+> ## ⚠️ REGLA DE ORO — No negociable
+> **Este plan refactoriza ÚNICAMENTE diseño y presentación. CERO cambios a la
+> lógica de negocio.** La integridad funcional del sistema clínico es
+> intocable. Concretamente:
+>
+> **Lo que NO se toca (capas de negocio):**
+> - `src/services/` — cliente Axios, endpoints, queryClient, outbox, network
+> - `src/hooks/` — lógica de negocio: `useChat`, `usePatientProfile`,
+>   `useAppointmentRealtime`, `usePushNotifications`, `useOfflinePrefetch`, etc.
+> - `src/store/authStore` — estado de autenticación y sesión
+> - `src/utils/` — `datetime`, `confirm`, `whatsapp`, `haptics`, `lastSeen`,
+>   `educationMeta` (incl. cálculos clínicos)
+> - `src/database/` — init + SQLite outbox
+> - Backend (no se toca para nada)
+> - Todos los tests de negocio existentes (no se modifican, deben seguir pasando)
+>
+> **Lo que SÍ se refactoriza (capas de presentación):**
+> - `app/` — composición de pantallas (delegar header/estados a `ScreenLayout`)
+> - `src/components/ui/` — primitivas visuales (`KpiCard`, `AppButton`, etc.)
+> - `src/components/patterns/` — patrones (`ListScreen`, `FormSheet`, `PageTabs`)
+> - `src/components/layout/` — `ScreenLayout`, `AppSidebar`, `RoleGuard`
+> - `src/components/web/` — `WebShell`, `WebSidebar`, `DataTable`
+> - `src/theme/` — tokens (solo añadir/refinar, nunca romper los existentes)
+>
+> **Garantía de preservación funcional:**
+> - Al extraer formularios (Fase 3), la mutación y validación clínica se
+>   **preservan llamada-por-llamada**: mismo endpoint, mismo orden, mismo toast,
+>   mismo `dedupeKey`. Solo se mueve el estado de UI del formulario (open/close,
+>   valores de campo) a un hook; la lógica de negocio no cambia.
+> - `npm run verify` (tsc + audit:design:strict + jest) debe seguir verde en
+>   cada commit. Los tests actuales no se modifican; si alguno se "rompe" por
+>   el movimiento de código de presentación, es señal de que se cruzó la línea
+>   y se debe revertir ese cambio.
+> - La separación es estructural: `app/` = UI; `src/services`+`src/hooks`+
+>   `src/store`+`src/utils` = negocio (intocable).
+
 **Fecha:** 2026-06-29
 **Autor:** KEVO (análisis + plan)
 **Repositorio:** https://github.com/JoseLuisQL/vitmaterna.git (rama `main`)
