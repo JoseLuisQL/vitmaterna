@@ -13,79 +13,7 @@ import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { pushSupported } from '../utils/pushEnv';
-
-/** Decide a qué ruta llevar según el tipo/datos de la notificación. */
-function routeForNotification(role: string | undefined, data: Record<string, any>): string | null {
-  const tipo = data?.tipo as string | undefined;
-
-  // Notificaciones relativas a citas.
-  if (
-    tipo &&
-    ['cita_confirmada', 'solicitud_reprogramacion', 'reprogramacion_aprobada', 'reprogramacion_rechazada', 'inasistencia'].includes(
-      tipo,
-    )
-  ) {
-    if (role === 'obstetra') return '/(obstetra)/(tabs)/cronograma';
-    if (role === 'gestante') return '/(gestante)/(tabs)/citas';
-  }
-
-  // Emergencia (botón de pánico) → el obstetra entra DIRECTO a la conversación
-  // de esa gestante (donde actúa), no a la bandeja.
-  if (tipo === 'emergencia') {
-    if (role === 'obstetra') {
-      const conv = data?.conversationId as string | undefined;
-      const gid = data?.gestanteId as string | undefined;
-      const qs = conv ? `?conversationId=${conv}` : gid ? `?gestanteId=${gid}` : '';
-      return `/(obstetra)/(tabs)/chat${qs}`;
-    }
-  }
-
-  // Signo de alarma → el obstetra va a la ficha de la gestante (sección
-  // Alarmas) si viene el id; si no, a la lista de gestantes.
-  if (tipo === 'signo_alarma' || data?.dangerSignId) {
-    if (role === 'obstetra') {
-      const gid = data?.gestanteId as string | undefined;
-      return gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
-    }
-  }
-
-  // Recordatorio de suplemento → tratamiento de la gestante.
-  if (tipo === 'recordatorio_suplemento') {
-    if (role === 'gestante') return '/(gestante)/(tabs)/tratamiento';
-  }
-
-  // Contenido educativo recomendado → abrir el artículo (o la sección Educación).
-  if (tipo === 'educacion') {
-    if (role === 'gestante') {
-      return data?.contentId
-        ? `/(gestante)/educacion/${data.contentId}`
-        : '/(gestante)/(tabs)/educacion';
-    }
-  }
-
-  // Mensaje de chat → abrir DIRECTO la conversación de quien escribió, con scroll
-  // al mensaje. La gestante tiene un único hilo; el obstetra abre el de la
-  // gestante remitente (conversationId/gestanteId vienen en los datos).
-  if (tipo === 'mensaje_chat') {
-    const conv = data?.conversationId as string | undefined;
-    const msgId = data?.messageId as string | undefined;
-    const msgQs = msgId ? `&messageId=${msgId}` : '';
-    if (role === 'gestante') {
-      return conv ? `/(gestante)/(tabs)/chat?conversationId=${conv}${msgQs}` : '/(gestante)/(tabs)/chat';
-    }
-    if (role === 'obstetra') {
-      const gid = data?.gestanteId as string | undefined;
-      if (conv) return `/(obstetra)/(tabs)/chat?conversationId=${conv}${msgQs}`;
-      if (gid) return `/(obstetra)/(tabs)/chat?gestanteId=${gid}`;
-      return '/(obstetra)/(tabs)/chat';
-    }
-  }
-
-  // Por defecto, abrir la bandeja de notificaciones del rol.
-  if (role === 'obstetra') return '/(obstetra)/notificaciones';
-  if (role === 'gestante') return '/(gestante)/notificaciones';
-  return null;
-}
+import { resolveNotificationTarget, type NotificationData } from '../navigation/notificationRoutes';
 
 export function usePushNotifications(): void {
   const router = useRouter();
@@ -119,23 +47,44 @@ export function usePushNotifications(): void {
 
         if (cancelled) return;
 
+        // Navega al destino de una notificación (vista específica por payload o
+        // bandeja del rol). Comparte la MISMA lógica que la bandeja in-app.
+        const navigateTo = (data: NotificationData) => {
+          const target = resolveNotificationTarget(roleRef.current, data);
+          if (!target) return;
+          try {
+            router.push(target as never);
+          } catch {
+            // Ruta no disponible: ignorar silenciosamente.
+          }
+        };
+
+        // ARRANQUE EN FRÍO: si la app se abrió tocando una notificación estando
+        // cerrada, el listener no captura ese toque. Recuperamos la última
+        // respuesta y navegamos a su destino (deep link por payload).
+        try {
+          const last = await Notifications.getLastNotificationResponseAsync();
+          if (!cancelled && last) {
+            const data = (last.notification.request.content.data || {}) as NotificationData;
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            navigateTo(data);
+          }
+        } catch {
+          // No disponible o sin respuesta previa: continuar.
+        }
+
+        if (cancelled) return;
+
         // Al RECIBIR una notificación: refrescar el contador y la lista.
         receivedSub = Notifications.addNotificationReceivedListener(() => {
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
         });
 
-        // Al TOCAR una notificación: navegar a la pantalla relevante.
+        // Al TOCAR una notificación (app en foreground/background): navegar.
         responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-          const data = (response.notification.request.content.data || {}) as Record<string, any>;
+          const data = (response.notification.request.content.data || {}) as NotificationData;
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          const target = routeForNotification(roleRef.current, data);
-          if (target) {
-            try {
-              router.push(target as never);
-            } catch {
-              // Ruta no disponible: ignorar silenciosamente.
-            }
-          }
+          navigateTo(data);
         });
       } catch (e) {
         if (__DEV__) console.log('Push notifications no disponibles:', e);
