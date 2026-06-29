@@ -15,7 +15,7 @@ import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, TextField } from '../../../src/components/ui';
 import { SearchField } from '../../../src/components/ui/Field';
 import { Pencil, KeyRound, Trash2 } from 'lucide-react-native';
 import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColors } from '../../../src/theme/colors';
@@ -543,17 +543,12 @@ export default function UsuariosScreen(): React.ReactElement {
       }
     >
       <View style={{ gap: 12 }}>
-        <View><Text style={styles.fieldLabel}>Nombres *</Text>
-          <TextInput style={styles.fieldInput} value={editFirstName} onChangeText={setEditFirstName} placeholder="Nombres" placeholderTextColor={commonColors.textTertiary} /></View>
-        <View><Text style={styles.fieldLabel}>Apellidos *</Text>
-          <TextInput style={styles.fieldInput} value={editLastName} onChangeText={setEditLastName} placeholder="Apellidos" placeholderTextColor={commonColors.textTertiary} /></View>
-        <View><Text style={styles.fieldLabel}>Teléfono</Text>
-          <TextInput style={styles.fieldInput} value={editPhone} onChangeText={setEditPhone} placeholder="987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" /></View>
-        <View><Text style={styles.fieldLabel}>Correo electrónico</Text>
-          <TextInput style={styles.fieldInput} value={editEmail} onChangeText={setEditEmail} placeholder="correo@ejemplo.com" placeholderTextColor={commonColors.textTertiary} keyboardType="email-address" autoCapitalize="none" /></View>
+        <TextField label="Nombres *" value={editFirstName} onChangeText={setEditFirstName} placeholder="Nombres" themeColor={BRAND} />
+        <TextField label="Apellidos *" value={editLastName} onChangeText={setEditLastName} placeholder="Apellidos" themeColor={BRAND} />
+        <TextField label="Teléfono" value={editPhone} onChangeText={setEditPhone} placeholder="987654321" keyboardType="phone-pad" themeColor={BRAND} />
+        <TextField label="Correo electrónico" value={editEmail} onChangeText={setEditEmail} placeholder="correo@ejemplo.com" keyboardType="email-address" autoCapitalize="none" themeColor={BRAND} />
         {selectedUser?.role === 'obstetra' && (
-          <View><Text style={styles.fieldLabel}>Número COP</Text>
-            <TextInput style={styles.fieldInput} value={editCop} onChangeText={setEditCop} placeholder="COP" placeholderTextColor={commonColors.textTertiary} /></View>
+          <TextField label="Número COP" value={editCop} onChangeText={setEditCop} placeholder="COP" themeColor={BRAND} />
         )}
       </View>
     </AppModal>
@@ -573,8 +568,7 @@ export default function UsuariosScreen(): React.ReactElement {
         </>
       }
     >
-      <Text style={styles.fieldLabel}>Nueva contraseña (mín. 8 caracteres)</Text>
-      <TextInput style={styles.fieldInput} value={newPassword} onChangeText={setNewPassword} placeholder="Nueva contraseña" placeholderTextColor={commonColors.textTertiary} secureTextEntry autoCapitalize="none" />
+      <TextField label="Nueva contraseña (mín. 8 caracteres)" value={newPassword} onChangeText={setNewPassword} placeholder="Nueva contraseña" secureTextEntry autoCapitalize="none" themeColor={BRAND} />
       <Text style={styles.resetHint}>El usuario deberá iniciar sesión con esta nueva contraseña.</Text>
     </AppModal>
   );
@@ -746,91 +740,21 @@ export default function UsuariosScreen(): React.ReactElement {
             </View>
           </View>
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>DNI (8 dígitos) *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. 44556677"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="numeric"
-              maxLength={8}
-              value={dni}
-              onChangeText={setDni}
-            />
-          </View>
+          <TextField label="DNI (8 dígitos) *" placeholder="ej. 44556677" keyboardType="numeric" maxLength={8} value={dni} onChangeText={setDni} themeColor={BRAND} />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Nombres *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. Juan Pablo"
-              placeholderTextColor={commonColors.textTertiary}
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-          </View>
+          <TextField label="Nombres *" placeholder="ej. Juan Pablo" value={firstName} onChangeText={setFirstName} themeColor={BRAND} />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Apellidos *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. Pérez Gómez"
-              placeholderTextColor={commonColors.textTertiary}
-              value={lastName}
-              onChangeText={setLastName}
-            />
-          </View>
+          <TextField label="Apellidos *" placeholder="ej. Pérez Gómez" value={lastName} onChangeText={setLastName} themeColor={BRAND} />
 
           {role === 'obstetra' && (
-            <View style={styles.inputFieldGroup}>
-              <Text style={styles.inputLabel}>Número de COP *</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="ej. 12345"
-                placeholderTextColor={commonColors.textTertiary}
-                keyboardType="numeric"
-                value={cop}
-                onChangeText={setCop}
-              />
-            </View>
+            <TextField label="Número de COP *" placeholder="ej. 12345" keyboardType="numeric" value={cop} onChangeText={setCop} themeColor={BRAND} />
           )}
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Teléfono (ej. +51999888777)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. +51999888777"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-            />
-          </View>
+          <TextField label="Teléfono (ej. +51999888777)" placeholder="ej. +51999888777" keyboardType="phone-pad" value={phone} onChangeText={setPhone} themeColor={BRAND} />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Correo Electrónico (Opcional)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. correo@servidor.com"
-              placeholderTextColor={commonColors.textTertiary}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
+          <TextField label="Correo Electrónico (Opcional)" placeholder="ej. correo@servidor.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} themeColor={BRAND} />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Contraseña *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Mínimo 8 caracteres"
-              placeholderTextColor={commonColors.textTertiary}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
+          <TextField label="Contraseña *" placeholder="Mínimo 8 caracteres" secureTextEntry value={password} onChangeText={setPassword} themeColor={BRAND} />
         </View>
       </AppModal>
 

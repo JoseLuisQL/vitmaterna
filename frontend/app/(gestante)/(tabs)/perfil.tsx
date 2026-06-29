@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useMyProfile, useUpdatePatient, useUpdateNotificationPreferences, useChannelsStatus } from '../../../src/services/api-queries';
-import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField } from '../../../src/components/ui';
+import { ProfileInfoModal, useToast, AppModal, AppButton, DateTimeField, TextField } from '../../../src/components/ui';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { CardSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useRestartTour } from '../../../src/components/tour/useRestartTour';
@@ -254,52 +254,40 @@ export default function PerfilScreen(): React.ReactElement {
         }
       >
         <View style={{ gap: 14 }}>
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Nombres *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Nombres"
-              placeholderTextColor={commonColors.textTertiary}
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-          </View>
+          <TextField
+            label="Nombres *"
+            placeholder="Nombres"
+            value={firstName}
+            onChangeText={setFirstName}
+            themeColor={BRAND}
+          />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Apellidos *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Apellidos"
-              placeholderTextColor={commonColors.textTertiary}
-              value={lastName}
-              onChangeText={setLastName}
-            />
-          </View>
+          <TextField
+            label="Apellidos *"
+            placeholder="Apellidos"
+            value={lastName}
+            onChangeText={setLastName}
+            themeColor={BRAND}
+          />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Teléfono</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. +51999888777"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-            />
-          </View>
+          <TextField
+            label="Teléfono"
+            placeholder="ej. +51999888777"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            themeColor={BRAND}
+          />
 
-          <View style={styles.inputFieldGroup}>
-            <Text style={styles.inputLabel}>Correo Electrónico</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="ej. correo@servidor.com"
-              placeholderTextColor={commonColors.textTertiary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
+          <TextField
+            label="Correo Electrónico"
+            placeholder="ej. correo@servidor.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            themeColor={BRAND}
+          />
 
           <DateTimeField
             label="Fecha de Nacimiento *"
