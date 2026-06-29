@@ -39,6 +39,21 @@ import { AlturaUterinaChart } from '../../../src/components/shared/AlturaUterina
 import { confirmAction } from '../../../src/utils/confirm';
 import { openWhatsApp } from '../../../src/utils/whatsapp';
 import { goBack } from '../../../src/utils/navigation';
+// Sub-componentes y helpers extraídos (Fase 3) — presentacional puro, sin mutación.
+import { Fila } from '../../../src/components/obstetra/patient-detail/Fila';
+import { LabRow } from '../../../src/components/obstetra/patient-detail/LabRow';
+import { Seccion } from '../../../src/components/obstetra/patient-detail/Seccion';
+import {
+  TAB_ALIASES,
+  riskTextColor,
+  riskBgColor,
+  riskLabel,
+  vitalStatus,
+  classifyHb,
+  classifyQualitative,
+  LAB_EXAM_TYPES,
+  type LabState,
+} from '../../../src/components/obstetra/patient-detail/helpers';
 
 const BRAND = obstetraColors.primary;
 
@@ -55,237 +70,11 @@ const TABS = [
   { id: 'clinico', label: 'Clínico', icon: FlaskConical },
 ];
 
-/** Mapea deep-links antiguos (tab=laboratorio, alarmas, etc.) a los 4 grupos. */
-const TAB_ALIASES: Record<string, string> = {
-  datos: 'resumen',
-  controles: 'seguimiento',
-  visitas: 'seguimiento',
-  vacunas: 'tratamiento',
-  laboratorio: 'clinico',
-  alarmas: 'clinico',
-};
-
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const designTokens = {
   cardShadow: shadows.card,
   glassShadow: shadows.card,
 };
-
-// ─── UTILS & SUBCOMPONENTS ────────────────────────────────────────────────────
-function Fila({ label, value, isLast = false }: { label: string; value?: string | number | null; isLast?: boolean }) {
-  if (value === undefined || value === null || value === '') return null;
-  return (
-    <View style={[filaStyles.row, !isLast && filaStyles.border]}>
-      <Text style={filaStyles.label}>{label}</Text>
-      <Text style={filaStyles.value}>{value}</Text>
-    </View>
-  );
-}
-
-const filaStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  border: {
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.borderLight,
-  },
-  label: {
-    ...typography.bodySm,
-    color: commonColors.textSecondary,
-    flex: 1,
-    lineHeight: 20,
-  },
-  value: {
-    ...typography.bodySm,
-    fontFamily: typography.label.fontFamily,
-    fontWeight: '600',
-    color: commonColors.text,
-    flex: 1.5,
-    textAlign: 'right',
-    lineHeight: 20,
-  },
-});
-
-/**
- * Fila de resultado de laboratorio con interpretación clínica visible:
- * nombre del examen + qué mide (subtítulo), valor medido y una etiqueta de
- * estado con color (Normal / Alerta / Pendiente). Hace que la sección Clínico
- * se entienda de un vistazo, sin conocer los rangos de memoria.
- */
-function LabRow({
-  label, hint, value, state, stateLabel, isLast = false,
-}: {
-  label: string;
-  hint?: string;
-  value?: string | null;
-  state: 'normal' | 'alerta' | 'pendiente' | 'info';
-  stateLabel: string;
-  isLast?: boolean;
-}) {
-  const meta = {
-    normal: { color: semanticColors.success, bg: semanticColors.successLight },
-    alerta: { color: semanticColors.danger, bg: semanticColors.dangerLight },
-    pendiente: { color: commonColors.textTertiary, bg: commonColors.surfaceAlt },
-    info: { color: semanticColors.info, bg: semanticColors.infoLight },
-  }[state];
-  return (
-    <View style={[labRowStyles.row, !isLast && labRowStyles.border]}>
-      <View style={labRowStyles.left}>
-        <Text style={labRowStyles.label}>{label}</Text>
-        {hint ? <Text style={labRowStyles.hint}>{hint}</Text> : null}
-      </View>
-      <View style={labRowStyles.right}>
-        {value ? <Text style={labRowStyles.value} numberOfLines={2}>{value}</Text> : null}
-        <View style={[labRowStyles.pill, { backgroundColor: meta.bg }]}>
-          <Text style={[labRowStyles.pillText, { color: meta.color }]} numberOfLines={1}>{stateLabel}</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const labRowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 10 },
-  border: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
-  // Etiqueta (izquierda) y estado (derecha) comparten el ancho sin encimarse:
-  // ambas pueden encoger y su texto se ajusta en varias líneas.
-  left: { flex: 1.2, minWidth: 0 },
-  label: { ...typography.bodySm, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
-  hint: { ...typography.caption, color: commonColors.textTertiary, marginTop: 1 },
-  right: { flexShrink: 1, alignItems: 'flex-end', gap: 4, minWidth: 0 },
-  value: { ...typography.bodySm, fontWeight: '700', color: commonColors.text, textAlign: 'right' },
-  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full, alignSelf: 'flex-end' },
-  pillText: { ...typography.overline, fontSize: 10, fontWeight: '700' },
-});
-
-function Seccion({ titulo }: { titulo: string }) {
-  return (
-    <View style={seccionStyles.container}>
-      <Text style={seccionStyles.title}>{titulo}</Text>
-    </View>
-  );
-}
-
-const seccionStyles = StyleSheet.create({
-  container: {
-    marginTop: 20,
-    marginBottom: 6,
-    paddingHorizontal: 16,
-  },
-  title: {
-    ...typography.overline,
-    color: commonColors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  }
-});
-
-/** Color sólido del semáforo de riesgo. */
-function riskTextColor(riskLevel?: string): string {
-  if (riskLevel === 'Alto') return riskColors.riskRed;
-  if (riskLevel === 'Medio') return riskColors.riskYellow;
-  return riskColors.riskGreen;
-}
-
-/** Fondo suave del semáforo de riesgo (para el banner de estado). */
-function riskBgColor(riskLevel?: string): string {
-  if (riskLevel === 'Alto') return riskColors.riskRedLight;
-  if (riskLevel === 'Medio') return riskColors.riskYellowLight;
-  return riskColors.riskGreenLight;
-}
-
-/** Etiqueta legible del nivel de riesgo. */
-function riskLabel(riskLevel?: string): string {
-  if (riskLevel === 'Alto') return 'Riesgo alto';
-  if (riskLevel === 'Medio') return 'Riesgo moderado';
-  return 'Sin riesgo';
-}
-
-/**
- * Clasifica un signo vital de un control prenatal como normal o de alerta, para
- * que el obstetra detecte de un vistazo lo que requiere atención.
- * Devuelve 'warn' (fuera de rango) o 'ok'. Rangos de referencia obstétrica.
- */
-function vitalStatus(
-  type: 'pa' | 'fcf' | 'temp' | 'pulso',
-  c: any,
-): 'ok' | 'warn' {
-  if (type === 'pa') {
-    const s = c.presionSistolica, d = c.presionDiastolica;
-    if (s == null || d == null) return 'ok';
-    return s >= 140 || d >= 90 || s < 90 ? 'warn' : 'ok';
-  }
-  if (type === 'fcf') {
-    const v = c.fetalHeartRate;
-    if (v == null) return 'ok';
-    return v < 110 || v > 160 ? 'warn' : 'ok';
-  }
-  if (type === 'temp') {
-    const v = c.temperatura;
-    if (v == null) return 'ok';
-    return v >= 38 || v < 35 ? 'warn' : 'ok';
-  }
-  if (type === 'pulso') {
-    const v = c.pulsoMaterno;
-    if (v == null) return 'ok';
-    return v < 60 || v > 100 ? 'warn' : 'ok';
-  }
-  return 'ok';
-}
-
-/** Estado de interpretación de un resultado de laboratorio. */
-type LabState = 'normal' | 'alerta' | 'pendiente' | 'info';
-
-/** Clasifica la hemoglobina (corregida por altitud) según umbrales OMS/MINSA. */
-function classifyHb(corrected: number | null): { state: LabState; label: string } {
-  if (corrected == null) return { state: 'pendiente', label: 'Pendiente' };
-  if (corrected < 7) return { state: 'alerta', label: 'Anemia severa' };
-  if (corrected < 10) return { state: 'alerta', label: 'Anemia moderada' };
-  if (corrected < 11) return { state: 'alerta', label: 'Anemia leve' };
-  return { state: 'normal', label: 'Normal' };
-}
-
-/**
- * Interpreta un resultado cualitativo (VIH, VDRL, Hepatitis B, orina, PAP).
- * Reconoce reactivo/positivo/anormal como alerta; no reactivo/negativo/normal
- * como normal. Sin dato → pendiente.
- */
-function classifyQualitative(value?: string | null): { state: LabState; label: string } {
-  if (!value || !String(value).trim()) return { state: 'pendiente', label: 'Pendiente' };
-  const v = String(value).toLowerCase();
-  if (/(no reactivo|negativo|normal|no reactiv)/.test(v)) return { state: 'normal', label: value };
-  if (/(reactivo|positivo|anormal|alterad|patolog)/.test(v)) return { state: 'alerta', label: value };
-  return { state: 'info', label: value };
-}
-
-/**
- * Catálogo de exámenes de laboratorio del control prenatal (MINSA). Define para
- * cada uno cómo se captura: 'numeric' (un valor + unidad) o 'qualitative'
- * (opciones reactivo/no reactivo, normal/anormal). Simplifica el formulario:
- * la obstetra ya no decide entre 4 campos de valor.
- */
-const LAB_EXAM_TYPES: {
-  tipo: string;
-  label: string;
-  kind: 'numeric' | 'qualitative';
-  unidad?: string;
-  placeholder?: string;
-  options?: string[];
-  hint?: string;
-}[] = [
-  { tipo: 'hemoglobina', label: 'Hemoglobina', kind: 'numeric', unidad: 'g/dL', placeholder: 'Ej. 11.5', hint: 'Se corrige por la altitud automáticamente para evaluar anemia.' },
-  { tipo: 'glucemia', label: 'Glucemia', kind: 'numeric', unidad: 'mg/dL', placeholder: 'Ej. 85' },
-  { tipo: 'vih', label: 'VIH', kind: 'qualitative', options: ['No reactivo', 'Reactivo'] },
-  { tipo: 'vdrl', label: 'Sífilis (VDRL/RPR)', kind: 'qualitative', options: ['No reactivo', 'Reactivo'] },
-  { tipo: 'hepatitis_b', label: 'Hepatitis B', kind: 'qualitative', options: ['No reactivo', 'Reactivo'] },
-  { tipo: 'orina', label: 'Orina', kind: 'qualitative', options: ['Normal', 'Anormal'], hint: 'Anormal puede indicar infección urinaria.' },
-  { tipo: 'pap', label: 'Papanicolaou', kind: 'qualitative', options: ['Normal', 'Anormal'] },
-];
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function PatientProfileScreen(): React.ReactElement {
