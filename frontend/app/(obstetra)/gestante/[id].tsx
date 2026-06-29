@@ -1938,7 +1938,7 @@ const styles = StyleSheet.create({
   // Botón rápido "Vista previa" (ícono ojo) por fila de la lista.
   recPreviewIconBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: obstetraColors.primaryLight, flexShrink: 0 },
   // Tarjeta tipo "artículo" en el detalle del recurso.
-  recArticleCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.borderLight, overflow: 'hidden', ...shadows.card },
+  recArticleCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, overflow: 'hidden', ...shadows.card },
   recArticleCover: { width: '100%', height: 130, backgroundColor: commonColors.surfaceAlt },
   recArticleBanner: { width: '100%', height: 88, alignItems: 'center', justifyContent: 'center' },
   recArticleBody: { padding: spacing.md, gap: spacing.xs },
