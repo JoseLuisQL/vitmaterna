@@ -9,12 +9,17 @@
  */
 import { riskColors, semanticColors, commonColors } from '../../../theme/colors';
 
-/** Mapea deep-links antiguos (tab=laboratorio, alarmas, etc.) a los 4 grupos. */
+/** Mapea deep-links antiguos (tab=laboratorio, alarmas, etc.) a los 4 grupos
+ * actuales (resumen / embarazo / evolucion / clinico). */
 export const TAB_ALIASES: Record<string, string> = {
-  datos: 'resumen',
-  controles: 'seguimiento',
-  visitas: 'seguimiento',
-  vacunas: 'tratamiento',
+  datos: 'embarazo',
+  personales: 'embarazo',
+  antecedentes: 'embarazo',
+  seguimiento: 'evolucion',
+  controles: 'evolucion',
+  visitas: 'evolucion',
+  tratamiento: 'clinico',
+  vacunas: 'clinico',
   laboratorio: 'clinico',
   alarmas: 'clinico',
 };

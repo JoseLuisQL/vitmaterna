@@ -46,7 +46,6 @@ import { Seccion } from '../../../src/components/obstetra/patient-detail/Seccion
 import {
   TAB_ALIASES,
   riskTextColor,
-  riskBgColor,
   riskLabel,
   vitalStatus,
   classifyHb,
@@ -57,16 +56,19 @@ import {
 
 const BRAND = obstetraColors.primary;
 
-// ─── TABS (4 secciones lógicas y jerárquicas) ────────────────────────────────
-// Se agrupan los contenidos en 4 grupos alineados a los objetivos de la tesis:
-//   Resumen     → datos personales, obstétricos, antecedentes y embarazo
-//   Seguimiento → controles prenatales + visitas domiciliarias (Objetivo 1)
-//   Tratamiento → medicinas/suplementos + vacunas (Objetivo 2)
-//   Clínico     → laboratorio (Hb) + signos de alarma
+// ─── TABS (4 secciones por FLUJO CLÍNICO) ────────────────────────────────────
+// Reorganizadas según cómo trabaja el obstetra al abrir un expediente:
+//   Resumen   → estado de un vistazo: riesgo, alertas accionables, próxima cita.
+//   Embarazo  → ficha estática editable: datos del embarazo, antecedentes
+//               obstétricos, antecedentes personales/familiares, datos personales.
+//   Evolución → cómo avanza el embarazo en el tiempo: controles prenatales,
+//               gráficas (altura uterina, peso) y visitas domiciliarias.
+//   Clínico   → datos clínicos puntuales: laboratorio, tratamiento, vacunas y
+//               signos de alarma.
 const TABS = [
-  { id: 'resumen', label: 'Resumen', icon: User },
-  { id: 'seguimiento', label: 'Seguimiento', icon: Stethoscope },
-  { id: 'tratamiento', label: 'Tratamiento', icon: Pill },
+  { id: 'resumen', label: 'Resumen', icon: Activity },
+  { id: 'embarazo', label: 'Embarazo', icon: Baby },
+  { id: 'evolucion', label: 'Evolución', icon: Stethoscope },
   { id: 'clinico', label: 'Clínico', icon: FlaskConical },
 ];
 
@@ -673,17 +675,48 @@ export default function PatientProfileScreen(): React.ReactElement {
               <Text style={styles.patientName} numberOfLines={1}>
                 {patient.firstName} {patient.lastName}
               </Text>
-              <Text style={styles.patientSub}>DNI {patient.documentNumber}{patient.age ? ` • ${patient.age} años` : ''}</Text>
+              <Text style={styles.patientSub} numberOfLines={1}>
+                DNI {patient.documentNumber}{patient.age ? ` · ${patient.age} años` : ''}
+              </Text>
             </View>
-            {/* El nivel de riesgo se muestra (con jerarquía) en el banner de estado
-                del tab Resumen; aquí se omite para no duplicarlo (issue #3). */}
+            {/* Chip de riesgo: identidad clínica de la paciente, siempre visible. */}
+            <View style={[styles.headerRiskChip, { backgroundColor: riskTextColor(patient.riskLevel) }]}>
+              <View style={styles.headerRiskDot} />
+              <Text style={styles.headerRiskText}>{riskLabel(patient.riskLevel)}</Text>
+            </View>
+          </View>
+
+          {/* Estado clínico EN LÍNEA: lo esencial de un vistazo sin entrar a un
+              tab (semana · trimestre · próxima cita · alertas pendientes). */}
+          <View style={styles.headerStatusRow}>
+            <View style={styles.headerStat}>
+              <Text style={styles.headerStatVal} numberOfLines={1}>
+                {patient.currentWeek ? `${patient.currentWeek}` : '—'}
+                <Text style={styles.headerStatUnit}> sem</Text>
+              </Text>
+              <Text style={styles.headerStatLbl} numberOfLines={1}>
+                {patient.currentTrimester ? `${patient.currentTrimester}° trimestre` : 'Edad gestacional'}
+              </Text>
+            </View>
+            <View style={styles.headerStatDivider} />
+            <View style={styles.headerStat}>
+              <Text style={styles.headerStatVal} numberOfLines={1}>
+                {nextAppointment ? new Date(nextAppointment.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '—'}
+              </Text>
+              <Text style={styles.headerStatLbl} numberOfLines={1}>Próxima cita</Text>
+            </View>
+            <View style={styles.headerStatDivider} />
+            <View style={styles.headerStat}>
+              <Text style={[styles.headerStatVal, pendingDangerCount > 0 && { color: commonColors.white }]} numberOfLines={1}>
+                {pendingDangerCount > 0 ? pendingDangerCount : '0'}
+              </Text>
+              <Text style={styles.headerStatLbl} numberOfLines={1}>
+                {pendingDangerCount === 1 ? 'Alarma' : 'Alarmas'}
+              </Text>
+            </View>
           </View>
         </SafeAreaView>
       </LinearGradient>
-
-      {/* KPIs de Semana/Trimestre/FPP/IMC eliminados aquí: duplicaban el banner
-          de estado clínico del tab Resumen (issue #2/#3). El estado glanceable
-          vive ahora en un solo lugar (statusBanner), con mejor jerarquía. */}
 
       {/* ── PANTALLA PRINCIPAL CON TABS ──
           Fila de ancho fijo que reparte los 4 tabs por igual (flex:1). Antes era
@@ -720,86 +753,29 @@ export default function PatientProfileScreen(): React.ReactElement {
           contentContainerStyle={[styles.scrollArea, webShell && styles.scrollAreaWeb]}
           showsVerticalScrollIndicator={false}
         >
-          {/* ── SECCIÓN: RESUMEN (estado + datos + obstétricos + antecedentes + embarazo) ── */}
+          {/* ── SECCIÓN: RESUMEN — solo lo accionable de un vistazo ── */}
           {activeTab === 'resumen' && (
             <View style={styles.dataTabContainer}>
-              {/* 1. BANNER DE ESTADO CLÍNICO — lo crítico siempre arriba y a la vista */}
-              <View style={[styles.statusBanner, { backgroundColor: riskBgColor(patient.riskLevel) }, designTokens.cardShadow]}>
-                <View style={styles.statusTopRow}>
-                  <View style={[styles.statusRiskChip, { backgroundColor: riskTextColor(patient.riskLevel) }]}>
-                    <View style={styles.statusRiskDot} />
-                    <Text style={styles.statusRiskText}>{riskLabel(patient.riskLevel)}</Text>
-                  </View>
-                  {pendingDangerCount > 0 && (
-                    <View style={styles.statusAlertChip}>
-                      <AlertTriangle size={12} color={semanticColors.danger} />
-                      <Text style={styles.statusAlertText}>
-                        {pendingDangerCount} signo{pendingDangerCount > 1 ? 's' : ''} de alarma
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                {/* Métricas en rejilla 2×2 (cada celda al 50%): en móvil ya no
-                    se aprietan ni se desordenan como en la fila de 4 columnas. */}
-                <View style={styles.statusMetricsGrid}>
-                  <View style={styles.statusMetricCell}>
-                    <Baby size={16} color={obstetraColors.primary} />
-                    <View style={styles.statusMetricTexts}>
-                      <Text style={styles.statusMetricVal} numberOfLines={1}>
-                        {patient.currentWeek ? `${patient.currentWeek} sem` : '—'}
-                        {patient.currentTrimester ? ` · ${patient.currentTrimester}° trim.` : ''}
-                      </Text>
-                      <Text style={styles.statusMetricLbl} numberOfLines={1}>Edad gestacional</Text>
-                    </View>
-                  </View>
-                  <View style={styles.statusMetricCell}>
-                    <CalendarHeart size={16} color={obstetraColors.primary} />
-                    <View style={styles.statusMetricTexts}>
-                      <Text style={styles.statusMetricVal} numberOfLines={1}>
-                        {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                      </Text>
-                      <Text style={styles.statusMetricLbl} numberOfLines={1}>Fecha prob. de parto</Text>
-                    </View>
-                  </View>
-                  <View style={styles.statusMetricCell}>
-                    <CalendarClock size={16} color={obstetraColors.primary} />
-                    <View style={styles.statusMetricTexts}>
-                      <Text style={styles.statusMetricVal} numberOfLines={1}>
-                        {nextAppointment ? new Date(nextAppointment.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '—'}
-                      </Text>
-                      <Text style={styles.statusMetricLbl} numberOfLines={1}>Próxima cita</Text>
-                    </View>
-                  </View>
-                  <View style={styles.statusMetricCell}>
-                    <Activity size={16} color={obstetraColors.primary} />
-                    <View style={styles.statusMetricTexts}>
-                      <Text style={styles.statusMetricVal} numberOfLines={1}>{displayImc}</Text>
-                      <Text style={styles.statusMetricLbl} numberOfLines={1}>IMC</Text>
-                    </View>
-                  </View>
-                </View>
-                {/* Cinta prenatal: continuidad del embarazo a la vista. Se muestra
-                    el caption (semana/trimestre) para que la barra tenga contexto
-                    y no se lea como un control sin etiqueta. */}
-                {Number(patient.currentWeek) > 0 ? (
-                  <View style={styles.statusRibbon}>
-                    <PrenatalRibbon
-                      week={Number(patient.currentWeek)}
-                      colors={obstetraColors.gradient}
-                      showCaption
-                      milestones={ribbonMilestones}
-                    />
-                  </View>
-                ) : null}
-              </View>
-
-              {/* 2. ALERTAS ACCIONABLES — lo único que requiere atención.
-                  Se filtran las que solo repiten el nivel de riesgo ya visible en
-                  el chip de arriba (evita ver "Riesgo alto" hasta 3 veces); se
-                  conservan las accionables (p. ej. "Sin controles registrados"). */}
-              {accionableAlertas.length > 0 && (
+              {/* 1. ALERTAS ACCIONABLES — lo primero porque es lo que exige acción.
+                  Si hay signos de alarma pendientes, se muestran arriba con un CTA
+                  directo a la pestaña Clínico donde se atienden. */}
+              {(accionableAlertas.length > 0 || pendingDangerCount > 0) ? (
                 <View style={[styles.alertasCard, designTokens.cardShadow]}>
                   <Text style={styles.alertasTitle}>Requiere atención</Text>
+                  {pendingDangerCount > 0 && (
+                    <TouchableOpacity
+                      style={styles.resumenAlertaRow}
+                      onPress={() => setActiveTab('clinico')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Ver signos de alarma pendientes"
+                    >
+                      <AlertTriangle size={14} color={riskColors.riskRed} />
+                      <Text style={[styles.resumenAlertaText, { fontWeight: '700' }]}>
+                        {pendingDangerCount} signo{pendingDangerCount > 1 ? 's' : ''} de alarma sin atender
+                      </Text>
+                      <ChevronRight size={16} color={commonColors.textTertiary} />
+                    </TouchableOpacity>
+                  )}
                   {accionableAlertas.map((a: string, i: number) => (
                     <View key={i} style={styles.resumenAlertaRow}>
                       <AlertTriangle size={14} color={riskColors.riskRed} />
@@ -807,9 +783,59 @@ export default function PatientProfileScreen(): React.ReactElement {
                     </View>
                   ))}
                 </View>
+              ) : (
+                <View style={[styles.okCard, designTokens.cardShadow]}>
+                  <CheckCircle2 size={18} color={semanticColors.success} />
+                  <Text style={styles.okCardText}>Sin alertas pendientes. La gestante está al día.</Text>
+                </View>
               )}
 
-              {/* 3. DETALLE CLÍNICO — agrupado y secundario respecto al estado */}
+              {/* 2. AVANCE DEL EMBARAZO — la cinta como pieza central del resumen. */}
+              {Number(patient.currentWeek) > 0 ? (
+                <View style={[styles.card, designTokens.cardShadow]}>
+                  <Text style={[styles.cardHeader, { marginBottom: spacing.sm }]}>Avance del embarazo</Text>
+                  <PrenatalRibbon
+                    week={Number(patient.currentWeek)}
+                    colors={obstetraColors.gradient}
+                    showCaption
+                    milestones={ribbonMilestones}
+                  />
+                </View>
+              ) : null}
+
+              {/* 3. DATOS CLAVE — métricas no presentes en la cabecera (FPP / IMC). */}
+              <View style={styles.resumenKpiRow}>
+                <View style={[styles.resumenKpi, designTokens.cardShadow]}>
+                  <CalendarHeart size={18} color={BRAND} />
+                  <Text style={styles.resumenKpiVal} numberOfLines={1}>
+                    {patient.estimatedDueDate ? new Date(patient.estimatedDueDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                  </Text>
+                  <Text style={styles.resumenKpiLbl} numberOfLines={1}>Fecha prob. de parto</Text>
+                </View>
+                <View style={[styles.resumenKpi, designTokens.cardShadow]}>
+                  <Activity size={18} color={BRAND} />
+                  <Text style={styles.resumenKpiVal} numberOfLines={1}>{displayImc}</Text>
+                  <Text style={styles.resumenKpiLbl} numberOfLines={1}>IMC</Text>
+                </View>
+              </View>
+
+              {/* Atajo a la próxima cita / agenda. */}
+              <TouchableOpacity
+                style={[styles.resumenLinkCard, designTokens.cardShadow]}
+                onPress={() => setActiveTab('evolucion')}
+                accessibilityRole="button"
+                accessibilityLabel="Ver evolución y controles"
+              >
+                <Stethoscope size={18} color={BRAND} />
+                <Text style={styles.resumenLinkText}>Ver controles y evolución del embarazo</Text>
+                <ChevronRight size={18} color={commonColors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── SECCIÓN: EMBARAZO — ficha estática editable ── */}
+          {activeTab === 'embarazo' && (
+            <View style={styles.dataTabContainer}>
               <Text style={styles.groupLabel}>Información clínica</Text>
               <Accordion title="Datos del embarazo" icon={CalendarHeart} accentColor={BRAND} defaultOpen
                 headerAction={(
@@ -895,15 +921,15 @@ export default function PatientProfileScreen(): React.ReactElement {
             </View>
           )}
 
-          {/* ── SECCIÓN: SEGUIMIENTO (controles prenatales + visitas) ── */}
-          {activeTab === 'seguimiento' && (
+          {/* ── SECCIÓN: EVOLUCIÓN (controles prenatales + gráficas + visitas) ── */}
+          {activeTab === 'evolucion' && (
             <View style={styles.section}>
-              {/* Encabezado explicativo de la sección (issue #6 de Seguimiento) */}
+              {/* Encabezado explicativo de la sección */}
               <View style={[styles.card, designTokens.cardShadow]}>
-                <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Seguimiento del embarazo</Text>
+                <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Evolución del embarazo</Text>
                 <Text style={styles.clinicoIntro}>
-                  Aquí ves cómo evoluciona el embarazo control a control: el crecimiento del bebé (altura uterina),
-                  la ganancia de peso y el historial de controles con sus signos vitales.
+                  Cómo avanza el embarazo control a control: crecimiento del bebé (altura uterina),
+                  ganancia de peso y el historial de controles con sus signos vitales.
                 </Text>
               </View>
 
@@ -1104,17 +1130,9 @@ export default function PatientProfileScreen(): React.ReactElement {
           )}
 
           {/* ── SECCIÓN: TRATAMIENTO (medicinas/suplementos + vacunas) ── */}
-          {activeTab === 'tratamiento' && (
+          {/* ── SECCIÓN: CLÍNICO (tratamiento + vacunas + laboratorio + alarmas) ── */}
+          {activeTab === 'clinico' && (
             <View style={styles.section}>
-              {/* Encabezado explicativo de la sección */}
-              <View style={[styles.card, designTokens.cardShadow]}>
-                <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Tratamiento y vacunas</Text>
-                <Text style={styles.clinicoIntro}>
-                  Medicamentos y suplementos recetados con su adherencia (qué tanto los toma la gestante)
-                  y el esquema de vacunación del embarazo.
-                </Text>
-              </View>
-
               <View style={[styles.card, designTokens.cardShadow]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Medicamentos y suplementos</Text>
@@ -1224,19 +1242,14 @@ export default function PatientProfileScreen(): React.ReactElement {
                   <Text style={styles.emptyTextInfo}>No hay vacunas en el esquema.</Text>
                 )}
               </View>
-            </View>
-          )}
 
-          {/* ── SECCIÓN: CLÍNICO (laboratorio + signos de alarma) ── */}
-          {activeTab === 'clinico' && (
-            <View style={{ gap: spacing.sm2 }}>
-              {/* ENCABEZADO + EXPLICACIÓN de qué es esta sección */}
-              <View style={[styles.card, designTokens.cardShadow]}>
+              {/* ── LABORATORIO ── */}
+              <View style={[styles.card, designTokens.cardShadow, { marginTop: spacing.md }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 12 }}>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Exámenes de laboratorio</Text>
                     <Text style={styles.clinicoIntro}>
-                      Resultados de los análisis de la gestante con su interpretación. El color indica si está
+                      Resultados de los análisis con su interpretación. El color indica si está
                       {' '}<Text style={{ color: semanticColors.success, fontWeight: '700' }}>normal</Text>,
                       {' '}requiere <Text style={{ color: semanticColors.danger, fontWeight: '700' }}>atención</Text> o está
                       {' '}<Text style={{ color: commonColors.textTertiary, fontWeight: '700' }}>pendiente</Text>.
@@ -2026,6 +2039,49 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: commonColors.onColorTextSoft,
   },
+  // Chip de riesgo en la cabecera (sobre gradiente)
+  headerRiskChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: spacing.sm, paddingVertical: 5,
+    borderRadius: borderRadius.full,
+  },
+  headerRiskDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: commonColors.white },
+  headerRiskText: { ...typography.caption, fontWeight: '800', color: commonColors.white },
+  // Estado clínico en línea (sobre gradiente)
+  headerStatusRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: commonColors.onColorSurfaceFaint,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.sm2,
+    marginTop: spacing.md,
+  },
+  headerStat: { flex: 1, alignItems: 'center', paddingHorizontal: spacing.xs },
+  headerStatVal: { ...typography.bodyMd, fontWeight: '800', color: commonColors.white },
+  headerStatUnit: { ...typography.caption, fontWeight: '700', color: commonColors.onColorTextSoft },
+  headerStatLbl: { ...typography.caption, color: commonColors.onColorTextSoft, marginTop: 2 },
+  headerStatDivider: { width: 1, alignSelf: 'stretch', backgroundColor: commonColors.onColorSurfaceStrong, marginVertical: 4 },
+  // Resumen — tarjeta "sin alertas"
+  okCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: semanticColors.successLight,
+    borderRadius: borderRadius.xl, padding: spacing.lg,
+  },
+  okCardText: { flex: 1, ...typography.bodySm, color: commonColors.text, fontWeight: '600' },
+  // Resumen — KPIs (FPP / IMC)
+  resumenKpiRow: { flexDirection: 'row', gap: spacing.sm },
+  resumenKpi: {
+    flex: 1, backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl, padding: spacing.md, gap: 4,
+  },
+  resumenKpiVal: { ...typography.bodyMd, fontWeight: '800', color: commonColors.text, marginTop: 4 },
+  resumenKpiLbl: { ...typography.caption, color: commonColors.textSecondary },
+  // Resumen — tarjeta-atajo
+  resumenLinkCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl, padding: spacing.lg,
+  },
+  resumenLinkText: { flex: 1, ...typography.bodySm, fontWeight: '600', color: commonColors.text },
   // Main Content
   mainContent: {
     flex: 1,
@@ -2071,64 +2127,6 @@ const styles = StyleSheet.create({
   },
 
   // Banner de estado clínico (lo crítico siempre arriba)
-  statusBanner: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  statusTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  statusRiskChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.sm2,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-  },
-  statusRiskDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: commonColors.white },
-  statusRiskText: { ...typography.buttonSm, color: commonColors.white },
-  statusAlertChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: spacing.sm2,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    backgroundColor: commonColors.surface,
-  },
-  statusAlertText: { ...typography.caption, fontWeight: '700', color: semanticColors.danger },
-  statusMetricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.xs,
-  },
-  statusMetricCell: {
-    width: '50%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm2,
-  },
-  statusMetricTexts: { flex: 1, minWidth: 0 },
-  statusMetricVal: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
-  statusMetricLbl: { ...typography.overline, fontSize: 10, color: commonColors.textSecondary, marginTop: 1 },
-  statusRibbon: {
-    backgroundColor: commonColors.surface,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.sm2,
-    paddingVertical: spacing.sm,
-    marginTop: spacing.sm,
-  },
-
   resumenAlertaRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
