@@ -35,6 +35,7 @@ import { EmergencyAlert, type EmergencyCoords } from '../../../src/components/sh
 import { useSidebar } from '../../../src/components/layout/SidebarProvider';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../../src/theme/responsive';
+import { confirmAction } from '../../../src/utils/confirm';
 
 const BRAND = gestanteColors.primary;
 
@@ -109,11 +110,32 @@ export default function GestanteDashboard(): React.ReactElement {
   const nextStatus: string = nextAppointment?.status || 'programada';
   const canConfirmNext = nextStatus === 'programada';
 
-  const handleConfirmNext = () => {
+  const handleConfirmNext = async () => {
     if (!nextAppointment?.id) return;
+    // Confirmación previa por seguridad: evita confirmaciones accidentales y
+    // explica qué implica el acto, con el contexto de la cita a la vista.
+    const fecha = nextAppointment.date
+      ? new Date(nextAppointment.date).toLocaleDateString('es-PE', {
+          weekday: 'long', day: '2-digit', month: 'long',
+        })
+      : 'la fecha indicada';
+    const hora = nextAppointment.date
+      ? new Date(nextAppointment.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
+    const tipo = nextAppointment.type || 'Control Prenatal';
+    const ok = await confirmAction({
+      title: 'Confirmar que asistirás',
+      message:
+        `Confirmas tu cita de ${tipo} el ${fecha}${hora ? ` a las ${hora}` : ''}. ` +
+        'Tu obstetra será notificada de que asistirás. Si no podrás ir, mejor solicita reprogramar desde "Mis citas".',
+      confirmText: 'Sí, asistiré',
+      cancelText: 'Cancelar',
+      tone: 'info',
+    });
+    if (!ok) return;
     confirmMutation.mutate(nextAppointment.id, {
       onSuccess: () => {
-        toast.success('Cita confirmada', 'Tu obstetra fue notificada.');
+        toast.success('Cita confirmada', 'Tu obstetra fue notificada de que asistirás.');
         refetch();
       },
       onError: () => toast.error('No se pudo confirmar', 'Inténtalo nuevamente.'),

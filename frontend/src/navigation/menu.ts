@@ -59,8 +59,10 @@ export const NAVIGATION: Record<UserRole, RoleNav> = {
       {
         title: 'Mi salud',
         items: [
-          { icon: BookOpen, label: 'Educación', description: 'Contenido para tu embarazo', href: '/(gestante)/(tabs)/educacion' },
+          // Lo crítico primero: reportar un signo de alarma es la acción más
+          // urgente de esta sección.
           { icon: AlertTriangle, label: 'Signos de alarma', description: 'Reportar síntomas', href: '/(gestante)/alarmas' },
+          { icon: BookOpen, label: 'Educación', description: 'Contenido para tu embarazo', href: '/(gestante)/(tabs)/educacion' },
           { icon: MapPin, label: 'Visitas domiciliarias', description: 'Historial de visitas', href: '/(gestante)/visitas' },
         ],
       },
@@ -110,11 +112,11 @@ export const NAVIGATION: Record<UserRole, RoleNav> = {
         ],
       },
       {
-        title: 'Sistema',
+        title: 'Configuración',
         items: [
+          { icon: Settings, label: 'Parámetros', description: 'Ajustes generales del sistema', href: '/(admin)/(tabs)/config' },
+          { icon: Bell, label: 'Canales de aviso', description: 'SMS y WhatsApp', href: '/(admin)/(tabs)/notificaciones' },
           { icon: Building2, label: 'Sedes', description: 'Establecimientos de salud', href: '/(admin)/(tabs)/sedes' },
-          { icon: Settings, label: 'Configuración', description: 'Parámetros del sistema', href: '/(admin)/(tabs)/config' },
-          { icon: Bell, label: 'Notificaciones', description: 'SMS y WhatsApp', href: '/(admin)/(tabs)/notificaciones' },
         ],
       },
       {

@@ -26,6 +26,7 @@ import {
 } from '../../services/api-queries';
 import { confirmAction } from '../../utils/confirm';
 import { goBack } from '../../utils/navigation';
+import { resolveNotificationTarget } from '../../navigation/notificationRoutes';
 import { useToast } from '../ui';
 import { BellOff } from 'lucide-react-native';
 import { EmptyState } from '../ui/EmptyState';
@@ -222,64 +223,10 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
   const handlePress = (n: AppNotification) => {
     if (!n.leidaAt) markRead.mutate(n.id);
 
-    const citaTipos = [
-      'cita_confirmada',
-      'solicitud_reprogramacion',
-      'reprogramacion_aprobada',
-      'reprogramacion_rechazada',
-      'inasistencia',
-    ];
-
-    const datos = (n.datos ?? {}) as { gestanteId?: string; conversationId?: string; messageId?: string; contentId?: string };
-
-    let target: string | null = null;
-    if (n.tipo === 'emergencia' && role === 'obstetra') {
-      // Entra directo a la conversación de la gestante en emergencia.
-      target = datos.conversationId
-        ? `/(obstetra)/(tabs)/chat?conversationId=${datos.conversationId}`
-        : datos.gestanteId
-          ? `/(obstetra)/(tabs)/chat?gestanteId=${datos.gestanteId}`
-          : '/(obstetra)/(tabs)/chat';
-    } else if (citaTipos.includes(n.tipo)) {
-      target = role === 'obstetra' ? '/(obstetra)/(tabs)/cronograma' : '/(gestante)/(tabs)/citas';
-    } else if (n.tipo === 'signo_alarma' && role === 'obstetra') {
-      // El signo de alarma se gestiona en la ficha de la gestante (sección
-      // Signos de alarma). Si no hay gestanteId, cae a la lista de gestantes.
-      const gid = (n.datos as { gestanteId?: string })?.gestanteId;
-      target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
-    } else if (n.tipo === 'examenes_pendientes' && role === 'obstetra') {
-      const gid = (n.datos as { gestanteId?: string })?.gestanteId;
-      target = gid ? `/(obstetra)/gestante/${gid}` : '/(obstetra)/(tabs)/gestantes';
-    } else if (n.tipo === 'mensaje_chat') {
-      // Mensaje de chat → abrir DIRECTO la conversación correcta (no la bandeja),
-      // con scroll/resaltado al mensaje exacto cuando viene el id.
-      const msgQs = datos.messageId ? `&messageId=${datos.messageId}` : '';
-      if (role === 'gestante') {
-        target = datos.conversationId
-          ? `/(gestante)/(tabs)/chat?conversationId=${datos.conversationId}${msgQs}`
-          : '/(gestante)/(tabs)/chat';
-      } else {
-        target = datos.conversationId
-          ? `/(obstetra)/(tabs)/chat?conversationId=${datos.conversationId}${msgQs}`
-          : datos.gestanteId
-            ? `/(obstetra)/(tabs)/chat?gestanteId=${datos.gestanteId}`
-            : '/(obstetra)/(tabs)/chat';
-      }
-    } else if (n.tipo === 'educacion' && role === 'gestante') {
-      // Recomendación de contenido → abrir el recurso directamente.
-      const cid = (n.datos as { contentId?: string })?.contentId;
-      target = cid ? `/(gestante)/educacion/${cid}` : '/(gestante)/(tabs)/educacion';
-    } else if (n.tipo === 'recordatorio_suplemento' && role === 'gestante') {
-      target = '/(gestante)/(tabs)/tratamiento';
-    } else if (n.tipo === 'fpp_proxima' && role === 'gestante') {
-      target = '/(gestante)/(tabs)/tratamiento';
-    } else if (n.tipo === 'obstetra_pendiente' && role === 'admin') {
-      target = '/(admin)/(tabs)/usuarios';
-    } else if (n.tipo === 'alarma_sin_atender' && role === 'admin') {
-      const gid = (n.datos as { gestanteId?: string })?.gestanteId;
-      target = gid ? `/(admin)/supervision/gestantes` : '/(admin)/supervision/gestantes';
-    }
-
+    // Misma fuente de verdad que las notificaciones push: el destino se calcula
+    // a partir del tipo + payload (datos) + rol. Abre directo la vista
+    // relacionada cuando existe; si no, la bandeja del rol.
+    const target = resolveNotificationTarget(role, { tipo: n.tipo, ...(n.datos ?? {}) });
     if (target) {
       try {
         router.push(target as never);

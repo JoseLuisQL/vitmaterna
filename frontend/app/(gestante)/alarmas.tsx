@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  Linking, TextInput,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,9 +12,10 @@ import {
   AlertTriangle, Send, CheckCircle, Phone,
   Frown, Thermometer, Activity, Droplets, Droplet,
   Baby, Zap, Eye, AlertCircle, Clock, Users, HeartPulse, ArrowLeft,
+  MoreHorizontal,
 } from 'lucide-react-native';
 import { reportDangerSign } from '../../src/services/api-queries';
-import { useToast } from '../../src/components/ui';
+import { useToast, Accordion, TextAreaField } from '../../src/components/ui';
 import { gradients } from '../../src/theme/gradients';
 import { commonColors, semanticColors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
@@ -23,7 +24,20 @@ import { WebMaxWidth } from '../../src/components/web';
 import { ScreenLayout } from '../../src/components/layout/ScreenLayout';
 import { useResponsive } from '../../src/theme/responsive';
 
-const SIGNOS_EMBARAZO = [
+/**
+ * VITMATERNA — Reportar alarma (gestante)
+ *
+ * Refactor UX (divulgación progresiva): los signos se agrupan por etapa en
+ * secciones colapsables. La etapa "Durante el embarazo" arranca abierta por ser
+ * la más frecuente; "Parto" y "Después del parto" quedan plegadas para reducir
+ * la carga cognitiva del personal/gestante rural. Cada sección muestra cuántos
+ * síntomas hay marcados dentro. Se añade "Otro síntoma" para reportes
+ * personalizados. El acceso a emergencia (llamar) está siempre visible.
+ */
+
+type SignoDef = { icono: string; texto: string };
+
+const SIGNOS_EMBARAZO: SignoDef[] = [
   { icono: 'Frown', texto: 'Vómitos frecuentes e intensos' },
   { icono: 'Thermometer', texto: 'Dolor de cabeza fuerte, fiebre o calentura' },
   { icono: 'Activity', texto: 'Pies, manos o cara hinchada' },
@@ -34,7 +48,7 @@ const SIGNOS_EMBARAZO = [
   { icono: 'Eye', texto: 'Visión borrosa o manchas en los ojos' },
 ];
 
-const SIGNOS_PARTO = [
+const SIGNOS_PARTO: SignoDef[] = [
   { icono: 'Droplet', texto: 'Pérdida de líquido por más de 6 horas' },
   { icono: 'Baby', texto: 'El niño viene de pies o atravesado' },
   { icono: 'Users', texto: 'Son gemelos o mellizos' },
@@ -43,16 +57,20 @@ const SIGNOS_PARTO = [
   { icono: 'Clock', texto: 'La placenta no sale por más de 30 minutos' },
 ];
 
-const SIGNOS_POSTPARTO = [
+const SIGNOS_POSTPARTO: SignoDef[] = [
   { icono: 'Droplets', texto: 'Sangrado vaginal abundante' },
   { icono: 'Thermometer', texto: 'Fiebre, escalofríos y mal olor' },
   { icono: 'Activity', texto: 'Hinchazón y dolor de manos' },
   { icono: 'AlertCircle', texto: 'La placenta no salió completa' },
 ];
 
-const TODOS_LOS_SIGNOS = [
-  ...SIGNOS_EMBARAZO, ...SIGNOS_PARTO, ...SIGNOS_POSTPARTO
+const TODOS_LOS_SIGNOS: SignoDef[] = [
+  ...SIGNOS_EMBARAZO, ...SIGNOS_PARTO, ...SIGNOS_POSTPARTO,
 ];
+
+// Índices globales por grupo (para mapear selección ↔ etiqueta original).
+const OFFSET_PARTO = SIGNOS_EMBARAZO.length;
+const OFFSET_POSTPARTO = SIGNOS_EMBARAZO.length + SIGNOS_PARTO.length;
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Frown, Thermometer, Activity, Droplets, Droplet,
@@ -70,6 +88,9 @@ export default function AlarmScreen(): React.ReactElement {
   const { webShell } = useResponsive();
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [notas, setNotas] = useState('');
+  // "Otro síntoma": permite describir un signo no listado.
+  const [otroActivo, setOtroActivo] = useState(false);
+  const [otroTexto, setOtroTexto] = useState('');
   const [enviado, setEnviado] = useState(false);
 
   const { mutateAsync: enviarAlerta, isPending } = useMutation({
@@ -90,12 +111,35 @@ export default function AlarmScreen(): React.ReactElement {
     setSeleccionados((prev) => prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]);
   }
 
+  // Cuenta de síntomas marcados por grupo (para el badge del Accordion).
+  const countEmbarazo = useMemo(
+    () => seleccionados.filter((i) => i < OFFSET_PARTO).length,
+    [seleccionados],
+  );
+  const countParto = useMemo(
+    () => seleccionados.filter((i) => i >= OFFSET_PARTO && i < OFFSET_POSTPARTO).length,
+    [seleccionados],
+  );
+  const countPostparto = useMemo(
+    () => seleccionados.filter((i) => i >= OFFSET_POSTPARTO).length,
+    [seleccionados],
+  );
+
+  // Etiquetas a reportar = signos marcados + (si aplica) el texto de "Otro".
+  const otroValido = otroActivo && otroTexto.trim().length > 0;
+  const totalReportes = seleccionados.length + (otroValido ? 1 : 0);
+
   async function handleEnviar() {
-    if (seleccionados.length === 0) {
-      toast.warning('Marca un síntoma', 'Selecciona al menos un síntoma antes de enviar.');
+    if (totalReportes === 0) {
+      toast.warning('Marca un síntoma', 'Selecciona al menos un síntoma o describe uno en "Otro síntoma".');
+      return;
+    }
+    if (otroActivo && otroTexto.trim().length === 0 && seleccionados.length === 0) {
+      toast.warning('Describe el síntoma', 'Escribe qué sientes en "Otro síntoma" antes de enviar.');
       return;
     }
     const sintomas = seleccionados.map((i) => TODOS_LOS_SIGNOS[i].texto);
+    if (otroValido) sintomas.push(`Otro: ${otroTexto.trim()}`);
     try {
       await enviarAlerta({ sintomas, notas });
       setEnviado(true);
@@ -105,6 +149,36 @@ export default function AlarmScreen(): React.ReactElement {
         'Revisa tu conexión e inténtalo de nuevo. Si es urgente, llama al centro de salud.'
       );
     }
+  }
+
+  function resetForm() {
+    setEnviado(false);
+    setSeleccionados([]);
+    setNotas('');
+    setOtroActivo(false);
+    setOtroTexto('');
+  }
+
+  // Fila de síntoma reutilizable (misma anatomía en cada grupo).
+  function SignoRow({ index }: { index: number }) {
+    const signo = TODOS_LOS_SIGNOS[index];
+    const isSelected = seleccionados.includes(index);
+    return (
+      <TouchableOpacity
+        style={[styles.signoRow, isSelected && styles.signoRowSelected]}
+        onPress={() => toggleSigno(index)}
+        activeOpacity={0.7}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isSelected }}
+        accessibilityLabel={signo.texto}
+      >
+        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+          {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
+        </View>
+        <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
+        <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
+      </TouchableOpacity>
+    );
   }
 
   const confirmView = (
@@ -123,6 +197,12 @@ export default function AlarmScreen(): React.ReactElement {
             <Text style={styles.confirmItemText}>{TODOS_LOS_SIGNOS[i].texto}</Text>
           </View>
         ))}
+        {otroValido && (
+          <View style={styles.confirmItem}>
+            <MoreHorizontal size={20} color={commonColors.textSecondary} />
+            <Text style={styles.confirmItemText}>{otroTexto.trim()}</Text>
+          </View>
+        )}
       </View>
 
       <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
@@ -135,7 +215,7 @@ export default function AlarmScreen(): React.ReactElement {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.resetBtn} onPress={() => { setEnviado(false); setSeleccionados([]); setNotas(''); }}>
+      <TouchableOpacity style={styles.resetBtn} onPress={resetForm}>
         <Text style={styles.resetBtnText}>Reportar otro síntoma</Text>
       </TouchableOpacity>
 
@@ -165,88 +245,124 @@ export default function AlarmScreen(): React.ReactElement {
   const mainForm = (
     <ScrollView contentContainerStyle={[styles.scrollContent, webShell && styles.webScrollContent]} showsVerticalScrollIndicator={false}>
       <WebMaxWidth width="readable">
-      <Text style={styles.groupTitle}>Durante el Embarazo</Text>
-      <View style={styles.signosCard}>
-        {SIGNOS_EMBARAZO.map((signo, i) => {
-          const isSelected = seleccionados.includes(i);
-          return (
-            <TouchableOpacity key={i} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(i)} activeOpacity={0.7}>
-              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
+        <Text style={styles.intro}>
+          Marca los síntomas que sientes. Solo abre la etapa que te corresponde; tu obstetra recibirá
+          el aviso de inmediato.
+        </Text>
+
+        <Accordion
+          title="Durante el embarazo"
+          icon={Baby}
+          accentColor={semanticColors.danger}
+          count={countEmbarazo}
+          defaultOpen
+        >
+          <View style={styles.groupBody}>
+            {SIGNOS_EMBARAZO.map((_, i) => <SignoRow key={i} index={i} />)}
+          </View>
+        </Accordion>
+
+        <Accordion
+          title="Durante el parto"
+          icon={HeartPulse}
+          accentColor={semanticColors.danger}
+          count={countParto}
+        >
+          <View style={styles.groupBody}>
+            {SIGNOS_PARTO.map((_, i) => <SignoRow key={OFFSET_PARTO + i} index={OFFSET_PARTO + i} />)}
+          </View>
+        </Accordion>
+
+        <Accordion
+          title="Después del parto"
+          icon={Activity}
+          accentColor={semanticColors.danger}
+          count={countPostparto}
+        >
+          <View style={styles.groupBody}>
+            {SIGNOS_POSTPARTO.map((_, i) => <SignoRow key={OFFSET_POSTPARTO + i} index={OFFSET_POSTPARTO + i} />)}
+          </View>
+        </Accordion>
+
+        {/* "Otro síntoma": reporte personalizado para signos no listados. */}
+        <Accordion
+          title="Otro síntoma"
+          icon={MoreHorizontal}
+          accentColor={semanticColors.danger}
+          count={otroValido ? 1 : 0}
+          defaultOpen={otroActivo}
+        >
+          <View style={styles.groupBody}>
+            <TouchableOpacity
+              style={[styles.signoRow, otroActivo && styles.signoRowSelected]}
+              onPress={() => setOtroActivo((v) => !v)}
+              activeOpacity={0.7}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: otroActivo }}
+              accessibilityLabel="Quiero describir otro síntoma"
+            >
+              <View style={[styles.checkbox, otroActivo && styles.checkboxSelected]}>
+                {otroActivo && <CheckCircle size={18} color={commonColors.surface} />}
               </View>
-              <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
-              <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
+              <MoreHorizontal size={20} color={otroActivo ? semanticColors.danger : commonColors.textSecondary} />
+              <Text style={[styles.signoText, otroActivo && styles.signoTextSelected]}>
+                Quiero describir otro síntoma
+              </Text>
             </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <Text style={styles.groupTitle}>Durante el Parto</Text>
-      <View style={styles.signosCard}>
-        {SIGNOS_PARTO.map((signo, i) => {
-          const idx = SIGNOS_EMBARAZO.length + i;
-          const isSelected = seleccionados.includes(idx);
-          return (
-            <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
-              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
+            {otroActivo && (
+              <View style={styles.otroFieldWrap}>
+                <TextAreaField
+                  label="¿Qué sientes?"
+                  value={otroTexto}
+                  onChangeText={setOtroTexto}
+                  placeholder="Describe el síntoma que no aparece en la lista…"
+                  numberOfLines={3}
+                  themeColor={semanticColors.danger}
+                />
               </View>
-              <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
-              <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+            )}
+          </View>
+        </Accordion>
 
-      <Text style={styles.groupTitle}>Después del Parto</Text>
-      <View style={styles.signosCard}>
-        {SIGNOS_POSTPARTO.map((signo, i) => {
-          const idx = SIGNOS_EMBARAZO.length + SIGNOS_PARTO.length + i;
-          const isSelected = seleccionados.includes(idx);
-          return (
-            <TouchableOpacity key={idx} style={[styles.signoRow, isSelected && styles.signoRowSelected]} onPress={() => toggleSigno(idx)} activeOpacity={0.7}>
-              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                {isSelected && <CheckCircle size={18} color={commonColors.surface} />}
-              </View>
-              <SignoIcon name={signo.icono} color={isSelected ? semanticColors.danger : commonColors.textSecondary} />
-              <Text style={[styles.signoText, isSelected && styles.signoTextSelected]}>{signo.texto}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <Text style={styles.groupTitle}>Información adicional (opcional)</Text>
-      <TextInput
-        style={styles.textArea}
-        value={notas}
-        onChangeText={setNotas}
-        multiline
-        numberOfLines={4}
-        placeholder="Describa con más detalle cómo se siente..."
-        placeholderTextColor={commonColors.textTertiary}
-        textAlignVertical="top"
-      />
-
-      {seleccionados.length > 0 && (
-        <View style={styles.countBox}>
-          <Text style={styles.countText}>Seleccionaste {seleccionados.length} síntoma(s). Tu obstetra será notificada.</Text>
+        <View style={styles.notasWrap}>
+          <TextAreaField
+            label="Información adicional (opcional)"
+            value={notas}
+            onChangeText={setNotas}
+            placeholder="Describe con más detalle cómo te sientes…"
+            numberOfLines={4}
+            themeColor={semanticColors.danger}
+          />
         </View>
-      )}
 
-      <TouchableOpacity style={[styles.sendBtn, isPending && styles.sendBtnDisabled]} onPress={handleEnviar} disabled={isPending}>
-        <Send size={20} color={commonColors.surface} />
-        <Text style={styles.sendBtnText}>{isPending ? 'Enviando...' : 'Enviar alerta a mi obstetra'}</Text>
-      </TouchableOpacity>
+        {totalReportes > 0 && (
+          <View style={styles.countBox}>
+            <Text style={styles.countText}>
+              Seleccionaste {totalReportes} síntoma{totalReportes > 1 ? 's' : ''}. Tu obstetra será notificada.
+            </Text>
+          </View>
+        )}
 
-      <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
-        <View style={styles.emergencyIconWrap}>
-          <Phone size={24} color={commonColors.surface} />
-        </View>
-        <View style={styles.emergencyInfo}>
-          <Text style={styles.emergencyLabel}>Emergencia — Centro de Salud</Text>
-          <Text style={styles.emergencyPhone}>083 – 421800</Text>
-        </View>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sendBtn, isPending && styles.sendBtnDisabled]}
+          onPress={handleEnviar}
+          disabled={isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar alerta a mi obstetra"
+        >
+          <Send size={20} color={commonColors.surface} />
+          <Text style={styles.sendBtnText}>{isPending ? 'Enviando...' : 'Enviar alerta a mi obstetra'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.emergencyCard} onPress={() => Linking.openURL('tel:083421800')}>
+          <View style={styles.emergencyIconWrap}>
+            <Phone size={24} color={commonColors.surface} />
+          </View>
+          <View style={styles.emergencyInfo}>
+            <Text style={styles.emergencyLabel}>Emergencia — Centro de Salud</Text>
+            <Text style={styles.emergencyPhone}>083 – 421800</Text>
+          </View>
+        </TouchableOpacity>
       </WebMaxWidth>
     </ScrollView>
   );
@@ -303,15 +419,16 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...typography.body, color: commonColors.onColorTextStrong, marginTop: 4 },
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl, marginTop: -24 },
   webScrollContent: { marginTop: 0 },
-  groupTitle: { ...typography.overline, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.md, marginLeft: spacing.md },
-  signosCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, paddingVertical: spacing.sm, borderWidth: 1, borderColor: commonColors.border },
+  intro: { ...typography.bodySm, fontSize: 15, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 21 },
+  groupBody: { paddingVertical: spacing.xs },
   signoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, paddingHorizontal: spacing.lg, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   signoRowSelected: { backgroundColor: semanticColors.dangerLight },
   checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: commonColors.border, alignItems: 'center', justifyContent: 'center' },
   checkboxSelected: { backgroundColor: semanticColors.danger, borderColor: semanticColors.danger },
   signoText: { flex: 1, ...typography.bodySm, fontSize: 15, color: commonColors.text },
   signoTextSelected: { color: semanticColors.danger, fontWeight: '600' },
-  textArea: { backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.xl, padding: spacing.lg, ...typography.bodySm, fontSize: 15, color: commonColors.text, minHeight: 120, marginTop: spacing.sm },
+  otroFieldWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  notasWrap: { marginTop: spacing.md },
   countBox: { backgroundColor: semanticColors.dangerLight, borderWidth: 1, borderColor: semanticColors.danger, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.lg },
   countText: { ...typography.bodySm, color: semanticColors.danger, fontWeight: '600', textAlign: 'center' },
   sendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm + 4, backgroundColor: semanticColors.danger, borderRadius: borderRadius.full, paddingVertical: spacing.md, marginTop: spacing.lg },

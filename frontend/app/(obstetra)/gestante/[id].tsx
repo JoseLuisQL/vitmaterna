@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity,
-  StatusBar, Platform, TextInput, Image
+  StatusBar, Platform, Image
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { resolveMediaUrl } from '../../../src/services/api';
@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, ChevronDown, ChevronUp, User, Stethoscope, Pill, FlaskConical,
-  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Search, Send, X,
+  Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Send,
   Phone, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
   Eye, Clock, ExternalLink, PlayCircle, CheckCircle2, Droplet, Beaker, ShieldCheck,
 } from 'lucide-react-native';
@@ -18,7 +18,7 @@ import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs, PrenatalRibbon } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs, PrenatalRibbon, SearchField } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, webLayout } from '../../../src/theme/spacing';
@@ -1733,18 +1733,13 @@ export default function PatientProfileScreen(): React.ReactElement {
       >
         {!recSelected ? (
           <>
-            <View style={styles.recSearchBox}>
-              <Search size={18} color={commonColors.textTertiary} />
-              <TextInput
-                style={styles.recSearchInput}
+            <View style={{ marginBottom: spacing.md }}>
+              <SearchField
                 value={recSearch}
                 onChangeText={setRecSearch}
                 placeholder="Buscar por título o categoría…"
-                placeholderTextColor={commonColors.textTertiary}
+                themeColor={BRAND}
               />
-              {recSearch ? (
-                <TouchableOpacity onPress={() => setRecSearch('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda"><X size={16} color={commonColors.textTertiary} /></TouchableOpacity>
-              ) : null}
             </View>
             <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
               {catalogLoading ? (
@@ -1925,8 +1920,7 @@ export default function PatientProfileScreen(): React.ReactElement {
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  recSearchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44, marginBottom: spacing.md },
-  recSearchInput: { flex: 1, ...typography.body, fontSize: 15, color: commonColors.text },
+
   recEmpty: { ...typography.bodySm, color: commonColors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl },
   recRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   recRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.xs2 },

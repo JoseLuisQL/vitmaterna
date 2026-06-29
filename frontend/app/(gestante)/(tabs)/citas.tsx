@@ -42,6 +42,7 @@ import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spa
 import { shadows } from '../../../src/theme/shadows';
 import { zIndex } from '../../../src/theme/zIndex';
 import { useResponsive } from '../../../src/theme/responsive';
+import { confirmAction } from '../../../src/utils/confirm';
 
 const BRAND = gestanteColors.primary;
 
@@ -201,10 +202,22 @@ export default function AppointmentsScreen() {
     setDetailVisible(true);
   };
 
-  const handleConfirm = (appt: Appointment) => {
+  const handleConfirm = async (appt: Appointment) => {
+    // Confirmación previa por seguridad, con el contexto de la cita a la vista.
+    const ok = await confirmAction({
+      title: 'Confirmar que asistirás',
+      message:
+        `Confirmas tu cita de ${appt.motivo || 'Control Prenatal'} el ${fechaLarga(appt.fecha)}` +
+        ` a las ${horaTexto(appt.hora)}. Tu obstetra será notificada de que asistirás. ` +
+        'Si no podrás ir, mejor solicita reprogramar.',
+      confirmText: 'Sí, asistiré',
+      cancelText: 'Cancelar',
+      tone: 'info',
+    });
+    if (!ok) return;
     confirmMutation.mutate(appt.id, {
       onSuccess: () => {
-        toast.success('Cita confirmada', 'Tu obstetra fue notificada de que aceptaste la cita.');
+        toast.success('Cita confirmada', 'Tu obstetra fue notificada de que asistirás.');
         setDetailVisible(false);
         refetch();
       },
