@@ -174,8 +174,11 @@ export default function CronogramaScreen(): React.ReactElement {
             accessibilityRole="button"
             accessibilityLabel={`Abrir historia de ${patientName}`}
           >
-            <View style={styles.cardTopRow}>
-              <Text style={styles.patientName} numberOfLines={1}>{patientName}</Text>
+            {/* El nombre es el dato primario: ocupa toda la línea. El estado
+                va debajo, a la izquierda, sin robarle ancho (antes el badge
+                ancho "SOLICITA REPROGRAMAR" truncaba el nombre a 2 letras). */}
+            <Text style={styles.patientName} numberOfLines={1}>{patientName}</Text>
+            <View style={styles.cardBadgeRow}>
               <AppBadge label={statusText} variant={variant} />
             </View>
             <Text style={styles.apptType} numberOfLines={1}>{item.motivo || 'Control prenatal'}</Text>
@@ -513,7 +516,9 @@ const styles = StyleSheet.create({
   segmentText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
   segmentTextActive: { color: commonColors.white },
 
-  listContent: { paddingBottom: layout.tabBarSpace + 80, paddingTop: spacing.xs },
+  // Colchón inferior amplio para que el FAB (56px) no tape los botones de la
+  // última tarjeta al llegar al fondo del scroll.
+  listContent: { paddingBottom: layout.tabBarSpace + 96, paddingTop: spacing.xs },
   listWeb: { width: '100%', paddingBottom: spacing.xl },
 
   sectionHeader: { backgroundColor: commonColors.background, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
@@ -532,8 +537,8 @@ const styles = StyleSheet.create({
   timeCol: { minWidth: 76, paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, justifyContent: 'center' },
   timeText: { ...typography.label, fontWeight: '700', color: commonColors.text },
   cardBody: { flex: 1, paddingLeft: spacing.md, minWidth: 0 },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2 },
-  patientName: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 },
+  patientName: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
+  cardBadgeRow: { flexDirection: 'row', marginTop: 4, marginBottom: 2 },
   apptType: { ...typography.bodySm, color: commonColors.textSecondary },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   metaText: { ...typography.caption, color: commonColors.textTertiary },
