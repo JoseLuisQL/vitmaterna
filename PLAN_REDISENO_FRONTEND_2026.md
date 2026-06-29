@@ -173,6 +173,32 @@ móvil aparte o como PWA. **Descartada** porque:
 - El sistema de diseño actual **ya cumple WCAG AA** en tokens y ya tiene
   primitivas accesibles. El problema no es el sistema, es que no se usa.
 
+### 2.3 Opción B.2 (descartada): Integrar React Bits (reactbits.dev)
+
+**Investigado y descartado por incompatibilidad técnica verificada.**
+
+React Bits (42.1K ⭐, por David Haz) es una colección de componentes animados
+**para React web**, no para React Native. Análisis de la documentación oficial:
+
+- **4 variantes:** JS+CSS, TS+CSS, JS+Tailwind, TS+Tailwind — todas usan
+  HTML/CSS (`<div>`, `<span>`, `filter: blur()`, `box-shadow`).
+- **Dependencias:** `motion` (Framer Motion) que anima el **DOM del navegador**.
+  Tu app usa `react-native-reanimated` que anima el **hilo nativo** — motores
+  distintos, incompatibles.
+- **Distribución:** copy-paste o CLI del código fuente (no es npm). Copiar un
+  componente a RN da error de compilación (`<div>` no existe, `filter: blur()`
+  no es válido en `StyleSheet`).
+- **Advertencia del autor:** "Using more than 2-3 components on a page is not
+  advised" y "Mobile Optimization: Consider disabling certain effects on mobile".
+  Tu app es móvil-first para gestantes rurales — contradictorio.
+
+**Conclusión:** React Bits no se puede integrar en un proyecto Expo/React Native
+sin reescribirlo por completo. Su estética (glow, split text, partículas) es
+alcanzable con el stack nativo de la app (`reanimated` + `react-native-svg` +
+`expo-linear-gradient`), que ya tiene 24 componentes animados. El plan de
+rediseño logra la fluidez/"wow" con estas herramientas nativas (§3.1, §3.3),
+sin romper el APK ni el offline-first.
+
 ### 2.3 Opción C (futura, opcional): Añadir NativeWind como capa de ergonomía
 
 Si se quiere la ergonomía de Tailwind (`className="flex-1 p-4"`) en RN, se puede
