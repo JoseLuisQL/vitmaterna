@@ -270,7 +270,7 @@ carga cognitiva baja, salud-literacy-first) y en ISO 9241-110 (diálogo):
 ### 3.3 Compacidad y fluidez moderna
 
 > **Compacto no significa apretado.** Significa denso pero con aire, sin
-> "basura" entre elementos, con transiciones que se sientan fluidas.
+> "basura" entre elementos, con transiciones que se sienten fluidas.
 
 **Acciones (Fase 5):**
 - **5.12** Densidad consistente: usar `stack.element` (12) entre elementos
@@ -286,6 +286,110 @@ carga cognitiva baja, salud-literacy-first) y en ISO 9241-110 (diálogo):
 - **5.15** "Sense of flow": al reemplazar skeleton por contenido, usar un
   `fade-in` corto (150ms) en vez de aparición brusca. Al cambiar de tab, el
   contenido entra con un cross-fade suave (no recarga visible).
+
+### 3.4 Tarjetas compactas y claras
+
+> **La tarjeta es el átomo del diseño.** Debe ser compacta, clara y consistente:
+> blanca, sombra suave, radio coherente, padding semántico, sin dobles
+> jerarquías. Una tarjeta = una unidad de información.
+
+**Diagnóstico actual:**
+- `AppCard` es bueno (sombra, `PressableScale`, `overflow:hidden`) pero el
+  padding es un único `spacing.md2` (20) sin variantes de densidad.
+- `KpiCard` es bueno pero usa `${accent}1A` (hex concatenado para alpha 10%),
+  que es frágil — un color sin `#` o con opacidad distinta lo rompe.
+- No hay un modo `compact` estándar para tarjetas de lista densa vs tarjetas
+  hero de dashboard.
+
+**Acciones (Fase 0 + Fase 5):**
+- **0.9** `AppCard` — añadir prop `density?: 'comfortable' | 'compact'`
+  (comfortable = `spacing.md2`/20 actual; compact = `spacing.md`/16 para listas
+  densas y filas). Asegurar que el padding interno respeta `stack` semántico.
+- **0.10** `KpiCard` — reemplazar `${accent}1A` por un helper `withAlpha(accent, 0.1)`
+  robusto (o usar el token `*Light` del acento cuando exista). Añadir modo
+  `compact` (sin barra de progreso, icono más pequeño) para filas de KPIs.
+- **5.16** Claridad jerárquica: una tarjeta tiene **un** título (h3/h4), un
+  subtítulo opcional (caption) y el contenido. Sin títulos dobles ni metadatos
+  compitiendo. Auditar y simplificar donde haya ruido dentro de tarjetas.
+- **5.17** Separadores: dentro de una tarjeta, separar secciones con `stack.group`
+  (aire) en vez de `borderBottom` visible. Si se usa separador, que sea
+  `borderLight` (casi invisible), no `border`.
+- **5.18** Estados de tarjeta consistentes: `default` → sombra `card`;
+  `elevated` → sombra `float`; `highlighted` → borde de acento + glow.
+  Auditar que no haya tarjetas con sombra Y borde a la vez (regla de §3.2).
+
+### 3.5 Gráficos claros y minimalistas
+
+> **Un gráfico clínico debe ser legible de un vistazo.** Pocos elementos, mucho
+> aire, una sola serie principal con color de acento, grilla casi invisible,
+  sin decoración. Lo que no aporta información, quita.
+
+**Diagnóstico actual:**
+- Los 3 gráficos SVG (`LineChartSvg`, `ChartBar`, `ChartDonut`) son limpios
+  (sin react-native-chart-kit) y correctos. **Buen punto de partida.**
+- **Problema:** `fontSize={9/10}` y `strokeWidth={1}` hardcoded para ejes y
+  grilla → no usan tokens de tipografía ni un "hairline" token. Si se cambia
+  la paleta o el cuerpo mínimo, los gráficos no se adaptan.
+- `ChartBar` tiene animación de llenado (600ms cubic) — buena, pero respeta
+  `useReducedMotion`? No (debería saltar al valor final si reduce-motion).
+- `ChartDonut` usa `strokeLinecap="butt"` (segmentos rectos) — más limpio que
+  "round", correcto para datos clínicos.
+
+**Acciones (Fase 0 + Fase 5):**
+- **0.11** Añadir tokens de gráfico en `src/theme/`: `chartGridStroke`
+  (`commonColors.borderLight`), `chartAxisFontSize` (10), `chartAxisColor`
+  (`commonColors.textTertiary`), `chartBarRadius` (relleno de barras).
+  Un solo lugar para afinar todos los gráficos.
+- **0.12** `LineChartSvg` / `ChartBar` / `ChartDonut` — reemplazar literales
+  (`fontSize={9}`, `strokeWidth={1}`, `fill={commonColors.textTertiary}`)
+  por los nuevos tokens de gráfico. Sin cambiar la lógica de cálculo.
+- **0.13** `ChartBar` — respetar `useReducedMotion`: si true, animación de
+  llenado → instantánea (salto al valor final). Sin tocar el cálculo.
+- **5.19** Claridad de serie: una serie principal con color de acento del rol;
+  bandas de referencia en `*Light` con opacidad baja; series secundarias en
+  `textSecondary`. Máximo 2 series + 1 banda por gráfico (más es ruido).
+- **5.20** Aire en gráficos: padding interno generoso (`spacing.md` mínimo),
+  leyenda separada del lienzo con `stack.sm` de aire. Sin etiquetas amontonadas.
+- **5.21** Dona/barras: verificar que los colores de segmentos vienen de
+  `riskColors`/`semanticColors` (no colores sueltos) para coherencia clínica.
+
+### 3.6 Iconos minimalistas, limpios y suaves
+
+> **El icono es lenguaje, no decoración.** Mismo set (Lucide), mismo peso de
+> trazo, misma escala de tamaño. Suave = trazo fino consistente, no pesos
+  mezclados.
+
+**Diagnóstico actual:**
+- Set correcto: **Lucide React Native** (outline, consistente). Buena base.
+- **Problema 1 — prolifxeración de tamaños:** se usan **20 tamaños distintos**
+  (11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 32, 36, 40, 42, 44,
+  48, 56). Eso es ruido visual: el mismo tipo de icono se ve distinto en cada
+  pantalla.
+- **Problema 2 — peso inconsistente:** hay 24 overrides manuales de
+  `strokeWidth` (cuando Lucide por defecto es 2). Mezclar pesos rompe la
+  sensación de limpieza.
+
+**Acciones (Fase 0 + Fase 5):**
+- **0.14** Añadir una **escala de iconos** en `src/theme/iconography.ts`:
+  `iconSizes = { xs: 14, sm: 16, md: 20, lg: 24, xl: 32, xxl: 48 }`
+  (alineada con la escala tipográfica). Un solo lugar para todos los tamaños.
+- **0.15** Añadir un **peso de trazo estándar** en el mismo token:
+  `iconStroke = { regular: 1.75, emphasis: 2.25 }` (regular para iconos en
+  reposo, emphasis para el icono activo/seleccionado). Lucide default 2 queda
+  algo pesado para estética minimalista; 1.75 es más suave y limpio.
+- **0.16** Crear un wrapper `AppIcon` (`src/components/ui/AppIcon.tsx`) que
+  aplica `iconSizes` + `iconStroke` por defecto y expone `size="sm"|"md"|...`
+  semántico. Reemplaza `<Icon size={18} />` sueltos por `<AppIcon name=...
+  size="md" />`.
+- **5.22** Auditar y reducir los 20 tamaños a los 6 de la escala. Migrar los
+  overrides de `strokeWidth` a `iconStroke.regular` (o `emphasis` solo en
+  estado activo).
+- **5.23** Suavidad: los iconos **siempre** van con `strokeLinecap="round"` y
+  `strokeLinejoin="round"` (Lucide lo trae por defecto; verificar que ningún
+  override lo rompa). Sin sombras ni fondos de color ruidosos en iconos.
+- **5.24** Icono + etiqueta: nunca un icono solo para información crítica
+  (ISO 9241-143). Siempre con texto, excepto acciones obvias (back, cerrar,
+  menú) que ya tienen `accessibilityLabel`.
 
 ---
 
@@ -371,6 +475,20 @@ de pantallas tenga a dónde migrar.
 - [ ] **0.8** Auditar `ActivityIndicator`: eliminar en cargas de
   pantalla/lista; reservar solo para botón enviando, "cargar más" y
   pull-to-refresh nativo.
+- [ ] **0.9** `AppCard` — añadir `density?: 'comfortable' | 'compact'`
+  (comfortable = 20; compact = 16 para listas densas).
+- [ ] **0.10** `KpiCard` — reemplazar `${accent}1A` por `withAlpha(accent, 0.1)`;
+  añadir modo `compact`.
+- [ ] **0.11** Tokens de gráfico en `src/theme/`: `chartGridStroke`,
+  `chartAxisFontSize`, `chartAxisColor`, `chartBarRadius`.
+- [ ] **0.12** `LineChartSvg`/`ChartBar`/`ChartDonut` — reemplazar literales
+  (`fontSize={9}`, `strokeWidth={1}`) por tokens de gráfico. Sin tocar cálculo.
+- [ ] **0.13** `ChartBar` — respetar `useReducedMotion` (animación → instantánea).
+- [ ] **0.14** Escala de iconos en `src/theme/iconography.ts`:
+  `iconSizes = { xs:14, sm:16, md:20, lg:24, xl:32, xxl:48 }`.
+- [ ] **0.15** Peso de trazo estándar: `iconStroke = { regular:1.75, emphasis:2.25 }`.
+- [ ] **0.16** `AppIcon` wrapper (`src/components/ui/AppIcon.tsx`) con `size`
+  semántico + `iconStroke` por defecto.
 
 ### Fase 1 — Migración de los 10 dashboards/listas a `ScreenLayout` (2-3 días)
 
@@ -467,6 +585,15 @@ intención a realidad. Sobre la base ya consistente, afinar:
 - [ ] **5.14** Transiciones de pantalla consistentes (`slide_from_right`).
 - [ ] **5.15** "Sense of flow": fade-in (150ms) al reemplazar skeleton por
   contenido; cross-fade suave al cambiar de tab.
+- [ ] **5.16** Claridad jerárquica en tarjetas (un título, un subtítulo).
+- [ ] **5.17** Separadores con aire (`stack.group`) en vez de `borderBottom`.
+- [ ] **5.18** Estados de tarjeta consistentes (default/elevated/highlighted).
+- [ ] **5.19** Series de gráfico: 1 principal + 1 banda máx.; colores de tokens.
+- [ ] **5.20** Aire en gráficos (padding `spacing.md`+, leyenda separada).
+- [ ] **5.21** Segmentos de dona/barras desde `riskColors`/`semanticColors`.
+- [ ] **5.22** Auditar y reducir 20 tamaños de icono → 6 de `iconSizes`.
+- [ ] **5.23** Verificar `strokeLinecap/join="round"` en todos los iconos.
+- [ ] **5.24** Icono + etiqueta siempre (ISO 9241-143) salvo acciones obvias.
 
 ### Fase 6 — Accesibilidad y compliance final (1 día)
 
@@ -628,6 +755,14 @@ El rediseño está completo cuando:
     color decorativos (solo `*Light` para estado clínico)
 13. ✅ **Fluidez:** `PressableScale` en toda tarjeta/fila clickeable;
     `motion.surface` en modales; fade-in al reemplazar skeleton por contenido
+14. ✅ **Tarjetas:** `AppCard` con `density` (comfortable/compact); 0 tarjetas
+    con sombra Y borde; `KpiCard` sin hex-alpha frágil (`withAlpha`)
+15. ✅ **Gráficos:** 0 literales (`fontSize={9}`, `strokeWidth={1}`) en
+    `LineChartSvg`/`ChartBar`/`ChartDonut` (usan tokens de gráfico);
+    `ChartBar` respeta `useReducedMotion`
+16. ✅ **Iconos:** 0 tamaños fuera de la escala `iconSizes`
+    (xs/sm/md/lg/xl/xxl); 0 overrides manuales de `strokeWidth` (usan
+    `iconStroke.regular`/`emphasis`); todos vía `AppIcon`
 
 ---
 
