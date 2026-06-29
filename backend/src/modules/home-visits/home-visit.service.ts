@@ -115,10 +115,8 @@ export class HomeVisitService {
       if (esFutura) {
         try {
           const { notifyUserViaWhatsApp } = await import('../notifications/channels.js');
-          await notifyUserViaWhatsApp(
-            gestante.user.id,
-            `VitMaterna: tu obstetra realizará una visita domiciliaria el ${visitDate.toLocaleDateString()}. Por favor, mantente disponible. ¡Gracias!`,
-          );
+          const { waHomeVisit } = await import('../../utils/whatsappMessages.js');
+          await notifyUserViaWhatsApp(gestante.user.id, waHomeVisit(gestante.user.firstName, visitDate.toLocaleDateString()));
         } catch (e) {
           console.error('[VISITA WHATSAPP] No se pudo avisar por WhatsApp:', (e as Error).message);
         }

@@ -548,7 +548,8 @@ export async function deliverChatViaWhatsApp(
   opts: { senderName?: string; text?: string; tipo?: string; mediaUrl?: string | null },
 ): Promise<void> {
   try {
-    const prefix = opts.senderName ? `${opts.senderName} (VitMaterna): ` : 'VitMaterna: ';
+    const { waChatForward, waChatImageForward } = await import('../../utils/whatsappMessages.js');
+    const prefix = waChatForward(opts.senderName ?? 'VitMaterna');
 
     if (opts.tipo === 'imagen' && opts.mediaUrl) {
       const c = await resolveWhatsAppCredentials();
@@ -558,20 +559,20 @@ export async function deliverChatViaWhatsApp(
         const prefs = (user?.notificationPreferences ?? null) as { whatsapp?: boolean } | null;
         const e164 = toE164PE(user?.phone);
         if (e164 && prefs?.whatsapp !== false) {
-          const caption = opts.text?.trim() ? `${prefix}${opts.text.trim()}` : `${prefix}te envió una foto.`;
+          const caption = waChatImageForward(opts.senderName ?? 'VitMaterna', opts.text);
           await sendOpenWAImage(c, e164.replace(/^\+/, ''), imageUrl, caption);
           return;
         }
       }
       // Respaldo: aviso de texto (sin URL cruda) por el canal de pago habitual.
-      const fallback = opts.text?.trim() ? `${prefix}${opts.text.trim()}` : `${prefix}te envió una foto. Ábrela en la app de VitMaterna.`;
+      const fallback = waChatImageForward(opts.senderName ?? 'VitMaterna', opts.text);
       await notifyUserViaWhatsApp(userId, fallback);
       return;
     }
 
     const text = (opts.text || '').trim();
     if (!text) return;
-    await notifyUserViaWhatsApp(userId, `${prefix}${text}`);
+    await notifyUserViaWhatsApp(userId, `${prefix}\n${text}`);
   } catch (e) {
     console.error('[CHAT→WHATSAPP] No se pudo reenviar el mensaje por WhatsApp:', (e as Error).message);
   }

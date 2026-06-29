@@ -68,7 +68,8 @@ async function tryAppointmentReply(gestanteId: string, body: string): Promise<Co
     if (appt.estado !== 'confirmada') {
       await prisma.appointment.update({ where: { id: appt.id }, data: { estado: 'confirmada' } });
     }
-    return { handled: true, reply: 'Gracias, tu cita quedó CONFIRMADA. Te esperamos. Si necesitas cambiarla, responde 2.' };
+    const { waReplyCitaConfirmada } = await import('../../utils/whatsappMessages.js');
+    return { handled: true, reply: waReplyCitaConfirmada() };
   }
   // Reprogramación: marca la solicitud y avisa al obstetra responsable.
   await prisma.appointment.update({
@@ -77,6 +78,7 @@ async function tryAppointmentReply(gestanteId: string, body: string): Promise<Co
   });
   try {
     const { findObstetraUserIdForGestante, notifyUser } = await import('./notification.service.js');
+    const { waReplyReprogramarAviso } = await import('../../utils/whatsappMessages.js');
     const obstetraUserId = await findObstetraUserIdForGestante(gestanteId);
     if (obstetraUserId) {
       const g = await prisma.gestante.findUnique({ where: { id: gestanteId }, include: { user: true } });
@@ -85,14 +87,15 @@ async function tryAppointmentReply(gestanteId: string, body: string): Promise<Co
         obstetraUserId,
         'solicitud_reprogramacion',
         'Solicitud de reprogramación',
-        `${nombre} pidió reprogramar su cita del ${new Date(appt.fecha).toLocaleDateString()} (respondió por WhatsApp).`,
+        waReplyReprogramarAviso(nombre, new Date(appt.fecha).toLocaleDateString()),
         { gestanteId, appointmentId: appt.id, via: 'whatsapp' },
       );
     }
   } catch {
     /* best-effort */
   }
-  return { handled: true, reply: 'Entendido, registramos tu solicitud de REPROGRAMACIÓN. Tu obstetra te contactará para darte una nueva fecha.' };
+  const { waReplyCitaReprogramar } = await import('../../utils/whatsappMessages.js');
+  return { handled: true, reply: waReplyCitaReprogramar() };
 }
 
 /**
@@ -136,7 +139,8 @@ async function trySupplementReply(gestanteId: string, body: string): Promise<Com
     registrados++;
   }
   if (registrados === 0) return { handled: false };
-  return { handled: true, reply: 'Excelente, registramos que ya tomaste tu suplemento de hoy. ¡Sigue así por tu salud y la de tu bebé!' };
+  const { waReplySuplementoTomado } = await import('../../utils/whatsappMessages.js');
+  return { handled: true, reply: waReplySuplementoTomado() };
 }
 
 /**

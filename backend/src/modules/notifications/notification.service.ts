@@ -10,6 +10,15 @@ import { examenesPendientes } from '../../utils/examenesObligatorios.js';
 import { emitNotificationEvent } from '../../utils/notificationEvents.js';
 import { getInvalidTokens, type PushTicketLike } from '../../utils/pushTickets.js';
 import { fechaCorteRetencion } from '../../utils/notificationRetention.js';
+import {
+  waAppointmentReminderGestante,
+  waAppointmentReminderAcompanante,
+  waSupplementReminder,
+  waMissedAppointment,
+  waLowAdherence,
+  waFppReminder,
+  waPendingExams,
+} from '../../utils/whatsappMessages.js';
 
 const expo = new Expo();
 
@@ -177,7 +186,7 @@ export async function scanAndSendReminders() {
         // texto es solo informativo (no rompe nada).
         await enqueueDelivery({
           phone: user.phone,
-          message: `Hola ${user.firstName}, recuerda que tienes tu control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. Responde 1 para CONFIRMAR o 2 para REPROGRAMAR. ¡Tu asistencia es muy importante!`,
+          message: waAppointmentReminderGestante(user.firstName, apptDate.toLocaleDateString()),
           prefs: user.notificationPreferences as any,
           userId: user.id,
         });
@@ -188,7 +197,7 @@ export async function scanAndSendReminders() {
         if (acompanantePhone) {
           await enqueueDelivery({
             phone: acompanantePhone,
-            message: `VitMaterna: ${user.firstName} tiene su control prenatal mañana ${apptDate.toLocaleDateString()} a las 9:00 AM. Acompáñala, tu apoyo es importante.`,
+            message: waAppointmentReminderAcompanante(user.firstName, apptDate.toLocaleDateString()),
             prefs: null,
             userId: null,
           });
@@ -290,7 +299,7 @@ export async function scanSupplementReminders() {
     if (recordadosTratamientos.has(t.id)) continue;
 
     const horaTxt = `${String(ht.getUTCHours()).padStart(2, '0')}:${String(ht.getUTCMinutes()).padStart(2, '0')}`;
-    const mensaje = `Hola ${user.firstName}, no olvides tomar tu ${t.nombre} (${t.dosis}) de las ${horaTxt}. Registra tu consumo en la app.`;
+    const mensaje = waSupplementReminder(user.firstName, t.nombre, t.dosis, horaTxt);
     // CONTROL DE GASTO: el recordatorio DIARIO de suplemento va SOLO por push +
     // in-app (era el mayor consumo de créditos al enviarse cada día por SMS/WA).
     await notifyUser(user.id, 'recordatorio_suplemento', 'Recordatorio de medicamento', mensaje, {
@@ -389,7 +398,7 @@ export async function scanMissedAppointments() {
         obstetraUserId,
         'inasistencia',
         'Cita perdida',
-        `${nombre} no asistió a su control del ${new Date(appt.fecha).toLocaleDateString()}. Considera una visita domiciliaria o llamada.`,
+        waMissedAppointment(nombre, new Date(appt.fecha).toLocaleDateString()),
         { gestanteId: appt.gestanteId, appointmentId: appt.id },
       );
     }
@@ -449,7 +458,7 @@ export async function scanLowAdherence() {
         obstetraUserId,
         'baja_adherencia',
         'Baja adherencia al tratamiento',
-        `${nombre} tiene ${adherencia}% de adherencia en "${t.nombre}". Recomienda intervención/seguimiento.`,
+        waLowAdherence(nombre, t.nombre, adherencia),
         { gestanteId: t.gestanteId, treatmentId: t.id, adherencia },
       );
     }
@@ -496,7 +505,7 @@ export async function scanUpcomingFPP() {
 
     if (avisadosFpp.has(`${g.user.id}:${hito}`)) continue;
 
-    const mensaje = `Hola ${g.user.firstName}, tu fecha probable de parto se acerca (faltan ~${diasRestantes} días). Prepara tu plan de parto y tus cosas para el bebé.`;
+    const mensaje = waFppReminder(g.user.firstName, diasRestantes);
     // CONTROL DE GASTO: los avisos de FPP van SOLO por push + in-app (ni la
     // gestante ni el acompañante reciben SMS/WhatsApp por este evento).
     await notifyUser(g.user.id, 'fpp_proxima', 'Tu parto se acerca', mensaje, { hito, diasRestantes });
@@ -562,7 +571,7 @@ export async function scanPendingExams() {
         obstetraUserId,
         'examenes_pendientes',
         'Exámenes pendientes',
-        `${nombreGestante} (sem. ${egWeeks}) tiene exámenes del tamizaje básico sin registrar: ${nombres}.`,
+        waPendingExams(nombreGestante, egWeeks, nombres),
         { gestanteId: g.id, egWeeks, faltantes },
       );
     }

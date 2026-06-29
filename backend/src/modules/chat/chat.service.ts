@@ -488,14 +488,8 @@ export const sendEmergencyAlert = async (userId: string, latitude: number, longi
     });
     if (obstetra?.userId) {
       const { notifyUserViaWhatsAppWithLocation } = await import('../notifications/channels.js');
-      const waMsg = [
-        'EMERGENCIA - Botón de auxilio',
-        `Paciente: ${nombre}${egTexto}`,
-        `Riesgo: ${gestante.nivelRiesgo || 'no definido'}`,
-        `Teléfono: ${telefono}`,
-        `Ubicación: ${mapsUrl}`,
-        'Contáctala de inmediato.',
-      ].join('\n');
+      const { waEmergencyAlert } = await import('../../utils/whatsappMessages.js');
+      const waMsg = waEmergencyAlert(nombre, egTexto, gestante.nivelRiesgo || 'no definido', telefono, mapsUrl);
       await notifyUserViaWhatsAppWithLocation(obstetra.userId, waMsg, latitude, longitude);
     }
   } catch (e) {

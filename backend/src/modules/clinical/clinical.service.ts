@@ -475,15 +475,8 @@ export class ClinicalService {
         // depender solo del push. Se avisa al obstetra responsable por WhatsApp.
         try {
           const { notifyUserViaWhatsApp } = await import('../notifications/channels.js');
-          await notifyUserViaWhatsApp(
-            obstetraUserId,
-            [
-              'SIGNO DE ALARMA GRAVE',
-              `Paciente: ${nombre}`,
-              `Síntoma: ${data.tipo_signo}`,
-              'Requiere atención inmediata. Contáctala de inmediato.',
-            ].join('\n'),
-          );
+          const { waDangerSignAlert } = await import('../../utils/whatsappMessages.js');
+          await notifyUserViaWhatsApp(obstetraUserId, waDangerSignAlert(nombre, data.tipo_signo));
         } catch {
           /* best-effort: la notificación in-app/push ya quedó registrada */
         }
