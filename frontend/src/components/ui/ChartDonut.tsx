@@ -14,6 +14,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { chartTokens } from '../../theme/charts';
 
 export interface DonutDatum {
   label: string;
@@ -115,7 +116,7 @@ export function ChartDonut({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  row: { flexDirection: 'row', alignItems: 'center', gap: chartTokens.legendGap },
   center: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   centerValue: { ...typography.h1, color: commonColors.text },
   centerLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },

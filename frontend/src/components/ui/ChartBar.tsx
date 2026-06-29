@@ -17,6 +17,8 @@ import Animated, {
 import { commonColors, gestanteColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { chartTokens } from '../../theme/charts';
+import { useReducedMotion } from '../../theme/motion';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
@@ -59,9 +61,13 @@ interface AnimatedBarProps {
 
 function AnimatedBar({ x, barWidth, top, fullHeight, ratio, color }: AnimatedBarProps) {
   const progress = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
-    progress.value = withTiming(ratio, { duration: 600, easing: Easing.out(Easing.cubic) });
-  }, [ratio, progress]);
+    // Con reduce-motion activado: salto instantáneo al valor final (sin animación).
+    progress.value = reduceMotion
+      ? ratio
+      : withTiming(ratio, { duration: 600, easing: Easing.out(Easing.cubic) });
+  }, [ratio, progress, reduceMotion]);
 
   const animatedProps = useAnimatedProps(() => {
     const h = Math.max(0, fullHeight * progress.value);
@@ -70,8 +76,8 @@ function AnimatedBar({ x, barWidth, top, fullHeight, ratio, color }: AnimatedBar
 
   return (
     <>
-      <Rect x={x} y={top} width={barWidth} height={fullHeight} rx={barWidth / 2} fill={commonColors.surfaceAlt} />
-      <AnimatedRect x={x} width={barWidth} rx={barWidth / 2} fill={color} animatedProps={animatedProps} />
+      <Rect x={x} y={top} width={barWidth} height={fullHeight} rx={chartTokens.barRadius} fill={commonColors.surfaceAlt} />
+      <AnimatedRect x={x} width={barWidth} rx={chartTokens.barRadius} fill={color} animatedProps={animatedProps} />
     </>
   );
 }
@@ -114,10 +120,10 @@ export function ChartBar({
                     y1={yPos(t)}
                     x2={width - PADDING_RIGHT}
                     y2={yPos(t)}
-                    stroke={commonColors.borderLight}
-                    strokeWidth={1}
+                    stroke={chartTokens.gridStroke}
+                    strokeWidth={chartTokens.axisStrokeWidth}
                   />
-                  <SvgText x={left - 6} y={yPos(t) + 3} fontSize={9} fill={commonColors.textTertiary} textAnchor="end">
+                  <SvgText x={left - 6} y={yPos(t) + 3} fontSize={chartTokens.axisFontSize} fill={chartTokens.axisColor} textAnchor="end">
                     {`${Math.round(t)}${yUnit}`}
                   </SvgText>
                 </React.Fragment>

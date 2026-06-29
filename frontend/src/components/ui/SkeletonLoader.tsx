@@ -1,11 +1,13 @@
 /**
  * VITMATERNA - SkeletonLoader
- * Placeholders con animación shimmer (loop de opacidad) para reemplazar el
- * spinner global durante la carga. Incluye variantes compuestas listas para
- * usar: CardSkeleton, ListItemSkeleton, DashboardSkeleton.
+ * Placeholders con animación shimmer de BARRIDO (linear-gradient animado
+ * izquierda→derecha) para reemplazar el spinner global durante la carga.
+ * Respeta `useReducedMotion`: si el usuario tiene reduce-motion activado, el
+ * placeholder se muestra estático (sin barrido). Incluye variantes compuestas
+ * listas para usar: CardSkeleton, ListItemSkeleton, DashboardSkeleton, etc.
  */
 import React, { useEffect } from 'react';
-import { View, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
+import { View, StyleSheet, ViewStyle, DimensionValue, useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { commonColors } from '../../theme/colors';
 import { borderRadius, spacing } from '../../theme/spacing';
+import { useReducedMotion } from '../../theme/motion';
 
 type SkeletonShape = 'line' | 'circle' | 'rect' | 'card';
 
@@ -33,17 +36,27 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   radius,
   style,
 }) => {
-  const opacity = useSharedValue(0.5);
+  const reduceMotion = useReducedMotion();
+  const translateX = useSharedValue(-1);
+  const { width: winWidth } = useWindowDimensions();
+  // Ancho estimado del bloque brillado: suficiente para cubrir cualquier celda.
+  const sweepWidth = Math.max(160, winWidth);
 
   useEffect(() => {
-    opacity.value = withRepeat(
-      withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+    if (reduceMotion) return; // estático: no animar
+    translateX.value = withRepeat(
+      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
       -1,
-      true,
+      false,
     );
-  }, [opacity]);
+  }, [translateX, reduceMotion]);
 
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const sweepStyle = useAnimatedStyle(() => {
+    // t va de 0→1; mapeamos a translateX de -sweepWidth a +sweepWidth.
+    const t = translateX.value;
+    const x = -sweepWidth + t * (sweepWidth * 2);
+    return { transform: [{ translateX: x }] };
+  });
 
   const resolvedHeight =
     height ?? (shape === 'line' ? 14 : shape === 'circle' ? 48 : shape === 'card' ? 120 : 48);
@@ -57,14 +70,20 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   const resolvedWidth = shape === 'circle' ? resolvedHeight : width;
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.base,
         { width: resolvedWidth, height: resolvedHeight, borderRadius: resolvedRadius },
-        animatedStyle,
         style,
       ]}
-    />
+    >
+      {!reduceMotion && (
+        <Animated.View
+          style={[styles.sweep, sweepStyle, { width: sweepWidth / 2 }]}
+          pointerEvents="none"
+        />
+      )}
+    </View>
   );
 };
 
@@ -200,6 +219,18 @@ export const DetailHeaderSkeleton: React.FC<{ style?: ViewStyle }> = ({ style })
 const styles = StyleSheet.create({
   base: {
     backgroundColor: commonColors.surfaceHover,
+    overflow: 'hidden',
+  },
+  /** Bloque translúcido que barre la superficie para el efecto shimmer. */
+  sweep: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    // Degradado simulado con un bloque blanco translúcido (sin expo-linear-gradient
+    // para mantener el componente sin dependencias nativas extra). El barrido lo da
+    // el translateX animado.
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

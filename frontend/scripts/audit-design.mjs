@@ -34,7 +34,9 @@ const JSON_OUT = args.includes('--json');
 
 /** @type {{id:string,label:string,re:RegExp,blocking:boolean}[]} */
 const RULES = [
-  { id: 'R1', label: 'Color hex literal', re: /#[0-9A-Fa-f]{6}\b/g, blocking: true },
+  // R1 cubre hex de 3 dígitos (#000, #fff), 6 (#0C8174) y 8 (#0C8174FF) — con word boundary
+  // para no capturar fragmentos de identificadores o URL.
+  { id: 'R1', label: 'Color hex literal', re: /#[0-9A-Fa-f]{3}\b(?![0-9A-Fa-f])|#[0-9A-Fa-f]{6}\b|#[0-9A-Fa-f]{8}\b/g, blocking: true },
   { id: 'R2', label: 'rgba() crudo', re: /\brgba\(/g, blocking: true },
   { id: 'R3', label: 'Alert.alert', re: /Alert\.alert\s*\(/g, blocking: true },
   { id: 'R4', label: '<Modal> RN crudo', re: /<Modal[\s>]/g, blocking: true },

@@ -23,7 +23,7 @@ import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import { useAuditLogs, useExportBackup } from '../../../src/services/admin-queries';
 
-const BRAND = obstetraColors.primary;
+const BRAND = adminColors.primary;
 
 // Etiquetas legibles para acción HTTP y entidad afectada.
 const ACCION_LABEL: Record<string, string> = {

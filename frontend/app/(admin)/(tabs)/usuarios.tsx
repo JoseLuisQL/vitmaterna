@@ -46,7 +46,7 @@ import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { useResponsive } from '../../../src/theme/responsive';
 import { DataTable, type DataTableColumn } from '../../../src/components/web';
 
-const BRAND = obstetraColors.primary;
+const BRAND = adminColors.primary;
 import { useAuthStore } from '../../../src/store/authStore';
 
 // ─── UTILS & SUBCOMPONENTS ────────────────────────────────────────────────────
@@ -712,7 +712,7 @@ export default function UsuariosScreen(): React.ReactElement {
         accessibilityRole="button"
         accessibilityLabel="Crear usuario"
       >
-        <Plus size={28} color={obstetraColors.onPrimary} />
+        <Plus size={28} color={adminColors.onPrimary} />
       </TouchableOpacity>
       )}
 

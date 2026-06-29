@@ -45,7 +45,7 @@ import {
   type EducationContent,
 } from '../../../src/services/admin-queries';
 
-const BRAND = obstetraColors.primary;
+const BRAND = adminColors.primary;
 
 const TIPO_LABEL: Record<string, string> = {
   articulo: 'Artículo',

@@ -24,6 +24,12 @@ interface AppCardProps {
   onPress?: () => void;
   padding?: number;
   noPadding?: boolean;
+  /**
+   * Densidad del padding interno. 'comfortable' (20px, default) para tarjetas
+   * hero de dashboard; 'compact' (16px) para listas densas y filas. Se ignora
+   * si se pasa `padding` explícito o `noPadding`.
+   */
+  density?: 'comfortable' | 'compact';
   /** Sombra más marcada (float). */
   elevated?: boolean;
   /** Muestra borde suave además de la sombra. */
@@ -40,6 +46,7 @@ export const AppCard: React.FC<AppCardProps> = ({
   onPress,
   padding,
   noPadding = false,
+  density = 'comfortable',
   elevated = false,
   bordered = false,
   highlighted = false,
@@ -58,13 +65,15 @@ export const AppCard: React.FC<AppCardProps> = ({
     if (onPress) scale.value = withSpring(1, animations.springFast);
   };
 
+  const resolvedPadding = padding ?? (density === 'compact' ? spacing.md : spacing.md2);
+
   const cardStyle: StyleProp<ViewStyle> = [
     styles.card,
     elevated ? shadows.float : shadows.card,
     highlighted && { borderWidth: 1, borderColor: accentColor },
     highlighted && coloredGlow(accentColor),
     bordered && !highlighted && styles.bordered,
-    noPadding ? undefined : { padding: padding ?? spacing.md2 },
+    noPadding ? undefined : { padding: resolvedPadding },
     style,
   ];
 

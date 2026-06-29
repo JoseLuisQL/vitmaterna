@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     position: 'absolute', right: spacing.lg, bottom: layout.tabBarSpace + spacing.sm,
     width: 56, height: 56, borderRadius: 28, backgroundColor: BRAND,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+    shadowColor: commonColors.black, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
 
   webToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },

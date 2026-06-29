@@ -23,7 +23,7 @@ import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { useSystemConfig, useUpdateSystemConfig } from '../../../src/services/admin-queries';
 
-const BRAND = obstetraColors.primary;
+const BRAND = adminColors.primary;
 
 const schema = z.object({
   maxPatientsPerObstetra: z.string().min(1, 'Requerido'),

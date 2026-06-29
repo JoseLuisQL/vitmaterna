@@ -7,7 +7,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
-import { commonColors, semanticColors } from '../../theme/colors';
+import { commonColors, semanticColors, withAlpha } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
@@ -25,6 +25,11 @@ interface KpiCardProps {
   accentColor?: string;
   /** Progreso 0–100 para la barra inferior. */
   progress?: number;
+  /**
+   * 'compact' oculta la barra de progreso y reduce el ícono para filas de KPIs
+   * densas. Default 'comfortable'.
+   */
+  variant?: 'comfortable' | 'compact';
   style?: ViewStyle;
 }
 
@@ -42,20 +47,22 @@ export function KpiCard({
   icon: Icon,
   accentColor,
   progress,
+  variant = 'comfortable',
   style,
 }: KpiCardProps): React.ReactElement {
   const tone = TONE[badgeTone];
   const accent = accentColor ?? commonColors.text;
+  const compact = variant === 'compact';
 
   return (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, compact && styles.cardCompact, style]}>
       <View style={styles.topRow}>
         <Text style={styles.label} numberOfLines={1}>
           {label}
         </Text>
         {Icon ? (
-          <View style={[styles.iconWrap, { backgroundColor: `${accent}1A` }]}>
-            <Icon size={16} color={accent} />
+          <View style={[styles.iconWrap, compact && styles.iconWrapCompact, { backgroundColor: withAlpha(accent, 0.1) }]}>
+            <Icon size={compact ? 14 : 16} color={accent} />
           </View>
         ) : null}
       </View>
@@ -73,7 +80,7 @@ export function KpiCard({
           </View>
         ) : null}
       </View>
-      {typeof progress === 'number' ? (
+      {!compact && typeof progress === 'number' ? (
         <View style={styles.track}>
           <View
             style={[
@@ -99,6 +106,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     ...shadows.card,
   },
+  cardCompact: {
+    padding: spacing.sm2,
+    gap: spacing.xs,
+  },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -111,6 +122,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconWrapCompact: {
+    width: 24,
+    height: 24,
   },
   label: { ...typography.caption, color: commonColors.textSecondary, flex: 1 },
   valueRow: {

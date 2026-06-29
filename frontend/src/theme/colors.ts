@@ -211,3 +211,28 @@ export const colors = {
   dental: dentalColors,
   chat: chatColors,
 } as const;
+
+/**
+ * Helper robusto para aplicar opacidad a un color hex. Reemplaza la frágil
+ * concatenación `${accent}1A` (que rompe si el color no tiene `#` o si el
+ * formato no es 6 dígitos). Soporta hex de 3 y 6 dígitos y devuelve `rgba()`.
+ *
+ *   withAlpha('#0C8174', 0.1)   → 'rgba(12,129,116,0.1)'
+ *   withAlpha('#000', 0.2)      → 'rgba(0,0,0,0.2)'
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  let h = hex.replace('#', '');
+  if (h.length === 3) {
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  }
+  if (h.length !== 6) return hex; // no es hex de 6 → devolver tal cual (fallback seguro)
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const a = Math.max(0, Math.min(1, alpha));
+  return `rgba(${r},${g},${b},${a})`;
+}
+

@@ -12,6 +12,7 @@ import Svg, { Circle, Line, Polyline, Polygon, Text as SvgText } from 'react-nat
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { chartTokens } from '../../theme/charts';
 
 export interface LineSeries {
   data: number[];
@@ -128,14 +129,14 @@ export function LineChartSvg({
                 y1={y(t)}
                 x2={width - PADDING_RIGHT}
                 y2={y(t)}
-                stroke={commonColors.borderLight}
-                strokeWidth={1}
+                stroke={chartTokens.gridStroke}
+                strokeWidth={chartTokens.axisStrokeWidth}
               />
               <SvgText
                 x={padLeft - 6}
                 y={y(t) + 3}
-                fontSize={9}
-                fill={commonColors.textTertiary}
+                fontSize={chartTokens.axisFontSize}
+                fill={chartTokens.axisColor}
                 textAnchor="end"
               >
                 {t.toFixed(decimals)}
@@ -156,7 +157,7 @@ export function LineChartSvg({
                   points={pts}
                   fill="none"
                   stroke={s.color}
-                  strokeWidth={s.strokeWidth ?? 2}
+                  strokeWidth={s.strokeWidth ?? chartTokens.lineStrokeWidth}
                   strokeDasharray={s.dashed ? '5,4' : undefined}
                   strokeLinejoin="round"
                   strokeLinecap="round"
@@ -186,8 +187,8 @@ export function LineChartSvg({
                 key={`x${i}`}
                 x={x(i)}
                 y={PADDING_TOP + chartH + 16}
-                fontSize={9}
-                fill={commonColors.textTertiary}
+                fontSize={chartTokens.axisFontSize}
+                fill={chartTokens.axisColor}
                 textAnchor="middle"
               >
                 {lbl}
