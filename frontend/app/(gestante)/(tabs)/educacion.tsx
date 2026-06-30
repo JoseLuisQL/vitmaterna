@@ -11,7 +11,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, StyleSheet, Text, ScrollView, TouchableOpacity, Pressable,
-  Linking, StatusBar, Image,
+  Linking, StatusBar, Image, Platform,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -365,6 +365,20 @@ export default function EducacionScreen(): React.ReactElement {
 
   const renderHeader = () => (
     <View ref={educacionTourTarget} collapsable={false}>
+      {/* Herramientas rápidas */}
+      {!webShell && (
+        <View style={styles.toolsRow}>
+          <TouchableOpacity style={styles.toolBtn} onPress={() => setToolsVisible(true)} activeOpacity={0.85}>
+            <Calculator size={18} color={commonColors.textSecondary} />
+            <Text style={styles.toolBtnText}>Mis semanas</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.toolBtn} onPress={() => router.push('/(gestante)/alarmas')} activeOpacity={0.85}>
+            <AlertTriangle size={18} color={commonColors.textSecondary} />
+            <Text style={styles.toolBtnText}>Signos de alarma</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Buscador */}
       <SearchField
         value={query}
@@ -538,19 +552,6 @@ export default function EducacionScreen(): React.ReactElement {
               <Text style={styles.headerTitle}>Educación</Text>
               <Text style={styles.headerSubtitle}>Aprende sobre tu embarazo</Text>
             </View>
-            <NotificationBell href="/(gestante)/notificaciones" />
-          </View>
-
-          {/* Herramientas rápidas */}
-          <View style={styles.toolsRow}>
-            <TouchableOpacity style={styles.toolBtn} onPress={() => setToolsVisible(true)} activeOpacity={0.85}>
-              <Calculator size={16} color={commonColors.white} />
-              <Text style={styles.toolBtnText}>Mis semanas</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.toolBtn} onPress={() => router.push('/(gestante)/alarmas')} activeOpacity={0.85}>
-              <AlertTriangle size={16} color={commonColors.white} />
-              <Text style={styles.toolBtnText}>Signos de alarma</Text>
-            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -563,43 +564,48 @@ export default function EducacionScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   headerWrapper: { paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: Platform.OS === 'android' ? 44 : spacing.md },
   headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
   headerTitle: { ...typography.display, color: commonColors.white, marginBottom: 2 },
   headerSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft },
-  toolsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: commonColors.onColorSurface, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 8 },
-  toolBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
-  listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
+  
+  toolsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  toolBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: commonColors.surface, borderRadius: borderRadius.full, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: commonColors.border, ...shadows.card },
+  toolBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.text, fontSize: 13 },
+  
+  listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: 120 },
   listWeb: { width: '100%', alignSelf: 'center', paddingBottom: spacing.xl },
   searchBox: { marginBottom: spacing.md },
-  catRow: { gap: spacing.sm, paddingBottom: spacing.sm },
-  catChip: { paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
-  catChipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  catRow: { gap: spacing.sm, paddingBottom: spacing.md },
+  catChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border },
+  catChipActive: { backgroundColor: '#115E59', borderColor: '#115E59' },
   catChipText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
   catChipTextActive: { color: commonColors.white },
-  sectionHint: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.sm, marginLeft: 4 },
-  cardWrap: { position: 'relative', marginBottom: spacing.sm2 },
+  sectionHint: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.sm, marginLeft: 4, fontStyle: 'italic' },
+  
+  cardWrap: { position: 'relative', marginBottom: spacing.md },
   card: {
     flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md,
     backgroundColor: commonColors.surface, borderRadius: borderRadius.xl,
     padding: spacing.md2, ...shadows.card,
+    borderLeftWidth: 4, borderLeftColor: BRAND,
   },
   cardIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   cardThumb: { width: 56, height: 56, borderRadius: borderRadius.lg, backgroundColor: commonColors.surfaceAlt },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   cardCategory: { ...typography.overline, textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
-  cardTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, marginTop: 2 },
-  cardExcerpt: { ...typography.caption, color: commonColors.textSecondary, marginTop: 3, lineHeight: 18 },
-  recoTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: gestanteColors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full, flexShrink: 1 },
+  cardTitle: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text, marginTop: 2, fontSize: 16 },
+  cardExcerpt: { ...typography.caption, color: commonColors.textSecondary, marginTop: 4, lineHeight: 18, fontSize: 13 },
+  recoTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: gestanteColors.primaryLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.full, flexShrink: 1 },
   recoTagText: { ...typography.overline, fontSize: 9.5, fontWeight: '700', color: BRAND },
   recoNota: { ...typography.caption, color: BRAND, fontStyle: 'italic', marginTop: 3, lineHeight: 18 },
-  cardMetaRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  cardMetaRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm + 2 },
   cardMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardMetaText: { ...typography.overline, letterSpacing: 0, color: commonColors.textTertiary },
-  cardFavSpacer: { width: 24 },
-  cardFav: { position: 'absolute', top: spacing.sm, right: spacing.sm, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  cardMetaText: { ...typography.overline, letterSpacing: 0, color: commonColors.textTertiary, fontSize: 11 },
+  cardFavSpacer: { width: 28 },
+  cardFav: { position: 'absolute', top: spacing.sm, right: spacing.sm, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  
   emptyWrap: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl, gap: spacing.sm },
   emptyTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.sm },
   emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 20 },

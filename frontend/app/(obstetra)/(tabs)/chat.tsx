@@ -373,8 +373,23 @@ export default function ObstetraChatScreen() {
     <View style={styles.container}>
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bandejaHeader}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.bandejaTitle}>Bandeja de Consultas</Text>
-          <Text style={styles.bandejaSubtitle}>Mensajes con tus gestantes</Text>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.bandejaTitle}>Bandeja de Consultas</Text>
+              <Text style={styles.bandejaSubtitle}>Mensajes con tus gestantes</Text>
+            </View>
+            <TouchableOpacity
+              ref={!webShell ? (masivoTourTarget as any) : undefined}
+              style={styles.headerBroadcastBtn}
+              onPress={() => router.push('/(obstetra)/mensaje-masivo')}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Mensaje masivo"
+            >
+              <Megaphone size={16} color={commonColors.white} />
+              <Text style={styles.headerBroadcastText}>Masivo</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -385,11 +400,6 @@ export default function ObstetraChatScreen() {
       ) : (
         renderList(false)
       )}
-
-      <TouchableOpacity ref={!webShell ? (masivoTourTarget as any) : undefined} style={styles.broadcastFab} onPress={() => router.push('/(obstetra)/mensaje-masivo')} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Mensaje masivo">
-        <Megaphone size={20} color={commonColors.white} />
-        <Text style={styles.broadcastFabText}>Mensaje masivo</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -411,17 +421,26 @@ const styles = StyleSheet.create({
 
   // Headers móviles
   bandejaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.lg, borderBottomRightRadius: borderRadius.lg },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   bandejaTitle: { ...typography.h1, color: commonColors.white },
   bandejaSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
+  headerBroadcastBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255, 255, 255, 0.2)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: borderRadius.full, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.35)' },
+  headerBroadcastText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
 
   mobileSearchWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.md },
 
-  listContent: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace + 80 },
+  listContent: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: layout.tabBarSpace + 24 },
   emptyWrap: { paddingTop: spacing.xxl },
 
   // Hilo
-  threadHeader: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.lg, borderBottomRightRadius: borderRadius.lg },
-  threadHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  threadHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'android' ? 48 : spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+  },
+  threadHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
   backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: commonColors.onColorSurface },
   headerAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: commonColors.onColorSurfaceStrong, alignItems: 'center', justifyContent: 'center' },
   headerAvatarText: { ...typography.h4, color: commonColors.white },
@@ -433,8 +452,4 @@ const styles = StyleSheet.create({
 
   broadcastBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, paddingHorizontal: spacing.sm2, height: 36, borderRadius: borderRadius.full },
   broadcastBtnText: { ...typography.bodySm, fontWeight: '600', color: commonColors.white },
-  // Sobre la barra de tabs flotante (64 + safe-area). Antes en bottom:24 el FAB
-  // quedaba TAPADO por la barra inferior en móvil.
-  broadcastFab: { position: 'absolute', right: spacing.lg, bottom: layout.tabBarSpace + spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BRAND, paddingHorizontal: 20, paddingVertical: 14, borderRadius: borderRadius.full, ...coloredGlow(BRAND) },
-  broadcastFabText: { color: commonColors.white, ...typography.button, fontSize: 15 },
 });

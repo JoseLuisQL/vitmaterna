@@ -2,10 +2,10 @@
  * VITMATERNA — Gestante: ubicación de domicilio + historial de visitas domiciliarias.
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MapPin, CheckCircle2, Home } from 'lucide-react-native';
+import { ArrowLeft, MapPin, CheckCircle2, Home } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { goBack } from '../../src/utils/navigation';
 import { useMyProfile, useHomeVisits, useUpdateUbicacion } from '../../src/services/api-queries';
@@ -172,10 +172,12 @@ export default function VisitasGestante(): React.ReactElement {
     <View style={styles.container}>
       <LinearGradient colors={gestanteColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']} style={styles.headerRow}>
-          <TouchableOpacity onPress={() => goBack(router, '/(gestante)/(tabs)' as any)} hitSlop={10} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Volver">
-            <ChevronLeft size={24} color={commonColors.white} />
+          <TouchableOpacity onPress={() => goBack(router, '/(gestante)/(tabs)' as any)} hitSlop={12} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Volver">
+            <ArrowLeft size={24} color={commonColors.white} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Visitas domiciliarias</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Visitas domiciliarias</Text>
+          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -193,34 +195,34 @@ export default function VisitasGestante(): React.ReactElement {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
-  header: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  header: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: Platform.OS === 'android' ? 44 : spacing.md },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
-  headerTitle: { ...typography.h2, color: commonColors.white },
-  content: { padding: spacing.lg, paddingBottom: layout.tabBarSpace },
+  headerTitle: { ...typography.display, color: commonColors.white, fontSize: 20 },
+  content: { padding: spacing.lg, paddingBottom: 120 },
   webContent: { paddingBottom: spacing.xl },
-  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card, borderTopWidth: 4, borderTopColor: BRAND },
   cardTitle: { ...typography.h3, color: commonColors.text },
-  cardSub: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 4, marginBottom: spacing.md },
-  locBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: borderRadius.md, backgroundColor: gestanteColors.primaryLight, borderWidth: 1, borderColor: BRAND },
+  cardSub: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 4, marginBottom: spacing.md, lineHeight: 18 },
+  locBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: gestanteColors.primaryLight, borderWidth: 1, borderColor: BRAND },
   locBtnText: { ...typography.label, color: BRAND, fontWeight: '700' },
-  coordsBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
+  coordsBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.md },
   coordsText: { ...typography.bodySm, color: commonColors.textSecondary },
-  inputLabel: { ...typography.label, color: commonColors.textSecondary, marginTop: spacing.md, marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, padding: spacing.sm + 2, ...typography.body, color: commonColors.text, backgroundColor: commonColors.surfaceAlt },
-  saveBtn: { marginTop: spacing.md, backgroundColor: BRAND, borderRadius: borderRadius.md, paddingVertical: 14, alignItems: 'center' },
+  inputLabel: { ...typography.label, color: commonColors.textSecondary, marginTop: spacing.md, marginBottom: 8, fontWeight: '700' },
+  input: { borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, padding: spacing.md, ...typography.body, color: commonColors.text, backgroundColor: commonColors.surfaceAlt },
+  saveBtn: { marginTop: spacing.md, backgroundColor: BRAND, borderRadius: borderRadius.full, paddingVertical: 14, alignItems: 'center' },
   saveBtnDisabled: { backgroundColor: commonColors.disabled },
-  saveBtnText: { ...typography.button, color: commonColors.white },
+  saveBtnText: { ...typography.button, color: commonColors.white, fontWeight: '700' },
   sectionTitle: { ...typography.h3, color: commonColors.text, marginTop: spacing.xl, marginBottom: spacing.md },
-  emptyBox: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
-  emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center' },
-  visitCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm + 2, ...shadows.card, gap: 4 },
-  visitHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  numBadge: { backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.sm, paddingHorizontal: 8, paddingVertical: 2 },
+  emptyBox: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.borderLight, borderStyle: 'dashed' },
+  emptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  visitCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.sm + 2, ...shadows.card, gap: 4, borderLeftWidth: 4, borderLeftColor: BRAND },
+  visitHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 4 },
+  numBadge: { backgroundColor: gestanteColors.primaryLight, borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
   numText: { ...typography.overline, color: BRAND, fontWeight: '800', letterSpacing: 0 },
-  visitDate: { ...typography.label, color: commonColors.text },
+  visitDate: { ...typography.label, color: commonColors.textSecondary },
   visitMotivo: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
-  visitText: { ...typography.bodySm, color: commonColors.textSecondary },
-  visitAcuerdo: { ...typography.caption, color: commonColors.textSecondary, fontStyle: 'italic' },
-  personal: { ...typography.caption, color: commonColors.text, marginTop: 4, fontWeight: '600' },
+  visitText: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2, lineHeight: 18 },
+  visitAcuerdo: { ...typography.caption, color: BRAND, fontStyle: 'italic', marginTop: 4 },
+  personal: { ...typography.caption, color: commonColors.textTertiary, marginTop: 8, fontWeight: '600' },
 });

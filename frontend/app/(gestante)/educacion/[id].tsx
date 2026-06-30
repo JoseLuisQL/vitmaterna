@@ -6,7 +6,7 @@
  * abrir recurso). Marca el artículo como leído al abrirlo.
  */
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, StatusBar, Image, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -100,10 +100,12 @@ export default function EducacionDetalleScreen(): React.ReactElement {
         </TouchableOpacity>
       ) : null}
 
-      <RichText content={item.contenido} accentColor={cat.color} />
+      <View style={styles.richTextContainer}>
+        <RichText content={item.contenido} accentColor={cat.color} baseStyle={{ fontSize: 16, lineHeight: 26, color: '#334155' }} />
+      </View>
 
-      <View style={styles.readBadge}>
-        <CheckCircle2 size={16} color={cat.color} />
+      <View style={[styles.readBadge, { backgroundColor: cat.color + '15', borderColor: cat.color + '30' }]}>
+        <CheckCircle2 size={18} color={cat.color} />
         <Text style={[styles.readBadgeText, { color: cat.color }]}>Marcado como leído</Text>
       </View>
       </WebMaxWidth>
@@ -192,7 +194,7 @@ export default function EducacionDetalleScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: commonColors.background },
   header: { borderBottomLeftRadius: borderRadius.xxl, borderBottomRightRadius: borderRadius.xxl, paddingBottom: spacing.xl },
-  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  safeAreaHeader: { paddingHorizontal: spacing.lg, paddingTop: Platform.OS === 'android' ? 44 : spacing.md },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
   backBtnPlain: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.surfaceAlt, marginBottom: spacing.lg },
@@ -213,7 +215,8 @@ const styles = StyleSheet.create({
     padding: spacing.lg, marginBottom: spacing.lg, ...shadows.card,
   },
   mediaText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
-  readBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xl, alignSelf: 'center' },
-  readBadgeText: { ...typography.caption, fontWeight: '700' },
+  readBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.xl, alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 12, borderRadius: borderRadius.full, borderWidth: 1 },
+  readBadgeText: { ...typography.bodySm, fontWeight: '700', fontSize: 13 },
+  richTextContainer: { marginTop: spacing.sm },
   notFound: { ...typography.body, color: commonColors.textSecondary, textAlign: 'center', marginTop: spacing.xl },
 });

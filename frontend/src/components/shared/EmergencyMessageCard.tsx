@@ -1,51 +1,43 @@
 /**
  * VITMATERNA — EmergencyMessageCard
  *
- * Renderiza un mensaje de tipo `alerta_emergencia` como una tarjeta clínica
- * profesional (sin emojis): cabecera de urgencia con icono, líneas de datos
- * estructuradas (Paciente / Riesgo / Teléfono / Síntoma) y un botón para abrir
- * la ubicación en el mapa cuando viene una URL.
- *
- * El contenido llega como texto multilínea "Etiqueta: valor". Lo parseamos para
- * mostrarlo ordenado; si no tiene ese formato, se muestra tal cual.
+ * Tarjeta clínica de alta prioridad para alertas de emergencia obstétrica.
+ * Diseño ejecutivo con acento lateral rojo, tipografía estructurada y llamada
+ * a la acción inmediata.
  */
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
-import { Siren, MapPin, ChevronRight } from 'lucide-react-native';
+import { Siren, MapPin, ChevronRight, AlertTriangle } from 'lucide-react-native';
 import { commonColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, borderRadius } from '../../theme/spacing';
 
 interface EmergencyMessageCardProps {
-  /** Contenido del mensaje (multilínea "Etiqueta: valor"). */
   text: string;
-  /** Hora ya formateada (HH:mm). */
   time: string;
-  /** URL del mapa (mediaUrl del mensaje), si existe. */
   mapsUrl?: string | null;
 }
 
 interface ParsedLine {
   label?: string;
   value: string;
-  isUrl?: boolean;
 }
 
-/** Separa el texto en título + líneas etiqueta/valor. */
 function parse(text: string): { title: string; lines: ParsedLine[] } {
   const raw = (text || '').split('\n').map((l) => l.trim()).filter(Boolean);
-  if (raw.length === 0) return { title: 'Emergencia', lines: [] };
-  const title = raw[0];
+  if (raw.length === 0) return { title: 'ALERTA DE EMERGENCIA', lines: [] };
+  
+  // Limpiar el título principal
+  const title = raw[0].replace(/^-*\s*/, '');
   const lines: ParsedLine[] = [];
+  
   for (let i = 1; i < raw.length; i++) {
     const l = raw[i];
     const idx = l.indexOf(':');
     if (idx > 0) {
       const label = l.slice(0, idx).trim();
       const value = l.slice(idx + 1).trim();
-      const isUrl = /^https?:\/\//i.test(value);
-      // La ubicación (URL) no se muestra como texto: va al botón.
-      if (isUrl) continue;
+      if (/^https?:\/\//i.test(value)) continue;
       lines.push({ label, value });
     } else {
       lines.push({ value: l });
@@ -58,62 +50,172 @@ export function EmergencyMessageCard({ text, time, mapsUrl }: EmergencyMessageCa
   const { title, lines } = parse(text);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.iconWrap}>
-          <Siren size={18} color={commonColors.white} />
+    <View style={styles.cardContainer}>
+      <View style={styles.card}>
+        {/* Cabecera de la Alerta */}
+        <View style={styles.headerRow}>
+          <View style={styles.badge}>
+            <Siren size={14} color={semanticColors.danger} />
+            <Text style={styles.badgeText}>ALERTA OBSTÉTRICA</Text>
+          </View>
+          <Text style={styles.timeText}>{time}</Text>
         </View>
-        <Text style={styles.title} numberOfLines={2}>{title}</Text>
+
+        <Text style={styles.mainTitle}>{title}</Text>
+
+        {/* Datos Clínicos Estructurados */}
+        {lines.length > 0 && (
+          <View style={styles.grid}>
+            {lines.map((l, i) => {
+              const isSintoma = l.label?.toLowerCase().includes('síntoma') || l.label?.toLowerCase().includes('sintoma');
+              const isAccion = l.label?.toLowerCase().includes('acción') || l.label?.toLowerCase().includes('accion');
+              
+              if (isAccion) {
+                return (
+                  <View key={i} style={styles.actionBox}>
+                    <AlertTriangle size={15} color={semanticColors.danger} style={{ marginTop: 1 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.actionLabel}>ACCIÓN REQUERIDA:</Text>
+                      <Text style={styles.actionValue}>{l.value}</Text>
+                    </View>
+                  </View>
+                );
+              }
+
+              return (
+                <View key={i} style={styles.row}>
+                  {l.label ? <Text style={styles.rowLabel}>{l.label}</Text> : null}
+                  <Text style={[styles.rowValue, isSintoma && styles.sintomaHighlight]}>
+                    {l.value}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Ubicación GPS */}
+        {mapsUrl ? (
+          <Pressable
+            style={({ pressed }) => [styles.mapBtn, pressed && styles.mapBtnPressed]}
+            onPress={() => Linking.openURL(mapsUrl)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver ubicación de la gestante en el mapa"
+          >
+            <MapPin size={16} color={commonColors.white} />
+            <Text style={styles.mapBtnText}>Abrir GPS en Google Maps</Text>
+            <ChevronRight size={16} color={commonColors.white} />
+          </Pressable>
+        ) : null}
       </View>
-
-      {lines.length > 0 && (
-        <View style={styles.body}>
-          {lines.map((l, i) => (
-            <View key={i} style={styles.row}>
-              {l.label ? <Text style={styles.label}>{l.label}</Text> : null}
-              <Text style={[styles.value, !l.label && styles.valueFull]} numberOfLines={2}>{l.value}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {mapsUrl ? (
-        <Pressable
-          style={({ pressed }) => [styles.mapBtn, pressed && styles.mapBtnPressed]}
-          onPress={() => Linking.openURL(mapsUrl)}
-          accessibilityRole="button"
-          accessibilityLabel="Ver ubicación en el mapa"
-        >
-          <MapPin size={16} color={commonColors.white} />
-          <Text style={styles.mapBtnText}>Ver ubicación en el mapa</Text>
-          <ChevronRight size={16} color={commonColors.white} />
-        </Pressable>
-      ) : null}
-
-      <Text style={styles.time}>{time}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  cardContainer: {
     alignSelf: 'center',
-    width: '96%',
-    backgroundColor: semanticColors.dangerLight,
-    borderWidth: 1.5,
-    borderColor: semanticColors.danger,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    width: '94%',
     marginVertical: spacing.sm,
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  iconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: semanticColors.danger, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, ...typography.label, fontWeight: '800', color: semanticColors.danger },
-  body: { marginTop: spacing.sm, gap: 4 },
-  row: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  label: { ...typography.caption, fontWeight: '700', color: semanticColors.danger, minWidth: 72 },
-  value: { ...typography.bodySm, color: commonColors.text, flex: 1, fontWeight: '600' },
-  valueFull: { fontWeight: '500' },
+  card: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderLeftWidth: 5,
+    borderLeftColor: semanticColors.danger,
+    padding: spacing.md,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  badgeText: {
+    ...typography.overline,
+    color: semanticColors.danger,
+    fontWeight: '800',
+    fontSize: 11,
+  },
+  timeText: {
+    ...typography.caption,
+    color: commonColors.textTertiary,
+    fontWeight: '600',
+  },
+  mainTitle: {
+    ...typography.h4,
+    color: '#991B1B',
+    fontWeight: '800',
+    marginBottom: spacing.sm2,
+  },
+  grid: {
+    gap: 8,
+    marginTop: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  rowLabel: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: '#7F1D1D',
+    width: 72,
+    marginTop: 1,
+  },
+  rowValue: {
+    ...typography.bodySm,
+    color: commonColors.text,
+    flex: 1,
+    fontWeight: '500',
+  },
+  sintomaHighlight: {
+    fontWeight: '700',
+    color: '#1E293B',
+    fontSize: 14,
+  },
+  actionBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    padding: 10,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    marginTop: 6,
+  },
+  actionLabel: {
+    ...typography.overline,
+    color: semanticColors.danger,
+    fontWeight: '800',
+    fontSize: 10,
+  },
+  actionValue: {
+    ...typography.bodySm,
+    color: '#991B1B',
+    fontWeight: '700',
+    marginTop: 2,
+  },
   mapBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -126,8 +228,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   mapBtnPressed: { opacity: 0.85 },
-  mapBtnText: { ...typography.label, fontWeight: '700', color: commonColors.white },
-  time: { ...typography.caption, fontSize: 11, color: semanticColors.danger, alignSelf: 'flex-end', marginTop: spacing.sm, fontWeight: '600' },
+  mapBtnText: {
+    ...typography.label,
+    fontWeight: '700',
+    color: commonColors.white,
+  },
 });
 
 export default EmergencyMessageCard;

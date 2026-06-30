@@ -5,7 +5,7 @@ import { goBack } from '../../../src/utils/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Activity, Baby, Stethoscope } from 'lucide-react-native';
+import { Activity, Baby, Stethoscope, Info } from 'lucide-react-native';
 import { AppInput } from '../../../src/components/ui/AppInput';
 import { AppButton } from '../../../src/components/ui/AppButton';
 import { useToast } from '../../../src/components/ui';
@@ -46,7 +46,6 @@ const optNumInRange = (label: string, min: number, max: number) =>
 const controlSchema = z.object({
   week: numInRange('La semana', 1, 42),
   weight: optNumInRange('El peso', 30, 200),
-  // Presión arterial en formato sistólica/diastólica (ej. 120/80). Opcional.
   bloodPressure: z
     .string()
     .optional()
@@ -81,8 +80,6 @@ export default function NuevoControlScreen(): React.ReactElement {
 
   const onSubmit = (data: ControlFormData) => {
     if (!patientId) return toast.error('Falta la paciente', 'No se pudo identificar a la gestante.');
-    // Solo se envían los campos opcionales con valor. pulsoMaterno es numérico
-    // en el backend; el resto se envían como texto (temperatura acepta ambos).
     const optionals: Record<string, string | number> = {};
     (['temperatura', 'movimientoFetal', 'proteinuria', 'edema', 'weight', 'bloodPressure', 'fetalHeartRate', 'fundalHeight'] as const).forEach((k) => {
       const v = (data[k] || '').trim();
@@ -90,8 +87,7 @@ export default function NuevoControlScreen(): React.ReactElement {
     });
     const pulso = (data.pulsoMaterno || '').trim();
     if (pulso && !Number.isNaN(Number(pulso))) optionals.pulsoMaterno = Number(pulso);
-    // Si el control nace de una cita (flujo "Atender cita"), se liga al
-    // appointmentId para que la cita quede con su evidencia clínica.
+
     createControl(
       {
         patientId,
@@ -114,91 +110,238 @@ export default function NuevoControlScreen(): React.ReactElement {
   return (
     <ScreenLayout
       role="obstetra"
-      title="Nuevo control"
-      subtitle="Registro de control prenatal"
+      title="Nuevo control prenatal"
+      subtitle="Registro de atención clínica"
       showBack
       onBack={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)}
       accentColor={BRAND}
       width="full"
       contentStyle={styles.scrollContent}
     >
-        <View style={styles.noteCard}>
-          <Text style={styles.noteText}>
-            Registro rápido del control. Solo la semana gestacional es obligatoria
-            (para el cronograma y el conteo de controles). El detalle clínico
-            completo queda en la ficha física MINSA — aquí basta lo esencial.
+      <View style={styles.infoBanner}>
+        <Info size={18} color={BRAND} style={{ marginTop: 2 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.infoTitle}>Registro clínico ágil</Text>
+          <Text style={styles.infoText}>
+            Solo la <Text style={{ fontWeight: '700', color: commonColors.text }}>Semana Gestacional (*)</Text> es obligatoria para el cálculo del cronograma. Los signos vitales y datos fetales son opcionales y complementan la ficha física MINSA.
           </Text>
         </View>
+      </View>
 
-        <View style={webShell ? styles.twoCol : undefined}>
-          <View style={webShell ? styles.col : undefined}>
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconWrap}><Activity size={20} color={BRAND} /></View>
-                <Text style={styles.sectionTitle}>Datos del control</Text>
+      <View style={webShell ? styles.twoCol : styles.singleCol}>
+        {/* Columna Izquierda / Sección 1: Signos Maternos */}
+        <View style={webShell ? styles.col : undefined}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconWrap}>
+                <Activity size={20} color={BRAND} />
               </View>
-              <View style={styles.formGroup}>
-                <AppInput control={control} name="week" label="Semana Gestacional" placeholder="Ej. 24" keyboardType="numeric" error={errors.week?.message} />
-                <AppInput control={control} name="weight" label="Peso (kg) — opcional" placeholder="Ej. 65.5" keyboardType="numeric" error={errors.weight?.message} />
-                <AppInput control={control} name="bloodPressure" label="Presión Arterial (mmHg) — opcional" placeholder="Ej. 120/80" error={errors.bloodPressure?.message} />
-                <AppInput control={control} name="temperatura" label="Temperatura (°C) — opcional" placeholder="Ej. 36.5" keyboardType="numeric" error={errors.temperatura?.message} />
-                <AppInput control={control} name="pulsoMaterno" label="Pulso materno (lpm) — opcional" placeholder="Ej. 78" keyboardType="numeric" error={errors.pulsoMaterno?.message} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle}>Signos Vitales Maternos</Text>
+                <Text style={styles.sectionSubtitle}>Mediciones físicas generales</Text>
               </View>
             </View>
 
-            <AppButton title="Guardar control" onPress={handleSubmit(onSubmit)} loading={isPending} disabled={isPending} themeColor={BRAND} style={StyleSheet.flatten([styles.submitBtn, webShell && styles.submitBtnWeb])} />
-          </View>
+            <View style={styles.formGroup}>
+              <AppInput
+                control={control}
+                name="week"
+                label="Semana Gestacional *"
+                placeholder="Ej. 24"
+                keyboardType="numeric"
+                error={errors.week?.message}
+              />
 
-          <View style={webShell ? styles.col : undefined}>
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconWrap}><Baby size={20} color={BRAND} /></View>
-                <Text style={styles.sectionTitle}>Datos Fetales — opcional</Text>
+              <View style={styles.gridRow}>
+                <AppInput
+                  control={control}
+                  name="weight"
+                  label="Peso (kg)"
+                  placeholder="Ej. 65.5"
+                  keyboardType="numeric"
+                  error={errors.weight?.message}
+                  containerStyle={styles.gridCol}
+                />
+                <AppInput
+                  control={control}
+                  name="bloodPressure"
+                  label="Presión Arterial (mmHg)"
+                  placeholder="Ej. 120/80"
+                  error={errors.bloodPressure?.message}
+                  containerStyle={styles.gridCol}
+                />
               </View>
-              <View style={styles.formGroup}>
-                <AppInput control={control} name="fetalHeartRate" label="Frecuencia Cardíaca Fetal (lpm) — opcional" placeholder="Ej. 140" keyboardType="numeric" error={errors.fetalHeartRate?.message} />
-                <AppInput control={control} name="fundalHeight" label="Altura Uterina (cm) — opcional" placeholder="Ej. 22" keyboardType="numeric" error={errors.fundalHeight?.message} />
-                <AppInput control={control} name="movimientoFetal" label="Movimiento fetal — opcional" placeholder="Ej. Presente / Ausente" error={errors.movimientoFetal?.message} />
-              </View>
-            </View>
 
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconWrap}><Stethoscope size={20} color={BRAND} /></View>
-                <Text style={styles.sectionTitle}>Indicaciones</Text>
-              </View>
-              <View style={styles.formGroup}>
-                <AppInput control={control} name="indications" label="Observaciones y Recomendaciones" placeholder="Escribe las indicaciones aquí..." multiline numberOfLines={4} error={errors.indications?.message} />
+              <View style={styles.gridRow}>
+                <AppInput
+                  control={control}
+                  name="temperatura"
+                  label="Temperatura (°C)"
+                  placeholder="Ej. 36.5"
+                  keyboardType="numeric"
+                  error={errors.temperatura?.message}
+                  containerStyle={styles.gridCol}
+                />
+                <AppInput
+                  control={control}
+                  name="pulsoMaterno"
+                  label="Pulso materno (lpm)"
+                  placeholder="Ej. 78"
+                  keyboardType="numeric"
+                  error={errors.pulsoMaterno?.message}
+                  containerStyle={styles.gridCol}
+                />
               </View>
             </View>
           </View>
         </View>
+
+        {/* Columna Derecha / Sección 2 y 3: Datos Fetales e Indicaciones */}
+        <View style={webShell ? styles.col : undefined}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconWrap}>
+                <Baby size={20} color={BRAND} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle}>Evaluación Fetal</Text>
+                <Text style={styles.sectionSubtitle}>Latidos y biometría obstétrica</Text>
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <View style={styles.gridRow}>
+                <AppInput
+                  control={control}
+                  name="fetalHeartRate"
+                  label="FCF (lpm)"
+                  placeholder="Ej. 140"
+                  keyboardType="numeric"
+                  error={errors.fetalHeartRate?.message}
+                  containerStyle={styles.gridCol}
+                />
+                <AppInput
+                  control={control}
+                  name="fundalHeight"
+                  label="Altura Uterina (cm)"
+                  placeholder="Ej. 22"
+                  keyboardType="numeric"
+                  error={errors.fundalHeight?.message}
+                  containerStyle={styles.gridCol}
+                />
+              </View>
+
+              <AppInput
+                control={control}
+                name="movimientoFetal"
+                label="Movimiento fetal"
+                placeholder="Ej. Normal / Activo / Disminuido"
+                error={errors.movimientoFetal?.message}
+              />
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconWrap}>
+                <Stethoscope size={20} color={BRAND} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle}>Plan e Indicaciones</Text>
+                <Text style={styles.sectionSubtitle}>Recomendaciones para la paciente</Text>
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <AppInput
+                control={control}
+                name="indications"
+                label="Indicaciones y Tratamiento"
+                placeholder="Escribe recomendaciones dietéticas, sulfato ferroso recetado o laboratorios pendientes..."
+                multiline
+                numberOfLines={4}
+                error={errors.indications?.message}
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Footer de Acciones Estructurado */}
+      <View style={webShell ? styles.footerBarWeb : styles.footerBarMobile}>
+        <AppButton
+          title="Cancelar"
+          variant="outline"
+          onPress={() => goBack(router, '/(obstetra)/(tabs)/gestantes' as any)}
+          style={webShell ? styles.cancelBtnWeb : styles.actionBtnMobile}
+          disabled={isPending}
+        />
+        <AppButton
+          title="Guardar control"
+          onPress={handleSubmit(onSubmit)}
+          loading={isPending}
+          disabled={isPending}
+          themeColor={BRAND}
+          style={webShell ? styles.submitBtnWeb : styles.actionBtnMobile}
+        />
+      </View>
     </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: commonColors.background },
-  scrollContent: { paddingTop: spacing.md2 },
-  noteCard: { backgroundColor: obstetraColors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md },
-  noteText: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18 },
-  sectionCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.md2, marginBottom: spacing.md, ...shadows.card },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
-  sectionIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { ...typography.h4, color: commonColors.text },
-  formGroup: { gap: spacing.md },
-  submitBtn: { marginTop: spacing.md },
-  submitBtnWeb: {
-    maxWidth: 320,
-    alignSelf: 'flex-end',
-  },
-  twoCol: {
+  scrollContent: { paddingTop: spacing.md2, paddingBottom: spacing.xxl },
+  infoBanner: {
     flexDirection: 'row',
-    gap: spacing.lg,
     alignItems: 'flex-start',
+    backgroundColor: obstetraColors.primaryLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md2,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
-  col: {
-    flex: 1,
-    minWidth: 0,
+  infoTitle: { ...typography.label, fontWeight: '700', color: obstetraColors.primaryDark, marginBottom: 2 },
+  infoText: { ...typography.bodySm, color: commonColors.textSecondary, lineHeight: 19 },
+  singleCol: { gap: spacing.md },
+  twoCol: { flexDirection: 'row', gap: spacing.lg, alignItems: 'flex-start' },
+  col: { flex: 1, minWidth: 0 },
+  sectionCard: {
+    backgroundColor: commonColors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.card,
   },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md2, gap: 12 },
+  sectionIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: obstetraColors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: { ...typography.h4, color: commonColors.text, fontWeight: '700' },
+  sectionSubtitle: { ...typography.caption, color: commonColors.textSecondary, marginTop: 1 },
+  formGroup: { gap: spacing.md },
+  gridRow: { flexDirection: 'row', gap: spacing.md },
+  gridCol: { flex: 1, minWidth: 0 },
+  footerBarMobile: {
+    flexDirection: 'column-reverse',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  footerBarWeb: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    justifyContent: 'flex-end',
+  },
+  actionBtnMobile: { width: '100%' },
+  cancelBtnWeb: { minWidth: 150 },
+  submitBtnWeb: { minWidth: 220 },
 });

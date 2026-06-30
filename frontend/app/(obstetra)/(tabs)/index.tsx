@@ -27,6 +27,7 @@ import { commonColors, obstetraColors, semanticColors, riskColors } from '../../
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout, webLayout } from '../../../src/theme/spacing';
 import { shadows } from '../../../src/theme/shadows';
+import { formatHora } from '../../../src/utils/datetime';
 
 const BRAND = obstetraColors.primary;
 
@@ -45,6 +46,19 @@ function Kpi({
     </TouchableOpacity>
   );
 }
+
+const AppointmentTimeBadge = ({ item }: { item: any }) => {
+  const full = formatHora(item.hora || item.date);
+  const parts = full.split(' ');
+  const timePart = parts[0] || '--:--';
+  const ampmPart = parts.slice(1).join('').toUpperCase().replace(/\./g, '');
+  return (
+    <View style={styles.timeLine}>
+      <Text style={styles.timeText} numberOfLines={1}>{timePart}</Text>
+      <Text style={styles.timeAmPm} numberOfLines={1}>{ampmPart}</Text>
+    </View>
+  );
+};
 
 export default function ObstetraDashboard(): React.ReactElement {
   const router = useRouter();
@@ -243,20 +257,18 @@ export default function ObstetraDashboard(): React.ReactElement {
                       activeOpacity={0.7}
                       onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
                     >
-                      <View style={styles.timeLine}>
-                        <Text style={styles.timeText} numberOfLines={1}>
-                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-                        </Text>
-                        <Text style={styles.timeAmPm}>
-                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
-                        </Text>
-                      </View>
+                      <AppointmentTimeBadge item={item} />
                       <View style={styles.appointmentContent}>
                         <View style={styles.appointmentHeader}>
                           <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
                           <AppBadge label={item.riskLevel || 'Bajo'} variant={item.riskLevel === 'Alto' ? 'danger' : item.riskLevel === 'Medio' ? 'warning' : 'success'} />
                         </View>
                         <Text style={styles.appointmentType} numberOfLines={1}>{item.type || 'Control Prenatal'}</Text>
+                        {item.observaciones ? (
+                          <Text style={[styles.appointmentType, { color: commonColors.textSecondary, fontSize: 12, marginTop: 2 }]} numberOfLines={1}>
+                            {item.observaciones}
+                          </Text>
+                        ) : null}
                       </View>
                       <ChevronRight size={20} color={commonColors.textTertiary} />
                     </TouchableOpacity>
@@ -295,14 +307,7 @@ export default function ObstetraDashboard(): React.ReactElement {
               activeOpacity={0.7}
               onPress={() => item.gestanteId && router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: item.gestanteId } } as any)}
             >
-              <View style={styles.timeLine}>
-                <Text style={styles.timeText} numberOfLines={1}>
-                  {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-                </Text>
-                <Text style={styles.timeAmPm}>
-                  {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1] || ''}
-                </Text>
-              </View>
+              <AppointmentTimeBadge item={item} />
               <View style={styles.appointmentContent}>
                 <View style={styles.appointmentHeader}>
                   <Text style={styles.patientName} numberOfLines={1}>{item.patientName || 'Paciente'}</Text>
@@ -372,9 +377,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     ...shadows.card,
   },
-  timeLine: { alignItems: 'center', justifyContent: 'center', paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, minWidth: 64 },
-  timeText: { ...typography.h3, color: commonColors.text },
-  timeAmPm: { ...typography.overline, color: commonColors.textTertiary, marginTop: 2 },
+  timeLine: { alignItems: 'center', justifyContent: 'center', paddingRight: spacing.md, borderRightWidth: 1, borderRightColor: commonColors.borderLight, minWidth: 72 },
+  timeText: { ...typography.h3, color: commonColors.text, fontWeight: '700' },
+  timeAmPm: { ...typography.overline, color: commonColors.textSecondary, fontWeight: '700', marginTop: 1, letterSpacing: 0.5 },
   appointmentContent: { flex: 1, paddingLeft: spacing.md, justifyContent: 'center', minWidth: 0 },
   appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: spacing.sm },
   patientName: { ...typography.bodyMd, fontWeight: '600', color: commonColors.text, flex: 1 },

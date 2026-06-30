@@ -8,7 +8,7 @@
  */
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, Text, RefreshControl, TouchableOpacity, SectionList } from 'react-native';
-import { Clock, MapPin, Plus, Home } from 'lucide-react-native';
+import { Clock, MapPin, Plus, Home, FileText } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AppBadge } from '../../../src/components/ui/AppBadge';
@@ -188,6 +188,14 @@ export default function CronogramaScreen(): React.ReactElement {
                 {esDomiciliaria ? 'Visita domiciliaria' : 'Consultorio'}
               </Text>
             </View>
+            {item.observaciones ? (
+              <View style={styles.obsBox}>
+                <FileText size={13} color={commonColors.textSecondary} style={{ marginTop: 2, flexShrink: 0 }} />
+                <Text style={styles.obsText} numberOfLines={3}>
+                  {item.observaciones}
+                </Text>
+              </View>
+            ) : null}
           </TouchableOpacity>
 
           {isRescheduleRequest && (
@@ -542,6 +550,8 @@ const styles = StyleSheet.create({
   apptType: { ...typography.bodySm, color: commonColors.textSecondary },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   metaText: { ...typography.caption, color: commonColors.textTertiary },
+  obsBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: commonColors.surfaceAlt, padding: spacing.xs, borderRadius: borderRadius.sm, marginTop: 6, gap: 6 },
+  obsText: { ...typography.caption, color: commonColors.textSecondary, flex: 1 },
 
   rescheduleBox: { backgroundColor: commonColors.surface, borderRadius: borderRadius.lg, padding: spacing.sm, marginTop: spacing.sm, borderWidth: 1, borderColor: semanticColors.warning },
   rescheduleTitle: { ...typography.caption, fontWeight: '700', color: commonColors.text },

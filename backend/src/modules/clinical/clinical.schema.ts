@@ -210,8 +210,22 @@ export const getUltrasoundsSchema = {
 
 export const createVaccinationRecordSchema = {
   body: z.object({
+    id: z.string().uuid().optional(),
     gestanteId: z.string().uuid(),
     vacuna: z.string().min(1),
+    dosisNumero: z.number().int().positive().optional(),
+    egSemanasAplicacion: z.number().int().nonnegative().optional(),
+    fechaAplicacion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    estado: z.enum(['pendiente', 'aplicada', 'no_aplica']).optional(),
+  }),
+};
+
+export const updateVaccinationRecordSchema = {
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    vacuna: z.string().min(1).optional(),
     dosisNumero: z.number().int().positive().optional(),
     egSemanasAplicacion: z.number().int().nonnegative().optional(),
     fechaAplicacion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),

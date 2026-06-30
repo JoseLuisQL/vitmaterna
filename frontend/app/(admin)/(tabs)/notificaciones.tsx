@@ -37,6 +37,7 @@ import {
 import { commonColors, adminColors, semanticColors, accentColors } from '../../../src/theme/colors';
 import { typography } from '../../../src/theme/typography';
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
+import { shadows } from '../../../src/theme/shadows';
 
 const BRAND = adminColors.primary;
 
@@ -401,7 +402,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                   <TextInput style={[styles.input, styles.testMsgInput]} value={smsTestMsg} onChangeText={setSmsTestMsg} placeholder="Escribe el mensaje a enviar…" placeholderTextColor={commonColors.textTertiary} multiline maxLength={500} />
                   <Text style={styles.label}>Número de destino</Text>
                   <View style={styles.testRow}>
-                    <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                    <TextInput style={[styles.input, { flex: 1, marginTop: 0, minWidth: 0 }]} value={smsTest} onChangeText={setSmsTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
                     <TouchableOpacity style={[styles.testBtn, testing === 'sms' && { opacity: 0.7 }]} onPress={() => runTest('sms')} disabled={testing === 'sms'} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Enviar SMS de prueba">
                       {testing === 'sms' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
                       <Text style={styles.testBtnText}>Probar</Text>
@@ -442,7 +443,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                     accessibilityState={{ selected: waProvider === 'whatsapp_cloud' }}
                     accessibilityLabel="Usar Meta Cloud API"
                   >
-                    <Text style={[styles.segmentText, waProvider === 'whatsapp_cloud' && styles.segmentTextActive]}>Meta Cloud API</Text>
+                    <Text style={[styles.segmentText, waProvider === 'whatsapp_cloud' && styles.segmentTextActive]}>Cloud API</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.segmentBtn, waProvider === 'openwa' && styles.segmentBtnActive]}
@@ -452,7 +453,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                     accessibilityState={{ selected: waProvider === 'openwa' }}
                     accessibilityLabel="Usar OpenWA, servidor propio"
                   >
-                    <Text style={[styles.segmentText, waProvider === 'openwa' && styles.segmentTextActive]}>OpenWA (servidor propio)</Text>
+                    <Text style={[styles.segmentText, waProvider === 'openwa' && styles.segmentTextActive]}>OpenWA (Propio)</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -497,7 +498,7 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                   <TextInput style={[styles.input, styles.testMsgInput]} value={waTestMsg} onChangeText={setWaTestMsg} placeholder="Escribe el mensaje a enviar…" placeholderTextColor={commonColors.textTertiary} multiline maxLength={500} />
                   <Text style={styles.label}>Número de destino</Text>
                   <View style={styles.testRow}>
-                    <TextInput style={[styles.input, { flex: 1, marginTop: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
+                    <TextInput style={[styles.input, { flex: 1, marginTop: 0, minWidth: 0 }]} value={waTest} onChangeText={setWaTest} placeholder="+51987654321" placeholderTextColor={commonColors.textTertiary} keyboardType="phone-pad" />
                     <TouchableOpacity style={[styles.testBtn, testing === 'whatsapp' && { opacity: 0.7 }]} onPress={() => runTest('whatsapp')} disabled={testing === 'whatsapp'} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Enviar WhatsApp de prueba">
                       {testing === 'whatsapp' ? <ActivityIndicator size="small" color={commonColors.white} /> : <Send size={16} color={commonColors.white} />}
                       <Text style={styles.testBtnText}>Probar</Text>
@@ -728,39 +729,39 @@ const styles = StyleSheet.create({
   content: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
   // Resumen
   summaryRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  summaryCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.border, padding: spacing.md, alignItems: 'center', gap: spacing.xs2 + 2 },
-  summaryIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  summaryLabel: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600' },
-  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.border },
+  summaryCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.borderLight, padding: spacing.md, alignItems: 'center', gap: spacing.sm, ...shadows.subtle },
+  summaryIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  summaryLabel: { ...typography.h3, color: commonColors.text, fontWeight: '700' },
+  card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.borderLight, ...shadows.subtle },
   paidCard: { borderColor: semanticColors.warning, borderWidth: 1.5 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-  cardIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { ...typography.h3, color: commonColors.text },
-  cardHint: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', borderRadius: borderRadius.full, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { ...typography.overline, letterSpacing: 0, fontWeight: '700' },
+  cardIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { ...typography.h3, color: commonColors.text, fontWeight: '800' },
+  cardHint: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeText: { ...typography.label, letterSpacing: 0, fontWeight: '800' },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
-  switchLabel: { ...typography.bodyMd, color: commonColors.text },
+  switchLabel: { ...typography.h3, color: commonColors.text, fontWeight: '700' },
   // Selector de proveedor (segmented control sencillo con tokens del sistema).
-  segment: { flexDirection: 'row', gap: spacing.xs2, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: 4, marginTop: 4 },
-  segmentBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.sm, borderRadius: borderRadius.sm },
-  segmentBtnActive: { backgroundColor: commonColors.surface, borderWidth: 1, borderColor: BRAND },
-  segmentText: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary },
-  segmentTextActive: { color: BRAND },
-  helpBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.md, padding: spacing.sm2, marginTop: spacing.sm },
-  helpText: { ...typography.caption, color: commonColors.textSecondary, flex: 1, lineHeight: 17 },
-  label: { ...typography.caption, fontWeight: '600', color: commonColors.textSecondary, marginTop: spacing.md, marginBottom: 4 },
-  input: { backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4, ...typography.body, fontSize: 15, color: commonColors.text },
+  segment: { flexDirection: 'row', gap: 4, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.xl, padding: 4, marginTop: spacing.xs, marginBottom: spacing.sm },
+  segmentBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: 'transparent' },
+  segmentBtnActive: { backgroundColor: commonColors.surface, borderColor: commonColors.borderLight, ...shadows.subtle },
+  segmentText: { ...typography.bodySm, fontWeight: '600', color: commonColors.textSecondary, textAlign: 'center' },
+  segmentTextActive: { color: BRAND, fontWeight: '800' },
+  helpBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md },
+  helpText: { ...typography.bodySm, color: commonColors.textSecondary, flex: 1 },
+  label: { ...typography.label, fontWeight: '800', color: commonColors.textSecondary, marginTop: spacing.sm, marginBottom: 6 },
+  input: { backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: 14, ...typography.body, fontSize: 16, color: commonColors.text },
   inputError: { borderColor: semanticColors.danger },
-  errorHint: { ...typography.caption, color: semanticColors.danger, marginTop: 4 },
-  testBlock: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
-  testTitle: { ...typography.caption, fontWeight: '700', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
-  testDisabledHint: { ...typography.caption, color: commonColors.textTertiary, fontStyle: 'italic' },
-  testMsgInput: { minHeight: 64, textAlignVertical: 'top', marginBottom: spacing.sm },
-  testRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  testBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
-  testBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
-  note: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18, textAlign: 'center', paddingHorizontal: spacing.md },
+  errorHint: { ...typography.label, color: semanticColors.danger, marginTop: 6, fontWeight: '600' },
+  testBlock: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: commonColors.borderLight },
+  testTitle: { ...typography.label, fontWeight: '800', color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: spacing.sm },
+  testDisabledHint: { ...typography.bodySm, color: commonColors.textTertiary, fontStyle: 'italic' },
+  testMsgInput: { minHeight: 110, textAlignVertical: 'top', marginBottom: spacing.md, paddingTop: 14, paddingBottom: 14 },
+  testRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  testBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BRAND, borderRadius: borderRadius.full, paddingHorizontal: 16, paddingVertical: 12, ...shadows.card, flexShrink: 0 },
+  testBtnText: { ...typography.bodySm, fontWeight: '800', color: commonColors.white },
+  note: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.xl },
   twoCol: {
     flexDirection: 'row',
     gap: spacing.lg,
@@ -771,46 +772,46 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   // ─── Panel de gestión OpenWA (refactor) ───
-  owaPanel: { marginTop: spacing.xs, marginBottom: spacing.md },
+  owaPanel: { marginTop: spacing.sm, marginBottom: spacing.md },
   owaPanelHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-  refreshBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: adminColors.primaryLight },
+  refreshBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: adminColors.primaryLight },
   owaGrid: { flexDirection: 'row', gap: spacing.md, alignItems: 'stretch' },
   owaGridItem: { flex: 1, minWidth: 0 },
   owaCard: { marginBottom: spacing.md },
-  owaCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.sm2 },
-  owaCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs2 + 2 },
-  owaCardTitle: { ...typography.bodyLg, fontWeight: '700', color: commonColors.text },
-  owaCardDesc: { ...typography.caption, color: commonColors.textSecondary, lineHeight: 18, marginBottom: spacing.xs },
-  owaCount: { ...typography.caption, color: commonColors.textTertiary, fontWeight: '600' },
+  owaCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.sm },
+  owaCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  owaCardTitle: { ...typography.h3, fontWeight: '800', color: commonColors.text },
+  owaCardDesc: { ...typography.bodySm, color: commonColors.textSecondary, marginBottom: spacing.xs },
+  owaCount: { ...typography.label, color: commonColors.textTertiary, fontWeight: '700' },
   // Chip de estado en vivo de la sesión
-  liveChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2, borderRadius: borderRadius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
-  liveDot: { width: 7, height: 7, borderRadius: 4 },
-  liveChipText: { ...typography.caption, fontWeight: '700' },
+  liveChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
+  liveDot: { width: 8, height: 8, borderRadius: 4 },
+  liveChipText: { ...typography.label, fontWeight: '800' },
   // Lista de datos del estado
-  owaInfoList: { marginTop: spacing.xs2 },
-  owaInfoValueRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
-  owaInfoValue: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600' },
-  owaErrorBox: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs2 + 2, backgroundColor: semanticColors.dangerLight, borderRadius: borderRadius.md, padding: spacing.sm2, marginTop: spacing.sm },
-  owaErrorText: { ...typography.caption, color: semanticColors.danger, flex: 1, lineHeight: 17 },
-  owaConnectAction: { marginTop: spacing.md },
+  owaInfoList: { marginTop: spacing.sm },
+  owaInfoValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  owaInfoValue: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600', flexShrink: 1 },
+  owaErrorBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: semanticColors.dangerLight, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.sm },
+  owaErrorText: { ...typography.bodySm, color: semanticColors.danger, flex: 1 },
+  owaConnectAction: { marginTop: spacing.lg },
   // QR
-  qrBox: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-  qrFrame: { padding: spacing.sm, backgroundColor: commonColors.white, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: commonColors.border },
-  qrImage: { width: 200, height: 200, borderRadius: borderRadius.sm, backgroundColor: commonColors.white },
-  qrHint: { ...typography.caption, color: commonColors.textSecondary, textAlign: 'center', lineHeight: 17, paddingHorizontal: spacing.sm },
+  qrBox: { alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
+  qrFrame: { padding: spacing.md, backgroundColor: commonColors.white, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.border, ...shadows.subtle },
+  qrImage: { width: 220, height: 220, borderRadius: borderRadius.md, backgroundColor: commonColors.white },
+  qrHint: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.md },
   // Estado de entrega (chip)
-  deliveryChip: { borderRadius: borderRadius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: 3 },
-  deliveryChipText: { ...typography.overline, letterSpacing: 0.2, fontWeight: '700' },
+  deliveryChip: { borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  deliveryChipText: { ...typography.label, letterSpacing: 0, fontWeight: '800' },
   // Actividad reciente
-  owaLoading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
-  owaLoadingText: { ...typography.caption, color: commonColors.textSecondary },
-  owaEmpty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
-  owaEmptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-  owaEmptyText: { ...typography.caption, color: commonColors.textSecondary, textAlign: 'center', maxWidth: 260 },
-  owaMsgRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
+  owaLoading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
+  owaLoadingText: { ...typography.bodySm, color: commonColors.textSecondary },
+  owaEmpty: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl },
+  owaEmptyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  owaEmptyText: { ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', maxWidth: 280 },
+  owaMsgRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   owaMsgRowLast: { borderBottomWidth: 0 },
-  owaMsgIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  owaMsgIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   owaMsgBodyWrap: { flex: 1, minWidth: 0 },
-  owaMsgBody: { ...typography.bodyMd, color: commonColors.text, fontWeight: '500' },
-  owaMsgMeta: { ...typography.caption, color: commonColors.textTertiary, marginTop: 1 },
+  owaMsgBody: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600' },
+  owaMsgMeta: { ...typography.caption, color: commonColors.textTertiary, marginTop: 2 },
 });

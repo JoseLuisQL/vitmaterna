@@ -7,6 +7,7 @@ import { User as UserIcon, Search, Check, FileText, Calendar, Clock, ChevronRigh
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
 import {
   usePatients,
   useCreateAppointment,
@@ -187,7 +188,15 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.selectedName} numberOfLines={1}>{gestanteName}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 2 }}>
+                  <Text style={[styles.selectedName, { marginBottom: 0, flexShrink: 1 }]} numberOfLines={1}>{gestanteName}</Text>
+                  {(() => { const r = riskMeta(selectedPatient.riskLevel); return (
+                    <View style={[styles.riskChip, { backgroundColor: r.bg, paddingVertical: 4, paddingHorizontal: 8 }]}>
+                      <View style={[styles.riskDot, { backgroundColor: r.color, width: 6, height: 6 }]} />
+                      <Text style={[styles.riskChipText, { color: r.color, fontSize: 10, letterSpacing: 0.5 }]}>{r.label}</Text>
+                    </View>
+                  ); })()}
+                </View>
                 <View style={styles.selectedMetaRow}>
                   <Text style={styles.selectedMeta}>DNI {selectedPatient.documentNumber}</Text>
                   {selectedPatient.currentWeek ? (
@@ -198,12 +207,6 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
                   ) : null}
                 </View>
               </View>
-              {(() => { const r = riskMeta(selectedPatient.riskLevel); return (
-                <View style={[styles.riskChip, { backgroundColor: r.bg }]}>
-                  <View style={[styles.riskDot, { backgroundColor: r.color }]} />
-                  <Text style={[styles.riskChipText, { color: r.color }]}>{r.label}</Text>
-                </View>
-              ); })()}
               <Text style={styles.changeLink}>Cambiar</Text>
             </TouchableOpacity>
           ) : (
@@ -477,15 +480,15 @@ export function NuevaCitaModal({ visible, onClose }: NuevaCitaModalProps): React
 const styles = StyleSheet.create({
   // Encabezados de paso
   stepLabel: {
-    ...typography.overline,
+    ...typography.label,
     color: BRAND,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    fontWeight: '700',
-    marginTop: spacing.lg,
+    letterSpacing: 0.8,
+    fontWeight: '800',
+    marginTop: spacing.xl,
     marginBottom: spacing.sm,
   },
-  fieldLabel: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.md },
+  fieldLabel: { ...typography.label, color: commonColors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.lg, fontWeight: '700' },
 
   // Selector de paciente vacío
   selectorEmpty: {
@@ -493,80 +496,82 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: commonColors.surfaceAlt,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.md,
-    minHeight: 56,
+    borderRadius: borderRadius.xl,
+    paddingHorizontal: spacing.lg,
+    minHeight: 64,
     borderWidth: 1,
     borderColor: commonColors.border,
   },
-  iconBox: { width: 36, height: 36, borderRadius: borderRadius.sm, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  selectorEmptyText: { ...typography.body, color: commonColors.textTertiary, flex: 1 },
+  iconBox: { width: 40, height: 40, borderRadius: borderRadius.full, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  selectorEmptyText: { ...typography.bodyMd, color: commonColors.textSecondary, flex: 1, fontWeight: '500' },
 
   // Paciente seleccionada
   selectedCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     backgroundColor: obstetraColors.primaryLight,
-    borderRadius: borderRadius.md,
-    padding: spacing.sm2,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: BRAND,
   },
-  selectedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center' },
-  selectedAvatarText: { ...typography.bodyMd, fontWeight: '700', color: BRAND },
-  selectedName: { ...typography.bodyMd, fontWeight: '700', color: commonColors.text },
-  selectedMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
-  selectedMeta: { ...typography.caption, color: commonColors.textSecondary },
-  metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: commonColors.textTertiary },
-  changeLink: { ...typography.caption, color: BRAND, fontWeight: '700' },
+  selectedAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: commonColors.white, alignItems: 'center', justifyContent: 'center', ...shadows.card },
+  selectedAvatarText: { ...typography.bodyLg, fontWeight: '800', color: BRAND },
+  selectedName: { ...typography.h3, color: commonColors.text, marginBottom: 2 },
+  selectedMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2, flexWrap: 'wrap' },
+  selectedMeta: { ...typography.bodySm, color: commonColors.textSecondary },
+  metaDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: commonColors.textTertiary },
+  changeLink: { ...typography.label, color: BRAND, fontWeight: '800' },
 
   // Semáforo de riesgo
-  riskChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: borderRadius.full },
-  riskDot: { width: 7, height: 7, borderRadius: 4 },
-  riskChipText: { ...typography.overline, fontWeight: '700' },
+  riskChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm + 2, paddingVertical: 6, borderRadius: borderRadius.full },
+  riskDot: { width: 8, height: 8, borderRadius: 4 },
+  riskChipText: { ...typography.label, fontWeight: '800' },
 
   // Modalidad (segmentos)
   modalidadRow: { flexDirection: 'row', gap: spacing.sm },
-  modalidadBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: spacing.sm2, borderRadius: borderRadius.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
-  modalidadBtnActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
+  modalidadBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 14, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  modalidadBtnActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND, borderWidth: 2 },
   modalidadText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '600' },
-  modalidadTextActive: { color: BRAND, fontWeight: '700' },
-  hint: { ...typography.caption, color: commonColors.textTertiary, marginTop: spacing.sm, lineHeight: 17 },
+  modalidadTextActive: { color: BRAND, fontWeight: '800' },
+  hint: { ...typography.bodySm, color: commonColors.textTertiary, marginTop: spacing.sm, lineHeight: 18 },
 
   // Chips (motivo)
-  chipRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs2 },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
-  chipActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND },
-  chipText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '500' },
-  chipTextActive: { color: BRAND, fontWeight: '700' },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
+  chip: { paddingHorizontal: spacing.lg, paddingVertical: 12, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  chipActive: { backgroundColor: obstetraColors.primaryLight, borderColor: BRAND, borderWidth: 2 },
+  chipText: { ...typography.label, color: commonColors.textSecondary, fontWeight: '600' },
+  chipTextActive: { color: BRAND, fontWeight: '800' },
   customMotivoBox: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1, borderColor: commonColors.border,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
-    minHeight: 48,
-    marginTop: spacing.sm,
+    minHeight: 52,
+    marginTop: spacing.md,
   },
-  customMotivoInput: { flex: 1, ...typography.body, color: commonColors.text, paddingVertical: spacing.sm + 2 },
+  customMotivoInput: { flex: 1, ...typography.body, color: commonColors.text, paddingVertical: 14 },
 
   // Fecha
-  dateRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs2 },
-  dateChip: { alignItems: 'center', paddingVertical: spacing.sm2, paddingHorizontal: spacing.md, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, minWidth: 58, gap: 2 },
-  dateChipActive: { backgroundColor: BRAND, borderColor: BRAND },
-  dateChipDow: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase' },
-  dateChipDay: { ...typography.h3, color: commonColors.text },
-  dateChipMonth: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase' },
+  dateRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
+  dateChip: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: spacing.md, borderRadius: borderRadius.xl, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border, minWidth: 64, gap: 4 },
+  dateChipActive: { backgroundColor: BRAND, borderColor: BRAND, ...shadows.subtle },
+  dateChipDow: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  dateChipDay: { ...typography.display, color: commonColors.text, fontSize: 24 },
+  dateChipMonth: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
   dateChipTextActive: { color: obstetraColors.onPrimary },
 
   // Horarios
-  placeholderBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
-  placeholderText: { ...typography.bodySm, color: commonColors.textSecondary, flex: 1, lineHeight: 18 },
+  placeholderBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: commonColors.surfaceAlt, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, paddingVertical: spacing.lg, borderWidth: 1, borderColor: commonColors.borderLight, borderStyle: 'dashed' },
+  placeholderText: { ...typography.bodySm, color: commonColors.textSecondary, flex: 1, lineHeight: 20 },
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  slotChip: { minWidth: 64, alignItems: 'center', paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderRadius: borderRadius.sm, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
-  slotChipActive: { backgroundColor: BRAND, borderColor: BRAND },
+  slotChip: { minWidth: 72, alignItems: 'center', paddingVertical: 14, paddingHorizontal: spacing.md, borderRadius: borderRadius.full, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border },
+  slotChipActive: { backgroundColor: BRAND, borderColor: BRAND, ...shadows.subtle },
   slotChipDisabled: { opacity: 0.4 },
-  slotText: { ...typography.bodyMd, fontWeight: '600', color: commonColors.text },
-  slotTextActive: { color: obstetraColors.onPrimary, fontWeight: '700' },
+  slotText: { ...typography.label, fontWeight: '600', color: commonColors.text },
+  slotTextActive: { color: obstetraColors.onPrimary, fontWeight: '800' },
   slotTextDisabled: { color: commonColors.textTertiary, textDecorationLine: 'line-through' },
 
   // Descripción
@@ -577,12 +582,12 @@ const styles = StyleSheet.create({
     backgroundColor: commonColors.surfaceAlt,
     borderWidth: 1,
     borderColor: commonColors.border,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm2,
-    minHeight: 80,
+    paddingVertical: spacing.md,
+    minHeight: 100,
   },
-  textAreaInput: { flex: 1, ...typography.body, color: commonColors.text, textAlignVertical: 'top', minHeight: 60 },
+  textAreaInput: { flex: 1, ...typography.body, color: commonColors.text, textAlignVertical: 'top', minHeight: 80, lineHeight: 22 },
 
   // Resumen
   summaryCard: { marginTop: spacing.lg, padding: spacing.md, borderRadius: borderRadius.md, backgroundColor: obstetraColors.primaryLight, gap: spacing.sm },

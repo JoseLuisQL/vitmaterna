@@ -759,12 +759,61 @@ export class ClinicalService {
   }
 
   async createVaccinationRecord(data: any) {
-    const { gestanteId, fechaAplicacion, ...vaccineData } = data;
+    const { gestanteId, fechaAplicacion, id, ...vaccineData } = data;
+
+    // Si se pasa un ID, actualizar ese registro directamente
+    if (id) {
+      const existingById = await prisma.vaccinationRecord.findUnique({ where: { id } });
+      if (existingById) {
+        return prisma.vaccinationRecord.update({
+          where: { id },
+          data: {
+            ...vaccineData,
+            fechaAplicacion: fechaAplicacion ? new Date(fechaAplicacion) : (vaccineData.estado === 'aplicada' ? new Date() : existingById.fechaAplicacion),
+          }
+        });
+      }
+    }
+
+    // Buscar si ya existe un registro pendiente o previo para esta gestante con la misma vacuna
+    const existing = await prisma.vaccinationRecord.findFirst({
+      where: {
+        gestanteId,
+        vacuna: { equals: vaccineData.vacuna, mode: 'insensitive' },
+        dosisNumero: vaccineData.dosisNumero || 1,
+      }
+    });
+
+    if (existing) {
+      return prisma.vaccinationRecord.update({
+        where: { id: existing.id },
+        data: {
+          ...vaccineData,
+          fechaAplicacion: fechaAplicacion ? new Date(fechaAplicacion) : (vaccineData.estado === 'aplicada' ? new Date() : existing.fechaAplicacion),
+        }
+      });
+    }
+
     return prisma.vaccinationRecord.create({
       data: {
         ...vaccineData,
         gestanteId,
-        fechaAplicacion: fechaAplicacion ? new Date(fechaAplicacion) : undefined,
+        fechaAplicacion: fechaAplicacion ? new Date(fechaAplicacion) : (vaccineData.estado === 'aplicada' ? new Date() : undefined),
+      }
+    });
+  }
+
+  async updateVaccinationRecord(id: string, data: any) {
+    const existing = await prisma.vaccinationRecord.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Registro de vacunación no encontrado');
+    }
+    const { fechaAplicacion, ...rest } = data;
+    return prisma.vaccinationRecord.update({
+      where: { id },
+      data: {
+        ...rest,
+        fechaAplicacion: fechaAplicacion ? new Date(fechaAplicacion) : (rest.estado === 'aplicada' ? new Date() : existing.fechaAplicacion),
       }
     });
   }

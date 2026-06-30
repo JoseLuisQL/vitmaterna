@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronDown, ChevronUp, User, Stethoscope, Pill, FlaskConical,
   Syringe, AlertTriangle, Activity, Plus, ClipboardList, Trash2, BookOpen, Send,
   Phone, CalendarClock, Baby, HeartPulse, CalendarHeart, ChevronRight,
-  Eye, Clock, ExternalLink, PlayCircle, CheckCircle2, Droplet, Beaker, ShieldCheck,
+  Eye, Clock, ExternalLink, PlayCircle, CheckCircle2, Droplet, Beaker, ShieldCheck, HelpCircle, Scale,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
@@ -26,7 +26,7 @@ import { useResponsive } from '../../../src/theme/responsive';
 import { typography } from '../../../src/theme/typography';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
-  usePatientProfile, useCreateLabResult, useCreateVaccine, useCreateTreatment,
+  usePatientProfile, useCreateLabResult, useCreateVaccine, useUpdateVaccine, useCreateTreatment,
   useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
   useEducationCatalog, useRecommendContent,
   usePatientDangerSigns, useUpdateDangerSign, useHomeVisits,
@@ -115,6 +115,7 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [isLabModalVisible, setIsLabModalVisible] = useState(false);
   const [isVaxModalVisible, setIsVaxModalVisible] = useState(false);
   const [isTreatModalVisible, setIsTreatModalVisible] = useState(false);
+  const [isEvolucionModalVisible, setIsEvolucionModalVisible] = useState(false);
 
   // Form states for Lab Result
   const [labTipo, setLabTipo] = useState('');
@@ -126,6 +127,7 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [labObs, setLabObs] = useState('');
 
   // Form states for Vaccine Record
+  const [vaxId, setVaxId] = useState<string | undefined>(undefined);
   const [vaxNombre, setVaxNombre] = useState('');
   const [vaxDosis, setVaxDosis] = useState('1');
   const [vaxSemana, setVaxSemana] = useState('');
@@ -155,6 +157,7 @@ export default function PatientProfileScreen(): React.ReactElement {
 
   // Editar antecedentes obstétricos (G/P/C/A) — fórmula obstétrica
   const [isObsModalVisible, setIsObsModalVisible] = useState(false);
+  const [isAlarmHistoryModalVisible, setIsAlarmHistoryModalVisible] = useState(false);
   const [obsGestaciones, setObsGestaciones] = useState('');
   const [obsPartos, setObsPartos] = useState('');
   const [obsCesareas, setObsCesareas] = useState('');
@@ -191,7 +194,9 @@ export default function PatientProfileScreen(): React.ReactElement {
 
   // Mutations
   const { mutate: createLabResult, isPending: isSavingLab } = useCreateLabResult();
-  const { mutate: createVaccine, isPending: isSavingVax } = useCreateVaccine();
+  const { mutate: createVaccine, isPending: isCreatingVax } = useCreateVaccine();
+  const { mutate: updateVaccine, isPending: isUpdatingVax } = useUpdateVaccine();
+  const isSavingVax = isCreatingVax || isUpdatingVax;
   const { mutate: createTreatment, isPending: isSavingTreat } = useCreateTreatment();
   const { mutate: createAntecedente, isPending: isSavingAnt } = useCreateAntecedente();
   const { mutate: deleteAntecedente } = useDeleteAntecedente();
@@ -441,26 +446,42 @@ export default function PatientProfileScreen(): React.ReactElement {
     if (!vaxNombre) return toast.error('Falta el nombre', 'El nombre de la vacuna es requerido.');
     if (!patient) return;
 
-    createVaccine({
-      gestanteId: patient.id,
+    const payload = {
       vacuna: vaxNombre,
       dosisNumero: parseInt(vaxDosis, 10) || 1,
       egSemanasAplicacion: vaxSemana ? parseInt(vaxSemana, 10) : undefined,
       fechaAplicacion: vaxEstado === 'aplicada' ? new Date().toISOString().split('T')[0] : undefined,
       estado: vaxEstado,
-    }, {
-      onSuccess: () => {
-        toast.success('Vacuna registrada', 'El registro de vacunación se guardó.');
-        setIsVaxModalVisible(false);
-        setVaxNombre('');
-        setVaxDosis('1');
-        setVaxSemana('');
-        setVaxEstado('aplicada');
-      },
-      onError: () => {
-        toast.error('Error', 'No se pudo registrar la vacuna.');
-      }
-    });
+    };
+
+    const onSuccess = () => {
+      toast.success(vaxId ? 'Vacuna actualizada' : 'Vacuna registrada', vaxId ? 'El estado de la vacuna fue actualizado.' : 'El registro de vacunación se guardó.');
+      setIsVaxModalVisible(false);
+      setVaxId(undefined);
+      setVaxNombre('');
+      setVaxDosis('1');
+      setVaxSemana('');
+      setVaxEstado('aplicada');
+    };
+
+    const onError = () => {
+      toast.error('Error', 'No se pudo registrar/actualizar la vacuna.');
+    };
+
+    if (vaxId) {
+      updateVaccine({ id: vaxId, gestanteId: patient.id, data: payload }, { onSuccess, onError });
+    } else {
+      createVaccine({ gestanteId: patient.id, ...payload }, { onSuccess, onError });
+    }
+  };
+
+  const openEditVax = (v: any) => {
+    setVaxId(v.id || v._id);
+    setVaxNombre(v.nombre || '');
+    setVaxDosis(v.dosis?.toString() || '1');
+    setVaxSemana(v.semana?.toString() || '');
+    setVaxEstado(v.aplicada ? 'aplicada' : 'pendiente');
+    setIsVaxModalVisible(true);
   };
 
   const handleSaveTreat = () => {
@@ -706,14 +727,18 @@ export default function PatientProfileScreen(): React.ReactElement {
               <Text style={styles.headerStatLbl} numberOfLines={1}>Próxima cita</Text>
             </View>
             <View style={styles.headerStatDivider} />
-            <View style={styles.headerStat}>
+            <TouchableOpacity 
+              style={[styles.headerStat, pendingDangerCount > 0 && { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8 }]}
+              onPress={() => pendingDangerCount > 0 && setActiveTab('clinico')}
+              disabled={pendingDangerCount === 0}
+            >
               <Text style={[styles.headerStatVal, pendingDangerCount > 0 && { color: commonColors.white }]} numberOfLines={1}>
                 {pendingDangerCount > 0 ? pendingDangerCount : '0'}
               </Text>
               <Text style={styles.headerStatLbl} numberOfLines={1}>
                 {pendingDangerCount === 1 ? 'Alarma' : 'Alarmas'}
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -764,16 +789,23 @@ export default function PatientProfileScreen(): React.ReactElement {
                   <Text style={styles.alertasTitle}>Requiere atención</Text>
                   {pendingDangerCount > 0 && (
                     <TouchableOpacity
-                      style={styles.resumenAlertaRow}
+                      style={[styles.resumenAlertaRow, { backgroundColor: semanticColors.dangerLight || '#FEE2E2', paddingVertical: 12, paddingHorizontal: 14, borderRadius: borderRadius.md, marginBottom: 8 }]}
                       onPress={() => setActiveTab('clinico')}
-                      accessibilityRole="button"
-                      accessibilityLabel="Ver signos de alarma pendientes"
+                      activeOpacity={0.8}
                     >
-                      <AlertTriangle size={14} color={riskColors.riskRed} />
-                      <Text style={[styles.resumenAlertaText, { fontWeight: '700' }]}>
-                        {pendingDangerCount} signo{pendingDangerCount > 1 ? 's' : ''} de alarma sin atender
-                      </Text>
-                      <ChevronRight size={16} color={commonColors.textTertiary} />
+                      <AlertTriangle size={18} color={semanticColors.danger || '#DC2626'} />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={{ ...typography.bodyMd, fontWeight: '800', color: semanticColors.danger || '#DC2626' }}>
+                          {pendingDangerCount === 1 ? '1 Signo de alarma pendiente' : `${pendingDangerCount} Signos de alarma pendientes`}
+                        </Text>
+                        <Text style={{ ...typography.caption, color: commonColors.textSecondary, fontWeight: '600', marginTop: 2 }} numberOfLines={1}>
+                          {dangerSigns.find((s: any) => s.estado === 'pendiente')?.tipoSigno || 'Requiere evaluación'}
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: semanticColors.danger || '#DC2626', paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.sm, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={{ color: commonColors.white, fontWeight: '700', fontSize: 12 }}>Atender</Text>
+                        <ChevronRight size={14} color={commonColors.white} />
+                      </View>
                     </TouchableOpacity>
                   )}
                   {accionableAlertas.map((a: string, i: number) => (
@@ -936,15 +968,6 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── SECCIÓN: EVOLUCIÓN (controles prenatales + gráficas + visitas) ── */}
           {activeTab === 'evolucion' && (
             <View style={styles.section}>
-              {/* Encabezado explicativo de la sección */}
-              <View style={[styles.card, designTokens.cardShadow]}>
-                <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Evolución del embarazo</Text>
-                <Text style={styles.clinicoIntro}>
-                  Cómo avanza el embarazo control a control: crecimiento del bebé (altura uterina),
-                  ganancia de peso y el historial de controles con sus signos vitales.
-                </Text>
-              </View>
-
               {/* Sub-pestañas: separa Controles de Visitas domiciliarias para que
                   las visitas no queden enterradas tras una lista larga de controles. */}
               <ToggleTabs
@@ -960,15 +983,24 @@ export default function PatientProfileScreen(): React.ReactElement {
 
               {seguimientoView === 'controles' && (<>
               {/* Gráfica de altura uterina con bandas de referencia P10/P90 (RF-5.03) */}
-              <AlturaUterinaChart controls={controls} themeColor={BRAND} />
+              <AlturaUterinaChart controls={controls} themeColor={BRAND} onHelpPress={() => setIsEvolucionModalVisible(true)} />
 
               {/* La curva de peso solo se muestra si el módulo de peso está activo. */}
               {flags.pesoRegistros && hasWeightChart && (
                 <View style={[styles.card, designTokens.cardShadow, { padding: 20 }]}>
-                  <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Ganancia de peso</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <Text style={[styles.cardHeader, { marginBottom: 2, flex: 1 }]}>Ganancia de peso</Text>
+                    <TouchableOpacity
+                      style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}
+                      onPress={() => setIsEvolucionModalVisible(true)}
+                      accessibilityLabel="Ver explicación clínica de las gráficas"
+                    >
+                      <HelpCircle size={20} color={BRAND} />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.clinicoIntro}>
                     {hasWeightBand
-                      ? 'La línea morada es el peso de tu paciente. La franja verde es la ganancia recomendada para su contextura: mientras esté dentro, sube lo adecuado.'
+                      ? 'La línea azul es el peso de tu paciente. La franja verde es la ganancia recomendada para su contextura: mientras esté dentro, sube lo adecuado.'
                       : 'Peso de tu paciente por semana. Registra su peso habitual y talla para ver la franja de ganancia recomendada.'}
                   </Text>
                   <LineChartSvg
@@ -977,11 +1009,11 @@ export default function PatientProfileScreen(): React.ReactElement {
                     decimals={1}
                     yAxisLabel="Peso (kg)"
                     xAxisLabel="Semanas de embarazo"
-                    band={hasWeightBand ? { lower: weightLower, upper: weightUpper, color: semanticColors.successLight } : undefined}
+                    band={hasWeightBand ? { lower: weightLower, upper: weightUpper, color: 'rgba(31, 157, 107, 0.22)' } : undefined}
                     series={[
                       ...(hasWeightBand ? [
-                        { data: weightLower, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
-                        { data: weightUpper, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
+                        { data: weightLower, color: semanticColors.success, strokeWidth: 1.5, withDots: false, dashed: true },
+                        { data: weightUpper, color: semanticColors.success, strokeWidth: 1.5, withDots: false, dashed: true },
                       ] : []),
                       { data: weightData, color: BRAND, strokeWidth: 3, highlightLast: true },
                     ]}
@@ -1145,254 +1177,402 @@ export default function PatientProfileScreen(): React.ReactElement {
           {/* ── SECCIÓN: CLÍNICO (tratamiento + vacunas + laboratorio + alarmas) ── */}
           {activeTab === 'clinico' && (
             <View style={styles.section}>
-              <View style={[styles.card, designTokens.cardShadow]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={[styles.cardHeader, { marginBottom: 0 }]}>Medicamentos y suplementos</Text>
-                  <TouchableOpacity 
-                    style={styles.primaryActionBtn}
-                    onPress={() => setIsTreatModalVisible(true)}
-                  >
-                    <Plus size={16} color={obstetraColors.onPrimary} />
-                    <Text style={styles.primaryActionText}>Recetar</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {suplementos.length > 0 ? suplementos.map((sup: any) => {
-                  const tomados = sup.diasTomados?.length || 0;
-                  const total = sup.totalDias || 30;
-                  const pct = total > 0 ? Math.round((tomados / total) * 100) : 0;
-                  // Interpretación de la adherencia en lenguaje claro.
-                  const adColor = pct >= 80 ? semanticColors.success : pct >= 50 ? semanticColors.warning : semanticColors.danger;
-                  const adLabel = pct >= 80 ? 'Buena adherencia' : pct >= 50 ? 'Adherencia regular' : 'Adherencia baja';
-
-                  const suspendido = sup.estado === 'suspendido';
-                  return (
-                    <View key={sup.id || sup._id} style={[styles.pillCard, designTokens.glassShadow, suspendido && { opacity: 0.6 }]}>
-                      <View style={styles.pillIconBox}>
-                        <Pill size={24} color={BRAND} />
-                      </View>
-                      <View style={styles.pillInfo}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <Text style={styles.pillName}>{sup.nombre}</Text>
-                          {suspendido && <Text style={styles.suspendBadge}>Suspendido</Text>}
-                        </View>
-                        <Text style={styles.pillDosis}>{sup.dosis} • {sup.frecuencia}</Text>
-                        
-                        <View style={styles.progressWrap}>
-                          <View style={styles.progressTrack}>
-                            <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: adColor }]} />
-                          </View>
-                          <Text style={[styles.progressPct, { color: adColor }]}>{pct}%</Text>
-                        </View>
-                        <View style={styles.adherenceRow}>
-                          {!suspendido && (
-                            <View style={[styles.adherencePill, { backgroundColor: adColor + '1A' }]}>
-                              <Text style={[styles.adherencePillText, { color: adColor }]}>{adLabel}</Text>
-                            </View>
-                          )}
-                          <Text style={styles.progressHint}>{tomados} de {total} dosis tomadas</Text>
-                        </View>
-
-                        {!suspendido && (
-                          <View style={styles.treatActionsRow}>
-                            <TouchableOpacity style={styles.treatActionBtn} onPress={() => openEditTreat(sup)}>
-                              <Text style={styles.treatActionText}>Editar</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.treatActionBtn, styles.treatSuspendBtn]} onPress={() => setSuspendTreat(sup)}>
-                              <Text style={[styles.treatActionText, { color: semanticColors.danger }]}>Suspender</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  );
-                }) : (
-                  <EmptyState
-                    icon={Pill as any}
-                    title="Sin medicación"
-                    description="No hay suplementos o tratamientos activos."
-                    themeColor={BRAND}
-                  />
-                )}
-              </View>
-
-              {/* Vacunas prenatales (indicador de adherencia, Objetivo 2) */}
-              <View style={[styles.card, designTokens.cardShadow, { marginTop: spacing.md }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Vacunas del embarazo</Text>
-                    {vacunas.length > 0 && (
-                      <Text style={styles.sectionCount}>
-                        {vacunas.filter((v: any) => v.aplicada).length} de {vacunas.length} aplicadas
-                      </Text>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.primaryActionBtn}
-                    onPress={() => setIsVaxModalVisible(true)}
-                  >
-                    <Plus size={16} color={obstetraColors.onPrimary} />
-                    <Text style={styles.primaryActionText}>Registrar</Text>
-                  </TouchableOpacity>
-                </View>
-                {vacunas.length > 0 ? vacunas.map((v: any, i: number) => (
-                  <View key={i} style={[styles.vaxRow, i < vacunas.length - 1 && styles.vaxBorder]}>
-                    <View style={styles.vaxIconBox}>
-                      <Syringe size={20} color={v.aplicada ? semanticColors.success : commonColors.textTertiary} />
-                    </View>
-                    <View style={styles.vaxInfo}>
-                      <Text style={styles.vaxName}>{v.nombre}</Text>
-                      <Text style={styles.vaxWeek}>Recomendada sem. {v.semana}</Text>
-                    </View>
-                    <View style={[styles.vaxStatus, v.aplicada ? styles.vaxStatusOk : styles.vaxStatusPending]}>
-                      <Text style={[styles.vaxStatusText, v.aplicada ? styles.vaxStatusTextOk : styles.vaxStatusTextPending]}>
-                        {v.aplicada ? 'Aplicada' : 'Pendiente'}
-                      </Text>
-                    </View>
-                  </View>
-                )) : (
-                  <Text style={styles.emptyTextInfo}>No hay vacunas en el esquema.</Text>
-                )}
-              </View>
-
-              {/* ── LABORATORIO ── */}
-              <View style={[styles.card, designTokens.cardShadow, { marginTop: spacing.md }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 12 }}>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[styles.cardHeader, { marginBottom: 2 }]}>Exámenes de laboratorio</Text>
-                    <Text style={styles.clinicoIntro}>
-                      Resultados de los análisis con su interpretación. El color indica si está
-                      {' '}<Text style={{ color: semanticColors.success, fontWeight: '700' }}>normal</Text>,
-                      {' '}requiere <Text style={{ color: semanticColors.danger, fontWeight: '700' }}>atención</Text> o está
-                      {' '}<Text style={{ color: commonColors.textTertiary, fontWeight: '700' }}>pendiente</Text>.
-                    </Text>
-                  </View>
-                  <TouchableOpacity style={styles.primaryActionBtn} onPress={() => setIsLabModalVisible(true)}>
-                    <Plus size={16} color={obstetraColors.onPrimary} />
-                    <Text style={styles.primaryActionText}>Registrar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* GRUPO 1: HEMOGLOBINA Y ANEMIA */}
-              <View style={[styles.card, designTokens.cardShadow]}>
-                <View style={styles.labGroupHeader}>
-                  <Droplet size={16} color={BRAND} />
-                  <Text style={styles.labGroupTitle}>Hemoglobina y anemia</Text>
-                </View>
-                <Text style={styles.labGroupNote}>
-                  Valor corregido por la altitud de la zona. La anemia se evalúa con este valor corregido (no el observado).
-                </Text>
-                {(() => {
-                  const rows = [
-                    { n: 'I', val: lab.hemoglobina1, corr: lab.hb1Corregida, show: true },
-                    { n: 'II', val: lab.hemoglobina2, corr: lab.hb2Corregida, show: lab.hemoglobina2 != null || Number(patient.currentWeek) >= 25 },
-                    { n: 'III', val: lab.hemoglobina3, corr: lab.hb3Corregida, show: lab.hemoglobina3 != null || Number(patient.currentWeek) >= 33 },
-                  ].filter((r) => r.show);
-                  return rows.map((r, i) => {
-                    const cls = classifyHb(r.corr ?? r.val ?? null);
-                    const valueText = r.val != null
-                      ? `${r.val} g/dL${r.corr != null && r.corr !== r.val ? ` (corr. ${r.corr})` : ''}`
-                      : null;
-                    return (
-                      <LabRow
-                        key={r.n}
-                        label={`Hemoglobina ${r.n}`}
-                        hint={r.n === 'I' ? '1er control' : r.n === 'II' ? 'aprox. sem. 25' : 'aprox. sem. 33'}
-                        value={valueText}
-                        state={cls.state}
-                        stateLabel={cls.label}
-                        isLast={i === rows.length - 1}
-                      />
-                    );
-                  });
-                })()}
-              </View>
-
-              {/* GRUPO 2: TAMIZAJE / SEROLOGÍA */}
-              <View style={[styles.card, designTokens.cardShadow]}>
-                <View style={styles.labGroupHeader}>
-                  <ShieldCheck size={16} color={BRAND} />
-                  <Text style={styles.labGroupTitle}>Tamizaje y serología</Text>
-                </View>
-                {(() => {
-                  const items = [
-                    { label: 'VIH', hint: 'Tamizaje VIH', value: lab.vih },
-                    { label: 'Sífilis (VDRL/RPR)', hint: 'Tamizaje de sífilis', value: lab.vdrl },
-                    { label: 'Hepatitis B', hint: 'Antígeno de superficie', value: lab.hepatitisB },
-                    { label: 'Glucemia', hint: 'Azúcar en sangre', value: lab.glucemia },
-                    { label: 'Examen de orina', hint: 'Descarta infección urinaria', value: lab.examenOrina },
-                    { label: 'Papanicolaou (PAP)', hint: 'Tamizaje de cáncer de cuello uterino', value: lab.pap },
-                  ];
-                  return items.map((it, i) => {
-                    const cls = classifyQualitative(it.value);
-                    return (
-                      <LabRow
-                        key={it.label}
-                        label={it.label}
-                        hint={it.hint}
-                        value={cls.state === 'pendiente' ? null : (it.value || null)}
-                        state={cls.state}
-                        stateLabel={cls.state === 'pendiente' ? 'Pendiente' : cls.label}
-                        isLast={i === items.length - 1}
-                      />
-                    );
-                  });
-                })()}
-              </View>
-
+              {/* ALARMAS REPORTADAS EN PRIMER LUGAR */}
               <Seccion titulo="Signos de alarma reportados" />
               {dangerSigns.length === 0 ? (
-                <View style={[styles.card, designTokens.cardShadow]}>
+                <View style={[styles.card, designTokens.cardShadow, { marginBottom: 16 }]}>
                   <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>
                     Esta gestante no ha reportado signos de alarma.
                   </Text>
                 </View>
               ) : (
-                dangerSigns.map((s) => {
-                  const grave = (s.severidad || '').toLowerCase() === 'grave';
-                  const color = grave ? semanticColors.danger : semanticColors.warning;
-                  const pendiente = s.estado === 'pendiente';
-                  const estadoLabel = s.estado === 'atendido' ? 'Atendido' : s.estado === 'derivado' ? 'Derivado' : 'Pendiente';
-                  return (
-                    <View key={s.id} style={[styles.card, designTokens.cardShadow]}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                          <AlertTriangle size={16} color={color} />
-                          <Text style={{ ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 }} numberOfLines={2}>{s.tipoSigno}</Text>
+                <>
+                  {[...dangerSigns]
+                    .sort((a: any, b: any) => {
+                      if (a.estado === 'pendiente' && b.estado !== 'pendiente') return -1;
+                      if (a.estado !== 'pendiente' && b.estado === 'pendiente') return 1;
+                      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                    })
+                    .slice(0, 1)
+                    .map((s) => {
+                      const grave = (s.severidad || '').toLowerCase() === 'grave';
+                      const color = grave ? semanticColors.danger : semanticColors.warning;
+                      const pendiente = s.estado === 'pendiente';
+                      const estadoLabel = s.estado === 'atendido' ? 'Atendido' : s.estado === 'derivado' ? 'Derivado' : 'Pendiente';
+                      return (
+                        <View key={s.id} style={[styles.card, designTokens.cardShadow, { marginBottom: 12 }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                              <AlertTriangle size={16} color={color} />
+                              <Text style={{ ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 }} numberOfLines={2}>{s.tipoSigno}</Text>
+                            </View>
+                            <View style={{ backgroundColor: color + '1A', paddingHorizontal: 10, paddingVertical: 3, borderRadius: borderRadius.full }}>
+                              <Text style={{ ...typography.overline, color, fontWeight: '700' }}>{grave ? 'GRAVE' : 'LEVE'}</Text>
+                            </View>
+                          </View>
+                          {s.descripcion ? (
+                            <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, marginBottom: 6 }}>{s.descripcion}</Text>
+                          ) : null}
+                          <Text style={{ ...typography.caption, color: commonColors.textTertiary, marginBottom: pendiente ? 10 : 0 }}>
+                            {new Date(s.createdAt).toLocaleString('es-PE')} · {estadoLabel}
+                          </Text>
+                          {pendiente && (
+                            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                              <TouchableOpacity
+                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: borderRadius.lg, backgroundColor: semanticColors.warningLight }}
+                                disabled={isUpdatingDanger}
+                                onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'derivado' })}
+                              >
+                                <Text style={{ ...typography.label, color: semanticColors.warning, fontWeight: '700' }}>Derivar</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: borderRadius.lg, backgroundColor: semanticColors.successLight }}
+                                disabled={isUpdatingDanger}
+                                onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'atendido' })}
+                              >
+                                <Text style={{ ...typography.label, color: semanticColors.success, fontWeight: '700' }}>Atender</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
                         </View>
-                        <View style={{ backgroundColor: color + '1A', paddingHorizontal: 10, paddingVertical: 3, borderRadius: borderRadius.full }}>
-                          <Text style={{ ...typography.overline, color, fontWeight: '700' }}>{grave ? 'GRAVE' : 'LEVE'}</Text>
+                      );
+                    })}
+
+                  {dangerSigns.length > 1 && (
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        backgroundColor: BRAND + '1A',
+                        paddingVertical: 12,
+                        borderRadius: borderRadius.md,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: BRAND + '33',
+                      }}
+                      onPress={() => setIsAlarmHistoryModalVisible(true)}
+                    >
+                      <ClipboardList size={16} color={BRAND} />
+                      <Text style={{ ...typography.label, color: BRAND, fontWeight: '700' }}>
+                        Ver historial completo ({dangerSigns.length} reportes)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+
+              {/* ── MEDICAMENTOS Y SUPLEMENTOS ── */}
+              <View style={[styles.card, designTokens.cardShadow, { marginBottom: spacing.lg }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND + '1A', alignItems: 'center', justifyContent: 'center' }}>
+                    <Pill size={20} color={BRAND} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...typography.h4, color: commonColors.text, fontWeight: '700' }}>Esquema de Medicación y Suplementos</Text>
+                    <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>Prescripción preventiva y monitoreo de adherencia</Text>
+                  </View>
+                </View>
+
+                {/* Acción prominente y limpia */}
+                <View style={{ marginTop: 14, marginBottom: 16, width: '100%' }}>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      backgroundColor: BRAND,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: borderRadius.full,
+                      width: '100%',
+                    }}
+                    onPress={() => setIsTreatModalVisible(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFF" />
+                    <Text style={{ ...typography.bodySm, color: '#FFF', fontWeight: '700' }}>Recetar suplemento</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ borderTopWidth: 1, borderTopColor: commonColors.borderLight || '#F1F5F9', paddingTop: 12 }}>
+                  {suplementos.length > 0 ? suplementos.map((sup: any, idx: number) => {
+                    const tomados = sup.diasTomados?.length || 0;
+                    const total = sup.totalDias || 30;
+                    const pct = total > 0 ? Math.round((tomados / total) * 100) : 0;
+                    const adColor = pct >= 80 ? semanticColors.success : pct >= 50 ? semanticColors.warning : semanticColors.danger;
+                    const adLabel = pct >= 80 ? 'Buena adherencia' : pct >= 50 ? 'Adherencia regular' : 'Adherencia baja';
+                    const suspendido = sup.estado === 'suspendido';
+                    const isLast = idx === suplementos.length - 1;
+
+                    return (
+                      <View key={sup.id || sup._id} style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingVertical: spacing.md }, !isLast && { borderBottomWidth: 1, borderBottomColor: commonColors.border }, suspendido && { opacity: 0.6 }]}>
+                        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                          <Pill size={20} color={BRAND} />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ ...typography.bodyMd, fontWeight: '700', color: commonColors.text }}>{sup.nombre}</Text>
+                            {suspendido && (
+                              <Text style={{ ...typography.overline, color: semanticColors.danger, backgroundColor: semanticColors.dangerLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: borderRadius.full, fontWeight: '700' }}>
+                                Suspendido
+                              </Text>
+                            )}
+                          </View>
+                          <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 2 }}>{sup.dosis} • {sup.frecuencia}</Text>
+                          
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                            <View style={{ flex: 1, height: 6, backgroundColor: commonColors.border, borderRadius: 3, overflow: 'hidden' }}>
+                              <View style={[{ height: 6, borderRadius: 3 }, { width: `${pct}%`, backgroundColor: adColor }]} />
+                            </View>
+                            <Text style={[{ ...typography.caption, fontWeight: '700', width: 36, textAlign: 'right' }, { color: adColor }]}>{pct}%</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, flexWrap: 'wrap', gap: 4 }}>
+                            {!suspendido && (
+                              <View style={[{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: borderRadius.full }, { backgroundColor: adColor + '1A' }]}>
+                                <Text style={[{ ...typography.overline, fontWeight: '700' }, { color: adColor }]}>{adLabel}</Text>
+                              </View>
+                            )}
+                            <Text style={{ ...typography.caption, color: commonColors.textTertiary }}>{tomados} de {total} dosis registradas</Text>
+                          </View>
+
+                          {!suspendido && (
+                            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: 10 }}>
+                              <TouchableOpacity style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.border }} onPress={() => openEditTreat(sup)}>
+                                <Text style={{ ...typography.caption, fontWeight: '600' }}>Editar</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.md, backgroundColor: commonColors.surfaceAlt, borderWidth: 1 }, { borderColor: semanticColors.dangerLight }]} onPress={() => setSuspendTreat(sup)}>
+                                <Text style={[{ ...typography.caption, fontWeight: '600' }, { color: semanticColors.danger }]}>Suspender</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
                         </View>
                       </View>
-                      {s.descripcion ? (
-                        <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, marginBottom: 6 }}>{s.descripcion}</Text>
-                      ) : null}
-                      <Text style={{ ...typography.caption, color: commonColors.textTertiary, marginBottom: pendiente ? 10 : 0 }}>
-                        {new Date(s.createdAt).toLocaleString('es-PE')} · {estadoLabel}
-                      </Text>
-                      {pendiente && (
-                        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                          <TouchableOpacity
-                            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: borderRadius.lg, backgroundColor: semanticColors.warningLight }}
-                            disabled={isUpdatingDanger}
-                            onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'derivado' })}
-                          >
-                            <Text style={{ ...typography.label, color: semanticColors.warning, fontWeight: '700' }}>Derivar</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: borderRadius.lg, backgroundColor: semanticColors.successLight }}
-                            disabled={isUpdatingDanger}
-                            onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'atendido' })}
-                          >
-                            <Text style={{ ...typography.label, color: semanticColors.success, fontWeight: '700' }}>Atender</Text>
-                          </TouchableOpacity>
+                    );
+                  }) : (
+                    <EmptyState
+                      icon={Pill as any}
+                      title="Sin medicación activa"
+                      description="No hay suplementos o tratamientos registrados. Presiona el botón superior para emitir una receta."
+                      themeColor={BRAND}
+                    />
+                  )}
+                </View>
+              </View>
+
+              {/* ── VACUNAS DEL EMBARAZO ── */}
+              <View style={[styles.card, designTokens.cardShadow, { marginBottom: spacing.lg }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND + '1A', alignItems: 'center', justifyContent: 'center' }}>
+                    <Syringe size={20} color={BRAND} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...typography.h4, color: commonColors.text, fontWeight: '700' }}>Vacunas del Embarazo</Text>
+                    <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>
+                      {vacunas.length > 0 ? `${vacunas.filter((v: any) => v.aplicada).length} de ${vacunas.length} vacunas aplicadas` : 'Inmunizaciones obligatorias MINSA'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Acción prominente y limpia */}
+                <View style={{ marginTop: 14, marginBottom: 16, width: '100%' }}>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      backgroundColor: BRAND,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: borderRadius.full,
+                      width: '100%',
+                    }}
+                    onPress={() => {
+                      setVaxId(undefined);
+                      setVaxNombre('');
+                      setVaxDosis('1');
+                      setVaxSemana('');
+                      setVaxEstado('pendiente');
+                      setIsVaxModalVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFF" />
+                    <Text style={{ ...typography.bodySm, color: '#FFF', fontWeight: '700' }}>Registrar vacuna</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ borderTopWidth: 1, borderTopColor: commonColors.borderLight || '#F1F5F9', paddingTop: 12 }}>
+                  {vacunas.length > 0 ? vacunas.map((v: any, idx: number) => {
+                    const isLast = idx === vacunas.length - 1;
+                    return (
+                      <TouchableOpacity
+                        key={v.id || idx}
+                        style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }, !isLast && { borderBottomWidth: 1, borderBottomColor: commonColors.border }]}
+                        onPress={() => openEditVax(v)}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: v.aplicada ? '#DCFCE7' : obstetraColors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                            <Syringe size={18} color={v.aplicada ? semanticColors.success : BRAND} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ ...typography.bodySm, fontWeight: '700', color: commonColors.text }}>{v.nombre}</Text>
+                            <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>Semana recomendada: {v.semana || 'Estándar'}</Text>
+                          </View>
                         </View>
-                      )}
-                    </View>
-                  );
-                })
-              )}
+                        <View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: borderRadius.full, backgroundColor: v.aplicada ? '#DCFCE7' : BRAND }}>
+                          <Text style={{ ...typography.caption, fontWeight: '700', color: v.aplicada ? semanticColors.success : '#FFF' }}>
+                            {v.aplicada ? 'Aplicada' : 'Registrar'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  }) : (
+                    <EmptyState
+                      icon={Syringe as any}
+                      title="Sin esquema de vacunación"
+                      description="Presiona el botón superior para registrar las inmunizaciones."
+                      themeColor={BRAND}
+                    />
+                  )}
+                </View>
+              </View>
+
+              {/* ── CONTROL DE HEMOGLOBINA Y ANEMIA ── */}
+              <View style={[styles.card, designTokens.cardShadow, { marginBottom: spacing.lg }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND + '1A', alignItems: 'center', justifyContent: 'center' }}>
+                    <Droplet size={20} color={BRAND} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...typography.h4, color: commonColors.text, fontWeight: '700' }}>Control de Hemoglobina y Anemia</Text>
+                    <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>Tamizaje seriado y corrección por altitud</Text>
+                  </View>
+                </View>
+
+                {/* Acción prominente y limpia */}
+                <View style={{ marginTop: 14, marginBottom: 16, width: '100%' }}>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      backgroundColor: BRAND,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: borderRadius.full,
+                      width: '100%',
+                    }}
+                    onPress={() => {
+                      setLabTipo('hemoglobina');
+                      setLabUnidad('g/dL');
+                      setLabValorText('');
+                      setIsLabModalVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFF" />
+                    <Text style={{ ...typography.bodySm, color: '#FFF', fontWeight: '700' }}>Registrar hemoglobina</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ borderTopWidth: 1, borderTopColor: commonColors.borderLight || '#F1F5F9', paddingTop: 12 }}>
+                  {(() => {
+                    const rows = [
+                      { n: 'I', val: lab.hemoglobina1, corr: lab.hb1Corregida, show: true },
+                      { n: 'II', val: lab.hemoglobina2, corr: lab.hb2Corregida, show: lab.hemoglobina2 != null || Number(patient.currentWeek) >= 25 },
+                      { n: 'III', val: lab.hemoglobina3, corr: lab.hb3Corregida, show: lab.hemoglobina3 != null || Number(patient.currentWeek) >= 33 },
+                    ].filter((r) => r.show);
+                    return rows.map((r, i) => {
+                      const cls = classifyHb(r.corr ?? r.val ?? null);
+                      const valueText = r.val != null
+                        ? `${r.val} g/dL${r.corr != null && r.corr !== r.val ? ` (corr. ${r.corr})` : ''}`
+                        : null;
+                      return (
+                        <LabRow
+                          key={r.n}
+                          label={`Hemoglobina ${r.n}`}
+                          hint={r.n === 'I' ? '1er control' : r.n === 'II' ? 'aprox. sem. 25' : 'aprox. sem. 33'}
+                          value={valueText}
+                          state={cls.state}
+                          stateLabel={cls.label}
+                          isLast={i === rows.length - 1}
+                        />
+                      );
+                    });
+                  })()}
+                </View>
+              </View>
+
+              {/* ── PANEL DE TAMIZAJES SEROLÓGICOS ── */}
+              <View style={[styles.card, designTokens.cardShadow, { marginBottom: spacing.lg }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND + '1A', alignItems: 'center', justifyContent: 'center' }}>
+                    <ShieldCheck size={20} color={BRAND} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...typography.h4, color: commonColors.text, fontWeight: '700' }}>Panel de Tamizajes Serológicos</Text>
+                    <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>Detección de infecciones y comorbilidades obstétricas</Text>
+                  </View>
+                </View>
+
+                {/* Acción prominente y limpia */}
+                <View style={{ marginTop: 14, marginBottom: 16, width: '100%' }}>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      backgroundColor: BRAND,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: borderRadius.full,
+                      width: '100%',
+                    }}
+                    onPress={() => {
+                      setLabTipo('vih');
+                      setLabResultado('');
+                      setIsLabModalVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFF" />
+                    <Text style={{ ...typography.bodySm, color: '#FFF', fontWeight: '700' }}>Registrar tamizaje</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ borderTopWidth: 1, borderTopColor: commonColors.borderLight || '#F1F5F9', paddingTop: 12 }}>
+                  {(() => {
+                    const items = [
+                      { label: 'VIH', hint: 'Tamizaje VIH', value: lab.vih },
+                      { label: 'Sífilis (VDRL/RPR)', hint: 'Tamizaje de sífilis', value: lab.vdrl },
+                      { label: 'Hepatitis B', hint: 'Antígeno de superficie', value: lab.hepatitisB },
+                      { label: 'Glucemia', hint: 'Azúcar en sangre', value: lab.glucemia },
+                      { label: 'Examen de orina', hint: 'Descarta infección urinaria', value: lab.examenOrina },
+                      { label: 'Papanicolaou (PAP)', hint: 'Tamizaje de cáncer de cuello uterino', value: lab.pap },
+                    ];
+                    return items.map((it, i) => {
+                      const cls = classifyQualitative(it.value);
+                      return (
+                        <LabRow
+                          key={it.label}
+                          label={it.label}
+                          hint={it.hint}
+                          value={cls.state === 'pendiente' ? null : (it.value || null)}
+                          state={cls.state}
+                          stateLabel={cls.state === 'pendiente' ? 'Pendiente' : cls.label}
+                          isLast={i === items.length - 1}
+                        />
+                      );
+                    });
+                  })()}
+                </View>
+              </View>
 
               {/* Acceso a tamizajes/registros opcionales: solo si están habilitados. */}
               {tamizajesEnabled && (
@@ -1520,11 +1700,11 @@ export default function PatientProfileScreen(): React.ReactElement {
       {/* ── MODAL: REGISTRAR VACUNA ── */}
       <AppModal
         visible={isVaxModalVisible}
-        onClose={() => setIsVaxModalVisible(false)}
-        title="Registrar vacunación"
+        onClose={() => { setIsVaxModalVisible(false); setVaxId(undefined); }}
+        title={vaxId ? 'Actualizar estado de vacuna' : 'Registrar vacunación'}
         footer={
           <>
-            <AppButton title="Cancelar" variant="outline" onPress={() => setIsVaxModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Cancelar" variant="outline" onPress={() => { setIsVaxModalVisible(false); setVaxId(undefined); }} style={{ flex: 1 }} />
             <AppButton title="Guardar" onPress={handleSaveVax} style={{ flex: 1 }} themeColor={BRAND} disabled={isSavingVax} loading={isSavingVax} />
           </>
         }
@@ -1551,6 +1731,105 @@ export default function PatientProfileScreen(): React.ReactElement {
             </View>
           </View>
         </View>
+      </AppModal>
+
+      {/* ── MODAL: HISTORIAL COMPLETO DE SIGNOS DE ALARMA ── */}
+      <AppModal
+        visible={isAlarmHistoryModalVisible}
+        onClose={() => setIsAlarmHistoryModalVisible(false)}
+        title={`Historial de Alarma (${dangerSigns.length})`}
+        footer={
+          <AppButton title="Cerrar" variant="outline" onPress={() => setIsAlarmHistoryModalVisible(false)} style={{ flex: 1 }} />
+        }
+      >
+        <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={false}>
+          <View style={{ gap: 12, paddingBottom: 10 }}>
+            {dangerSigns.some((s: any) => s.estado === 'pendiente') && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <AlertTriangle size={16} color={semanticColors.danger} />
+                <Text style={{ ...typography.label, color: semanticColors.danger, fontWeight: '800' }}>
+                  ACTIVOS PARA ATENDER ({dangerSigns.filter((s: any) => s.estado === 'pendiente').length})
+                </Text>
+              </View>
+            )}
+            {dangerSigns
+              .filter((s: any) => s.estado === 'pendiente')
+              .map((s: any) => {
+                const grave = (s.severidad || '').toLowerCase() === 'grave';
+                const color = grave ? semanticColors.danger : semanticColors.warning;
+                return (
+                  <View key={s.id} style={{ backgroundColor: color + '0D', borderWidth: 1.5, borderColor: color, padding: 12, borderRadius: borderRadius.md }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <AlertTriangle size={16} color={color} />
+                        <Text style={{ ...typography.bodyMd, fontWeight: '700', color: commonColors.text, flex: 1 }}>{s.tipoSigno}</Text>
+                      </View>
+                      <View style={{ backgroundColor: color + '1A', paddingHorizontal: 8, paddingVertical: 2, borderRadius: borderRadius.full }}>
+                        <Text style={{ ...typography.overline, color, fontWeight: '700' }}>{grave ? 'GRAVE' : 'LEVE'}</Text>
+                      </View>
+                    </View>
+                    {s.descripcion ? (
+                      <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, marginBottom: 8 }}>{s.descripcion}</Text>
+                    ) : null}
+                    <Text style={{ ...typography.caption, color: commonColors.textTertiary, marginBottom: 10 }}>
+                      Reportado: {new Date(s.createdAt).toLocaleString('es-PE')} · Pendiente
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                      <TouchableOpacity
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: borderRadius.md, backgroundColor: semanticColors.warningLight }}
+                        disabled={isUpdatingDanger}
+                        onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'derivado' })}
+                      >
+                        <Text style={{ ...typography.label, color: semanticColors.warning, fontWeight: '700' }}>Derivar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: borderRadius.md, backgroundColor: semanticColors.successLight }}
+                        disabled={isUpdatingDanger}
+                        onPress={() => updateDangerSign({ id: s.id, gestanteId: id || '', estado: 'atendido' })}
+                      >
+                        <Text style={{ ...typography.label, color: semanticColors.success, fontWeight: '700' }}>Atender</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+            {dangerSigns.some((s: any) => s.estado !== 'pendiente') && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>
+                <ClipboardList size={16} color={commonColors.textSecondary} />
+                <Text style={{ ...typography.label, color: commonColors.textSecondary, fontWeight: '800' }}>
+                  HISTORIAL RESUELTO ({dangerSigns.filter((s: any) => s.estado !== 'pendiente').length})
+                </Text>
+              </View>
+            )}
+            {dangerSigns
+              .filter((s: any) => s.estado !== 'pendiente')
+              .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map((s: any) => {
+                const grave = (s.severidad || '').toLowerCase() === 'grave';
+                const estadoLabel = s.estado === 'atendido' ? 'Atendido' : 'Derivado';
+                return (
+                  <View key={s.id} style={{ backgroundColor: commonColors.surface, borderWidth: 1, borderColor: commonColors.border, padding: 12, borderRadius: borderRadius.md, opacity: 0.85 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <CheckCircle2 size={16} color={semanticColors.success} />
+                        <Text style={{ ...typography.bodyMd, fontWeight: '600', color: commonColors.text, flex: 1 }}>{s.tipoSigno}</Text>
+                      </View>
+                      <View style={{ backgroundColor: semanticColors.successLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: borderRadius.full }}>
+                        <Text style={{ ...typography.overline, color: semanticColors.success, fontWeight: '700' }}>{estadoLabel.toUpperCase()}</Text>
+                      </View>
+                    </View>
+                    {s.descripcion ? (
+                      <Text style={{ ...typography.bodySm, color: commonColors.textSecondary, marginBottom: 4 }}>{s.descripcion}</Text>
+                    ) : null}
+                    <Text style={{ ...typography.caption, color: commonColors.textTertiary }}>
+                      Reportado: {new Date(s.createdAt).toLocaleString('es-PE')}
+                    </Text>
+                  </View>
+                );
+              })}
+          </View>
+        </ScrollView>
       </AppModal>
 
       {/* ── MODAL: REGISTRAR TRATAMIENTO ── */}
@@ -1701,6 +1980,89 @@ export default function PatientProfileScreen(): React.ReactElement {
         </View>
       </AppModal>
 
+      {/* ── MODAL: GUÍA CLÍNICA EVOLUCIÓN ── */}
+      <AppModal
+        visible={isEvolucionModalVisible}
+        onClose={() => setIsEvolucionModalVisible(false)}
+        title="Guía Clínica de Evolución"
+        subtitle="Monitoreo e interpretación de gráficas"
+        footer={
+          <AppButton title="Entendido" onPress={() => setIsEvolucionModalVisible(false)} style={{ flex: 1 }} themeColor={BRAND} />
+        }
+      >
+        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+          <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Stethoscope size={18} color={BRAND} />
+                <Text style={[styles.cardHeader, { fontSize: 16, color: BRAND }]}>¿Para qué ayuda esta sección?</Text>
+              </View>
+              <Text style={[styles.clinicoIntro, { fontSize: 13, lineHeight: 19, textAlign: 'left' }]}>
+                Permite la vigilancia progresiva (control a control) del desarrollo materno-fetal para la toma de decisiones clínicas rápidas y detección temprana de alertas clínicas.
+              </Text>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: commonColors.borderLight }} />
+
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <Activity size={18} color={semanticColors.success} />
+                <Text style={[styles.cardHeader, { fontSize: 16 }]}>Altura Uterina (Crecimiento Fetal)</Text>
+              </View>
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                  <Text style={{ fontSize: 13, lineHeight: 19, color: semanticColors.success, fontWeight: '700' }}>•</Text>
+                  <Text style={[styles.clinicoIntro, { flex: 1, fontSize: 13, lineHeight: 19, textAlign: 'left' }]}>
+                    <Text style={{ fontWeight: '700', color: semanticColors.success }}>Franja Verde:</Text> Curvas de referencia P10 a P90 según los estándares oficiales CLAP/SISP (OPS/OMS) y MINSA para la edad gestacional.
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                  <Text style={{ fontSize: 13, lineHeight: 19, color: semanticColors.danger, fontWeight: '700' }}>•</Text>
+                  <Text style={[styles.clinicoIntro, { flex: 1, fontSize: 13, lineHeight: 19, textAlign: 'left' }]}>
+                    <Text style={{ fontWeight: '700', color: semanticColors.danger }}>Alerta clínica:</Text> Si el punto cae por debajo, descartar RCIU u oligohidramnios. Si está por encima, evaluar macrosomía o polihidramnios.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: commonColors.borderLight }} />
+
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <Scale size={18} color={semanticColors.success} />
+                <Text style={[styles.cardHeader, { fontSize: 16 }]}>Ganancia de Peso Materno</Text>
+              </View>
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                  <Text style={{ fontSize: 13, lineHeight: 19, color: semanticColors.success, fontWeight: '700' }}>•</Text>
+                  <Text style={[styles.clinicoIntro, { flex: 1, fontSize: 13, lineHeight: 19, textAlign: 'left' }]}>
+                    <Text style={{ fontWeight: '700', color: semanticColors.success }}>Franja Verde:</Text> Rango ideal de ganancia en kg proyectado desde el IMC pregestacional de la paciente según estándares internacionales del IOM (Institute of Medicine).
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                  <Text style={{ fontSize: 13, lineHeight: 19, color: semanticColors.danger, fontWeight: '700' }}>•</Text>
+                  <Text style={[styles.clinicoIntro, { flex: 1, fontSize: 13, lineHeight: 19, textAlign: 'left' }]}>
+                    <Text style={{ fontWeight: '700', color: semanticColors.danger }}>Alerta clínica:</Text> Previene preeclampsia, diabetes gestacional o bajo peso al nacer.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: commonColors.borderLight }} />
+
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <ClipboardList size={18} color={commonColors.text} />
+                <Text style={[styles.cardHeader, { fontSize: 16 }]}>Registro de Datos</Text>
+              </View>
+              <Text style={[styles.clinicoIntro, { fontSize: 13, lineHeight: 19, textAlign: 'left' }]}>
+                Se actualizan de forma automática cada vez que registras una atención en <Text style={{ fontWeight: '700', color: commonColors.text }}>+ Nuevo Control</Text> o en una <Text style={{ fontWeight: '700', color: commonColors.text }}>Visita Domiciliaria</Text>. El peso habitual y talla se configuran en los antecedentes de la paciente.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </AppModal>
+
       {/* ── MODAL: EDITAR TRATAMIENTO (RF-4.10) ── */}
       <AppModal
         visible={!!editTreat}
@@ -1759,9 +2121,9 @@ export default function PatientProfileScreen(): React.ReactElement {
           <>
             <AppButton title="Volver" variant="outline" onPress={backToRecList} style={{ flex: 1 }} />
             <AppButton
-              title="Enviar a la gestante"
+              title="Enviar"
               onPress={handleRecommend}
-              style={{ flex: 1 }}
+              style={{ flex: 1.5 }}
               themeColor={BRAND}
               loading={isRecommending}
               disabled={isRecommending}
@@ -1791,36 +2153,26 @@ export default function PatientProfileScreen(): React.ReactElement {
                   const CIcon = cm.icon;
                   const thumb = resolveMediaUrl(c.thumbnailUrl);
                   return (
-                    <View key={c.id} style={styles.recRow}>
-                      <TouchableOpacity
-                        style={styles.recRowMain}
-                        onPress={() => openRecDetail(c)}
-                        activeOpacity={0.7}
-                      >
-                        {thumb ? (
-                          <Image source={{ uri: thumb }} style={styles.recThumb} resizeMode="cover" />
-                        ) : (
-                          <View style={[styles.recIcon, { backgroundColor: cm.bg }]}>
-                            <CIcon size={20} color={cm.color} />
-                          </View>
-                        )}
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.recRowCat, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
-                          <Text style={styles.recTitle} numberOfLines={2}>{c.titulo}</Text>
-                          <Text style={styles.recMeta}>{tm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''} · {readingTime(c.contenido, c.duracionMin)}</Text>
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.recRow, { paddingVertical: 10 }]}
+                      onPress={() => openRecDetail(c)}
+                      activeOpacity={0.7}
+                    >
+                      {thumb ? (
+                        <Image source={{ uri: thumb }} style={styles.recThumb} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.recIcon, { backgroundColor: commonColors.surfaceAlt, borderWidth: 1, borderColor: commonColors.borderLight }]}>
+                          <CIcon size={20} color={BRAND} />
                         </View>
-                      </TouchableOpacity>
-                      {/* Botón rápido de vista previa (lleva al mismo detalle) */}
-                      <TouchableOpacity
-                        style={styles.recPreviewIconBtn}
-                        onPress={() => openRecDetail(c)}
-                        accessibilityLabel={`Vista previa de ${c.titulo}`}
-                        accessibilityRole="button"
-                        hitSlop={8}
-                      >
-                        <Eye size={18} color={BRAND} />
-                      </TouchableOpacity>
-                    </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.recRowCat, { color: BRAND }]} numberOfLines={1}>{cm.label}</Text>
+                        <Text style={styles.recTitle} numberOfLines={2}>{c.titulo}</Text>
+                        <Text style={styles.recMeta}>{tm.label}{c.trimestre ? ` · ${c.trimestre}° trim` : ''} · {readingTime(c.contenido, c.duracionMin)}</Text>
+                      </View>
+                      <ChevronRight size={18} color={commonColors.textTertiary} />
+                    </TouchableOpacity>
                   );
                 })
               )}
@@ -1842,42 +2194,42 @@ export default function PatientProfileScreen(): React.ReactElement {
               const bodyPreview = showFullBody ? body : `${body.slice(0, 320).trimEnd()}…`;
               return (
                 <>
-                  {/* Tarjeta "artículo": portada o ícono + categoría + título + meta */}
-                  <View style={styles.recArticleCard}>
-                    {thumb ? (
-                      <Image source={{ uri: thumb }} style={styles.recArticleCover} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.recArticleBanner, { backgroundColor: cm.bg }]}>
-                        <CIcon size={30} color={cm.color} />
-                      </View>
-                    )}
-                    <View style={styles.recArticleBody}>
-                      <View style={[styles.recCatBadge, { backgroundColor: cm.bg }]}>
-                        <CIcon size={13} color={cm.color} />
-                        <Text style={[styles.recCatBadgeText, { color: cm.color }]}>{cm.label}</Text>
-                      </View>
-                      <Text style={styles.recArticleTitle}>{recSelected.titulo}</Text>
-                      <View style={styles.recArticleMetaRow}>
-                        <View style={styles.recMetaChip}>
-                          <TIcon size={12} color={commonColors.textSecondary} />
-                          <Text style={styles.recMetaChipText}>{tm.label}</Text>
+                  {/* Tarjeta compacta del recurso */}
+                  <View style={[styles.recArticleCard, { padding: 14, gap: 10, borderWidth: 1, borderColor: commonColors.borderLight }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      {thumb ? (
+                        <Image source={{ uri: thumb }} style={{ width: 44, height: 44, borderRadius: 10 }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: commonColors.borderLight }}>
+                          <CIcon size={22} color={BRAND} />
                         </View>
-                        <View style={styles.recMetaChip}>
-                          <Clock size={12} color={commonColors.textSecondary} />
-                          <Text style={styles.recMetaChipText}>{readingTime(body, recSelected.duracionMin)}</Text>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <Text style={[styles.recCatBadgeText, { color: BRAND }]}>{cm.label}</Text>
+                          <Text style={{ color: commonColors.textTertiary }}>·</Text>
+                          <Text style={{ fontSize: 11, color: commonColors.textSecondary, fontWeight: '600' }}>{tm.label}</Text>
                         </View>
-                        {recSelected.trimestre ? (
-                          <View style={styles.recMetaChip}>
-                            <Text style={styles.recMetaChipText}>{recSelected.trimestre}° trimestre</Text>
-                          </View>
-                        ) : null}
+                        <Text style={[styles.recArticleTitle, { marginTop: 0, fontSize: 15 }]}>{recSelected.titulo}</Text>
                       </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 6, borderTopWidth: 1, borderTopColor: commonColors.borderLight }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Clock size={14} color={commonColors.textSecondary} />
+                        <Text style={{ fontSize: 12, color: commonColors.textSecondary }}>{readingTime(body, recSelected.duracionMin)}</Text>
+                      </View>
+                      {recSelected.trimestre ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <CalendarClock size={14} color={commonColors.textSecondary} />
+                          <Text style={{ fontSize: 12, color: commonColors.textSecondary }}>{recSelected.trimestre}° trimestre</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
 
-                  {/* Recurso multimedia (si existe): abre en el navegador/app */}
+                  {/* Recurso multimedia (si existe) */}
                   {media ? (
-                    <TouchableOpacity style={styles.recMediaCard} onPress={() => Linking.openURL(media)} activeOpacity={0.85}>
+                    <TouchableOpacity style={[styles.recMediaCard, { marginTop: 12 }]} onPress={() => Linking.openURL(media)} activeOpacity={0.85}>
                       {isPlayable ? <PlayCircle size={20} color={BRAND} /> : <ExternalLink size={18} color={BRAND} />}
                       <Text style={styles.recMediaText}>
                         {recSelected.tipo === 'video' ? 'Ver video' : recSelected.tipo === 'audio' ? 'Escuchar audio' : 'Abrir recurso'}
@@ -1885,64 +2237,86 @@ export default function PatientProfileScreen(): React.ReactElement {
                     </TouchableOpacity>
                   ) : null}
 
-                  {/* Cuerpo real del contenido (EL FIX): lectura con formato RichText */}
-                  <View>
-                    <Text style={styles.recSectionLabel}>Contenido</Text>
-                    {body ? (
-                      <View style={styles.recBodyWrap}>
-                        <RichText content={bodyPreview} accentColor={cm.color} />
+                  {/* Resumen del contenido */}
+                  {body ? (
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={[styles.recSectionLabel, { marginBottom: 6 }]}>Resumen del contenido</Text>
+                      <View style={[styles.recBodyWrap, { padding: 12 }]}>
+                        <RichText content={bodyPreview} accentColor={BRAND} />
                         {isLong ? (
                           <TouchableOpacity
-                            style={styles.recExpandBtn}
+                            style={[styles.recExpandBtn, { marginTop: 8, paddingTop: 8 }]}
                             onPress={() => setRecBodyExpanded((v) => !v)}
                             activeOpacity={0.7}
                           >
                             <Text style={[styles.recExpandText, { color: BRAND }]}>
-                              {showFullBody ? 'Ver menos' : 'Ver contenido completo'}
+                              {showFullBody ? 'Ver menos' : 'Leer todo'}
                             </Text>
-                            {showFullBody
-                              ? <ChevronUp size={16} color={BRAND} />
-                              : <ChevronDown size={16} color={BRAND} />}
+                            {showFullBody ? <ChevronUp size={16} color={BRAND} /> : <ChevronDown size={16} color={BRAND} />}
                           </TouchableOpacity>
                         ) : null}
                       </View>
-                    ) : (
-                      <Text style={styles.recEmptyBody}>Este recurso aún no tiene contenido de lectura.</Text>
-                    )}
+                    </View>
+                  ) : null}
+
+                  {/* Envío y Nota personalizada */}
+                  <View style={{ marginTop: 14, borderTopWidth: 1, borderTopColor: commonColors.borderLight, paddingTop: 14 }}>
+                    <PlainInput
+                      label="Nota personalizada para la gestante (opcional)"
+                      placeholder="Ej. Léelo antes de tu próxima cita del martes."
+                      multiline
+                      value={recNota}
+                      onChangeText={setRecNota}
+                      themeColor={BRAND}
+                    />
                   </View>
 
-                  {/* ENVÍO: nota opcional + maqueta fiel de cómo lo verá en el chat */}
-                  <View style={styles.recDivider} />
-                  <PlainInput
-                    label="Nota para la gestante (opcional)"
-                    placeholder="Ej. Léelo antes de tu próxima cita."
-                    multiline
-                    value={recNota}
-                    onChangeText={setRecNota}
-                    themeColor={BRAND}
-                  />
-                  <View>
-                    <Text style={styles.recSectionLabel}>Así lo verá en su chat</Text>
-                    <View style={styles.recPreviewBubble}>
-                      <Text style={styles.recPreviewNote}>
-                        {recNota.trim()
-                          ? `Tu obstetra te recomienda este contenido: "${recSelected.titulo}".\n\n${recNota.trim()}`
-                          : `Tu obstetra te recomienda leer este contenido: "${recSelected.titulo}".`}
-                      </Text>
-                      <View style={styles.recPreviewCard}>
-                        {thumb ? (
-                          <Image source={{ uri: thumb }} style={[styles.recThumb, { borderRadius: borderRadius.md }]} resizeMode="cover" />
-                        ) : (
-                          <View style={[styles.recIcon, { backgroundColor: cm.bg, borderRadius: borderRadius.md }]}>
-                            <CIcon size={20} color={cm.color} />
-                          </View>
-                        )}
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.recMeta, { color: cm.color }]} numberOfLines={1}>{cm.label}</Text>
-                          <Text style={styles.recTitle} numberOfLines={2}>{recSelected.titulo}</Text>
-                          <Text style={styles.recMeta}>{tm.label} · {readingTime(body, recSelected.duracionMin)} · Toca para leer</Text>
+                  {/* Vista previa profesional del mensaje (WhatsApp / App) */}
+                  <View style={{ marginTop: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <WhatsAppIcon size={16} />
+                      <Text style={[styles.recSectionLabel, { marginBottom: 0 }]}>Vista previa del mensaje</Text>
+                    </View>
+
+                    <View style={[styles.recPreviewBubble, { padding: 0, overflow: 'hidden', borderWidth: 1, borderColor: commonColors.borderLight }]}>
+                      <View style={{ backgroundColor: commonColors.surfaceAlt, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: commonColors.borderLight }}>
+                        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' }}>
+                          <Send size={11} color="#FFF" />
                         </View>
-                        <ChevronRight size={18} color={commonColors.textTertiary} />
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: BRAND, flex: 1 }}>Recomendación clínica de VitMaterna</Text>
+                      </View>
+
+                      <View style={{ padding: 14, gap: 12 }}>
+                        <Text style={[styles.recPreviewNote, { marginBottom: 0, color: commonColors.text, fontWeight: '500' }]}>
+                          Hola {patient.firstName}, tu obstetra te sugiere revisar este material educativo:
+                        </Text>
+
+                        {recNota.trim() ? (
+                          <View style={{ flexDirection: 'row', gap: 8, backgroundColor: commonColors.surfaceAlt, padding: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: BRAND }}>
+                            <Text style={{ fontSize: 13, color: commonColors.text, fontStyle: 'italic', flex: 1 }}>
+                              "{recNota.trim()}"
+                            </Text>
+                          </View>
+                        ) : null}
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, backgroundColor: commonColors.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: commonColors.borderLight }}>
+                          {thumb ? (
+                            <Image source={{ uri: thumb }} style={{ width: 40, height: 40, borderRadius: 8 }} resizeMode="cover" />
+                          ) : (
+                            <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: commonColors.borderLight }}>
+                              <CIcon size={20} color={BRAND} />
+                            </View>
+                          )}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: BRAND }}>{cm.label}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: commonColors.text }} numberOfLines={1}>{recSelected.titulo}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <Clock size={11} color={commonColors.textSecondary} />
+                              <Text style={{ fontSize: 11, color: commonColors.textSecondary }}>{readingTime(body, recSelected.duracionMin)}</Text>
+                            </View>
+                          </View>
+                          <ChevronRight size={18} color={commonColors.textTertiary} />
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -1967,8 +2341,6 @@ const styles = StyleSheet.create({
   recRowCat: { ...typography.overline, fontSize: 10, marginBottom: 2 },
   recTitle: { ...typography.bodyMd, color: commonColors.text, fontWeight: '600' },
   recMeta: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  // Botón rápido "Vista previa" (ícono ojo) por fila de la lista.
-  recPreviewIconBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: obstetraColors.primaryLight, flexShrink: 0 },
   // Tarjeta tipo "artículo" en el detalle del recurso.
   recArticleCard: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, overflow: 'hidden', ...shadows.card },
   recArticleCover: { width: '100%', height: 130, backgroundColor: commonColors.surfaceAlt },

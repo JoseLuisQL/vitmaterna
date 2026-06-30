@@ -299,6 +299,12 @@ export default function AppointmentsScreen() {
                   <Text style={styles.metaText} numberOfLines={1}>{item.obstetraNombre}</Text>
                 </View>
               ) : null}
+              {item.observaciones ? (
+                <View style={[styles.metaRow, { marginTop: 2 }]}>
+                  <Info size={13} color={commonColors.textSecondary} style={{ flexShrink: 0 }} />
+                  <Text style={[styles.metaText, { color: commonColors.textSecondary }]} numberOfLines={2}>{item.observaciones}</Text>
+                </View>
+              ) : null}
               <View style={styles.badgeRow}>
                 <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
                   {React.createElement(meta.icon, { size: 12, color: meta.text })}
@@ -461,7 +467,7 @@ export default function AppointmentsScreen() {
                 <DetailRow icon={Clock} label="Hora" value={horaTexto(selected.hora)} />
                 {selected.obstetraNombre ? <DetailRow icon={User} label="Profesional" value={selected.obstetraNombre} /> : null}
                 {selected.numeroControl ? <DetailRow icon={FileText} label="N.º de control" value={`Control ${selected.numeroControl}`} /> : null}
-                {selected.observaciones ? <DetailRow icon={Info} label="Indicaciones" value={selected.observaciones} /> : null}
+                <DetailRow icon={Info} label="Indicaciones" value={selected.observaciones || 'Ninguna indicación especial'} />
 
                 {selected.estado === 'solicitud_reprogramacion' && (
                   <View style={styles.pendingBox}>

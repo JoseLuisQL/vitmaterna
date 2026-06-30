@@ -208,6 +208,15 @@ export const getVaccinationRecords = async (req: Request, res: Response, next: N
   }
 };
 
+export const updateVaccinationRecord = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await clinicalService.updateVaccinationRecord(req.params.id as string, req.body);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createPathology = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await clinicalService.createPathology(req.body);

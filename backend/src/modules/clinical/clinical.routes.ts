@@ -121,6 +121,11 @@ clinicalRoutes.post(
   validate(schema.createVaccinationRecordSchema),
   controller.createVaccinationRecord
 );
+clinicalRoutes.patch(
+  '/vaccines/:id',
+  validate(schema.updateVaccinationRecordSchema),
+  controller.updateVaccinationRecord
+);
 clinicalRoutes.get(
   '/vaccines/:gestanteId',
   validate(schema.getVaccinationRecordsSchema),

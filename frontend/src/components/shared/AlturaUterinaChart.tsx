@@ -4,7 +4,8 @@
  * (CLAP/MINSA) para detectar restricción o exceso de crecimiento.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { HelpCircle } from 'lucide-react-native';
 import { LineChartSvg } from '../ui/LineChartSvg';
 import { commonColors, obstetraColors, semanticColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -20,9 +21,10 @@ interface ControlPoint {
 interface Props {
   controls: ControlPoint[];
   themeColor?: string;
+  onHelpPress?: () => void;
 }
 
-export function AlturaUterinaChart({ controls, themeColor = obstetraColors.primary }: Props): React.ReactElement | null {
+export function AlturaUterinaChart({ controls, themeColor = obstetraColors.primary, onHelpPress }: Props): React.ReactElement | null {
   const points = useMemo(
     () =>
       controls
@@ -69,9 +71,20 @@ export function AlturaUterinaChart({ controls, themeColor = obstetraColors.prima
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Crecimiento del bebé (altura uterina)</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <Text style={[styles.title, { flex: 1 }]}>Crecimiento del bebé (altura uterina)</Text>
+        {onHelpPress && (
+          <TouchableOpacity
+            style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: commonColors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}
+            onPress={onHelpPress}
+            accessibilityLabel="Ver explicación clínica de las gráficas"
+          >
+            <HelpCircle size={20} color={themeColor} />
+          </TouchableOpacity>
+        )}
+      </View>
       <Text style={styles.subtitle}>
-        La línea morada es tu paciente. La franja verde es lo normal: mientras el punto esté dentro, el crecimiento va bien.
+        La línea azul es tu paciente. La franja verde es lo normal: mientras el punto esté dentro, el crecimiento va bien.
       </Text>
 
       <LineChartSvg
@@ -80,10 +93,10 @@ export function AlturaUterinaChart({ controls, themeColor = obstetraColors.prima
         decimals={1}
         yAxisLabel="Altura uterina (cm)"
         xAxisLabel="Semanas de embarazo"
-        band={{ lower: p10Data, upper: p90Data, color: semanticColors.successLight }}
+        band={{ lower: p10Data, upper: p90Data, color: 'rgba(31, 157, 107, 0.22)' }}
         series={[
-          { data: p10Data, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
-          { data: p90Data, color: commonColors.borderStrong, strokeWidth: 1, withDots: false, dashed: true },
+          { data: p10Data, color: semanticColors.success, strokeWidth: 1.5, withDots: false, dashed: true },
+          { data: p90Data, color: semanticColors.success, strokeWidth: 1.5, withDots: false, dashed: true },
           { data: auData, color: themeColor, strokeWidth: 3, highlightLast: true },
         ]}
         legend={[

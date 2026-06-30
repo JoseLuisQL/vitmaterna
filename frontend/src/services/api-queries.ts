@@ -25,6 +25,7 @@ const combineDateTime = (fecha: string, hora: string) => {
 const mapAppointment = (appt: any) => ({
   id: appt.id || appt._id,
   date: combineDateTime(appt.fecha, appt.hora),
+  hora: appt.hora || null,
   patientName: appt.gestante?.user ? `${appt.gestante.user.firstName} ${appt.gestante.user.lastName}` : 'Paciente',
   type: appt.motivo || 'Control Prenatal',
   status: appt.estado || 'programada',
@@ -36,6 +37,7 @@ const mapAppointment = (appt: any) => ({
   horaReprogramada: appt.horaReprogramada || null,
   motivoReprogramacion: appt.motivoReprogramacion || null,
   modalidad: appt.modalidad || 'establecimiento',
+  observaciones: appt.observaciones || null,
 });
 
 /**
@@ -221,8 +223,10 @@ const mapPatientProfile = (g: any) => {
     })(),
     // Vacunas
     vacunas: (g.vaccinationRecords || []).map((v: any) => ({
+      id: v.id,
       nombre: v.vacuna,
       semana: v.egSemanasAplicacion,
+      dosisNumero: v.dosisNumero,
       aplicada: v.estado === 'aplicada',
     })),
     // Suplementos / tratamientos
@@ -1067,6 +1071,21 @@ export const useCreateVaccine = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+    },
+  });
+};
+
+export const useUpdateVaccine = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, gestanteId, data }: { id: string; gestanteId?: string; data: any }) => {
+      const res = await api.patch(`/clinical/vaccines/${id}`, data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      if (variables.gestanteId) {
+        queryClient.invalidateQueries({ queryKey: ['patient', variables.gestanteId] });
+      }
     },
   });
 };

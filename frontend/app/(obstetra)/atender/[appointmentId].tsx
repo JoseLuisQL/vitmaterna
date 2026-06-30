@@ -108,11 +108,10 @@ export default function AtenderCitaScreen(): React.ReactElement {
       router.push({ pathname: '/(obstetra)/control/nuevo', params: { patientId: gid, appointmentId } } as any);
     } else if (key === 'tamizajes') {
       router.push({ pathname: '/(obstetra)/gestante/tamizajes', params: { id: gid, nombre } } as any);
-    } else {
-      // Laboratorios y Tratamiento se registran desde la ficha clínica, en su
-      // pestaña correspondiente (reutiliza los formularios existentes).
-      const tab = key === 'laboratorio' ? 'laboratorio' : 'tratamiento';
-      router.push({ pathname: '/(obstetra)/gestante/[id]', params: { id: gid, tab } } as any);
+    } else if (key === 'laboratorio') {
+      router.push({ pathname: '/(obstetra)/atender/laboratorios', params: { patientId: gid, appointmentId, patientName: nombre } } as any);
+    } else if (key === 'tratamiento') {
+      router.push({ pathname: '/(obstetra)/atender/tratamiento', params: { patientId: gid, appointmentId, patientName: nombre } } as any);
     }
   };
 

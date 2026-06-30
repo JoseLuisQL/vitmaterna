@@ -194,7 +194,7 @@ export function ListScreen<T>({
 
   // ── MÓVIL: lista de tarjetas ──
   return (
-    <ScreenLayout role={role} title={title} subtitle={subtitle} accentColor={accentColor} scroll={false} noPadding>
+    <ScreenLayout role={role} title={title} subtitle={subtitle} accentColor={accentColor} scroll={false} noPadding showBack={showBack} onBack={onBack}>
       <View style={styles.mobileToolbar}>{Toolbar}</View>
       {loading ? (
         <View style={styles.mobilePad}>

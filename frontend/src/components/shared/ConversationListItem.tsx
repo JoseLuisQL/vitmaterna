@@ -93,47 +93,55 @@ export function ConversationListItem({
       accessibilityLabel={`Abrir conversación con ${nombre}${hasUnread ? `, ${unread} sin leer` : ''}`}
       style={({ pressed, hovered }: any) => [
         styles.row,
-        selected && { backgroundColor: accent + '12' },
+        isEmergency && styles.rowEmergency,
+        selected && { backgroundColor: accent + '14', borderColor: accent + '33' },
         hovered && !selected && { backgroundColor: commonColors.surfaceHover },
         pressed && !selected && { backgroundColor: commonColors.surfaceAlt },
         IS_WEB && ({ cursor: 'pointer' } as any),
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
+      <View style={[styles.avatar, { backgroundColor: avatarColor }, isEmergency && { borderWidth: 2, borderColor: semanticColors.danger }]}>
         <Text style={styles.avatarText}>{initials(nombre)}</Text>
         {online && <View style={styles.onlineDot} />}
       </View>
 
       <View style={styles.info}>
         <View style={styles.topRow}>
-          <Text style={[styles.name, hasUnread && styles.nameUnread]} numberOfLines={1}>
-            {nombre}
-          </Text>
+          <View style={styles.nameContainer}>
+            <Text style={[styles.name, (hasUnread || isEmergency) && styles.nameUnread]} numberOfLines={1}>
+              {nombre}
+            </Text>
+            {item.dni ? (
+              <View style={styles.dniBadge}>
+                <Text style={styles.dniText}>{item.dni}</Text>
+              </View>
+            ) : null}
+          </View>
           {!!time && (
-            <Text style={[styles.time, hasUnread && { color: accent }]}>{time}</Text>
+            <Text style={[styles.time, hasUnread && { color: accent, fontWeight: '700' }, isEmergency && { color: semanticColors.danger, fontWeight: '700' }]}>
+              {time}
+            </Text>
           )}
         </View>
 
         <View style={styles.bottomRow}>
           {item.lastMessageMine && !isEmergency && (
             item.lastMessageType === 'texto' || item.lastMessageType == null ? (
-              <CheckCheck size={14} color={commonColors.textTertiary} style={styles.tick} />
+              <CheckCheck size={15} color={commonColors.textTertiary} style={styles.tick} />
             ) : null
           )}
           {Icon && (
-            <Icon size={14} color={isEmergency ? semanticColors.danger : previewColor} style={styles.previewIcon} />
+            <Icon size={15} color={isEmergency ? semanticColors.danger : previewColor} style={styles.previewIcon} />
           )}
           <Text style={[styles.preview, { color: previewColor }, (hasUnread || isEmergency) && styles.previewStrong]} numberOfLines={1}>
             {item.lastMessageMine && (item.lastMessageType === 'texto' || item.lastMessageType == null) ? `Tú: ${preview}` : preview}
           </Text>
           {hasUnread && (
-            <View style={[styles.badge, isEmergency && { backgroundColor: semanticColors.danger }, !isEmergency && { backgroundColor: accent }]}>
+            <View style={[styles.badge, isEmergency ? { backgroundColor: semanticColors.danger } : { backgroundColor: accent }]}>
               <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
             </View>
           )}
         </View>
-
-        {item.dni ? <Text style={styles.dni}>DNI {item.dni}</Text> : null}
       </View>
     </Pressable>
   );
@@ -143,15 +151,21 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm2,
-    paddingVertical: spacing.sm2,
+    gap: 12,
+    paddingVertical: 12,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: commonColors.borderLight || '#F1F5F9',
+  },
+  rowEmergency: {
+    backgroundColor: '#FEF2F2', // Soft red alert tint
+    borderBottomColor: '#FEE2E2',
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -167,12 +181,27 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: commonColors.surface,
   },
-  info: { flex: 1, minWidth: 0, gap: 3 },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  name: { ...typography.bodyMd, color: commonColors.text, flex: 1 },
-  nameUnread: { fontWeight: '700' },
-  time: { ...typography.caption, color: commonColors.textTertiary },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  info: { flex: 1, minWidth: 0, gap: 4 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  nameContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
+  name: { ...typography.bodyMd, color: commonColors.text, flexShrink: 1 },
+  nameUnread: { fontWeight: '700', color: commonColors.text },
+  dniBadge: {
+    backgroundColor: commonColors.surfaceAlt,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+  },
+  dniText: {
+    ...typography.overline,
+    color: commonColors.textSecondary,
+    fontWeight: '600',
+    fontSize: 11,
+  },
+  time: { ...typography.caption, color: commonColors.textTertiary, flexShrink: 0 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   tick: { flexShrink: 0 },
   previewIcon: { flexShrink: 0 },
   preview: { ...typography.bodySm, flex: 1 },
@@ -187,7 +216,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   badgeText: { ...typography.caption, fontSize: 11, fontWeight: '800', color: commonColors.white },
-  dni: { ...typography.caption, color: commonColors.textTertiary },
 });
 
 export default ConversationListItem;

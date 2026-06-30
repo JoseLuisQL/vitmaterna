@@ -247,6 +247,13 @@ export default function GestanteDashboard(): React.ReactElement {
                     <Text style={styles.detailLabel}>Estado:</Text>
                     <StatusChip status={nextStatus} />
                   </View>
+                  <View style={styles.divider} />
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Indicaciones:</Text>
+                    <Text style={[styles.detailValue, { flex: 1, textAlign: 'right', marginLeft: 12, color: nextAppointment.observaciones ? commonColors.text : commonColors.textTertiary }]} numberOfLines={2}>
+                      {nextAppointment.observaciones || 'Ninguna indicación especial'}
+                    </Text>
+                  </View>
                   {canConfirmNext && (
                     <AppButton
                       title={confirmMutation.isPending ? 'Confirmando...' : 'Confirmar asistencia'}

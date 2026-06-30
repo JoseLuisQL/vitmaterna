@@ -331,12 +331,12 @@ const styles = StyleSheet.create({
   centered: { width: '100%', alignSelf: 'center', marginHorizontal: 'auto' },
 
   headerGradient: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
     borderBottomLeftRadius: borderRadius.xxl,
     borderBottomRightRadius: borderRadius.xxl,
   },
-  headerSafe: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  headerFlatSafe: { paddingTop: spacing.md, paddingBottom: spacing.sm, paddingHorizontal: spacing.lg },
+  headerSafe: { paddingHorizontal: spacing.lg, paddingTop: Platform.OS === 'android' ? 48 : spacing.md },
+  headerFlatSafe: { paddingTop: Platform.OS === 'android' ? 48 : spacing.md, paddingBottom: spacing.sm, paddingHorizontal: spacing.lg },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerTexts: { flex: 1, minWidth: 0 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },

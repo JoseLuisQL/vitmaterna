@@ -310,33 +310,56 @@ export function NotificationsScreen({ role, themeColor = commonColors.text, grad
         errorTitle="No se pudieron cargar las notificaciones"
         errorMessage="Revisa tu conexión y vuelve a intentar."
         accentColor={themeColor}
-        actions={
-          <View style={styles.headerActions}>
-            {unreadCount > 0 && (
-              <TouchableOpacity onPress={() => markAll.mutate()} disabled={markAll.isPending} style={[styles.headerActionBtn, webShell && { backgroundColor: commonColors.surfaceAlt }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Marcar todo como leído">
-                <CheckCheck size={16} color={webShell ? themeColor : commonColors.white} />
-                <Text style={[styles.headerActionText, webShell && { color: themeColor }]}>Leer todo</Text>
-              </TouchableOpacity>
-            )}
-            {items.length > 0 && (
-              <TouchableOpacity onPress={handleClear} disabled={clearAll.isPending} style={[styles.headerActionBtn, webShell && { backgroundColor: commonColors.surfaceAlt }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Limpiar notificaciones">
-                <Trash2 size={16} color={webShell ? semanticColors.danger : commonColors.white} />
-                <Text style={[styles.headerActionText, webShell && { color: semanticColors.danger }]}>Limpiar</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
       >
-        <View style={styles.filterRow}>
-          {(['todas', 'no_leidas', 'urgentes'] as Filtro[]).map((f) => {
-            const active = filtro === f;
-            const label = f === 'todas' ? 'Todas' : f === 'no_leidas' ? `No leídas${unreadCount > 0 ? ` (${unreadCount})` : ''}` : `Urgentes${urgentCount > 0 ? ` (${urgentCount})` : ''}`;
-            return (
-              <TouchableOpacity key={f} onPress={() => setFiltro(f)} style={[styles.filterChip, webShell && { backgroundColor: commonColors.surfaceAlt }, active && (webShell ? { backgroundColor: themeColor } : styles.filterChipActive)]} activeOpacity={0.8}>
-                <Text style={[styles.filterText, webShell && { color: commonColors.textSecondary }, active && (webShell ? { color: commonColors.white } : { color: themeColor })]}>{label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={styles.controlPanel}>
+          <View style={styles.filterRow}>
+            {(['todas', 'no_leidas', 'urgentes'] as Filtro[]).map((f) => {
+              const active = filtro === f;
+              const label = f === 'todas' ? 'Todas' : f === 'no_leidas' ? `No leídas${unreadCount > 0 ? ` (${unreadCount})` : ''}` : `Urgentes${urgentCount > 0 ? ` (${urgentCount})` : ''}`;
+              return (
+                <TouchableOpacity
+                  key={f}
+                  onPress={() => setFiltro(f)}
+                  style={[
+                    styles.filterChip,
+                    active ? { backgroundColor: themeColor, borderColor: themeColor } : styles.filterChipInactive,
+                  ]}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.filterText, active ? styles.filterTextActive : styles.filterTextInactive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {(unreadCount > 0 || items.length > 0) && (
+            <View style={styles.actionsRow}>
+              {unreadCount > 0 && (
+                <TouchableOpacity
+                  onPress={() => markAll.mutate()}
+                  disabled={markAll.isPending}
+                  style={styles.actionPill}
+                  activeOpacity={0.75}
+                >
+                  <CheckCheck size={15} color={themeColor} />
+                  <Text style={[styles.actionPillText, { color: themeColor }]}>Leer todo</Text>
+                </TouchableOpacity>
+              )}
+              {items.length > 0 && (
+                <TouchableOpacity
+                  onPress={handleClear}
+                  disabled={clearAll.isPending}
+                  style={[styles.actionPill, styles.actionPillDelete]}
+                  activeOpacity={0.75}
+                >
+                  <Trash2 size={15} color={semanticColors.danger} />
+                  <Text style={[styles.actionPillText, { color: semanticColors.danger }]}>Limpiar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
         {isLoading ? (
@@ -398,26 +421,63 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.h2, color: commonColors.white },
   headerSubtitle: { ...typography.caption, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  headerActionBtn: {
+  controlPanel: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+    backgroundColor: commonColors.background,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+  },
+  filterChipInactive: {
+    backgroundColor: commonColors.surface,
+    borderColor: '#CBD5E1',
+  },
+  filterText: {
+    ...typography.label,
+    fontWeight: '700',
+  },
+  filterTextActive: {
+    color: commonColors.white,
+  },
+  filterTextInactive: {
+    color: '#334155',
+  },
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.sm2,
-    paddingVertical: 7,
+    gap: 10,
+    marginTop: 2,
   },
-  headerActionText: { ...typography.label, color: commonColors.white, fontWeight: '700' },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  filterChip: {
-    paddingHorizontal: spacing.md,
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: commonColors.surface,
+    paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
-  filterChipActive: { backgroundColor: commonColors.white },
-  filterText: { ...typography.label, color: commonColors.white, fontWeight: '600' },
+  actionPillDelete: {
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  actionPillText: {
+    ...typography.caption,
+    fontWeight: '700',
+  },
   sectionHeader: {
     ...typography.overline,
     color: commonColors.textSecondary,

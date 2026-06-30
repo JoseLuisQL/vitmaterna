@@ -198,53 +198,88 @@ export default function ReportesScreen(): React.ReactElement {
         error={isError || !data}
         onRetry={() => refetch()}
         width="full"
-        actions={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View ref={exportTourTarget} collapsable={false} style={[styles.exportRow, { marginTop: 0 }]}>
-              <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportXLSX} activeOpacity={0.7} disabled={exportingXlsx} accessibilityRole="button" accessibilityLabel="Exportar Excel">
-                {exportingXlsx ? <ActivityIndicator size="small" color={commonColors.white} /> : <Sheet size={18} color={commonColors.white} />}
-                <Text style={styles.expBtnText}>{exportingXlsx ? 'Exportando…' : 'Excel'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.expBtn, webShell && styles.expBtnWeb]} onPress={exportPDF} activeOpacity={0.7} disabled={exporting} accessibilityRole="button" accessibilityLabel="Exportar PDF">
-                {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={18} color={commonColors.white} />}
-                <Text style={styles.expBtnText}>{exporting ? 'Exportando…' : 'PDF'}</Text>
-              </TouchableOpacity>
-            </View>
-            <NotificationBell href="/(obstetra)/notificaciones" />
-          </View>
-        }
       >
-        {/* KPIs principales */}
-        <View ref={reportesTourTarget} collapsable={false}>
-        <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.xs }}>
-          {[
-            { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: obstetraColors.primaryLight },
-            { icon: TrendingUp, label: 'Adherencia', value: `${data?.averageAdherence || 0}%`, color: semanticColors.success, bg: semanticColors.successLight },
-            { icon: CheckCircle, label: '6+ controles', value: data?.con6Controles || 0, color: semanticColors.info, bg: semanticColors.infoLight },
-            { icon: AlertTriangle, label: 'Alto riesgo', value: data?.enAltoRiesgo || 0, color: semanticColors.danger, bg: semanticColors.dangerLight },
-          ].map(({ icon: Icon, label, value, color, bg }) => (
-            <View key={label} style={styles.kpi}>
-              <View style={[styles.kpiIcon, { backgroundColor: bg }]}><Icon size={20} color={color} /></View>
-              <Text style={[styles.kpiValue, { color }]}>{value}</Text>
-              <Text style={styles.kpiLabel}>{label}</Text>
-            </View>
-          ))}
-        </AutoGrid>
+        {/* Barra de Control y Exportación */}
+        <View style={styles.exportControlBar}>
+          <View style={styles.exportControlTextWrap}>
+            <Text style={styles.exportControlTitle}>Resumen Clínico 2026</Text>
+            <Text style={styles.exportControlSub}>Exportación en formato oficial MINSA</Text>
+          </View>
+          <View ref={exportTourTarget} collapsable={false} style={styles.exportButtonsRow}>
+            <TouchableOpacity
+              style={styles.exportBtnExecutive}
+              onPress={exportXLSX}
+              activeOpacity={0.75}
+              disabled={exportingXlsx}
+              accessibilityRole="button"
+              accessibilityLabel="Exportar Excel"
+            >
+              {exportingXlsx ? <ActivityIndicator size="small" color={BRAND} /> : <Sheet size={16} color={BRAND} />}
+              <Text style={styles.exportBtnTextExecutive}>{exportingXlsx ? '...' : 'Excel'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.exportBtnExecutive, styles.exportBtnPdf]}
+              onPress={exportPDF}
+              activeOpacity={0.75}
+              disabled={exporting}
+              accessibilityRole="button"
+              accessibilityLabel="Exportar PDF"
+            >
+              {exporting ? <ActivityIndicator size="small" color={commonColors.white} /> : <Download size={16} color={commonColors.white} />}
+              <Text style={[styles.exportBtnTextExecutive, { color: commonColors.white }]}>{exporting ? '...' : 'PDF'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={webShell ? styles.twoCol : undefined}>
+        {/* KPIs principales */}
+        <View ref={reportesTourTarget} collapsable={false}>
+          <AutoGrid minColumnWidth={150} maxColumns={4} style={{ marginBottom: spacing.sm }}>
+            {[
+              { icon: Users, label: 'Pacientes', value: data?.totalGestantes || 0, color: BRAND, bg: obstetraColors.primaryLight },
+              { icon: TrendingUp, label: 'Adherencia', value: `${data?.averageAdherence || 0}%`, color: semanticColors.success, bg: semanticColors.successLight },
+              { icon: CheckCircle, label: '6+ controles', value: data?.con6Controles || 0, color: semanticColors.info, bg: semanticColors.infoLight },
+              { icon: AlertTriangle, label: 'Alto riesgo', value: data?.enAltoRiesgo || 0, color: semanticColors.danger, bg: semanticColors.dangerLight },
+            ].map(({ icon: Icon, label, value, color, bg }) => (
+              <View key={label} style={[styles.kpi, { borderLeftColor: color, borderLeftWidth: 4 }]}>
+                <View style={[styles.kpiIcon, { backgroundColor: bg }]}><Icon size={18} color={color} /></View>
+                <Text style={[styles.kpiValue, { color }]}>{value}</Text>
+                <Text style={styles.kpiLabel}>{label}</Text>
+              </View>
+            ))}
+          </AutoGrid>
+        </View>
+
+        <View style={[webShell ? styles.twoCol : undefined, { paddingBottom: 40 }]}>
           <View style={webShell ? styles.col : undefined}>
             {/* Indicadores MINSA */}
             <Text style={styles.sectionTitle}>Indicadores MINSA / ENDES</Text>
             <View ref={minsaTourTarget} collapsable={false} style={styles.card}>
-              <Text style={styles.cardCaption}>Cada barra es el avance actual; la marca vertical es la meta.</Text>
+              <Text style={styles.cardCaption}>Avance porcentual respecto a las metas estratégicas.</Text>
+              
+              <View style={styles.minsaLegendRow}>
+                <View style={styles.minsaLegendItem}>
+                  <View style={[styles.minsaLegendDot, { backgroundColor: semanticColors.success }]} />
+                  <Text style={styles.minsaLegendText}>Cumple meta</Text>
+                </View>
+                <View style={styles.minsaLegendItem}>
+                  <View style={[styles.minsaLegendDot, { backgroundColor: semanticColors.danger }]} />
+                  <Text style={styles.minsaLegendText}>Por debajo</Text>
+                </View>
+                <View style={styles.minsaLegendItem}>
+                  <View style={styles.minsaLegendTick} />
+                  <Text style={styles.minsaLegendText}>Marca de meta</Text>
+                </View>
+              </View>
+
               {data?.kpisMinsa.map((kpi, idx) => {
                 const ok = kpi.pct >= kpi.meta;
                 return (
                   <View key={kpi.label} style={[styles.minsaRow, idx === (data.kpisMinsa.length - 1) && { marginBottom: 0 }]}>
                     <View style={styles.minsaHead}>
                       <Text style={styles.minsaLabel} numberOfLines={1}>{kpi.label}</Text>
-                      <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>{kpi.pct}% <Text style={styles.minsaMeta}>/ {kpi.meta}%</Text></Text>
+                      <Text style={[styles.minsaPct, { color: ok ? semanticColors.success : semanticColors.danger }]}>
+                        {kpi.pct}% <Text style={styles.minsaMeta}>/ {kpi.meta}%</Text>
+                      </Text>
                     </View>
                     <View style={styles.bar}>
                       <View style={[styles.barFill, { width: `${Math.min(100, kpi.pct)}%`, backgroundColor: ok ? semanticColors.success : semanticColors.danger }]} />
@@ -258,7 +293,7 @@ export default function ReportesScreen(): React.ReactElement {
             {/* Tabla de menor adherencia */}
             <Text style={styles.sectionTitle}>Atención prioritaria</Text>
             <View style={styles.card}>
-              <Text style={styles.cardCaption}>Gestantes con menor adherencia al tratamiento; revisa primero estas.</Text>
+              <Text style={styles.cardCaption}>Gestantes con menor adherencia al tratamiento suplementario.</Text>
               {(data?.gestantesMenorAdherencia?.length ?? 0) === 0 ? (
                 <Text style={styles.emptyInline}>Sin pacientes prioritarias por ahora.</Text>
               ) : (
@@ -312,32 +347,74 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: commonColors.onColorSurface },
   title: { ...typography.h1, color: commonColors.white },
   subtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
-  exportRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  expBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: commonColors.onColorSurfaceStrong, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
-  // En el portal web el header es una superficie blanca: el fondo translúcido
-  // blanco dejaba los botones invisibles. Sobre web usamos el color de marca sólido.
-  expBtnWeb: { backgroundColor: BRAND, paddingHorizontal: spacing.md2, paddingVertical: 10, minWidth: 104 },
-  expBtnText: { ...typography.caption, fontWeight: '700', color: commonColors.white },
+  exportControlBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    backgroundColor: commonColors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...shadows.card,
+  },
+  exportControlTextWrap: { flex: 1, minWidth: 180 },
+  exportControlTitle: { ...typography.bodyMd, fontWeight: '800', color: commonColors.text },
+  exportControlSub: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
+  exportButtonsRow: { flexDirection: 'row', gap: 10 },
+  exportBtnExecutive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  exportBtnPdf: {
+    backgroundColor: BRAND,
+    borderColor: BRAND,
+  },
+  exportBtnTextExecutive: { ...typography.label, fontWeight: '700', color: BRAND },
+
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
-  // KPIs (mismo estilo que admin).
   kpi: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.md2, ...shadows.card },
   kpiIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   kpiValue: { ...typography.h2 },
   kpiLabel: { ...typography.caption, color: commonColors.textSecondary, marginTop: 2 },
-  // Títulos de sección como etiqueta pequeña sobre cada tarjeta (igual que admin).
   sectionTitle: { ...typography.overline, color: commonColors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.lg, marginLeft: 4 },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, ...shadows.card },
   cardCaption: { ...typography.caption, color: commonColors.textSecondary, marginBottom: spacing.md, lineHeight: 17 },
-  // Filas MINSA (igual que admin).
+
+  minsaLegendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  minsaLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  minsaLegendDot: { width: 8, height: 8, borderRadius: 4 },
+  minsaLegendTick: { width: 3, height: 12, backgroundColor: '#334155', borderRadius: 1 },
+  minsaLegendText: { ...typography.caption, color: commonColors.textSecondary, fontWeight: '600' },
+
   minsaRow: { marginBottom: spacing.md },
   minsaHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 },
   minsaLabel: { ...typography.bodySm, fontWeight: '600', color: commonColors.text, flex: 1, marginRight: 12 },
   minsaPct: { ...typography.bodySm, fontWeight: '700' },
   minsaMeta: { ...typography.caption, color: commonColors.textTertiary, fontWeight: '500' },
-  bar: { height: 8, backgroundColor: commonColors.surfaceAlt, borderRadius: 4, position: 'relative' },
-  barFill: { height: '100%', borderRadius: 4 },
-  barMeta: { position: 'absolute', top: -3, width: 2, height: 14, backgroundColor: commonColors.text, opacity: 0.45, borderRadius: 1 },
-  // Tabla de prioridad.
+  bar: { height: 10, backgroundColor: '#F1F5F9', borderRadius: 5, position: 'relative', overflow: 'visible' },
+  barFill: { height: '100%', borderRadius: 5 },
+  barMeta: { position: 'absolute', top: -3, width: 3, height: 16, backgroundColor: '#334155', borderRadius: 1.5, zIndex: 2 },
+
   adherenciaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm2, paddingVertical: spacing.sm2 },
   adherenciaRowBorder: { borderBottomWidth: 1, borderBottomColor: commonColors.borderLight },
   adherenciaNombre: { flex: 1, ...typography.bodySm, fontFamily: typography.label.fontFamily, fontWeight: '600', color: commonColors.text },
