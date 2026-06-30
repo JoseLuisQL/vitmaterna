@@ -111,6 +111,7 @@ export default function RootLayout(): React.ReactElement | null {
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <ThemedStatusBar />
+            <OfflineBanner />
             <MaintenanceGate>
               <WebShell>
                 <OnboardingGate>
@@ -118,7 +119,6 @@ export default function RootLayout(): React.ReactElement | null {
                 </OnboardingGate>
               </WebShell>
             </MaintenanceGate>
-            <OfflineBanner />
             <ConfirmHost />
             <TourHost />
           </ToastProvider>

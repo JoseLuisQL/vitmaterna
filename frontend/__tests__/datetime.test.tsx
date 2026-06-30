@@ -12,7 +12,8 @@ describe('CalendarPicker', () => {
     render(
       <CalendarPicker value={new Date(2026, 5, 1)} onSelect={onSelect} accentColor={obstetraColors.primary} />,
     );
-    expect(screen.getByText(/junio 2026/i)).toBeTruthy();
+    expect(screen.getByText(/junio/i)).toBeTruthy();
+    expect(screen.getByText('2026')).toBeTruthy();
     fireEvent.press(screen.getByText('15'));
     expect(onSelect).toHaveBeenCalledTimes(1);
     const picked = onSelect.mock.calls[0][0] as Date;

@@ -156,6 +156,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedUser = await getStoredUser();
 
       if (storedUser) {
+        // Restaurar sesión inmediatamente con datos locales. Si hay red, se
+        // refrescan abajo; si no, el usuario entra con lo que tenemos.
         set({
           user: storedUser,
           token,
@@ -179,6 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (error: any) {
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
+          // Sesión inválida: el servidor rechaza explícitamente → cerrar sesión.
           await clearStoredTokens();
           set({
             user: null,
@@ -186,7 +189,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             isAuthenticated: false,
             isInitialized: true,
           });
-        } else if (!storedUser) {
+        } else if (storedUser) {
+          // Error de red u otro transitorio con usuario almacenado → mantener
+          // la sesión con datos locales. El usuario puede seguir usando la app
+          // offline con los datos cacheados.
+          // (Ya se seteó isAuthenticated=true arriba, no hacer nada más.)
+        } else {
+          // Sin storedUser Y sin poder verificar → no se puede autenticar.
           await clearStoredTokens();
           set({
             user: null,
@@ -197,13 +206,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     } catch {
-      await clearStoredTokens();
-      set({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isInitialized: true,
-      });
+      // Error de lectura de SecureStore u otro imprevisto. Si ya restauramos
+      // la sesión con storedUser, NO la borramos para no romper el flujo
+      // offline. Solo si nunca se inicializó, marcamos como no autenticado.
+      if (!get().isInitialized) {
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isInitialized: true,
+        });
+      }
     }
   },
 

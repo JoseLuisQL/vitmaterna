@@ -256,31 +256,21 @@ const mapPatientProfile = (g: any) => {
 // Gestante Endpoints
 
 export const fetchGestanteDashboard = async () => {
-  try {
-    const [appointmentsRes, treatmentsRes, meRes] = await Promise.all([
-      api.get('/appointments', { params: { limit: 1, sort: 'asc', future: true } }),
-      api.get('/clinical/treatments', { params: { today: true } }),
-      api.get('/auth/me'),
-    ]);
-    return {
-      nextAppointment: appointmentsRes.data?.data?.[0] ? mapAppointment(appointmentsRes.data.data[0]) : null,
-      todayTreatments: treatmentsRes.data?.data || [],
-      profile: meRes.data?.data?.profile || null,
-    };
-  } catch (e) {
-    console.warn('Gestante Dashboard fetch failed:', e);
-    return { nextAppointment: null, todayTreatments: [], profile: null };
-  }
+  const [appointmentsRes, treatmentsRes, meRes] = await Promise.all([
+    api.get('/appointments', { params: { limit: 1, sort: 'asc', future: true } }),
+    api.get('/clinical/treatments', { params: { today: true } }),
+    api.get('/auth/me'),
+  ]);
+  return {
+    nextAppointment: appointmentsRes.data?.data?.[0] ? mapAppointment(appointmentsRes.data.data[0]) : null,
+    todayTreatments: treatmentsRes.data?.data || [],
+    profile: meRes.data?.data?.profile || null,
+  };
 };
 
 export const fetchAppointments = async () => {
-  try {
-    const res = await api.get('/appointments');
-    return (res.data?.data || []).map(mapAppointment);
-  } catch (e) {
-    console.warn('Appointments fetch failed:', e);
-    return [];
-  }
+  const res = await api.get('/appointments');
+  return (res.data?.data || []).map(mapAppointment);
 };
 
 export interface AdherenceAchievement {
@@ -305,16 +295,11 @@ export interface TreatmentsResponse {
 }
 
 export const fetchTreatments = async (): Promise<TreatmentsResponse> => {
-  try {
-    const res = await api.get('/clinical/treatments');
-    return {
-      treatments: res.data?.data || [],
-      gamificacion: res.data?.gamificacion ?? null,
-    };
-  } catch (e) {
-    if (__DEV__) console.warn('Treatments fetch failed:', e);
-    return { treatments: [], gamificacion: null };
-  }
+  const res = await api.get('/clinical/treatments');
+  return {
+    treatments: res.data?.data || [],
+    gamificacion: res.data?.gamificacion ?? null,
+  };
 };
 
 export const logTreatment = async (treatmentId: string) => {
@@ -390,67 +375,43 @@ const applyTakenToday = (t: any) => {
 // Obstetra Endpoints
 
 export const fetchObstetraDashboard = async () => {
-  try {
-    // `totalPatients` y `riskDistribution` se obtienen de un endpoint de
-    // agregación (conteo en BD), en vez de descargar toda la tabla de pacientes
-    // (`limit:1000`) para contar en el cliente. Mucho más liviano en red,
-    // crítico en zonas con conexión limitada.
-    const [statsRes, appointmentsRes, alertsRes] = await Promise.all([
-      api.get('/patients/stats').catch(e => {
-        if (__DEV__) console.warn('Dashboard: no se pudo cargar estadísticas', e?.message);
-        return { data: { data: { totalPatients: 0, riskDistribution: { low: 0, medium: 0, high: 0 } } } };
-      }),
-      api.get('/appointments', { params: { today: true } }).catch(e => {
-        if (__DEV__) console.warn('Dashboard: no se pudo cargar citas', e?.message);
-        return { data: { data: [] } };
-      }),
-      api.get('/clinical/danger-signs', { params: { estado: 'pendiente' } }).catch(e => {
-        if (__DEV__) console.warn('Dashboard: no se pudo cargar alertas', e?.message);
-        return { data: { data: [] } };
-      }),
-    ]);
+  // `totalPatients` y `riskDistribution` se obtienen de un endpoint de
+  // agregación (conteo en BD), en vez de descargar toda la tabla de pacientes
+  // (`limit:1000`) para contar en el cliente. Mucho más liviano en red,
+  // crítico en zonas con conexión limitada.
+  const [statsRes, appointmentsRes, alertsRes] = await Promise.all([
+    api.get('/patients/stats'),
+    api.get('/appointments', { params: { today: true } }),
+    api.get('/clinical/danger-signs', { params: { estado: 'pendiente' } }),
+  ]);
 
-    const stats = statsRes.data?.data || { totalPatients: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
-    const appointments = appointmentsRes.data?.data || [];
-    const alertsList = alertsRes.data?.data || [];
+  const stats = statsRes.data?.data || { totalPatients: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
+  const appointments = appointmentsRes.data?.data || [];
+  const alertsList = alertsRes.data?.data || [];
 
-    const riskDistribution = {
-      low: stats.riskDistribution?.low ?? 0,
-      medium: stats.riskDistribution?.medium ?? 0,
-      high: stats.riskDistribution?.high ?? 0,
-    };
+  const riskDistribution = {
+    low: stats.riskDistribution?.low ?? 0,
+    medium: stats.riskDistribution?.medium ?? 0,
+    high: stats.riskDistribution?.high ?? 0,
+  };
 
-    return {
-      totalPatients: stats.totalPatients ?? 0,
-      appointmentsToday: appointments.length,
-      alerts: alertsList.length,
-      completed: appointments.filter((a: any) => a.estado === 'completada').length,
-      riskDistribution,
-    };
-  } catch (e: any) {
-    if (__DEV__) console.warn('Dashboard: carga incompleta', e?.message);
-    return { totalPatients: 0, appointmentsToday: 0, alerts: 0, completed: 0, riskDistribution: { low: 0, medium: 0, high: 0 } };
-  }
+  return {
+    totalPatients: stats.totalPatients ?? 0,
+    appointmentsToday: appointments.length,
+    alerts: alertsList.length,
+    completed: appointments.filter((a: any) => a.estado === 'completada').length,
+    riskDistribution,
+  };
 };
 
 export const fetchPatients = async (search?: string) => {
-  try {
-    const res = await api.get('/patients', { params: { search } });
-    return (res.data?.data || []).map(mapPatient);
-  } catch (e) {
-    console.warn('Patients fetch failed:', e);
-    return [];
-  }
+  const res = await api.get('/patients', { params: { search } });
+  return (res.data?.data || []).map(mapPatient);
 };
 
 export const fetchPatientProfile = async (id: string) => {
-  try {
-    const res = await api.get(`/patients/${id}`);
-    return mapPatientProfile(res.data?.data);
-  } catch (e) {
-    console.warn('Patient Profile fetch failed:', e);
-    return null;
-  }
+  const res = await api.get(`/patients/${id}`);
+  return mapPatientProfile(res.data?.data);
 };
 
 export const useCreatePatient = () => {
@@ -494,13 +455,8 @@ export const createAppointment = async (data: any) => {
 };
 
 export const fetchTodayAppointments = async () => {
-  try {
-    const res = await api.get('/appointments', { params: { today: true } });
-    return (res.data?.data || []).map(mapAppointment);
-  } catch (e) {
-    console.warn('Today Appointments fetch failed:', e);
-    return [];
-  }
+  const res = await api.get('/appointments', { params: { today: true } });
+  return (res.data?.data || []).map(mapAppointment);
 };
 
 export const useGestanteDashboard = () => useQuery({ queryKey: ['gestanteDashboard'], queryFn: fetchGestanteDashboard });
@@ -512,13 +468,8 @@ export const useAppointments = () => useQuery({ queryKey: ['appointments'], quer
  * apliquen también aquí; usa `select` para devolver el array crudo del backend.
  */
 export const fetchAppointmentsRaw = async () => {
-  try {
-    const res = await api.get('/appointments');
-    return res.data?.data || [];
-  } catch (e) {
-    if (__DEV__) console.warn('Appointments (raw) fetch failed:', e);
-    return [];
-  }
+  const res = await api.get('/appointments');
+  return res.data?.data || [];
 };
 export const useGestanteAppointments = () =>
   useQuery({ queryKey: ['appointments', 'raw'], queryFn: fetchAppointmentsRaw });
@@ -537,20 +488,15 @@ export interface AppointmentFilters {
   hasta?: string;
 }
 export const fetchAppointmentsFiltered = async (filters: AppointmentFilters) => {
-  try {
-    const params: Record<string, string> = {};
-    if (filters.scope) params.scope = filters.scope;
-    if (filters.estado) params.estado = filters.estado;
-    if (filters.modalidad) params.modalidad = filters.modalidad;
-    if (filters.search && filters.search.trim()) params.search = filters.search.trim();
-    if (filters.desde) params.desde = filters.desde;
-    if (filters.hasta) params.hasta = filters.hasta;
-    const res = await api.get('/appointments', { params });
-    return res.data?.data || [];
-  } catch (e) {
-    if (__DEV__) console.warn('Appointments (filtered) fetch failed:', e);
-    return [];
-  }
+  const params: Record<string, string> = {};
+  if (filters.scope) params.scope = filters.scope;
+  if (filters.estado) params.estado = filters.estado;
+  if (filters.modalidad) params.modalidad = filters.modalidad;
+  if (filters.search && filters.search.trim()) params.search = filters.search.trim();
+  if (filters.desde) params.desde = filters.desde;
+  if (filters.hasta) params.hasta = filters.hasta;
+  const res = await api.get('/appointments', { params });
+  return res.data?.data || [];
 };
 export const useAppointmentsFiltered = (filters: AppointmentFilters) =>
   useQuery({
@@ -943,12 +889,8 @@ export const fetchNotifications = async (soloNoLeidas = false): Promise<AppNotif
 };
 
 export const fetchUnreadCount = async (): Promise<number> => {
-  try {
-    const res = await api.get('/notifications/unread-count');
-    return res.data?.data?.count || 0;
-  } catch {
-    return 0;
-  }
+  const res = await api.get('/notifications/unread-count');
+  return res.data?.data?.count || 0;
 };
 
 export const useNotifications = () =>
@@ -963,12 +905,8 @@ export const useUnreadCount = () =>
 
 /** Total de mensajes de chat sin leer (badge del tab de Chat, estilo WhatsApp). */
 export const fetchUnreadChatCount = async (): Promise<number> => {
-  try {
-    const res = await api.get('/chat/unread-count');
-    return res.data?.data?.count ?? 0;
-  } catch {
-    return 0;
-  }
+  const res = await api.get('/chat/unread-count');
+  return res.data?.data?.count ?? 0;
 };
 
 export const useUnreadChatCount = (enabled = true) =>

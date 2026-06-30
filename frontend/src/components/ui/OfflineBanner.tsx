@@ -1,44 +1,65 @@
 /**
  * VITMATERNA — Banner global de "Sin conexión".
  *
- * Se muestra fijo bajo el área segura superior cuando no hay conexión. Usa el
- * store de red (subscribeOnline) para reaccionar sin re-render del árbol.
+ * Franja compacta y profesional que se desliza debajo del safe area top cuando
+ * no hay conexión. NO usa position: absolute sobre el header; en su lugar se
+ * renderiza en el flujo del layout con una animación de slide-down/slide-up
+ * suave. Es delgada (28px), con ícono WifiOff, texto conciso, y un color que
+ * destaca sin agredir.
+ *
+ * Uso en _layout.tsx: <OfflineBanner /> se renderiza ANTES del contenido
+ * principal para que empuje el contenido sin tapar la cabecera.
  */
 import React from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CloudOff } from 'lucide-react-native';
+import { Animated, StyleSheet, Text, View, Platform } from 'react-native';
+import { WifiOff } from 'lucide-react-native';
 import { isOnline, subscribeOnline } from '../../services/network';
 import { commonColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { zIndex } from '../../theme/zIndex';
+
+/** Altura de la franja. Compacta para no invadir. */
+const BANNER_HEIGHT = 28;
 
 export function OfflineBanner(): React.ReactElement | null {
-  const insets = useSafeAreaInsets();
   const [online, setOnline] = React.useState(isOnline());
-  const opacity = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(online ? 0 : 1)).current;
 
   React.useEffect(() => subscribeOnline(setOnline), []);
 
   React.useEffect(() => {
-    Animated.timing(opacity, {
+    Animated.spring(slideAnim, {
       toValue: online ? 0 : 1,
-      duration: 220,
-      useNativeDriver: true,
+      useNativeDriver: false,
+      tension: 80,
+      friction: 12,
     }).start();
-  }, [online, opacity]);
+  }, [online, slideAnim]);
 
-  if (online) return null;
+  // Interpolar la altura para que el banner empuje el contenido suavemente
+  // en vez de superponerse (position: absolute) sobre el header.
+  const animatedHeight = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, BANNER_HEIGHT],
+  });
+
+  const animatedOpacity = slideAnim.interpolate({
+    inputRange: [0, 0.4, 1],
+    outputRange: [0, 0.6, 1],
+  });
 
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.container, { paddingTop: insets.top + spacing.xs, opacity }]}
+      style={[
+        styles.container,
+        { height: animatedHeight, opacity: animatedOpacity },
+      ]}
     >
       <View style={styles.row}>
-        <CloudOff size={15} color={commonColors.white} />
-        <Text style={styles.text}>Sin conexión · mostrando datos guardados</Text>
+        <WifiOff size={12} color={commonColors.white} strokeWidth={2.5} />
+        <Text style={styles.text}>Sin conexión · datos guardados</Text>
+        <View style={styles.dot} />
       </View>
     </Animated.View>
   );
@@ -46,15 +67,42 @@ export function OfflineBanner(): React.ReactElement | null {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: zIndex.banner,
     backgroundColor: commonColors.bannerBackground,
-    paddingBottom: spacing.sm,
+    overflow: 'hidden',
     alignItems: 'center',
+    justifyContent: 'center',
+    // Sin position: absolute — vive en el flujo del layout.
+    // Se renderiza entre el StatusBar/SafeArea y el contenido.
+    ...Platform.select({
+      web: {
+        // En web añadimos un borde inferior sutil para separación visual
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.08)',
+      },
+    }),
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  text: { ...typography.caption, color: commonColors.white, fontWeight: '600' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+  },
+  text: {
+    ...typography.overline,
+    color: commonColors.white,
+    fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 0.3,
+    // Asegurar que no se desborda en pantallas pequeñas
+    ...Platform.select({
+      web: { lineHeight: 'normal' as any },
+    }),
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F59E0B',
+    // Punto ámbar como indicador visual de "advertencia" sutil
+  },
 });
