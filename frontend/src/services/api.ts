@@ -5,7 +5,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { API_URL } from '../config/env';
+import { API_URL, SERVER_ORIGIN as ENV_SERVER_ORIGIN } from '../config/env';
 
 const BASE_URL = API_URL;
 
@@ -215,12 +215,12 @@ export const getStoredUser = async (): Promise<any | null> => {
 };
 
 /** Origen del servidor sin el sufijo /v1 (para recursos estáticos como /uploads). */
-export const SERVER_ORIGIN = BASE_URL.replace(/\/v1\/?$/, '');
+export const SERVER_ORIGIN = ENV_SERVER_ORIGIN;
 
 /** Resuelve una mediaUrl relativa (/uploads/...) a una URL absoluta del servidor. */
 export const resolveMediaUrl = (url?: string | null): string | null => {
   if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
+  if (/^(https?:\/\/|data:|file:|blob:|content:)/i.test(url)) return url;
   return `${SERVER_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 

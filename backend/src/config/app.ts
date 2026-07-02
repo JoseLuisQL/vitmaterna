@@ -29,12 +29,21 @@ export function createApp(): express.Express {
   app.use(cors(corsOptions));
 
   // ---- Archivos subidos (imágenes del chat, RF-9.01) ----
-  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+  const uploadsPath = path.resolve(process.cwd(), 'uploads');
+  const manualesPath = path.resolve(process.cwd(), 'manuales');
+  const staticOptions = {
+    setHeaders: (res: express.Response) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    },
+  };
+
+  app.use('/uploads', express.static(uploadsPath, staticOptions));
+  app.use('/api/uploads', express.static(uploadsPath, staticOptions));
 
   // ---- Manuales de usuario (PDF) servidos públicamente por rol ----
-  // Permite que cada usuario abra su manual desde la app (Perfil → Manual de
-  // usuario). Sin autenticación, igual que /uploads.
-  app.use('/manuales', express.static(path.resolve(process.cwd(), 'manuales')));
+  app.use('/manuales', express.static(manualesPath, staticOptions));
+  app.use('/api/manuales', express.static(manualesPath, staticOptions));
 
   // ---- Webhooks entrantes (OpenWA) ----
   // Se monta ANTES del express.json() global: el handler usa express.raw para

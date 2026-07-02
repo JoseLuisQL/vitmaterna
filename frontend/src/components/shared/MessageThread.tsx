@@ -17,7 +17,8 @@
  * Mantiene una sola fuente de verdad para que ambos roles se vean idénticos.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Check, CheckCheck, ChevronRight, ChevronDown, AlertCircle, RotateCw } from 'lucide-react-native';
 import { TypingDots } from './TypingDots';
 import { EmergencyMessageCard } from './EmergencyMessageCard';
@@ -283,7 +284,7 @@ const Bubble = React.memo(function Bubble({
             accessibilityLabel={`Abrir contenido: ${msg.content.titulo}`}
           >
             {msg.content.thumbnailUrl ? (
-              <Image source={{ uri: resolveMediaUrl(msg.content.thumbnailUrl) || undefined }} style={styles.eduThumb} resizeMode="cover" />
+              <Image source={{ uri: resolveMediaUrl(msg.content.thumbnailUrl) || undefined }} style={styles.eduThumb} contentFit="cover" transition={200} />
             ) : (
               <View style={[styles.eduIcon, { backgroundColor: cm.bg }]}>
                 <CIcon size={22} color={cm.color} />
@@ -324,7 +325,8 @@ const Bubble = React.memo(function Bubble({
           <Image
             source={{ uri: resolveMediaUrl(msg.mediaUrl) || undefined }}
             style={styles.image}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
             accessibilityLabel="Foto enviada en el chat"
           />
         ) : (

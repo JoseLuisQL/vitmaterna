@@ -20,6 +20,15 @@
 		reverse_proxy api:3000
 	}
 
+	# --- Archivos subidos y manuales servidos desde el backend interno -------
+	handle /uploads/* {
+		reverse_proxy api:3000
+	}
+
+	handle /manuales/* {
+		reverse_proxy api:3000
+	}
+
 	# --- Sitio estático del frontend -----------------------------------------
 	handle {
 		root * /srv/www
