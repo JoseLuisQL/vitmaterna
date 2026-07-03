@@ -276,7 +276,7 @@ export class AdminService {
           },
         });
       } else if (role === 'gestante') {
-        await tx.gestante.create({
+        const gestante = await tx.gestante.create({
           data: {
             userId: user.id,
             fechaNacimiento: new Date('1990-01-01'),
@@ -284,6 +284,19 @@ export class AdminService {
             estado: 'activa',
           },
         });
+        const targetObstetraId = data.obstetraId || data.assignedDoctorId;
+        if (targetObstetraId) {
+          await tx.appointment.create({
+            data: {
+              gestanteId: gestante.id,
+              obstetraId: targetObstetraId,
+              fecha: new Date(),
+              hora: new Date(),
+              motivo: 'Asignación Inicial por Administrador',
+              estado: 'asistida',
+            },
+          });
+        }
       }
 
       return user;
@@ -345,6 +358,24 @@ export class AdminService {
           },
         });
       }
+      if (user.role === 'gestante') {
+        const targetObstetraId = data.obstetraId || data.assignedDoctorId;
+        if (targetObstetraId) {
+          const gestante = await tx.gestante.findUnique({ where: { userId } });
+          if (gestante) {
+            await tx.appointment.create({
+              data: {
+                gestanteId: gestante.id,
+                obstetraId: targetObstetraId,
+                fecha: new Date(),
+                hora: new Date(),
+                motivo: 'Asignación / Reasignación por Administrador',
+                estado: 'asistida',
+              },
+            });
+          }
+        }
+      }
       return updated;
     });
   }
@@ -383,9 +414,18 @@ export class AdminService {
         throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'No se puede eliminar al último administrador activo.');
       }
     }
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isActive: false, deletedAt: new Date() },
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { isActive: false, deletedAt: now },
+      });
+      if (user.role === 'gestante') {
+        await tx.gestante.updateMany({
+          where: { userId },
+          data: { deletedAt: now },
+        });
+      }
     });
     return { ok: true };
   }

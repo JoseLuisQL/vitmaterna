@@ -36,7 +36,12 @@ export class PatientService {
     const limit = filters.limit ? Number(filters.limit) : 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      deletedAt: null,
+      user: {
+        deletedAt: null,
+      },
+    };
 
     if (filters.estado) where.estado = filters.estado;
     if (filters.nivelRiesgo) where.nivelRiesgo = filters.nivelRiesgo;
@@ -68,6 +73,7 @@ export class PatientService {
 
     if (filters.search) {
       where.user = {
+        ...where.user,
         OR: [
           { dni: { contains: filters.search, mode: 'insensitive' } },
           { firstName: { contains: filters.search, mode: 'insensitive' } },
@@ -224,7 +230,7 @@ export class PatientService {
   }
 
   async createPatient(obstetraUserId: string, data: any) {
-    const { dni, firstName, lastName, phone, fechaNacimiento } = data;
+    const { dni, firstName, lastName, phone, fechaNacimiento, obstetraId: inputObstetraId, assignedDoctorId } = data;
     
     // Check if DNI already exists
     const existing = await prisma.user.findUnique({ where: { dni } });
@@ -267,11 +273,12 @@ export class PatientService {
       });
       
       // 3. Link to Obstetra via a first completed appointment
-      if (obstetra) {
+      const linkObstetraId = obstetra?.id || inputObstetraId || assignedDoctorId;
+      if (linkObstetraId) {
         await tx.appointment.create({
           data: {
             gestanteId: gestante.id,
-            obstetraId: obstetra.id,
+            obstetraId: linkObstetraId,
             fecha: new Date(),
             hora: new Date(),
             motivo: 'Registro Inicial en Sistema',
@@ -569,7 +576,8 @@ export class PatientService {
     }
 
     // 2. Separate user fields
-    const { firstName, lastName, phone, email, ...gestanteFields } = data;
+    const { firstName, lastName, phone, email, obstetraId: inputObstetraId, assignedDoctorId, ...gestanteFields } = data;
+    const targetObstetraId = inputObstetraId || assignedDoctorId;
 
     // 3. Process date fields
     const dateFields: any = {};
@@ -685,6 +693,19 @@ export class PatientService {
           },
         },
       });
+
+      if (targetObstetraId) {
+        await tx.appointment.create({
+          data: {
+            gestanteId: id,
+            obstetraId: targetObstetraId,
+            fecha: new Date(),
+            hora: new Date(),
+            motivo: 'Asignación / Reasignación de Obstetra',
+            estado: 'asistida',
+          },
+        });
+      }
 
       // Si se establece/actualiza la FUM, generar el cronograma de controles
       // SOLO si la opción "autoGenerarCitas" está activada por el administrador.

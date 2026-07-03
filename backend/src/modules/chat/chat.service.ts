@@ -121,18 +121,34 @@ export const getOrCreateConversation = async (
 
     let obstetraId = targetId;
     if (!obstetraId) {
-      const lastControl = await prisma.prenatalControl.findFirst({
+      const existingConv = await prisma.conversation.findFirst({
         where: { gestanteId: gestante.id },
-        orderBy: { fecha: 'desc' },
+        orderBy: { createdAt: 'desc' },
       });
-      if (lastControl) {
-        obstetraId = lastControl.obstetraId;
+      if (existingConv) {
+        obstetraId = existingConv.obstetraId;
       } else {
-        const firstObstetra = await prisma.obstetra.findFirst();
-        if (!firstObstetra) {
-          throw new AppError(404, ErrorCodes.NOT_FOUND, 'No obstetras registered in health center');
+        const lastControl = await prisma.prenatalControl.findFirst({
+          where: { gestanteId: gestante.id },
+          orderBy: { fecha: 'desc' },
+        });
+        if (lastControl) {
+          obstetraId = lastControl.obstetraId;
+        } else {
+          const lastAppointment = await prisma.appointment.findFirst({
+            where: { gestanteId: gestante.id, obstetraId: { not: null } },
+            orderBy: { fecha: 'desc' },
+          });
+          if (lastAppointment && lastAppointment.obstetraId) {
+            obstetraId = lastAppointment.obstetraId;
+          } else {
+            const firstObstetra = await prisma.obstetra.findFirst();
+            if (!firstObstetra) {
+              throw new AppError(404, ErrorCodes.NOT_FOUND, 'No obstetras registered in health center');
+            }
+            obstetraId = firstObstetra.id;
+          }
         }
-        obstetraId = firstObstetra.id;
       }
     }
 
