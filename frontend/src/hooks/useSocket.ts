@@ -31,6 +31,11 @@ export const useSocket = () => {
     newSocket.on('connect_error', (err) => {
       setIsConnected(false);
       if (__DEV__) console.log('Socket connect_error:', err?.message);
+      const msg = err?.message?.toLowerCase() || '';
+      if (msg.includes('authentication') || msg.includes('token') || msg.includes('jwt') || msg.includes('unauthorized') || msg.includes('401')) {
+        if (__DEV__) console.log('Socket auth error detected, triggering token refresh...');
+        useAuthStore.getState().refreshToken().catch(() => {});
+      }
     });
 
     newSocket.on('disconnect', () => {

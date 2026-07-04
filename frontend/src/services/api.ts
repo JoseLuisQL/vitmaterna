@@ -109,6 +109,9 @@ api.interceptors.response.use(
           response.data.data;
 
         await storeTokens(newToken, newRefreshToken);
+        if (onTokenRefreshCallback) {
+          onTokenRefreshCallback(newToken);
+        }
 
         processQueue(null, newToken);
 
@@ -132,6 +135,13 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+/** Callback para notificar a capas superiores (como Zustand) cuando se renueva un token por HTTP */
+let onTokenRefreshCallback: ((token: string) => void) | null = null;
+
+export const setOnTokenRefreshCallback = (cb: (token: string) => void): void => {
+  onTokenRefreshCallback = cb;
+};
 
 /** Store tokens securely */
 export const storeTokens = async (

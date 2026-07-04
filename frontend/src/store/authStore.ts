@@ -3,7 +3,7 @@
  * Zustand store for authentication state management.
  */
 import { create } from 'zustand';
-import api, { storeTokens, clearStoredTokens, getStoredToken, storeUser, getStoredUser } from '../services/api';
+import api, { storeTokens, clearStoredTokens, getStoredToken, storeUser, getStoredUser, setOnTokenRefreshCallback } from '../services/api';
 import type { User, LoginRequest, RegisterRequest, AuthResponse } from '../types/user';
 import type { ApiResponse } from '../types/api';
 import * as Device from 'expo-device';
@@ -307,3 +307,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+// Conectar el refresco automático de token HTTP de api.ts con el estado en memoria de Zustand
+setOnTokenRefreshCallback((newToken: string) => {
+  useAuthStore.setState({ token: newToken });
+});
+
