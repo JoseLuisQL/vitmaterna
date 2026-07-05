@@ -265,22 +265,23 @@ export const setupChatSockets = (io: Server) => {
               }
 
               // ── PUENTE A WHATSAPP (OPORTUNIDADES #1.2) ──
-              // Si el destinatario está completamente OFFLINE (sin ningún socket),
-              // el push puede no llegar (token caducado). Reenviamos el mensaje por
-              // WhatsApp como red de seguridad. Best-effort, respeta gasto y prefs.
-              if (!isOnline(recipientId)) {
-                try {
-                  const { deliverChatViaWhatsApp } = await import('../modules/notifications/channels.js');
-                  await deliverChatViaWhatsApp(recipientId, {
-                    senderName,
-                    text: content,
-                    tipo: type,
-                    mediaUrl: mediaUrl ?? null,
-                  });
-                } catch (e) {
-                  console.error('No se pudo reenviar el mensaje por WhatsApp:', e);
+              // Retrasamos unos segundos el envío para no saturar WhatsApp en
+              // desconexiones fugaces (flickers) de red móvil.
+              setTimeout(async () => {
+                if (!(await isOnline(recipientId))) {
+                  try {
+                    const { deliverChatViaWhatsApp } = await import('../modules/notifications/channels.js');
+                    await deliverChatViaWhatsApp(recipientId, {
+                      senderName,
+                      text: content,
+                      tipo: type,
+                      mediaUrl: mediaUrl ?? null,
+                    });
+                  } catch (e) {
+                    console.error('No se pudo reenviar el mensaje por WhatsApp:', e);
+                  }
                 }
-              }
+              }, 5000); // 5s grace period
             }
           }
         } catch (error) {

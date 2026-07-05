@@ -19,6 +19,8 @@ import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { ChatSkeleton } from '../../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
+import { OfflineBanner } from '../../../src/components/ui/OfflineBanner';
+
 import { MessageThread } from '../../../src/components/shared/MessageThread';
 import { ChatInput } from '../../../src/components/shared/ChatInput';
 import api from '../../../src/services/api';

@@ -254,12 +254,31 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     socket.on('presence', onPresence);
     socket.on('messages_read', onRead);
 
+    const onNewMessageSignal = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        api.get(`/chat/history/${conversationId}`, { params: { page: 1, limit: PAGE_SIZE } })
+          .then((res) => {
+            const list: any[] = res.data?.data || [];
+            const fresh = list.map(mapServerMessage).reverse();
+            setMessages((prev) => {
+              const optimistic = prev.filter((m) => m.pending || m.failed);
+              const ids = new Set(fresh.map((m) => m.id));
+              const keep = optimistic.filter((m) => !ids.has(m.id));
+              return [...fresh, ...keep];
+            });
+          })
+          .catch(() => { /* noop */ });
+      }
+    };
+    socket.on('chat:new_message', onNewMessageSignal);
+
     return () => {
       socket.off('connect', joinAndRead);
       socket.off('receive_message', onReceive);
       socket.off('typing', onTyping);
       socket.off('presence', onPresence);
       socket.off('messages_read', onRead);
+      socket.off('chat:new_message', onNewMessageSignal);
       emit('leave_conversation', conversationId);
       setOtherTyping(false);
     };

@@ -121,10 +121,35 @@ export async function sendTwilioSms(c: SmsCredentials, to: string, message: stri
 
 /** Envía un WhatsApp con la Cloud API. Lanza si la respuesta no es ok. */
 export async function sendWhatsAppCloud(c: WhatsAppCredentials, to: string, message: string): Promise<void> {
+  const isProactive = message.includes('🏥') || message.includes('🚨') || message.includes('⚠️');
+  let bodyPayload;
+
+  if (isProactive) {
+    bodyPayload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: 'vitmaterna_notification',
+        language: { code: 'es' },
+        components: [
+          { type: 'body', parameters: [{ type: 'text', text: message.slice(0, 1024) }] }
+        ]
+      }
+    };
+  } else {
+    bodyPayload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { body: message }
+    };
+  }
+
   const res = await fetch(`https://graph.facebook.com/${env.WHATSAPP_API_VERSION}/${c.phoneNumberId}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${c.apiToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: message } }),
+    body: JSON.stringify(bodyPayload),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');

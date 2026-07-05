@@ -17,6 +17,8 @@ import { findObstetraUserIdForGestante } from './notification.service.js';
  * comparar con el teléfono guardado del usuario.
  */
 export function nationalDigitsFromWhatsApp(from: string): string | null {
+  if (!from) return null;
+  if (from.includes('@lid')) return null;
   const raw = from.split('@')[0].replace(/\D+/g, '');
   if (!raw) return null;
   const e164 = toE164PE(raw);
@@ -33,7 +35,10 @@ export function nationalDigitsFromWhatsApp(from: string): string | null {
  */
 export async function findGestanteByPhone(from: string) {
   const nat = nationalDigitsFromWhatsApp(from);
-  if (!nat) return null;
+  if (!nat) {
+    console.warn(`[OPENWA INBOUND] No se pudo extraer dígitos nacionales de "${from}".`);
+    return null;
+  }
 
   // Candidatas: usuarios gestante cuyo teléfono contiene los 9 dígitos.
   const users = await prisma.user.findMany({

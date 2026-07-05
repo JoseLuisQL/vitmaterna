@@ -22,11 +22,15 @@ import { useToast } from '../../../src/components/ui';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SearchField } from '../../../src/components/ui/Field';
 import { ScreenLayout } from '../../../src/components/layout/ScreenLayout';
+import { ChatMasterDetailLayout } from '../../../src/components/layout/ChatMasterDetailLayout';
+
 import { useTourTarget } from '../../../src/components/tour/tourTargets';
 import { TOUR_TARGETS } from '../../../src/components/tour/steps/targets';
 import { ConversationListItem, type ConversationRow } from '../../../src/components/shared/ConversationListItem';
 import { MessageThread } from '../../../src/components/shared/MessageThread';
 import { ChatInput } from '../../../src/components/shared/ChatInput';
+import { OfflineBanner } from '../../../src/components/ui/OfflineBanner';
+
 import { useChatConversations } from '../../../src/services/api-queries';
 import { ChevronLeft, MessageSquare, Megaphone, Search, Users } from 'lucide-react-native';
 import { useSocket } from '../../../src/hooks/useSocket';
@@ -268,6 +272,7 @@ export default function ObstetraChatScreen() {
   // ── Sub-render: panel del hilo (cabecera + mensajes + input) ──
   const renderThread = (showBackButton: boolean) => (
     <>
+      {!showBackButton && <OfflineBanner />}
       <LinearGradient colors={obstetraColors.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.threadHeader}>
         <SafeAreaView edges={['top']} style={styles.threadHeaderRow}>
           {showBackButton && (
