@@ -384,6 +384,7 @@ model Treatment {
   frecuencia        String            @db.VarChar(50)
   viaAdministracion String            @default("oral") @map("via_administracion") @db.VarChar(30)
   horaToma          DateTime?         @map("hora_toma") @db.Time()
+  horarios          String[]          @default([]) @map("horarios")
   indicaciones      String?
   fechaInicio       DateTime          @map("fecha_inicio") @db.Date
   fechaFin          DateTime?         @map("fecha_fin") @db.Date

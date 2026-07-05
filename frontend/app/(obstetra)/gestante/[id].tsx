@@ -137,7 +137,8 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [treatNombre, setTreatNombre] = useState('');
   const [treatDosis, setTreatDosis] = useState('1 tableta');
   const [treatFrecuencia, setTreatFrecuencia] = useState('Diario');
-  const [treatHora, setTreatHora] = useState('08:00');
+  const [treatHorarios, setTreatHorarios] = useState<string[]>(['08:00']);
+  const [treatHoraInput, setTreatHoraInput] = useState('14:00');
   const [treatDuracion, setTreatDuracion] = useState('30');
 
   // Antecedentes (RF-2.03)
@@ -493,7 +494,8 @@ export default function PatientProfileScreen(): React.ReactElement {
       nombre: treatNombre,
       dosis: treatDosis,
       frecuencia: treatFrecuencia,
-      horaToma: treatHora || undefined,
+      horaToma: treatHorarios.length > 0 ? treatHorarios[0] : undefined,
+      horarios: treatHorarios,
       duracionDias: parseInt(treatDuracion, 10) || 30,
       fechaInicio: new Date().toISOString().split('T')[0],
       viaAdministracion: 'oral',
@@ -504,7 +506,8 @@ export default function PatientProfileScreen(): React.ReactElement {
         setTreatNombre('');
         setTreatDosis('1 tableta');
         setTreatFrecuencia('Diario');
-        setTreatHora('08:00');
+        setTreatHorarios(['08:00']);
+        setTreatHoraInput('14:00');
         setTreatDuracion('30');
       },
       onError: () => {
@@ -1321,7 +1324,14 @@ export default function PatientProfileScreen(): React.ReactElement {
                               </Text>
                             )}
                           </View>
-                          <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 2 }}>{sup.dosis} • {sup.frecuencia}</Text>
+                          <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 2 }}>
+                            {sup.dosis} • {sup.frecuencia}
+                            {sup.horarios && sup.horarios.length > 0
+                              ? ` • ⏰ ${sup.horarios.join(' · ')}`
+                              : sup.horaRecordatorio
+                              ? ` • ⏰ ${sup.horaRecordatorio}`
+                              : ''}
+                          </Text>
                           
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
                             <View style={{ flex: 1, height: 6, backgroundColor: commonColors.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -1848,16 +1858,49 @@ export default function PatientProfileScreen(): React.ReactElement {
           <PlainInput label="Medicamento" placeholder="Ej. Sulfato ferroso + ácido fólico" value={treatNombre} onChangeText={setTreatNombre} themeColor={BRAND} />
           <PlainInput label="Dosis" placeholder="Ej. 1 tableta, 60 mg" value={treatDosis} onChangeText={setTreatDosis} themeColor={BRAND} />
           <PlainInput label="Frecuencia" placeholder="Ej. Diario, cada 8 horas" value={treatFrecuencia} onChangeText={setTreatFrecuencia} themeColor={BRAND} />
-          <DateTimeField
-            label="Horario de recordatorio"
-            mode="time"
-            value={treatHora}
-            onChange={setTreatHora}
-            themeColor={BRAND}
-            placeholder="Seleccionar hora"
-            minuteStep={5}
-            helperText="A esta hora la gestante recibirá el aviso para tomar el medicamento."
-          />
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ ...typography.label, color: commonColors.text, marginBottom: spacing.xs }}>
+              Horarios de recordatorio móvil (múltiples al día)
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+              {treatHorarios.map((horaTxt, idx) => (
+                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND + '1A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: BRAND }}>
+                  <Text style={{ ...typography.bodySm, color: BRAND, fontWeight: '700', marginRight: 6 }}>{horaTxt}</Text>
+                  {treatHorarios.length > 1 && (
+                    <TouchableOpacity onPress={() => setTreatHorarios(treatHorarios.filter((_, i) => i !== idx))}>
+                      <Text style={{ color: BRAND, fontWeight: 'bold', fontSize: 16 }}>×</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <DateTimeField
+                  label=""
+                  mode="time"
+                  value={treatHoraInput}
+                  onChange={setTreatHoraInput}
+                  themeColor={BRAND}
+                  placeholder="Seleccionar hora"
+                  minuteStep={5}
+                />
+              </View>
+              <TouchableOpacity
+                style={{ backgroundColor: BRAND, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, justifyContent: 'center' }}
+                onPress={() => {
+                  if (treatHoraInput && !treatHorarios.includes(treatHoraInput)) {
+                    setTreatHorarios([...treatHorarios, treatHoraInput].sort());
+                  }
+                }}
+              >
+                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>+ Agregar hora</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 4 }}>
+              A las horas especificadas la gestante recibirá el aviso para tomar el medicamento.
+            </Text>
+          </View>
           <PlainInput label="Duración (días)" placeholder="Ej. 30" keyboardType="numeric" value={treatDuracion} onChangeText={setTreatDuracion} themeColor={BRAND} />
         </View>
       </AppModal>

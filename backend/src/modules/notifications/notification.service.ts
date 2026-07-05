@@ -261,7 +261,7 @@ export async function scanSupplementReminders() {
   const hoyMidnight = new Date(`${hoyStr}T00:00:00.000Z`);
 
   const tratamientos = await prisma.treatment.findMany({
-    where: { estado: 'activo', horaToma: { not: null } },
+    where: { estado: 'activo' },
     include: {
       gestante: { include: { user: true } },
       supplementLogs: { where: { fecha: hoyMidnight } },
@@ -269,42 +269,62 @@ export async function scanSupplementReminders() {
   });
 
   // Batch dedup (evita un findFirst por tratamiento → O(N) queries): se cargan
-  // de una sola vez los recordatorios de suplemento ya enviados hoy y se arma un
-  // Set de treatmentId para consultar en memoria.
+  // de una sola vez los recordatorios de suplemento ya enviados hoy.
   const recordadosHoy = await prisma.notification.findMany({
     where: { tipo: 'recordatorio_suplemento', createdAt: { gte: hoyMidnight } },
     select: { datos: true },
   });
-  const recordadosTratamientos = new Set(
+  const recordadosKeys = new Set(
     recordadosHoy
-      .map((n) => (n.datos as Record<string, unknown> | null)?.treatmentId)
-      .filter((id): id is string => typeof id === 'string'),
+      .map((n) => {
+        const d = n.datos as Record<string, unknown> | null;
+        if (!d || typeof d.treatmentId !== 'string') return null;
+        const h = typeof d.horario === 'string' ? d.horario : '';
+        return `${d.treatmentId}_${h}`;
+      })
+      .filter((k): k is string => typeof k === 'string'),
   );
 
   for (const t of tratamientos) {
     const user = t.gestante?.user;
-    if (!user || !t.horaToma) continue;
+    if (!user) continue;
 
-    // ¿ya pasó la hora de toma de hoy?
-    const ht = new Date(t.horaToma);
-    const horaToday = new Date(now);
-    horaToday.setUTCHours(ht.getUTCHours(), ht.getUTCMinutes(), 0, 0);
-    if (now.getTime() < horaToday.getTime()) continue;
+    const htFallback = t.horaToma
+      ? `${String(t.horaToma.getUTCHours()).padStart(2, '0')}:${String(t.horaToma.getUTCMinutes()).padStart(2, '0')}`
+      : null;
+    const horariosLista: string[] = t.horarios && t.horarios.length > 0
+      ? t.horarios
+      : (htFallback ? [htFallback] : []);
+    if (horariosLista.length === 0) continue;
 
     // ¿ya registró el consumo de hoy?
     const yaTomadoHoy = t.supplementLogs.some((l) => l.tomado);
     if (yaTomadoHoy) continue;
 
-    // ¿ya se le recordó hoy? (consulta en memoria)
-    if (recordadosTratamientos.has(t.id)) continue;
+    for (const horaTxt of horariosLista) {
+      const parts = horaTxt.split(':');
+      if (parts.length !== 2) continue;
+      const hours = parseInt(parts[0], 10);
+      const mins = parseInt(parts[1], 10);
+      if (isNaN(hours) || isNaN(mins)) continue;
 
-    const horaTxt = `${String(ht.getUTCHours()).padStart(2, '0')}:${String(ht.getUTCMinutes()).padStart(2, '0')}`;
-    const mensaje = waSupplementReminder(user.firstName, t.nombre, t.dosis, horaTxt);
-    // CONTROL DE GASTO: el recordatorio DIARIO de suplemento va SOLO por push +
-    // in-app (era el mayor consumo de créditos al enviarse cada día por SMS/WA).
-    await notifyUser(user.id, 'recordatorio_suplemento', 'Recordatorio de medicamento', mensaje, {
-      treatmentId: t.id,
-    });
+      // ¿ya pasó la hora de toma de hoy?
+      const horaToday = new Date(now);
+      horaToday.setUTCHours(hours, mins, 0, 0);
+      if (now.getTime() < horaToday.getTime()) continue;
+
+      // ¿ya se le recordó hoy para este horario exacto?
+      const dedupKey = `${t.id}_${horaTxt}`;
+      if (recordadosKeys.has(`${t.id}_`) || recordadosKeys.has(dedupKey)) continue;
+
+      const mensaje = waSupplementReminder(user.firstName, t.nombre, t.dosis, horaTxt);
+      await notifyUser(user.id, 'recordatorio_suplemento', 'Recordatorio de medicamento', mensaje, {
+        treatmentId: t.id,
+        horario: horaTxt,
+      });
+
+      recordadosKeys.add(dedupKey);
+    }
   }
 }
 

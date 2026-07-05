@@ -328,7 +328,9 @@ export default function TratamientoScreen(): React.ReactElement {
     const nombre = item.medicationName || item.nombre || 'Medicamento';
     const dosis = item.dosage || item.dosis || '1 tableta';
     const frecuencia = item.frequency || item.frecuencia || 'Diario';
-    const hora = item.scheduleTime || item.horaRecordatorio || '';
+    const horarios: string[] = item.horarios && item.horarios.length > 0
+      ? item.horarios
+      : (item.scheduleTime || item.horaRecordatorio ? [item.scheduleTime || item.horaRecordatorio] : []);
     const diasTomados: string[] = item.diasTomados || [];
     const diasOmitidos: string[] = item.diasOmitidos || [];
     const totalDias = item.totalDias || item.duracionDias || 30;
@@ -348,10 +350,10 @@ export default function TratamientoScreen(): React.ReactElement {
           <View style={styles.medInfo}>
             <Text style={styles.medName} numberOfLines={1}>{nombre}</Text>
             <Text style={styles.medDosis} numberOfLines={1}>{dosis} · {frecuencia}</Text>
-            {hora ? (
+            {horarios.length > 0 ? (
               <View style={styles.horaRow}>
                 <Clock size={13} color={commonColors.textSecondary} />
-                <Text style={styles.horaText}>{hora}</Text>
+                <Text style={styles.horaText}>{horarios.join(' · ')}</Text>
               </View>
             ) : null}
           </View>

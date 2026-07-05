@@ -235,15 +235,44 @@ export class ClinicalService {
   }
 
   async createTreatment(data: any) {
-    const { fechaInicio, fechaFin, horaToma, ...treatmentData } = data;
-    return prisma.treatment.create({
+    const { fechaInicio, fechaFin, horaToma, horarios, ...treatmentData } = data;
+    const horariosArray: string[] = Array.isArray(horarios) && horarios.length > 0
+      ? horarios
+      : (horaToma ? [horaToma] : []);
+    const firstHora = horariosArray.length > 0 ? horariosArray[0] : (horaToma || undefined);
+
+    const treatment = await prisma.treatment.create({
       data: {
         ...treatmentData,
+        horarios: horariosArray,
         fechaInicio: new Date(`${fechaInicio}T00:00:00.000Z`),
         fechaFin: fechaFin ? new Date(`${fechaFin}T00:00:00.000Z`) : undefined,
-        horaToma: horaToma ? new Date(`1970-01-01T${horaToma}:00.000Z`) : undefined,
+        horaToma: firstHora ? new Date(`1970-01-01T${firstHora}:00.000Z`) : undefined,
       },
     });
+
+    // Notificación automática al asignar un tratamiento (Issue #29)
+    try {
+      const gestante = await prisma.gestante.findUnique({
+        where: { id: treatment.gestanteId },
+        include: { user: true },
+      });
+      if (gestante?.user) {
+        const { notifyUser } = await import('../notifications/notification.service.js');
+        const dosisTxt = treatment.dosis ? ` (${treatment.dosis})` : '';
+        await notifyUser(
+          gestante.user.id,
+          'tratamiento_asignado',
+          'Nuevo tratamiento asignado',
+          `Tu obstetra te ha recetado un nuevo medicamento o suplemento: ${treatment.nombre}${dosisTxt}. Revisa tus indicaciones y horarios en la app.`,
+          { treatmentId: treatment.id }
+        );
+      }
+    } catch (err) {
+      console.error('Error enviando notificación automática de nuevo tratamiento:', err);
+    }
+
+    return treatment;
   }
 
   /**
@@ -257,10 +286,15 @@ export class ClinicalService {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Tratamiento no encontrado');
     }
 
-    const { horaToma, fechaFin, ...rest } = data;
+    const { horaToma, horarios, fechaFin, ...rest } = data;
     const updateData: any = { ...rest };
-    if (horaToma !== undefined) {
-      updateData.horaToma = horaToma ? new Date(`1970-01-01T${horaToma}:00.000Z`) : null;
+    if (horarios !== undefined || horaToma !== undefined) {
+      const horariosArray: string[] = Array.isArray(horarios)
+        ? horarios
+        : (horaToma ? [horaToma] : (existing.horarios || []));
+      updateData.horarios = horariosArray;
+      const firstHora = horariosArray.length > 0 ? horariosArray[0] : (horaToma || null);
+      updateData.horaToma = firstHora ? new Date(`1970-01-01T${firstHora}:00.000Z`) : null;
     }
     if (fechaFin !== undefined) {
       updateData.fechaFin = fechaFin ? new Date(`${fechaFin}T00:00:00.000Z`) : null;
@@ -305,6 +339,13 @@ export class ClinicalService {
       });
       const takenToday = diasTomados.includes(todayStr);
 
+      const horaTxt = t.horaToma
+        ? `${String(t.horaToma.getUTCHours()).padStart(2, '0')}:${String(t.horaToma.getUTCMinutes()).padStart(2, '0')}`
+        : null;
+      const horariosLista = t.horarios && t.horarios.length > 0
+        ? t.horarios
+        : (horaTxt ? [horaTxt] : []);
+
       return {
         ...t,
         diasTomados,
@@ -313,6 +354,9 @@ export class ClinicalService {
         totalDias: diasEsperados,
         adherencia,
         taken: takenToday,
+        horaRecordatorio: horaTxt || '',
+        scheduleTime: horaTxt || '',
+        horarios: horariosLista,
       };
     });
   }
