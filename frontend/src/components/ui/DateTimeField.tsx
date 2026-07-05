@@ -105,9 +105,11 @@ export function DateTimeField({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      <Text style={[styles.label, !!error && { color: semanticColors.danger }]}>
-        {label}{required ? <Text style={{ color: semanticColors.danger }}> *</Text> : null}
-      </Text>
+      {label ? (
+        <Text style={[styles.label, !!error && { color: semanticColors.danger }]}>
+          {label}{required ? <Text style={{ color: semanticColors.danger }}> *</Text> : null}
+        </Text>
+      ) : null}
       <Pressable
         onPress={openPicker}
         disabled={disabled}

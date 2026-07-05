@@ -78,3 +78,6 @@ export { ProfileInfoModal } from './ProfileInfoModal';
 export { ConfirmDialog, ValidationModal } from './ConfirmDialog';
 export type { ConfirmTone } from './ConfirmDialog';
 export { ConfirmHost } from './ConfirmHost';
+export { ScheduleSelector } from './ScheduleSelector';
+export type { ScheduleSelectorProps } from './ScheduleSelector';
+

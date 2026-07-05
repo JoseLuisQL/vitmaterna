@@ -18,7 +18,7 @@ import { HomeVisitsTab } from '../../../src/components/obstetra/HomeVisitsTab';
 import { LineChartSvg } from '../../../src/components/ui/LineChartSvg';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { DashboardSkeleton } from '../../../src/components/ui/SkeletonLoader';
-import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs, PrenatalRibbon, SearchField } from '../../../src/components/ui';
+import { AppModal, AppButton, useToast, DateTimeField, Accordion, PlainInput, ToggleTabs, PrenatalRibbon, SearchField, ScheduleSelector } from '../../../src/components/ui';
 import { WhatsAppIcon } from '../../../src/components/ui/WhatsAppIcon';
 import { commonColors, obstetraColors, semanticColors, riskColors } from '../../../src/theme/colors';
 import { spacing, borderRadius, webLayout } from '../../../src/theme/spacing';
@@ -169,6 +169,8 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [editDosis, setEditDosis] = useState('');
   const [editFrecuencia, setEditFrecuencia] = useState('');
   const [editIndicaciones, setEditIndicaciones] = useState('');
+  const [editHorarios, setEditHorarios] = useState<string[]>([]);
+  const [editDuracion, setEditDuracion] = useState('');
   const [suspendTreat, setSuspendTreat] = useState<any | null>(null);
   const [motivoSuspension, setMotivoSuspension] = useState('');
 
@@ -386,12 +388,28 @@ export default function PatientProfileScreen(): React.ReactElement {
     setEditDosis(sup.dosis || '');
     setEditFrecuencia(sup.frecuencia || '');
     setEditIndicaciones(sup.indicaciones || '');
+    const hrs: string[] = Array.isArray(sup.horarios) && sup.horarios.length > 0
+      ? sup.horarios
+      : (sup.horaRecordatorio || sup.horaToma ? [sup.horaRecordatorio || sup.horaToma] : ['08:00']);
+    setEditHorarios(hrs);
+    setEditDuracion(sup.duracionDias ? String(sup.duracionDias) : '30');
   };
 
   const handleSaveEditTreat = () => {
     if (!editTreat || !patient) return;
     updateTreatment(
-      { treatmentId: editTreat.id, gestanteId: patient.id, data: { dosis: editDosis, frecuencia: editFrecuencia, indicaciones: editIndicaciones || undefined } },
+      {
+        treatmentId: editTreat.id || editTreat._id,
+        gestanteId: patient.id,
+        data: {
+          dosis: editDosis,
+          frecuencia: editFrecuencia,
+          horarios: editHorarios,
+          horaToma: editHorarios.length > 0 ? editHorarios[0] : null,
+          duracionDias: parseInt(editDuracion, 10) || undefined,
+          indicaciones: editIndicaciones || undefined,
+        },
+      },
       {
         onSuccess: () => { toast.success('Tratamiento actualizado'); setEditTreat(null); },
         onError: () => toast.error('Error', 'No se pudo actualizar el tratamiento.'),
@@ -1857,50 +1875,13 @@ export default function PatientProfileScreen(): React.ReactElement {
         <View style={{ gap: 10 }}>
           <PlainInput label="Medicamento" placeholder="Ej. Sulfato ferroso + ácido fólico" value={treatNombre} onChangeText={setTreatNombre} themeColor={BRAND} />
           <PlainInput label="Dosis" placeholder="Ej. 1 tableta, 60 mg" value={treatDosis} onChangeText={setTreatDosis} themeColor={BRAND} />
-          <PlainInput label="Frecuencia" placeholder="Ej. Diario, cada 8 horas" value={treatFrecuencia} onChangeText={setTreatFrecuencia} themeColor={BRAND} />
-          <View style={{ marginBottom: spacing.md }}>
-            <Text style={{ ...typography.label, color: commonColors.text, marginBottom: spacing.xs }}>
-              Horarios de recordatorio móvil (múltiples al día)
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-              {treatHorarios.map((horaTxt, idx) => (
-                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND + '1A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: BRAND }}>
-                  <Text style={{ ...typography.bodySm, color: BRAND, fontWeight: '700', marginRight: 6 }}>{horaTxt}</Text>
-                  {treatHorarios.length > 1 && (
-                    <TouchableOpacity onPress={() => setTreatHorarios(treatHorarios.filter((_, i) => i !== idx))}>
-                      <Text style={{ color: BRAND, fontWeight: 'bold', fontSize: 16 }}>×</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <DateTimeField
-                  label=""
-                  mode="time"
-                  value={treatHoraInput}
-                  onChange={setTreatHoraInput}
-                  themeColor={BRAND}
-                  placeholder="Seleccionar hora"
-                  minuteStep={5}
-                />
-              </View>
-              <TouchableOpacity
-                style={{ backgroundColor: BRAND, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, justifyContent: 'center' }}
-                onPress={() => {
-                  if (treatHoraInput && !treatHorarios.includes(treatHoraInput)) {
-                    setTreatHorarios([...treatHorarios, treatHoraInput].sort());
-                  }
-                }}
-              >
-                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>+ Agregar hora</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 4 }}>
-              A las horas especificadas la gestante recibirá el aviso para tomar el medicamento.
-            </Text>
-          </View>
+          <ScheduleSelector
+            frecuencia={treatFrecuencia}
+            onFrecuenciaChange={setTreatFrecuencia}
+            horarios={treatHorarios}
+            onHorariosChange={setTreatHorarios}
+            themeColor={BRAND}
+          />
           <PlainInput label="Duración (días)" placeholder="Ej. 30" keyboardType="numeric" value={treatDuracion} onChangeText={setTreatDuracion} themeColor={BRAND} />
         </View>
       </AppModal>
@@ -2121,7 +2102,14 @@ export default function PatientProfileScreen(): React.ReactElement {
       >
         <View style={{ gap: 10 }}>
           <PlainInput label="Dosis" value={editDosis} onChangeText={setEditDosis} themeColor={BRAND} />
-          <PlainInput label="Frecuencia" value={editFrecuencia} onChangeText={setEditFrecuencia} themeColor={BRAND} />
+          <ScheduleSelector
+            frecuencia={editFrecuencia}
+            onFrecuenciaChange={setEditFrecuencia}
+            horarios={editHorarios}
+            onHorariosChange={setEditHorarios}
+            themeColor={BRAND}
+          />
+          <PlainInput label="Duración (días)" keyboardType="numeric" value={editDuracion} onChangeText={setEditDuracion} themeColor={BRAND} />
           <PlainInput label="Indicaciones (opcional)" multiline value={editIndicaciones} onChangeText={setEditIndicaciones} themeColor={BRAND} />
         </View>
       </AppModal>

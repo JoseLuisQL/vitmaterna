@@ -13,6 +13,7 @@ import { AppButton } from '../../../src/components/ui/AppButton';
 import { AppModal } from '../../../src/components/ui/AppModal';
 import { PlainInput } from '../../../src/components/ui/PlainInput';
 import { DateTimeField } from '../../../src/components/ui/DateTimeField';
+import { ScheduleSelector } from '../../../src/components/ui/ScheduleSelector';
 import { useToast } from '../../../src/components/ui';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { usePatientProfile, useCreateTreatment, useUpdateTreatment } from '../../../src/services/api-queries';
@@ -288,56 +289,13 @@ export default function AtenderTratamientoScreen(): React.ReactElement {
               onChangeText={setTreatDosis}
               themeColor={BRAND}
             />
-            <PlainInput
-              label="Frecuencia"
-              placeholder="Ej. Diario después del almuerzo"
-              value={treatFrecuencia}
-              onChangeText={setTreatFrecuencia}
+            <ScheduleSelector
+              frecuencia={treatFrecuencia}
+              onFrecuenciaChange={setTreatFrecuencia}
+              horarios={treatHorarios}
+              onHorariosChange={setTreatHorarios}
               themeColor={BRAND}
             />
-            <View style={{ marginBottom: spacing.md }}>
-              <Text style={{ ...typography.label, color: commonColors.text, marginBottom: spacing.xs }}>
-                Horarios de recordatorio móvil (múltiples al día)
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                {treatHorarios.map((horaTxt, idx) => (
-                  <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: BRAND + '1A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: BRAND }}>
-                    <Text style={{ ...typography.bodySm, color: BRAND, fontWeight: '700', marginRight: 6 }}>{horaTxt}</Text>
-                    {treatHorarios.length > 1 && (
-                      <TouchableOpacity onPress={() => setTreatHorarios(treatHorarios.filter((_, i) => i !== idx))}>
-                        <Text style={{ color: BRAND, fontWeight: 'bold', fontSize: 16 }}>×</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <DateTimeField
-                    label=""
-                    mode="time"
-                    value={treatHoraInput}
-                    onChange={setTreatHoraInput}
-                    themeColor={BRAND}
-                    placeholder="Seleccionar hora"
-                    minuteStep={5}
-                  />
-                </View>
-                <TouchableOpacity
-                  style={{ backgroundColor: BRAND, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, justifyContent: 'center' }}
-                  onPress={() => {
-                    if (treatHoraInput && !treatHorarios.includes(treatHoraInput)) {
-                      setTreatHorarios([...treatHorarios, treatHoraInput].sort());
-                    }
-                  }}
-                >
-                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>+ Agregar hora</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 4 }}>
-                A las horas especificadas el celular de la gestante emitirá la alerta visual y sonora.
-              </Text>
-            </View>
             <PlainInput
               label="Duración del tratamiento (días)"
               placeholder="Ej. 30"
