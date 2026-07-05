@@ -1345,9 +1345,9 @@ export default function PatientProfileScreen(): React.ReactElement {
                           <Text style={{ ...typography.caption, color: commonColors.textSecondary, marginTop: 2 }}>
                             {sup.dosis} • {sup.frecuencia}
                             {sup.horarios && sup.horarios.length > 0
-                              ? ` • ⏰ ${sup.horarios.join(' · ')}`
+                              ? ` • Hrs: ${sup.horarios.join(' · ')}`
                               : sup.horaRecordatorio
-                              ? ` • ⏰ ${sup.horaRecordatorio}`
+                              ? ` • Hrs: ${sup.horaRecordatorio}`
                               : ''}
                           </Text>
                           

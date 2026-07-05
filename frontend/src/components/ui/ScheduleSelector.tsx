@@ -1,12 +1,11 @@
 /**
- * VITMATERNA - ScheduleSelector
- * Selector profesional de horarios de toma y frecuencia de medicación.
- * Incluye atajos clínicos rápidos (Cada 8h, Cada 12h, Diario, etc.),
- * píldoras visuales elegantes con eliminación individual y barra unificada de adición.
+ * VITMATERNA - ScheduleSelector (Minimalista)
+ * Selector de horarios y frecuencia 100% minimalista, limpio y ordenado.
+ * Cero emojis, uso estricto de íconos Lucide y sin sobrecarga de contenido.
  */
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Clock, Plus, X, Zap, Check, Bell, Sparkles } from 'lucide-react-native';
+import { Clock, Plus, X, Zap, Check } from 'lucide-react-native';
 import { commonColors, semanticColors, obstetraColors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { borderRadius, spacing } from '../../theme/spacing';
@@ -52,21 +51,21 @@ export function ScheduleSelector({
 
   return (
     <View style={styles.container}>
-      {/* Input de Frecuencia */}
+      {/* 1. Frecuencia */}
       <PlainInput
-        label="Frecuencia e indicación de toma"
-        placeholder="Ej. Diario, cada 8 horas, con las comidas"
+        label="Frecuencia de toma"
+        placeholder="Ej. Diario, cada 8 horas"
         value={frecuencia}
         onChangeText={onFrecuenciaChange}
         themeColor={themeColor}
       />
 
-      {/* Atajos Clínicos Rápidos */}
-      <View style={styles.presetsContainer}>
-        <View style={styles.presetsHeader}>
-          <Zap size={14} color={themeColor} />
-          <Text style={[styles.presetsTitle, { color: themeColor }]}>
-            Atajos clínicos rápidos (carga automática de horas)
+      {/* 2. Atajos rápidos */}
+      <View style={styles.section}>
+        <View style={styles.headerRow}>
+          <Zap size={13} color={themeColor} />
+          <Text style={[styles.sectionTitle, { color: themeColor }]}>
+            Atajos rápidos
           </Text>
         </View>
         <View style={styles.presetsRow}>
@@ -91,7 +90,7 @@ export function ScheduleSelector({
                 }}
                 activeOpacity={0.7}
               >
-                {isSelected && <Check size={13} color="#FFF" style={{ marginRight: 4 }} />}
+                {isSelected && <Check size={12} color="#FFF" style={{ marginRight: 4 }} />}
                 <Text
                   style={[
                     styles.presetText,
@@ -107,42 +106,32 @@ export function ScheduleSelector({
         </View>
       </View>
 
-      {/* Panel Profesional de Cronograma Diario */}
-      <View style={[styles.scheduleCard, { borderColor: themeColor + '40' }]}>
-        <View style={styles.scheduleHeader}>
-          <View style={styles.scheduleHeaderLeft}>
-            <Clock size={16} color={themeColor} />
-            <Text style={[styles.scheduleTitle, { color: themeColor }]}>
-              Cronograma de Alertas al Día
-            </Text>
-          </View>
-          <View style={[styles.badge, { backgroundColor: themeColor + '1A' }]}>
-            <Text style={[styles.badgeText, { color: themeColor }]}>
-              {horarios.length} {horarios.length === 1 ? 'toma programada' : 'tomas programadas'}
-            </Text>
-          </View>
+      {/* 3. Horarios programados */}
+      <View style={styles.section}>
+        <View style={styles.headerRow}>
+          <Clock size={13} color={themeColor} />
+          <Text style={[styles.sectionTitle, { color: themeColor }]}>
+            Horarios programados
+          </Text>
+          <Text style={styles.countText}>
+            ({horarios.length})
+          </Text>
         </View>
 
-        {/* Píldoras de Horarios */}
-        <View style={styles.pillsContainer}>
+        <View style={styles.pillsRow}>
           {horarios.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Bell size={20} color={commonColors.textSecondary} style={{ opacity: 0.5, marginBottom: 4 }} />
-              <Text style={styles.emptyText}>
-                No hay horas asignadas. Selecciona un atajo clínico arriba o agrega una hora abajo.
-              </Text>
-            </View>
+            <Text style={styles.emptyText}>
+              Sin horarios asignados. Elige un atajo o agrega una hora.
+            </Text>
           ) : (
             horarios.map((horaTxt, idx) => (
               <View
                 key={`${horaTxt}-${idx}`}
-                style={[
-                  styles.timePill,
-                  { borderColor: themeColor, backgroundColor: '#FFF' },
-                ]}
+                style={[styles.timePill, { borderColor: themeColor }]}
               >
+                <Clock size={12} color={themeColor} style={{ marginRight: 5 }} />
                 <Text style={[styles.timePillText, { color: themeColor }]}>
-                  ⏰ {horaTxt}
+                  {horaTxt}
                 </Text>
                 {horarios.length > 1 && (
                   <TouchableOpacity
@@ -150,7 +139,7 @@ export function ScheduleSelector({
                     onPress={() => handleRemoveHora(idx)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <X size={14} color={semanticColors.danger} />
+                    <X size={12} color={semanticColors.danger} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -158,7 +147,7 @@ export function ScheduleSelector({
           )}
         </View>
 
-        {/* Barra de adición unificada */}
+        {/* Barra compacta para agregar hora */}
         <View style={styles.addBar}>
           <View style={{ flex: 1 }}>
             <DateTimeField
@@ -167,7 +156,7 @@ export function ScheduleSelector({
               value={newHora}
               onChange={setNewHora}
               themeColor={themeColor}
-              placeholder="Elegir hora..."
+              placeholder="00:00"
               minuteStep={5}
               containerStyle={{ marginBottom: 0 }}
             />
@@ -177,17 +166,9 @@ export function ScheduleSelector({
             onPress={handleAddHora}
             activeOpacity={0.8}
           >
-            <Plus size={16} color="#FFF" />
-            <Text style={styles.addBtnText}>Añadir toma</Text>
+            <Plus size={15} color="#FFF" />
+            <Text style={styles.addBtnText}>Añadir</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Nota explicativa inferior */}
-        <View style={styles.footerNote}>
-          <Sparkles size={13} color={commonColors.textSecondary} style={{ marginTop: 2, marginRight: 6 }} />
-          <Text style={styles.footerText}>
-            La gestante recibirá alertas Push e In-App automáticas e independientes por cada hora programada aquí en su celular.
-          </Text>
         </View>
       </View>
     </View>
@@ -197,127 +178,77 @@ export function ScheduleSelector({
 const styles = StyleSheet.create({
   container: {
     gap: spacing.sm,
-    marginBottom: spacing.xs,
   },
-  presetsContainer: {
-    marginTop: -4,
-    marginBottom: spacing.xs,
+  section: {
+    gap: 6,
   },
-  presetsHeader: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
+    gap: 5,
   },
-  presetsTitle: {
+  sectionTitle: {
     ...typography.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontSize: 11,
+  },
+  countText: {
+    ...typography.caption,
+    color: commonColors.textTertiary,
+    fontSize: 11,
+    fontWeight: '600',
   },
   presetsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   presetChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: borderRadius.full,
     borderWidth: 1,
   },
   presetText: {
     ...typography.caption,
-    fontWeight: '600',
-  },
-  scheduleCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1.5,
-    padding: spacing.md,
-    marginTop: 4,
-  },
-  scheduleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: commonColors.borderLight,
-  },
-  scheduleHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  scheduleTitle: {
-    ...typography.label,
-    fontWeight: '800',
-    fontSize: 15,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: borderRadius.full,
-  },
-  badgeText: {
-    ...typography.caption,
-    fontWeight: '800',
     fontSize: 12,
   },
-  pillsContainer: {
+  pillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: spacing.md,
-    minHeight: 40,
+    gap: 8,
     alignItems: 'center',
-  },
-  emptyContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFF',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: commonColors.borderLight,
-    borderStyle: 'dashed',
+    minHeight: 28,
   },
   emptyText: {
     ...typography.caption,
-    color: commonColors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
+    color: commonColors.textTertiary,
+    fontStyle: 'italic',
   },
   timePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 14,
-    paddingRight: 10,
-    paddingVertical: 8,
+    paddingLeft: 10,
+    paddingRight: 8,
+    paddingVertical: 5,
     borderRadius: borderRadius.full,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    backgroundColor: commonColors.surface,
   },
   timePillText: {
     ...typography.bodySm,
-    fontWeight: '800',
-    fontSize: 14,
-    marginRight: 8,
+    fontWeight: '700',
+    fontSize: 13,
+    marginRight: 6,
   },
   removeBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: semanticColors.danger + '15',
     alignItems: 'center',
     justifyContent: 'center',
@@ -325,43 +256,21 @@ const styles = StyleSheet.create({
   addBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: spacing.sm,
+    gap: 8,
+    marginTop: 2,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 52,
-    paddingHorizontal: 18,
+    gap: 4,
+    height: 48,
+    paddingHorizontal: 16,
     borderRadius: borderRadius.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   addBtnText: {
     ...typography.bodySm,
     color: '#FFF',
-    fontWeight: '700',
-  },
-  footerNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: commonColors.surfaceAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: borderRadius.sm,
-    borderWidth: 1,
-    borderColor: commonColors.borderLight,
-  },
-  footerText: {
-    flex: 1,
-    ...typography.caption,
-    color: commonColors.textSecondary,
-    fontSize: 12,
-    lineHeight: 16,
+    fontWeight: '600',
   },
 });

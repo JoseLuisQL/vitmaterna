@@ -183,9 +183,9 @@ export default function AtenderTratamientoScreen(): React.ReactElement {
                         <Text style={styles.pillDosis}>
                           {sup.dosis} • {sup.frecuencia}
                           {sup.horarios && sup.horarios.length > 0
-                            ? ` • ⏰ ${sup.horarios.join(' · ')}`
+                            ? ` • Hrs: ${sup.horarios.join(' · ')}`
                             : sup.horaRecordatorio
-                            ? ` • ⏰ ${sup.horaRecordatorio}`
+                            ? ` • Hrs: ${sup.horaRecordatorio}`
                             : ''}
                         </Text>
 

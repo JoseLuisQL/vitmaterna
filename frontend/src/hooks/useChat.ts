@@ -308,14 +308,14 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
     (mediaUrl: string) => {
       if (!conversationId) return;
       const clientId = `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      emit('send_message', { conversationId, content: '📷 Foto', type: 'imagen', mediaUrl, clientId });
+      emit('send_message', { conversationId, content: '[Foto]', type: 'imagen', mediaUrl, clientId });
       setMessages((prev) => [
         ...prev,
         {
           id: clientId,
           clientId,
           senderId: currentUserId || 'me',
-          text: '📷 Foto',
+          text: '[Foto]',
           createdAt: new Date().toISOString(),
           tipo: 'imagen',
           mediaUrl,
@@ -337,7 +337,7 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
       );
       if (!target) return;
       if (target.tipo === 'imagen' && target.mediaUrl) {
-        emit('send_message', { conversationId, content: target.text || '📷 Foto', type: 'imagen', mediaUrl: target.mediaUrl, clientId });
+        emit('send_message', { conversationId, content: target.text || '[Foto]', type: 'imagen', mediaUrl: target.mediaUrl, clientId });
       } else {
         emit('send_message', { conversationId, content: target.text, type: 'texto', clientId });
       }
