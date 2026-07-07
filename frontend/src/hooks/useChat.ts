@@ -196,6 +196,20 @@ export function useChat({ socket, isConnected, emit, conversationId, currentUser
       emit('mark_read', { conversationId });
       // Pedir el estado de presencia actual del otro participante.
       if (otherUserId) emit('get_presence', { userId: otherUserId });
+      // ISSUE #31 FIX: al (re)conectar, re-fetch la página 1 para sincronizar
+      // mensajes que llegaron mientras el socket estuvo desconectado.
+      api.get(`/chat/history/${conversationId}`, { params: { page: 1, limit: PAGE_SIZE } })
+        .then((res) => {
+          const list: any[] = res.data?.data || [];
+          const fresh = list.map(mapServerMessage).reverse();
+          setMessages((prev) => {
+            const optimistic = prev.filter((m) => m.pending || m.failed);
+            const ids = new Set(fresh.map((m) => m.id));
+            const keep = optimistic.filter((m) => !ids.has(m.id));
+            return [...fresh, ...keep];
+          });
+        })
+        .catch(() => { /* noop */ });
     };
     joinAndRead();
     socket.on('connect', joinAndRead);

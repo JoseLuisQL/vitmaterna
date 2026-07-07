@@ -35,13 +35,17 @@ export function usePushNotifications(): void {
       try {
         const Notifications = await import('expo-notifications');
 
-        // Mostrar la notificación aunque la app esté en primer plano.
+        // Mostrar la notificación aunque la app esté en primer plano,
+        // con prioridad MAX para que aparezca como heads-up (banner).
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowBanner: true,
             shouldShowList: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
+            // Prioridad MAX asegura que la notificación se muestra como
+            // heads-up en Android (banner flotante), no solo en la barra.
+            priority: Notifications.AndroidNotificationPriority?.MAX,
           }),
         });
 

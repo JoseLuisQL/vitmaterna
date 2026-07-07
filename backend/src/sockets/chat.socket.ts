@@ -268,17 +268,23 @@ export const setupChatSockets = (io: Server) => {
               // Retrasamos unos segundos el envío para no saturar WhatsApp en
               // desconexiones fugaces (flickers) de red móvil.
               setTimeout(async () => {
-                if (!(await isOnline(recipientId))) {
+                // isOnline() es síncrono (devuelve boolean): NO usar `await`
+                // (await boolean es siempre truthy y bloquea el envío).
+                const recipientOnline = isOnline(recipientId);
+                console.log(`[CHAT→WA] Destinatario ${recipientId} online=${recipientOnline}`);
+                if (!recipientOnline) {
                   try {
                     const { deliverChatViaWhatsApp } = await import('../modules/notifications/channels.js');
+                    console.log(`[CHAT→WA] Reenviando mensaje a ${recipientId} por WhatsApp...`);
                     await deliverChatViaWhatsApp(recipientId, {
                       senderName,
                       text: content,
                       tipo: type,
                       mediaUrl: mediaUrl ?? null,
                     });
+                    console.log(`[CHAT→WA] Mensaje reenviado exitosamente a ${recipientId}.`);
                   } catch (e) {
-                    console.error('No se pudo reenviar el mensaje por WhatsApp:', e);
+                    console.error('[CHAT→WA] No se pudo reenviar el mensaje por WhatsApp:', e);
                   }
                 }
               }, 5000); // 5s grace period

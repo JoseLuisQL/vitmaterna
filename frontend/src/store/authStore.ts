@@ -24,7 +24,7 @@ interface AuthState {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
-  refreshToken: () => Promise<void>;
+  refreshToken: () => Promise<string | undefined>;
   clearError: () => void;
   setUser: (user: User) => void;
   registerPushToken: () => Promise<void>;
@@ -220,7 +220,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  refreshToken: async (): Promise<void> => {
+  refreshToken: async (): Promise<string | undefined> => {
     try {
       const response = await api.post<ApiResponse<AuthResponse>>(
         '/auth/refresh',
@@ -228,12 +228,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { accessToken, refreshToken } = response.data.data;
       await storeTokens(accessToken, refreshToken);
       set({ token: accessToken });
+      return accessToken;
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 401 || status === 403 || status === 400) {
         const { logout } = get();
         await logout();
       }
+      return undefined;
     }
   },
 
@@ -284,11 +286,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (Platform.OS === 'android') {
         const Notifications = await import('expo-notifications');
-        Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Notificaciones VitMaterna',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
+          lightColor: '#FF0C8174',
+          sound: 'default',
+          showBadge: true,
+          enableVibrate: true,
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
         });
       }
 

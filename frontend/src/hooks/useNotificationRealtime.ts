@@ -12,6 +12,7 @@
  * llega al chat correspondiente.
  */
 import { useEffect, useRef } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { io, type Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -32,6 +33,7 @@ export function useNotificationRealtime(): void {
   const roleRef = useRef(role);
   const routerRef = useRef(router);
   const toastRef = useRef(toast);
+  const socketRef = useRef<Socket | null>(null);
   roleRef.current = role;
   routerRef.current = router;
   toastRef.current = toast;
@@ -43,10 +45,14 @@ export function useNotificationRealtime(): void {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,
+      // ISSUE #31 FIX: reconexión INFINITA.
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 30000,
       timeout: 10000,
     });
+
+    socketRef.current = socket;
 
     const refreshNotifications = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -55,6 +61,26 @@ export function useNotificationRealtime(): void {
       queryClient.invalidateQueries({ queryKey: ['chat', 'unread'] });
       queryClient.invalidateQueries({ queryKey: ['chat-conversations'] });
     };
+
+    // Al (re)conectar: refrescar estado que pudo cambiar durante la desconexión.
+    const onConnect = () => {
+      if (__DEV__) console.log('NotificationRealtime socket connected');
+      refreshNotifications();
+      refreshChat();
+    };
+    socket.on('connect', onConnect);
+
+    // ISSUE #31 FIX: al error de auth, refrescar token y actualizar el socket.
+    socket.on('connect_error', (err) => {
+      const msg = err?.message?.toLowerCase() || '';
+      if (msg.includes('authentication') || msg.includes('token') || msg.includes('jwt') || msg.includes('unauthorized') || msg.includes('401')) {
+        useAuthStore.getState().refreshToken().then((newToken: string | undefined) => {
+          if (newToken) {
+            socket.auth = { token: newToken };
+          }
+        }).catch(() => {});
+      }
+    });
 
     // Nueva notificación (cualquier tipo): refresca campana + suena + banner.
     const onNotification = () => {
@@ -89,7 +115,33 @@ export function useNotificationRealtime(): void {
     socket.on('chat:unread_changed', onUnreadChanged);
     socket.on('education:new_recommendation', onNewRecommendation);
 
+    // ISSUE #31 FIX: al volver a foreground, forzar reconexión si se perdió.
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'active' && socketRef.current) {
+        const s = socketRef.current;
+        if (s.disconnected) {
+          if (__DEV__) console.log('App resumed → reconectando socket de notificaciones...');
+          useAuthStore.getState().refreshToken().then((newToken: string | undefined) => {
+            if (newToken) {
+              s.auth = { token: newToken };
+            }
+            s.connect();
+          }).catch(() => {
+            s.connect();
+          });
+        } else {
+          // Aunque esté conectado, refrescar datos por si se perdieron eventos.
+          refreshNotifications();
+          refreshChat();
+        }
+      }
+    };
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
     return () => {
+      subscription.remove();
+      socketRef.current = null;
+      socket.off('connect', onConnect);
       socket.off('notification:new', onNotification);
       socket.off('chat:new_message', onChatMessage);
       socket.off('chat:unread_changed', onUnreadChanged);
@@ -98,3 +150,4 @@ export function useNotificationRealtime(): void {
     };
   }, [token, queryClient]);
 }
+
