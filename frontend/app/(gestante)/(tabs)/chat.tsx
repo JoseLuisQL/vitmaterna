@@ -45,6 +45,7 @@ export default function GestanteChatScreen() {
   const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
   const [inputText, setInputText] = useState('');
+  const [uploading, setUploading] = useState(false);
   const { data: convData, isLoading: isResolvingConv, isError: convError, refetch: refetchConv } = useQuery({
     queryKey: ['chat-conversation'],
     queryFn: async () => {
