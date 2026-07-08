@@ -63,6 +63,17 @@ export default function GestanteChatScreen() {
     otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, retryMessage, notifyTyping,
   } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId: obstetra?.userId });
 
+  // Deep-link desde notificación: resaltar el mensaje exacto (el hilo es único).
+  const params = useLocalSearchParams<{ messageId?: string }>();
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  useEffect(() => {
+    const msgId = params.messageId as string | undefined;
+    if (!msgId) return;
+    setHighlightMessageId(msgId);
+    const t = setTimeout(() => setHighlightMessageId(null), 2500);
+    return () => clearTimeout(t);
+  }, [params.messageId]);
+
   // Al reconectar el socket (por ejemplo al volver de background), forzar recarga
   // si es que los datos del obstetra fallaron previamente o se quedaron colgados.
   useEffect(() => {
