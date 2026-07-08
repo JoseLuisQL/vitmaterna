@@ -45,39 +45,23 @@ export default function GestanteChatScreen() {
   const toast = useToast();
   const { socket, isConnected, emit } = useSocket();
   const [inputText, setInputText] = useState('');
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [obstetra, setObstetra] = useState<{ userId?: string; firstName: string; lastName: string; phone?: string | null; lastSeenAt?: string | null } | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const {
-    messages, isLoadingHistory, isLoadingMore, hasMore,
-    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, retryMessage, notifyTyping,
-  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId: obstetra?.userId });
-
-  // Deep-link desde notificación: resaltar el mensaje exacto (el hilo es único).
-  const params = useLocalSearchParams<{ messageId?: string }>();
-  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
-  useEffect(() => {
-    const msgId = params.messageId as string | undefined;
-    if (!msgId) return;
-    setHighlightMessageId(msgId);
-    const t = setTimeout(() => setHighlightMessageId(null), 2500);
-    return () => clearTimeout(t);
-  }, [params.messageId]);
-
-  const { isLoading: isResolvingConv, isError: convError, refetch: refetchConv } = useQuery({
+  const { data: convData, isLoading: isResolvingConv, isError: convError, refetch: refetchConv } = useQuery({
     queryKey: ['chat-conversation'],
     queryFn: async () => {
-      // Si falla, se deja propagar el error para que la pantalla muestre el
-      // estado de error con reintento (antes se tragaba con console.warn).
       const res = await api.get('/chat/conversation');
-      setConversationId(res.data.data.id);
-      setObstetra(res.data.data.obstetra || null);
       return res.data.data;
     },
     retry: 3,
     refetchInterval: 10000, // Refresca en segundo plano para asegurar que la info del obstetra se cargue
   });
+
+  const conversationId = convData?.id || null;
+  const obstetra = convData?.obstetra || null;
+
+  const {
+    messages, isLoadingHistory, isLoadingMore, hasMore,
+    otherTyping, otherOnline, otherLastSeen, loadOlder, sendText, sendImage, retryMessage, notifyTyping,
+  } = useChat({ socket, isConnected, emit, conversationId, currentUserId: user?.id, otherUserId: obstetra?.userId });
 
   // Al reconectar el socket (por ejemplo al volver de background), forzar recarga
   // si es que los datos del obstetra fallaron previamente o se quedaron colgados.

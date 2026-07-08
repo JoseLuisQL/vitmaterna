@@ -66,6 +66,23 @@ export default function ObstetraChatScreen() {
 
   const { data: conversations = [], isLoading: isLoadingConvs, isError: convsError, refetch: refetchConvs } = useChatConversations();
 
+  // Solo filas con el formato nuevo (la caché persistida puede traer registros
+  // antiguos sin `nombre`; los descartamos para no romper el render).
+  const rows = useMemo<ConversationRow[]>(
+    () => (conversations as ConversationRow[]).filter((c) => c && (c.nombre || c.gestanteId)),
+    [conversations],
+  );
+
+  // Mantiene activeRow siempre actualizado con los últimos datos de la consulta o presencia
+  useEffect(() => {
+    if (activeId && rows.length > 0) {
+      const match = rows.find((r) => r.id === activeId);
+      if (match) {
+        setActiveRow((prev) => (!prev || JSON.stringify(prev) !== JSON.stringify(match) ? match : prev));
+      }
+    }
+  }, [activeId, rows]);
+
   // Reordena/actualiza la bandeja al recibir mensajes nuevos en tiempo real.
   useEffect(() => {
     if (!socket) return;
@@ -109,13 +126,6 @@ export default function ObstetraChatScreen() {
   const params = useLocalSearchParams<{ conversationId?: string; gestanteId?: string; messageId?: string }>();
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
   const handledDeepLink = useRef<string | null>(null);
-
-  // Solo filas con el formato nuevo (la caché persistida puede traer registros
-  // antiguos sin `nombre`; los descartamos para no romper el render).
-  const rows = useMemo<ConversationRow[]>(
-    () => (conversations as ConversationRow[]).filter((c) => c && (c.nombre || c.gestanteId)),
-    [conversations],
-  );
 
   // Filtrado por búsqueda (nombre o DNI).
   const filtered = useMemo<ConversationRow[]>(() => {
