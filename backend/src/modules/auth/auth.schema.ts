@@ -9,12 +9,14 @@ const dniField = z
 /**
  * Teléfono peruano flexible: acepta 9 dígitos (celular nacional) o con prefijo
  * de país opcional (+51 / 51 / 0051). El usuario puede ingresar solo 9 dígitos.
+ * Permite nulo o string vacío sin lanzar error de formato.
  */
 const phoneField = z
   .string()
-  .regex(
-    /^(?:\+?51|0051)?\s?\d{9}$/,
-    'El teléfono debe tener 9 dígitos (ej. 987654321)',
+  .nullish()
+  .refine(
+    (val) => !val || val.trim() === '' || /^(?:\+?51|0051)?\s?\d{9}$/.test(val.trim()),
+    { message: 'El teléfono debe tener 9 dígitos (ej. 987654321)' }
   );
 
 const passwordField = z
@@ -120,8 +122,11 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export const updateProfileSchema = z.object({
   firstName: z.string().min(2).max(100).trim().optional(),
   lastName: z.string().min(2).max(100).trim().optional(),
-  phone: phoneField.optional(),
-  email: z.string().email().optional(),
+  phone: phoneField,
+  email: z.string().nullish().refine(
+    (val) => !val || val.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()),
+    { message: 'Invalid email format' }
+  ),
   notificationPreferences: z
     .object({
       push: z.boolean().optional(),

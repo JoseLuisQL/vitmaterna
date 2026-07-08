@@ -233,6 +233,8 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const input = req.body as UpdateProfileInput;
 
+  console.log('[AUTH] PATCH /v1/auth/me called with payload:', JSON.stringify(input));
+
   const updated = await authService.updateUserProfile(userId, input);
   const sanitized = authService.sanitizeUser(updated);
 
