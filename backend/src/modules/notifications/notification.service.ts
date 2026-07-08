@@ -45,6 +45,14 @@ export async function sendPushNotification(
       title,
       body,
       data,
+      // Issue #32: prioridad alta + channelId 'default' para que Android muestre
+      // la notificación como heads-up (banner flotante) incluso en
+      // background/killed/lockscreen, enrutándola al canal que creamos en el
+      // cliente con importance MAX + visibility PUBLIC + showBadge. La API de
+      // Expo Server SDK v6 expone priority/badge/channelId a nivel raíz.
+      priority: 'high',
+      badge: 1, // incrementa el contador (badge) del icono de la app
+      channelId: 'default',
     });
   }
 
