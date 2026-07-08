@@ -7,6 +7,7 @@ import { AppError, ErrorCodes } from '../../types/index.js';
 import type { AccessTokenPayload, RefreshTokenPayload, UserRole } from '../../types/index.js';
 import type { User, UserSession } from '@prisma/client';
 import type { RegisterInput, UpdateProfileInput } from './auth.schema.js';
+import { toE164PE } from '../../utils/phone.js';
 
 const MAX_FAILED_ATTEMPTS = 5;
 // RF-1.08: bloqueo de 15 minutos tras 5 intentos fallidos.
@@ -219,7 +220,7 @@ export async function createUser(
         role: input.role,
         firstName: input.firstName,
         lastName: input.lastName,
-        phone: input.phone ?? null,
+        phone: input.phone ? (toE164PE(input.phone) ?? input.phone) : null,
         email: input.email ?? null,
         consentAccepted: input.consentAccepted,
         consentDate: new Date(),

@@ -9,6 +9,7 @@ import { predictNoShow } from '../../utils/noShowPrediction.js';
 import { generarResumenClinico } from '../../utils/clinicalSummary.js';
 import { examenesPendientes } from '../../utils/examenesObligatorios.js';
 import { calculateEG } from '../../utils/dateCalc.js';
+import { toE164PE } from '../../utils/phone.js';
 
 /**
  * Normaliza la respuesta de una gestante para que el DNI esté siempre disponible
@@ -253,7 +254,7 @@ export class PatientService {
           role: 'gestante',
           firstName,
           lastName,
-          phone,
+          phone: phone ? (toE164PE(phone) ?? phone) : null,
           isVerified: true,
           // La contraseña inicial es el DNI (dato semi-público): se obliga a
           // cambiarla en el primer ingreso por seguridad (issue #14).

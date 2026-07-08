@@ -121,7 +121,7 @@ export async function sendTwilioSms(c: SmsCredentials, to: string, message: stri
 
 /** Envía un WhatsApp con la Cloud API. Lanza si la respuesta no es ok. */
 export async function sendWhatsAppCloud(c: WhatsAppCredentials, to: string, message: string): Promise<void> {
-  const isProactive = message.includes('🏥') || message.includes('🚨') || message.includes('⚠️');
+  const isProactive = message.includes('🏥') || message.includes('🚨') || message.includes('⚠️') || message.includes('💬') || message.includes('⚠️') || message.includes('💊');
   let bodyPayload;
 
   if (isProactive) {

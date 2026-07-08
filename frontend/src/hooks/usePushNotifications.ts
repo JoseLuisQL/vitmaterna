@@ -83,12 +83,18 @@ export function usePushNotifications(): void {
         // cerrada, el listener no captura ese toque. Recuperamos la última
         // respuesta y navegamos a su destino (deep link por payload).
         try {
-          const last = await Notifications.getLastNotificationResponseAsync();
-          if (!cancelled && last) {
-            const data = (last.notification.request.content.data || {}) as NotificationData;
-            queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            navigateTo(data);
-          }
+          // Timeout para dar tiempo a Expo Router de estar listo para deep linking
+          setTimeout(async () => {
+            if (cancelled) return;
+            try {
+              const last = await Notifications.getLastNotificationResponseAsync();
+              if (last && last.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+                const data = (last.notification.request.content.data || {}) as NotificationData;
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                navigateTo(data);
+              }
+            } catch { /* ignora */ }
+          }, 1000);
         } catch {
           // No disponible o sin respuesta previa: continuar.
         }
