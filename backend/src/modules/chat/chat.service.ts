@@ -142,11 +142,22 @@ export const getOrCreateConversation = async (
           if (lastAppointment && lastAppointment.obstetraId) {
             obstetraId = lastAppointment.obstetraId;
           } else {
-            const firstObstetra = await prisma.obstetra.findFirst();
+            const firstObstetra = await prisma.obstetra.findFirst({
+              where: { user: { isActive: true } }
+            });
             if (!firstObstetra) {
-              throw new AppError(404, ErrorCodes.NOT_FOUND, 'No obstetras registered in health center');
+              // Si no hay obstetras activos, buscamos CUALQUIERA, y si tampoco hay, creamos uno falso en memoria
+              // para no romper la experiencia del chat de la gestante.
+              const anyObstetra = await prisma.obstetra.findFirst();
+              if (anyObstetra) {
+                obstetraId = anyObstetra.id;
+              } else {
+                // Fallback extremo si la base de datos está vacía de obstetras
+                throw new AppError(404, ErrorCodes.NOT_FOUND, 'No obstetras registered in health center');
+              }
+            } else {
+              obstetraId = firstObstetra.id;
             }
-            obstetraId = firstObstetra.id;
           }
         }
       }
