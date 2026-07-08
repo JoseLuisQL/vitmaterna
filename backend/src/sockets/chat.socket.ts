@@ -264,28 +264,38 @@ export const setupChatSockets = (io: Server) => {
                 console.error('No se pudo crear la notificación de chat:', e);
               }
 
-              // ── PUENTE A WHATSAPP (OPORTUNIDADES #1.2) ──
-              // Retrasamos unos segundos el envío para no saturar WhatsApp en
-              // desconexiones fugaces (flickers) de red móvil.
+              // ── PUENTE A WHATSAPP (Issue #30) ──
+              // Si el destinatario NO está conectado al chat en tiempo real (sin
+              // sockets), el sistema reenvía automáticamente el mensaje a su número
+              // de WhatsApp. Retrasamos unos segundos el envío para no saturar
+              // WhatsApp en desconexiones fugaces (flickers) de red móvil.
               setTimeout(async () => {
                 // isOnline() es síncrono (devuelve boolean): NO usar `await`
                 // (await boolean es siempre truthy y bloquea el envío).
                 const recipientOnline = isOnline(recipientId);
-                console.log(`[CHAT→WA] Destinatario ${recipientId} online=${recipientOnline}`);
-                if (!recipientOnline) {
-                  try {
-                    const { deliverChatViaWhatsApp } = await import('../modules/notifications/channels.js');
-                    console.log(`[CHAT→WA] Reenviando mensaje a ${recipientId} por WhatsApp...`);
-                    await deliverChatViaWhatsApp(recipientId, {
-                      senderName,
-                      text: content,
-                      tipo: type,
-                      mediaUrl: mediaUrl ?? null,
-                    });
-                    console.log(`[CHAT→WA] Mensaje reenviado exitosamente a ${recipientId}.`);
-                  } catch (e) {
-                    console.error('[CHAT→WA] No se pudo reenviar el mensaje por WhatsApp:', e);
-                  }
+                if (recipientOnline) {
+                  console.log(`[CHAT→WA] Usuario ${recipientId} online. No se reenvía por WhatsApp.`);
+                  return;
+                }
+                // Resolvemos el teléfono del destinatario para el log de diagnóstico
+                // (el envío real lo vuelve a resolver dentro de deliverChatViaWhatsApp).
+                let phoneForLog = '(sin teléfono)';
+                try {
+                  const rec = await prisma.user.findUnique({ where: { id: recipientId }, select: { phone: true } });
+                  phoneForLog = rec?.phone ?? '(sin teléfono)';
+                } catch { /* noop */ }
+                console.log(`[CHAT→WA] Usuario ${recipientId} offline. Reenviando mensaje a ${phoneForLog} por WhatsApp...`);
+                try {
+                  const { deliverChatViaWhatsApp } = await import('../modules/notifications/channels.js');
+                  await deliverChatViaWhatsApp(recipientId, {
+                    senderName,
+                    text: content,
+                    tipo: type,
+                    mediaUrl: mediaUrl ?? null,
+                  });
+                  console.log(`[CHAT→WA] Mensaje reenviado exitosamente a ${recipientId} (${phoneForLog}).`);
+                } catch (e) {
+                  console.error(`[CHAT→WA] No se pudo reenviar el mensaje a ${recipientId} (${phoneForLog}) por WhatsApp:`, (e as Error).message);
                 }
               }, 5000); // 5s grace period
             }
