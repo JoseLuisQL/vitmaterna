@@ -62,8 +62,12 @@ export async function resolveWebhookSecret(): Promise<string> {
  */
 export function verifyOpenWASignature(rawBody: Buffer, signature: string | undefined, secret: string): boolean {
   if (!signature || !secret) return false;
-  const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  const a = Buffer.from(signature);
+  // Parse either 'sha256=<hex>' format or just '<hex>'
+  const providedSignature = signature.startsWith('sha256=') ? signature.split('=')[1] : signature;
+  if (!providedSignature) return false;
+  
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  const a = Buffer.from(providedSignature);
   const b = Buffer.from(expected);
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);

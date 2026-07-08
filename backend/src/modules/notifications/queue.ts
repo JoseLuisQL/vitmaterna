@@ -67,7 +67,7 @@ export function initNotificationQueue(): void {
     });
     worker.on('error', (err) => {
       // Error de conexión del worker → desactivar cola y usar fallback.
-      console.error('[NOTIF QUEUE] Error del worker:', err.message);
+      console.error('[NOTIF QUEUE] Error del worker o versión incompabible:', err.message);
       queueReady = false;
     });
 
@@ -90,6 +90,7 @@ export async function enqueueDelivery(job: DeliveryJob): Promise<DeliveryResult[
       return;
     } catch (e) {
       console.warn('[NOTIF QUEUE] add() falló; fallback a envío directo:', (e as Error).message);
+      queueReady = false;
     }
   }
   // Fallback: envío directo.

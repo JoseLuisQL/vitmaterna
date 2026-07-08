@@ -383,6 +383,7 @@ export const useOpenWAMessages = (enabled: boolean, limit = 15) =>
     },
     enabled,
     retry: false,
+    refetchInterval: enabled ? 5000 : false, // Refresca en tiempo real cada 5s
   });
 
 /**
