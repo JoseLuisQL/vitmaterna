@@ -75,7 +75,8 @@ export default function GestanteChatScreen() {
       setObstetra(res.data.data.obstetra || null);
       return res.data.data;
     },
-    retry: 1,
+    retry: 3,
+    refetchInterval: 10000, // Refresca en segundo plano para asegurar que la info del obstetra se cargue
   });
 
   const handleWhatsApp = async () => {

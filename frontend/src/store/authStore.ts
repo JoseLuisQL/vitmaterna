@@ -181,7 +181,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (error: any) {
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
-          // Sesión inválida: el servidor rechaza explícitamente → cerrar sesión.
+          // Primero intentamos forzar un refresh manual si el interceptor no lo salvó
+          try {
+            const newToken = await get().refreshToken();
+            if (newToken) {
+              const retryResponse = await api.get<ApiResponse<any>>('/auth/me');
+              const retryFreshUser = retryResponse.data.data.user;
+              await storeUser(retryFreshUser);
+              set({
+                user: retryFreshUser,
+                token: newToken,
+                isAuthenticated: true,
+                isInitialized: true,
+              });
+              await get().registerPushToken();
+              return;
+            }
+          } catch (e) {
+            // El refresh falló también, procedemos a cerrar sesión.
+          }
+          
+          // Sesión inválida y refresh fallido: el servidor rechaza explícitamente → cerrar sesión.
           await clearStoredTokens();
           set({
             user: null,

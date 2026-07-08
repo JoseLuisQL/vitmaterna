@@ -9,6 +9,7 @@
  * No hace nada en web ni en Expo Go (push requiere build nativo).
  */
 import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
@@ -34,6 +35,21 @@ export function usePushNotifications(): void {
     (async () => {
       try {
         const Notifications = await import('expo-notifications');
+
+        // Configuración de canal nativo para Android: indispensable para recibir
+        // alertas sonoras y visuales (heads-up banner) con el APK en 2do plano o cerrado.
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'Notificaciones VITMATERNA',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#0C8174',
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+          });
+        }
 
         // Mostrar la notificación aunque la app esté en primer plano,
         // con prioridad MAX para que aparezca como heads-up (banner).

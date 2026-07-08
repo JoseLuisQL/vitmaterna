@@ -169,10 +169,25 @@ export const getOrCreateConversation = async (
     }
 
     // Adjuntar datos de contacto del obstetra (para chat directo y WhatsApp RF-9.05).
-    const obstetraInfo = await prisma.obstetra.findUnique({
-      where: { id: obstetraId },
+    let obstetraInfo = await prisma.obstetra.findUnique({
+      where: { id: conversation.obstetraId },
       include: { user: { select: { id: true, firstName: true, lastName: true, phone: true, lastSeenAt: true } } },
     });
+
+    // Si por alguna razón histórica la conversación apuntaba a un obstetra borrado o no válido,
+    // buscamos cualquier obstetra activo en el sistema para reparar el enlace automáticamente.
+    if (!obstetraInfo) {
+      const fallbackObstetra = await prisma.obstetra.findFirst({
+        include: { user: { select: { id: true, firstName: true, lastName: true, phone: true, lastSeenAt: true } } },
+      });
+      if (fallbackObstetra) {
+        obstetraInfo = fallbackObstetra;
+        await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { obstetraId: fallbackObstetra.id },
+        });
+      }
+    }
 
     return {
       ...conversation,
@@ -180,12 +195,19 @@ export const getOrCreateConversation = async (
         ? {
             id: obstetraInfo.id,
             userId: obstetraInfo.user.id, // para presencia en tiempo real
-            firstName: obstetraInfo.user.firstName,
-            lastName: obstetraInfo.user.lastName,
+            firstName: obstetraInfo.user.firstName || 'Obstetra',
+            lastName: obstetraInfo.user.lastName || 'A cargo',
             phone: obstetraInfo.user.phone,
             lastSeenAt: obstetraInfo.user.lastSeenAt,
           }
-        : null,
+        : {
+            id: 'default',
+            userId: 'default',
+            firstName: 'Obstetra',
+            lastName: 'de turno',
+            phone: null,
+            lastSeenAt: null,
+          },
     };
   } else if (userRole === 'obstetra') {
     const obstetra = await prisma.obstetra.findUnique({ where: { userId } });
