@@ -79,6 +79,14 @@ export default function GestanteChatScreen() {
     refetchInterval: 10000, // Refresca en segundo plano para asegurar que la info del obstetra se cargue
   });
 
+  // Al reconectar el socket (por ejemplo al volver de background), forzar recarga
+  // si es que los datos del obstetra fallaron previamente o se quedaron colgados.
+  useEffect(() => {
+    if (isConnected && convError) {
+      refetchConv();
+    }
+  }, [isConnected, convError, refetchConv]);
+
   const handleWhatsApp = async () => {
     if (!obstetra?.phone) {
       toast.info('WhatsApp no disponible', 'Tu obstetra no tiene un número registrado.');
