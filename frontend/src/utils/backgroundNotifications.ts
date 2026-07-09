@@ -34,6 +34,32 @@ export async function setupBackgroundNotifications(): Promise<void> {
     const TaskManager = await import('expo-task-manager');
     const Notifications = await import('expo-notifications');
 
+    // ISSUE #32/#34/#35 FIX: crear el canal Android 'default' AQUÍ, en el
+    // arranque nativo (antes de montar React y antes de iniciar sesión). El
+    // canal define el sonido, la vibración y la importancia (heads-up). Si el
+    // canal no existe cuando llega la PRIMERA push (p. ej. con la app cerrada o
+    // recién instalada, antes de autenticar), Android la enruta a un canal por
+    // defecto SIN sonido ni banner. Crearlo al inicio garantiza que toda push
+    // —cita, tratamiento, recordatorio de control/medicamento— suene y aparezca
+    // en la barra aunque la app esté cerrada o en segundo plano.
+    if (Platform.OS === 'android') {
+      try {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Notificaciones VITMATERNA',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#0C8174',
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          sound: 'default',
+          enableVibrate: true,
+          showBadge: true,
+        });
+        if (__DEV__) console.log('[BG NOTIF] Canal Android "default" creado al arranque.');
+      } catch (e: any) {
+        if (__DEV__) console.log('[BG NOTIF] No se pudo crear el canal Android:', e?.message);
+      }
+    }
+
     // Definir el task que se ejecuta cuando llega una notificación con la app
     // cerrada o en background. El OS despierta la app brevemente para esto.
     if (!TaskManager.isTaskDefined(BACKGROUND_NOTIFICATION_TASK)) {

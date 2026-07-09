@@ -210,6 +210,29 @@ export class AppointmentService {
       },
     });
     await emitAppointmentEvent('appointment:created', created);
+
+    // Issue #34: notificar a la gestante la NUEVA asignación de cita (push con
+    // sonido + in-app). No bloquea la creación si el envío falla.
+    try {
+      const gestanteUser = await prisma.gestante.findUnique({
+        where: { id: data.gestanteId },
+        select: { user: { select: { id: true } } },
+      });
+      if (gestanteUser?.user?.id) {
+        const fechaLegible = fechaObj.toISOString().slice(0, 10);
+        const tipoCita = esDomiciliaria ? 'visita domiciliaria' : 'cita';
+        await notifyUser(
+          gestanteUser.user.id,
+          'cita_asignada',
+          'Nueva cita asignada',
+          `Se te asignó una ${tipoCita} para el ${fechaLegible} a las ${data.hora}. Motivo: ${created.motivo}.`,
+          { appointmentId: created.id, fecha: fechaLegible, hora: data.hora, modalidad: created.modalidad },
+        );
+      }
+    } catch (e) {
+      // Best-effort: la cita ya está creada; el aviso es complementario.
+    }
+
     return created;
   }
 

@@ -22,22 +22,26 @@ import {
 
 const expo = new Expo();
 
-export async function sendPushNotification(
+/**
+ * Construye los mensajes de push para Expo con la configuración de sonido y
+ * prioridad requerida (issues #32/#34/#35): `sound:'default'` (suena),
+ * `priority:'high'` + `channelId:'default'` (heads-up en Android en
+ * background/killed/lockscreen) y `badge:1`. Función pura y exportada para poder
+ * verificarla en pruebas unitarias sin llamar a la red de Expo.
+ */
+export function buildPushMessages(
   tokens: string[],
   title: string,
   body: string,
-  data?: Record<string, unknown>
-): Promise<void> {
+  data?: Record<string, unknown>,
+): { messages: ExpoPushMessage[]; sentTokens: string[] } {
   const messages: ExpoPushMessage[] = [];
-  // Tokens en el MISMO orden que los mensajes/tickets, para mapear errores.
   const sentTokens: string[] = [];
-
   for (const pushToken of tokens) {
     if (!Expo.isExpoPushToken(pushToken)) {
       console.error(`Push token ${pushToken} is not a valid Expo push token`);
       continue;
     }
-
     sentTokens.push(pushToken);
     messages.push({
       to: pushToken,
@@ -45,16 +49,25 @@ export async function sendPushNotification(
       title,
       body,
       data,
-      // Issue #32: prioridad alta + channelId 'default' para que Android muestre
-      // la notificación como heads-up (banner flotante) incluso en
-      // background/killed/lockscreen, enrutándola al canal que creamos en el
-      // cliente con importance MAX + visibility PUBLIC + showBadge. La API de
-      // Expo Server SDK v6 expone priority/badge/channelId a nivel raíz.
       priority: 'high',
-      badge: 1, // incrementa el contador (badge) del icono de la app
+      badge: 1,
       channelId: 'default',
     });
   }
+  return { messages, sentTokens };
+}
+
+export async function sendPushNotification(
+  tokens: string[],
+  title: string,
+  body: string,
+  data?: Record<string, unknown>
+): Promise<void> {
+  // Issue #32/#34/#35: el payload lleva sonido + prioridad alta + channelId
+  // 'default' para que Android lo muestre como heads-up con sonido incluso en
+  // background/killed/lockscreen, enrutándolo al canal creado en el cliente con
+  // importance MAX. Se construye con un helper puro y testeable.
+  const { messages, sentTokens } = buildPushMessages(tokens, title, body, data);
 
   // Expo divide en chunks de 100; chunkPushNotifications respeta el orden.
   const chunks = expo.chunkPushNotifications(messages);
