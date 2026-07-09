@@ -3,7 +3,7 @@
  * Zustand store for authentication state management.
  */
 import { create } from 'zustand';
-import api, { storeTokens, clearStoredTokens, getStoredToken, storeUser, getStoredUser, setOnTokenRefreshCallback } from '../services/api';
+import api, { storeTokens, clearStoredTokens, getStoredToken, getStoredRefreshToken, storeUser, getStoredUser, setOnTokenRefreshCallback } from '../services/api';
 import type { User, LoginRequest, RegisterRequest, AuthResponse } from '../types/user';
 import type { ApiResponse } from '../types/api';
 import * as Device from 'expo-device';
@@ -242,8 +242,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   refreshToken: async (): Promise<string | undefined> => {
     try {
+      // El endpoint /auth/refresh EXIGE el refresh token en el body (zod
+      // refreshSchema). Antes se llamaba sin body → el backend respondía 400
+      // VALIDATION_ERROR, que abajo se interpretaba como sesión inválida y
+      // forzaba logout. Eso cerraba la sesión al volver del segundo plano
+      // (issue #37). Ahora leemos el refresh token persistido y lo enviamos.
+      const storedRefreshToken = await getStoredRefreshToken();
+
+      // Sin refresh token no hay nada que renovar. NO cerramos sesión aquí:
+      // puede ser una carrera durante el arranque; dejamos que el flujo normal
+      // (loadStoredAuth / interceptor 401) decida. Devolvemos undefined.
+      if (!storedRefreshToken) {
+        return undefined;
+      }
+
       const response = await api.post<ApiResponse<AuthResponse>>(
         '/auth/refresh',
+        { refreshToken: storedRefreshToken },
       );
       const { accessToken, refreshToken } = response.data.data;
       await storeTokens(accessToken, refreshToken);
@@ -251,7 +266,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return accessToken;
     } catch (error: any) {
       const status = error?.response?.status;
-      if (status === 401 || status === 403 || status === 400) {
+      // Solo cerramos sesión cuando el servidor rechaza EXPLÍCITAMENTE el
+      // refresh token (401/403 = token revocado/expirado/ inválido). Un 400,
+      // un error de red o cualquier fallo transitorio NO debe cerrar la sesión:
+      // así la app sobrevive a reanudaciones desde segundo plano y a cortes de
+      // red sin pedir login de nuevo (issue #37).
+      if (status === 401 || status === 403) {
         const { logout } = get();
         await logout();
       }
