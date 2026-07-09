@@ -40,6 +40,9 @@ adminRoutes.get(
   adminController.listUsers
 );
 
+// Lista de obstetras activos para el selector de "asignar obstetra" (issue #33).
+adminRoutes.get('/obstetras', adminController.listObstetras);
+
 adminRoutes.post(
   '/users',
   validate(createUserSchema),

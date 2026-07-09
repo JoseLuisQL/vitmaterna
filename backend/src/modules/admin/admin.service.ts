@@ -60,6 +60,36 @@ export class AdminService {
   }
 
   /**
+   * Lista los obstetras ACTIVOS y verificados (issue #33). Se usa para poblar
+   * el selector de "asignar obstetra" al registrar/editar una gestante desde el
+   * panel admin. Devuelve id de perfil obstetra + nombre + COP.
+   */
+  async listObstetras() {
+    const obstetras = await prisma.obstetra.findMany({
+      where: {
+        user: { deletedAt: null, isActive: true, isVerified: true },
+      },
+      select: {
+        id: true,
+        cop: true,
+        especialidad: true,
+        establecimiento: true,
+        user: { select: { firstName: true, lastName: true, dni: true } },
+      },
+      orderBy: { user: { firstName: 'asc' } },
+    });
+
+    return obstetras.map((o) => ({
+      id: o.id,
+      nombre: `${o.user.firstName} ${o.user.lastName}`.trim(),
+      dni: o.user.dni,
+      cop: o.cop,
+      especialidad: o.especialidad,
+      establecimiento: o.establecimiento,
+    }));
+  }
+
+  /**
    * Approve a user (usually obstetra)
    */
   async approveUser(userId: string) {
@@ -276,10 +306,17 @@ export class AdminService {
           },
         });
       } else if (role === 'gestante') {
+        // Fecha de nacimiento capturada por el admin (opcional); si no viene o
+        // es inválida, se usa un placeholder que el obstetra corregirá luego.
+        let fechaNac = new Date('1990-01-01');
+        if (data.fechaNacimiento) {
+          const parsed = new Date(data.fechaNacimiento);
+          if (!Number.isNaN(parsed.getTime())) fechaNac = parsed;
+        }
         const gestante = await tx.gestante.create({
           data: {
             userId: user.id,
-            fechaNacimiento: new Date('1990-01-01'),
+            fechaNacimiento: fechaNac,
             nivelRiesgo: 'verde',
             estado: 'activa',
           },

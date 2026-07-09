@@ -22,7 +22,7 @@ import { commonColors, obstetraColors, gestanteColors, adminColors, semanticColo
 import { spacing, borderRadius, layout } from '../../../src/theme/spacing';
 import { typography } from '../../../src/theme/typography';
 import { shadows } from '../../../src/theme/shadows';
-import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser, useApproveUser } from '../../../src/services/admin-queries';
+import { useAdminUsers, useCreateUser, useToggleUserActive, useUpdateUser, useResetUserPassword, useDeleteUser, useApproveUser, useObstetras } from '../../../src/services/admin-queries';
 
 /**
  * Estado real de una cuenta de 3 valores (issue #8):
@@ -215,6 +215,11 @@ export default function UsuariosScreen(): React.ReactElement {
   const [password, setPassword] = useState('');
   const [cop, setCop] = useState('');
   const [role, setRole] = useState('obstetra');
+  // Issue #33: al registrar una gestante, el admin puede asignarle un obstetra
+  // y capturar su fecha de nacimiento.
+  const [obstetraId, setObstetraId] = useState<string | null>(null);
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  const { data: obstetras = [] } = useObstetras();
 
   const handleToggleActive = async (user: any) => {
     const actionText = user.isActive ? 'desactivar' : 'activar/aprobar';
@@ -284,6 +289,9 @@ export default function UsuariosScreen(): React.ReactElement {
       password,
       role,
       cop: role === 'obstetra' ? cop : undefined,
+      // Issue #33: asignación de obstetra y fecha de nacimiento solo para gestantes.
+      obstetraId: role === 'gestante' && obstetraId ? obstetraId : undefined,
+      fechaNacimiento: role === 'gestante' && fechaNacimiento ? fechaNacimiento : undefined,
     }, {
       onSuccess: () => {
         toast.success('Usuario creado', `${firstName} ${lastName} ya puede ingresar.`);
@@ -297,6 +305,8 @@ export default function UsuariosScreen(): React.ReactElement {
         setPassword('');
         setCop('');
         setRole('obstetra');
+        setObstetraId(null);
+        setFechaNacimiento('');
       },
       onError: (err: any) => {
         toast.error('No se pudo crear el usuario', err.response?.data?.message || 'Revisa los datos e inténtalo de nuevo.');
@@ -750,6 +760,53 @@ export default function UsuariosScreen(): React.ReactElement {
             <TextField label="Número de COP *" placeholder="ej. 12345" keyboardType="numeric" value={cop} onChangeText={setCop} themeColor={BRAND} />
           )}
 
+          {role === 'gestante' && (
+            <>
+              <TextField
+                label="Fecha de nacimiento (opcional)"
+                placeholder="AAAA-MM-DD (ej. 1998-05-20)"
+                value={fechaNacimiento}
+                onChangeText={setFechaNacimiento}
+                themeColor={BRAND}
+              />
+              <View style={styles.inputFieldGroup}>
+                <Text style={styles.inputLabel}>Obstetra asignado (opcional)</Text>
+                {obstetras.length === 0 ? (
+                  <Text style={styles.assignHint}>No hay obstetras activos para asignar.</Text>
+                ) : (
+                  <View style={styles.obstetraList}>
+                    <TouchableOpacity
+                      style={[styles.obstetraItem, obstetraId === null && styles.obstetraItemActive]}
+                      onPress={() => setObstetraId(null)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sin asignar obstetra"
+                    >
+                      <Text style={[styles.obstetraItemText, obstetraId === null && styles.obstetraItemTextActive]}>
+                        Sin asignar
+                      </Text>
+                    </TouchableOpacity>
+                    {obstetras.map((o) => (
+                      <TouchableOpacity
+                        key={o.id}
+                        style={[styles.obstetraItem, obstetraId === o.id && styles.obstetraItemActive]}
+                        onPress={() => setObstetraId(o.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Asignar a ${o.nombre}`}
+                      >
+                        <Text style={[styles.obstetraItemText, obstetraId === o.id && styles.obstetraItemTextActive]}>
+                          {o.nombre}
+                        </Text>
+                        <Text style={[styles.obstetraItemMeta, obstetraId === o.id && styles.obstetraItemTextActive]}>
+                          COP {o.cop}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </>
+          )}
+
           <TextField label="Teléfono (ej. +51999888777)" placeholder="ej. +51999888777" keyboardType="phone-pad" value={phone} onChangeText={setPhone} themeColor={BRAND} />
 
           <TextField label="Correo Electrónico (Opcional)" placeholder="ej. correo@servidor.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} themeColor={BRAND} />
@@ -973,6 +1030,39 @@ const styles = StyleSheet.create({
   },
   roleTabTextActive: {
     color: obstetraColors.onPrimary,
+  },
+  assignHint: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
+  },
+  obstetraList: {
+    gap: spacing.xs,
+  },
+  obstetraItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+    backgroundColor: commonColors.surface,
+  },
+  obstetraItemActive: {
+    borderColor: adminColors.primary,
+    backgroundColor: adminColors.primaryLight,
+  },
+  obstetraItemText: {
+    ...typography.body,
+    color: commonColors.text,
+  },
+  obstetraItemMeta: {
+    ...typography.caption,
+    color: commonColors.textSecondary,
+  },
+  obstetraItemTextActive: {
+    color: adminColors.primary,
   },
   modalActions: {
     flexDirection: 'row',

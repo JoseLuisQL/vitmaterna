@@ -14,6 +14,25 @@ export const approveUser = async (id: string) => {
 
 export const useAdminUsers = () => useQuery({ queryKey: ['adminUsers'], queryFn: fetchUsers });
 
+/** Obstetra para el selector de "asignar obstetra" al registrar gestantes (#33). */
+export interface ObstetraOption {
+  id: string;
+  nombre: string;
+  dni: string;
+  cop: string;
+  especialidad?: string | null;
+  establecimiento?: string | null;
+}
+
+export const fetchObstetras = async (): Promise<ObstetraOption[]> => {
+  const res = await api.get('/admin/obstetras');
+  return res.data?.data || [];
+};
+
+/** Lista de obstetras activos para poblar el selector de asignación (#33). */
+export const useObstetras = () =>
+  useQuery({ queryKey: ['adminObstetras'], queryFn: fetchObstetras });
+
 export const useApproveUser = () => {
   const queryClient = useQueryClient();
   return useMutation({

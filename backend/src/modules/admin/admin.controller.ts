@@ -19,6 +19,11 @@ export class AdminController {
     }));
   }
 
+  async listObstetras(_req: Request, res: Response) {
+    const obstetras = await adminService.listObstetras();
+    return res.status(200).json(successResponse(obstetras));
+  }
+
   async approveUser(req: Request, res: Response) {
     const id = req.params.id as string;
     const user = await adminService.approveUser(id);

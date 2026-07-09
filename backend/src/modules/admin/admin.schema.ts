@@ -74,6 +74,12 @@ export const createUserSchema = {
     password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
     role: z.enum(['obstetra', 'admin', 'gestante']),
     cop: z.string().optional(),
+    // Obstetra al que se asigna la gestante (issue #33). El servicio crea una
+    // cita "Asignación Inicial por Administrador" para materializar el vínculo.
+    obstetraId: z.string().uuid('Selecciona un obstetra válido').optional(),
+    // Fecha de nacimiento de la gestante (opcional). Sin ella se usaba un
+    // placeholder (1990-01-01); permitir capturarla al registrar por admin.
+    fechaNacimiento: z.string().optional(),
   }).refine((data) => {
     if (data.role === 'obstetra' && !data.cop) {
       return false;
@@ -94,6 +100,8 @@ export const updateUserSchema = {
     email: z.string().email('Correo inválido').optional().or(z.literal('')),
     cop: z.string().optional(),
     especialidad: z.string().optional(),
+    // Reasignación de obstetra para una gestante (issue #33).
+    obstetraId: z.string().uuid('Selecciona un obstetra válido').optional(),
   }),
 };
 
