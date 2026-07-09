@@ -130,6 +130,8 @@ const mapPatientProfile = (g: any) => {
     // Datos personales
     historiaClinica: g.historiaClinica || null,
     fechaNacimiento: fechaNac ? new Date(fechaNac).toLocaleDateString('es-PE') : null,
+    // Valor crudo (ISO AAAA-MM-DD) para edición por el obstetra (issue #36).
+    fechaNacimientoRaw: fechaNac ? new Date(fechaNac).toISOString().split('T')[0] : null,
     address: g.direccion || g.user?.address || null,
     localidad: g.localidad || null,
     domicilioLat: g.domicilioLat != null ? Number(g.domicilioLat) : null,

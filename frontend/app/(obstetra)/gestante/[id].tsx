@@ -164,6 +164,19 @@ export default function PatientProfileScreen(): React.ReactElement {
   const [obsCesareas, setObsCesareas] = useState('');
   const [obsAbortos, setObsAbortos] = useState('');
 
+  // Issue #36: edición de datos personales de la gestante por el obstetra.
+  const [isPersonalModalVisible, setIsPersonalModalVisible] = useState(false);
+  const [pFirstName, setPFirstName] = useState('');
+  const [pLastName, setPLastName] = useState('');
+  const [pFechaNac, setPFechaNac] = useState('');
+  const [pHistoriaClinica, setPHistoriaClinica] = useState('');
+  const [pPhone, setPPhone] = useState('');
+  const [pAcompanante, setPAcompanante] = useState('');
+  const [pDireccion, setPDireccion] = useState('');
+  const [pLocalidad, setPLocalidad] = useState('');
+  const [pOcupacion, setPOcupacion] = useState('');
+  const [pCodigoSis, setPCodigoSis] = useState('');
+
   // Editar/suspender tratamiento (RF-4.10)
   const [editTreat, setEditTreat] = useState<any | null>(null);
   const [editDosis, setEditDosis] = useState('');
@@ -346,6 +359,57 @@ export default function PatientProfileScreen(): React.ReactElement {
         onSuccess: () => {
           toast.success('Antecedentes actualizados', 'Se recalculó el nivel de riesgo.');
           setIsObsModalVisible(false);
+        },
+        onError: (e: any) => toast.error('No se pudo guardar', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
+      },
+    );
+  };
+
+  // Issue #36: abrir el modal de edición de datos personales precargado.
+  const openPersonalModal = () => {
+    if (!patient) return;
+    setPFirstName(patient.firstName || '');
+    setPLastName(patient.lastName || '');
+    setPFechaNac(patient.fechaNacimientoRaw || '');
+    setPHistoriaClinica(patient.historiaClinica || '');
+    setPPhone(patient.phone || '');
+    setPAcompanante(patient.phoneAcompanante || '');
+    setPDireccion(patient.address || '');
+    setPLocalidad(patient.localidad || '');
+    setPOcupacion(patient.occupation || '');
+    setPCodigoSis(patient.sisCode || '');
+    setIsPersonalModalVisible(true);
+  };
+
+  const handleSavePersonal = () => {
+    if (!patient) return;
+    if (!pFirstName.trim() || !pLastName.trim()) {
+      return toast.error('Faltan datos', 'Los nombres y apellidos son obligatorios.');
+    }
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (pFechaNac && !dateRegex.test(pFechaNac)) {
+      return toast.error('Formato inválido', 'La fecha de nacimiento debe tener el formato AAAA-MM-DD.');
+    }
+    // Solo enviamos los campos personales; el backend actualiza User + Gestante.
+    const data: any = {
+      firstName: pFirstName.trim(),
+      lastName: pLastName.trim(),
+      historiaClinica: pHistoriaClinica.trim() || null,
+      phone: pPhone.trim() || null,
+      acompanantePhone: pAcompanante.trim() || null,
+      direccion: pDireccion.trim() || null,
+      localidad: pLocalidad.trim() || null,
+      ocupacion: pOcupacion.trim() || null,
+      codigoSis: pCodigoSis.trim() || null,
+    };
+    if (pFechaNac) data.fechaNacimiento = new Date(pFechaNac).toISOString();
+
+    updatePatient(
+      { id: patient.id, data },
+      {
+        onSuccess: () => {
+          toast.success('Datos personales actualizados', 'Los cambios se guardaron correctamente.');
+          setIsPersonalModalVisible(false);
         },
         onError: (e: any) => toast.error('No se pudo guardar', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
       },
@@ -968,7 +1032,14 @@ export default function PatientProfileScreen(): React.ReactElement {
               </Accordion>
 
               <Text style={styles.groupLabel}>Datos administrativos</Text>
-              <Accordion title="Datos personales" icon={User} accentColor={BRAND}>
+              <Accordion title="Datos personales" icon={User} accentColor={BRAND}
+                headerAction={(
+                  <TouchableOpacity style={styles.addChip} onPress={openPersonalModal} hitSlop={6}>
+                    <Plus size={13} color={BRAND} />
+                    <Text style={styles.addChipText}>Editar</Text>
+                  </TouchableOpacity>
+                )}
+              >
                 <Fila label="Nombre completo" value={`${patient.firstName} ${patient.lastName}`} />
                 <Fila label="DNI" value={patient.documentNumber} />
                 <Fila label="N° Historia Clínica" value={patient.historiaClinica} />
@@ -1966,6 +2037,59 @@ export default function PatientProfileScreen(): React.ReactElement {
               <PlainInput label="Abortos (A)" placeholder="Ej. 0" value={obsAbortos} onChangeText={setObsAbortos} keyboardType="number-pad" themeColor={BRAND} />
             </View>
           </View>
+        </View>
+      </AppModal>
+
+      {/* ── MODAL: EDITAR DATOS PERSONALES (issue #36) ── */}
+      <AppModal
+        visible={isPersonalModalVisible}
+        onClose={() => setIsPersonalModalVisible(false)}
+        title="Editar datos personales"
+        subtitle="Modifica o completa los datos personales de la gestante."
+        footer={
+          <>
+            <AppButton title="Cancelar" variant="outline" onPress={() => setIsPersonalModalVisible(false)} style={{ flex: 1 }} />
+            <AppButton title="Guardar" onPress={handleSavePersonal} style={{ flex: 1 }} themeColor={BRAND} loading={isSavingEmb} disabled={isSavingEmb} />
+          </>
+        }
+      >
+        <View style={{ gap: 14 }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Nombres *" placeholder="Ej. María" value={pFirstName} onChangeText={setPFirstName} themeColor={BRAND} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Apellidos *" placeholder="Ej. Pérez Gómez" value={pLastName} onChangeText={setPLastName} themeColor={BRAND} />
+            </View>
+          </View>
+          <DateTimeField
+            label="Fecha de nacimiento"
+            mode="date"
+            value={pFechaNac}
+            onChange={setPFechaNac}
+            themeColor={BRAND}
+            maximumDate={new Date()}
+            placeholder="Seleccionar fecha"
+          />
+          <PlainInput label="N° Historia Clínica" placeholder="Ej. HC-12345" value={pHistoriaClinica} onChangeText={setPHistoriaClinica} themeColor={BRAND} />
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Teléfono" placeholder="Ej. 987654321" value={pPhone} onChangeText={setPPhone} keyboardType="phone-pad" themeColor={BRAND} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Tel. acompañante" placeholder="Ej. 987654321" value={pAcompanante} onChangeText={setPAcompanante} keyboardType="phone-pad" themeColor={BRAND} />
+            </View>
+          </View>
+          <PlainInput label="Dirección" placeholder="Ej. Jr. Lima 123" value={pDireccion} onChangeText={setPDireccion} themeColor={BRAND} />
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Localidad" placeholder="Ej. Talavera" value={pLocalidad} onChangeText={setPLocalidad} themeColor={BRAND} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PlainInput label="Código SIS" placeholder="Ej. 12345678" value={pCodigoSis} onChangeText={setPCodigoSis} themeColor={BRAND} />
+            </View>
+          </View>
+          <PlainInput label="Ocupación" placeholder="Ej. Comerciante" value={pOcupacion} onChangeText={setPOcupacion} themeColor={BRAND} />
         </View>
       </AppModal>
 
