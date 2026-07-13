@@ -13,6 +13,11 @@ export default {
   roots: ['<rootDir>/tests'],
   setupFiles: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {
+    // `expo-server-sdk` se publica como ESM puro y rompe la carga en Jest
+    // (SyntaxError: Cannot use import statement outside a module). Los tests
+    // solo ejercitan lógica pura (payload de push), así que lo sustituimos por
+    // un stub ligero. Debe ir ANTES del mapeo genérico de `.js` (issues #32/#34/#35).
+    '^expo-server-sdk$': '<rootDir>/tests/mocks/expo-server-sdk.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
