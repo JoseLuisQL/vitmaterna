@@ -14,11 +14,12 @@ import {
   View, StyleSheet, Text, ScrollView, TextInput, TouchableOpacity, Switch, ActivityIndicator,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { goBack } from '../../../src/utils/navigation';
 import {
   MessageSquare, Phone, CheckCircle2, AlertCircle, Send, Info, Wallet, Server, RefreshCw,
-  Webhook, Smartphone, Clock, ArrowUpRight, ArrowDownLeft, Power, ScanLine, Inbox,
+  Webhook, Smartphone, Clock, ArrowUpRight, ArrowDownLeft, Power, ScanLine, Inbox, ChevronDown,
 } from 'lucide-react-native';
 import { AppCard } from '../../../src/components/ui/AppCard';
 import { InfoRow } from '../../../src/components/ui/InfoRow';
@@ -51,6 +52,38 @@ function StatusBadge({ configured }: { configured: boolean }) {
     <View style={[styles.badge, { backgroundColor: configured ? semanticColors.successLight : commonColors.surfaceAlt }]}>
       {configured ? <CheckCircle2 size={13} color={semanticColors.success} /> : <AlertCircle size={13} color={commonColors.textSecondary} />}
       <Text style={[styles.badgeText, { color: configured ? semanticColors.success : commonColors.textSecondary }]}>
+        {configured ? 'Activo' : 'Modo prueba'}
+      </Text>
+    </View>
+  );
+}
+
+/** Nombre legible del proveedor de un canal (para el resumen del hero). */
+function providerLabel(channel: 'sms' | 'whatsapp', provider?: string): string {
+  if (channel === 'sms') return provider === 'twilio' ? 'Twilio' : 'Sin proveedor';
+  if (provider === 'whatsapp_cloud') return 'Meta Cloud API';
+  if (provider === 'openwa') return 'OpenWA (propio)';
+  return 'Sin proveedor';
+}
+
+/**
+ * Tarjeta compacta de un canal DENTRO del hero (sobre el gradiente admin):
+ * icono, nombre del canal, proveedor y estado (activo / modo prueba).
+ */
+function HeroChannel({
+  icon: Icon, name, provider, configured,
+}: { icon: typeof MessageSquare; name: string; provider: string; configured: boolean }): React.ReactElement {
+  return (
+    <View style={styles.heroChannel}>
+      <View style={styles.heroChannelTop}>
+        <View style={styles.heroChannelIcon}>
+          <Icon size={17} color={commonColors.onColorText} />
+        </View>
+        <View style={[styles.heroDot, { backgroundColor: configured ? semanticColors.success : commonColors.onColorTextFaint }]} />
+      </View>
+      <Text style={styles.heroChannelName}>{name}</Text>
+      <Text style={styles.heroChannelProvider} numberOfLines={1}>{provider}</Text>
+      <Text style={[styles.heroChannelState, { color: configured ? commonColors.onColorText : commonColors.onColorTextFaint }]}>
         {configured ? 'Activo' : 'Modo prueba'}
       </Text>
     </View>
@@ -218,6 +251,19 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
   const smsConfigured = !!status?.sms.configured;
   const waConfigured = !!status?.whatsapp.configured;
 
+  // Tarjetas de canal colapsables: se abren solas si el canal aún no está
+  // configurado (para invitar a completarlo) y se pueden plegar para reducir ruido.
+  // Solo se fija el estado inicial UNA vez (al primer status), para no pisar el
+  // plegado manual del usuario cuando react-query refresca `status`.
+  const [smsExpanded, setSmsExpanded] = useState<boolean | null>(null);
+  const [waExpanded, setWaExpanded] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (status) {
+      setSmsExpanded((prev) => (prev === null ? !status.sms.configured : prev));
+      setWaExpanded((prev) => (prev === null ? !status.whatsapp.configured : prev));
+    }
+  }, [status]);
+
   const saveSms = () => {
     if (smsOn && fromNumber.trim() && !isE164(fromNumber)) {
       toast.error('Número inválido', 'El número remitente debe estar en formato E.164 (ej. +15550001111).');
@@ -309,27 +355,32 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
         </View>
       ) : (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Resumen de estado */}
-        <View ref={notifTourTarget} collapsable={false} style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <View style={[styles.summaryIcon, { backgroundColor: semanticColors.infoLight }]}>
-              <MessageSquare size={18} color={semanticColors.info} />
+        {/* Hero de resumen: estado de los canales de un vistazo */}
+        <View ref={notifTourTarget} collapsable={false}>
+          <LinearGradient
+            colors={adminColors.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={styles.heroHeader}>
+              <Text style={styles.heroTitle}>Estado de los canales</Text>
+              <Text style={styles.heroSubtitle}>
+                {smsConfigured || waConfigured
+                  ? 'Al menos un canal real está activo.'
+                  : 'Ningún canal real activo — todo va por push e in-app.'}
+              </Text>
             </View>
-            <Text style={styles.summaryLabel}>SMS</Text>
-            <StatusBadge configured={smsConfigured} />
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={[styles.summaryIcon, { backgroundColor: accentColors.whatsappLight }]}>
-              <Phone size={18} color={accentColors.whatsapp} />
+            <View style={styles.heroChannels}>
+              <HeroChannel icon={MessageSquare} name="SMS" provider={providerLabel('sms', status?.sms.provider)} configured={smsConfigured} />
+              <HeroChannel icon={Phone} name="WhatsApp" provider={providerLabel('whatsapp', status?.whatsapp.provider)} configured={waConfigured} />
             </View>
-            <Text style={styles.summaryLabel}>WhatsApp</Text>
-            <StatusBadge configured={waConfigured} />
-          </View>
+          </LinearGradient>
         </View>
 
         {/* ─── Interruptor global de gasto (SMS/WhatsApp) ─── */}
         <View style={[styles.card, styles.paidCard]}>
-          <View style={styles.cardHead}>
+          <View style={[styles.cardHead, { marginBottom: spacing.sm }]}>
             <View style={[styles.cardIcon, { backgroundColor: semanticColors.warningLight }]}>
               <Wallet size={20} color={semanticColors.warning} />
             </View>
@@ -358,7 +409,14 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
         <View style={webShell ? styles.twoCol : undefined}>
           {/* ─── SMS (Twilio) ─── */}
           <View ref={smsTourTarget} collapsable={false} style={[styles.card, webShell && { flex: 1 }]}>
-            <View style={styles.cardHead}>
+            <TouchableOpacity
+              style={styles.cardHead}
+              onPress={() => setSmsExpanded((v) => !v)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: !!smsExpanded }}
+              accessibilityLabel="Configuración de SMS por Twilio"
+            >
               <View style={[styles.cardIcon, { backgroundColor: semanticColors.infoLight }]}>
                 <MessageSquare size={20} color={semanticColors.info} />
               </View>
@@ -366,8 +424,14 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                 <Text style={styles.cardTitle}>SMS (Twilio)</Text>
                 <Text style={styles.cardHint}>Recordatorios y alertas por mensaje de texto</Text>
               </View>
-            </View>
+              <StatusBadge configured={smsConfigured} />
+              <View style={[styles.cardChevron, smsExpanded && styles.cardChevronOpen]}>
+                <ChevronDown size={20} color={commonColors.textSecondary} />
+              </View>
+            </TouchableOpacity>
 
+            {smsExpanded && (
+            <View style={styles.cardBody}>
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Activar Twilio</Text>
               <Switch value={smsOn} onValueChange={setSmsOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
@@ -411,11 +475,20 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                 </>
               )}
             </View>
+            </View>
+            )}
           </View>
 
           {/* ─── WhatsApp (Cloud API) ─── */}
           <View ref={waTourTarget} collapsable={false} style={[styles.card, webShell && { flex: 1 }]}>
-            <View style={styles.cardHead}>
+            <TouchableOpacity
+              style={styles.cardHead}
+              onPress={() => setWaExpanded((v) => !v)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: !!waExpanded }}
+              accessibilityLabel="Configuración de WhatsApp"
+            >
               <View style={[styles.cardIcon, { backgroundColor: accentColors.whatsappLight }]}>
                 <Phone size={20} color={accentColors.whatsapp} />
               </View>
@@ -423,8 +496,14 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                 <Text style={styles.cardTitle}>WhatsApp (Cloud API)</Text>
                 <Text style={styles.cardHint}>Mensajes vía WhatsApp Business</Text>
               </View>
-            </View>
+              <StatusBadge configured={waConfigured} />
+              <View style={[styles.cardChevron, waExpanded && styles.cardChevronOpen]}>
+                <ChevronDown size={20} color={commonColors.textSecondary} />
+              </View>
+            </TouchableOpacity>
 
+            {waExpanded && (
+            <View style={styles.cardBody}>
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Activar WhatsApp</Text>
               <Switch value={waOn} onValueChange={setWaOn} trackColor={{ false: commonColors.border, true: BRAND }} thumbColor={commonColors.white} />
@@ -507,6 +586,8 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
                 </>
               )}
             </View>
+            </View>
+            )}
           </View>
         </View>
 
@@ -727,14 +808,32 @@ export default function AdminNotificacionesScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   content: { paddingTop: spacing.lg, paddingBottom: layout.tabBarSpace },
-  // Resumen
-  summaryRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  summaryCard: { flex: 1, backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, borderWidth: 1, borderColor: commonColors.borderLight, padding: spacing.md, alignItems: 'center', gap: spacing.sm, ...shadows.subtle },
-  summaryIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  summaryLabel: { ...typography.h3, color: commonColors.text, fontWeight: '700' },
+  // ─── Hero de resumen (gradiente admin) ───
+  hero: { borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, ...shadows.card },
+  heroHeader: { marginBottom: spacing.md },
+  heroTitle: { ...typography.h3, color: commonColors.onColorText, fontWeight: '800' },
+  heroSubtitle: { ...typography.bodySm, color: commonColors.onColorTextSoft, marginTop: 2 },
+  heroChannels: { flexDirection: 'row', gap: spacing.md },
+  heroChannel: {
+    flex: 1, backgroundColor: commonColors.onColorSurface, borderRadius: borderRadius.lg,
+    padding: spacing.md, gap: 2,
+  },
+  heroChannelTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
+  heroChannelIcon: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: commonColors.onColorSurfaceFaint,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroDot: { width: 9, height: 9, borderRadius: 5 },
+  heroChannelName: { ...typography.bodyMd, color: commonColors.onColorText, fontWeight: '800' },
+  heroChannelProvider: { ...typography.caption, color: commonColors.onColorTextSoft },
+  heroChannelState: { ...typography.label, fontWeight: '800', marginTop: 2 },
   card: { backgroundColor: commonColors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: commonColors.borderLight, ...shadows.subtle },
   paidCard: { borderColor: semanticColors.warning, borderWidth: 1.5 },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  // Tarjeta de canal colapsable
+  cardChevron: { flexShrink: 0, transform: [{ rotate: '0deg' }] },
+  cardChevronOpen: { transform: [{ rotate: '180deg' }] },
+  cardBody: { marginTop: spacing.md },
   cardIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { ...typography.h3, color: commonColors.text, fontWeight: '800' },
   cardHint: { ...typography.bodySm, color: commonColors.textSecondary, marginTop: 2 },
