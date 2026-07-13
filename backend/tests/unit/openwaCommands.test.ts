@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, beforeEach } from '@jest/globals';
 
 /**
  * Pruebas del enrutado de respuestas por WhatsApp (`openwa.commands.ts`):
@@ -21,11 +21,16 @@ jest.unstable_mockModule('../../src/modules/notifications/notification.service.j
   notifyUser: jest.fn(async () => undefined),
 }));
 
-const { routeInboundCommand } = await import('../../src/modules/notifications/openwa.commands.js');
+// Import DINÁMICO dentro de beforeAll (no top-level await) para evitar TS1378 en
+// ts-jest ESM. El mock de módulos ya está registrado cuando esto corre.
+let routeInboundCommand: typeof import('../../src/modules/notifications/openwa.commands.js')['routeInboundCommand'];
 
 const GID = 'gestante-1';
 
 describe('routeInboundCommand (#4 cita / #5 suplemento)', () => {
+  beforeAll(async () => {
+    ({ routeInboundCommand } = await import('../../src/modules/notifications/openwa.commands.js'));
+  });
   beforeEach(() => {
     jest.clearAllMocks();
     prismaMock.appointment.findFirst.mockResolvedValue(null);

@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@jest/globals';
 
 /**
  * Pruebas del cliente del panel OpenWA (`openwa.client.ts`): mapea las respuestas
@@ -15,12 +15,21 @@ jest.unstable_mockModule('../../src/modules/notifications/channels.js', () => ({
   })),
 }));
 
-const { getSessionStatus, connectSession, disconnectSession, listMessages } = await import(
-  '../../src/modules/notifications/openwa.client.js'
-);
+// El import es DINÁMICO y dentro de beforeAll (no top-level) para que ts-jest en
+// modo ESM no emita TS1378 (top-level await). El mock de módulo con
+// `jest.unstable_mockModule` de arriba ya está registrado cuando esto corre.
+let getSessionStatus: typeof import('../../src/modules/notifications/openwa.client.js')['getSessionStatus'];
+let connectSession: typeof import('../../src/modules/notifications/openwa.client.js')['connectSession'];
+let disconnectSession: typeof import('../../src/modules/notifications/openwa.client.js')['disconnectSession'];
+let listMessages: typeof import('../../src/modules/notifications/openwa.client.js')['listMessages'];
 
 describe('openwa.client (panel de gestión)', () => {
   const originalFetch = global.fetch;
+  beforeAll(async () => {
+    ({ getSessionStatus, connectSession, disconnectSession, listMessages } = await import(
+      '../../src/modules/notifications/openwa.client.js'
+    ));
+  });
   beforeEach(() => {
     jest.restoreAllMocks();
   });

@@ -25,10 +25,12 @@ export default {
       'ts-jest',
       {
         useESM: true,
-        tsconfig: {
-          // Relaja la verificación estricta solo para los tests
-          verbatimModuleSyntax: false,
-        },
+        // Un tsconfig DEDICADO a los tests (tsconfig.test.json) con
+        // module=ESNext + target=ES2022. Sin esto, ts-jest degrada `module` y
+        // rompe el `await import()` de nivel superior que usan los tests que
+        // mockean módulos ESM con `jest.unstable_mockModule`
+        // (openwaClient/openwaCommands) → error TS1378.
+        tsconfig: '<rootDir>/tsconfig.test.json',
       },
     ],
   },
