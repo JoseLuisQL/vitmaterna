@@ -713,6 +713,23 @@ export const useUpdatePatient = () => {
   });
 };
 
+export const useDeletePatient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/patients/${id}`);
+      return res.data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: ['patient', id] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ['patientStats'] });
+      queryClient.invalidateQueries({ queryKey: ['todayAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+};
+
 export const fetchMyProfile = async () => {
   const res = await api.get('/auth/me');
   return res.data?.data || null;

@@ -35,24 +35,65 @@ export class AdminService {
               estado: true,
               departamento: true,
               provincia: true,
-              distrito: true
-            }
+              distrito: true,
+              appointments: {
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: {
+                  obstetra: {
+                    select: {
+                      id: true,
+                      cop: true,
+                      user: {
+                        select: {
+                          firstName: true,
+                          lastName: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           obstetra: {
             select: {
               id: true,
               cop: true,
               establecimiento: true,
-              especialidad: true
-            }
-          }
-        }
+              especialidad: true,
+            },
+          },
+        },
       }),
       prisma.user.count({ where: { deletedAt: null } }),
     ]);
 
+    const mappedUsers = users.map((u: any) => {
+      let assignedObstetra: { id: string; nombre: string; cop: string } | null = null;
+      if (u.gestante && u.gestante.appointments && u.gestante.appointments.length > 0) {
+        const obs = u.gestante.appointments[0].obstetra;
+        if (obs && obs.user) {
+          assignedObstetra = {
+            id: obs.id,
+            nombre: `${obs.user.firstName} ${obs.user.lastName}`.trim(),
+            cop: obs.cop,
+          };
+        }
+      }
+      return {
+        ...u,
+        gestante: u.gestante
+          ? {
+              ...u.gestante,
+              assignedObstetra,
+            }
+          : null,
+      };
+    });
+
     return {
-      users,
+      users: mappedUsers,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -352,6 +393,24 @@ export class AdminService {
           select: {
             id: true, fechaNacimiento: true, nivelRiesgo: true, estado: true,
             departamento: true, provincia: true, distrito: true, establecimiento: true,
+            appointments: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                obstetra: {
+                  select: {
+                    id: true,
+                    cop: true,
+                    user: {
+                      select: {
+                        firstName: true,
+                        lastName: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         obstetra: { select: { id: true, cop: true, establecimiento: true, especialidad: true } },
@@ -360,7 +419,29 @@ export class AdminService {
     if (!user) {
       throw new AppError(404, ErrorCodes.NOT_FOUND, 'Usuario no encontrado');
     }
-    return user;
+
+    let assignedObstetra: { id: string; nombre: string; cop: string } | null = null;
+    const gAny = (user as any).gestante;
+    if (gAny && gAny.appointments && gAny.appointments.length > 0) {
+      const obs = gAny.appointments[0].obstetra;
+      if (obs && obs.user) {
+        assignedObstetra = {
+          id: obs.id,
+          nombre: `${obs.user.firstName} ${obs.user.lastName}`.trim(),
+          cop: obs.cop,
+        };
+      }
+    }
+
+    return {
+      ...user,
+      gestante: gAny
+        ? {
+            ...gAny,
+            assignedObstetra,
+          }
+        : null,
+    };
   }
 
   /** Edita datos básicos de un usuario (y COP/especialidad si es obstetra). */

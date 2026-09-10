@@ -117,4 +117,75 @@ describe('Gestantes API — FPP automática', () => {
       await prisma.appointment.deleteMany({ where: { gestanteId, esAutoGenerada: true } });
     });
   });
+
+  describe('Eliminación de gestante (dar de baja por obstetra / admin)', () => {
+    let testGestanteId: string;
+
+    beforeAll(async () => {
+      // Crear una gestante específica con DNI único para probar la baja
+      const uniqueDni = `89${Math.floor(100000 + Math.random() * 900000)}`.slice(0, 8);
+      const created = await request(app)
+        .post(`${PREFIX}/patients`)
+        .set('Authorization', `Bearer ${obstetraToken}`)
+        .send({
+          dni: uniqueDni,
+          firstName: 'Gestante',
+          lastName: 'ParaEliminar',
+          phone: '987654321',
+          fechaNacimiento: '1995-05-10',
+        });
+      testGestanteId = created.body.data?.id;
+    });
+
+    it('permite a un obstetra dar de baja a una gestante', async () => {
+      const res = await request(app)
+        .delete(`${PREFIX}/patients/${testGestanteId}`)
+        .set('Authorization', `Bearer ${obstetraToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.ok).toBe(true);
+
+      const dbGestante = await prisma.gestante.findUnique({
+        where: { id: testGestanteId },
+        include: { user: true },
+      });
+      expect(dbGestante?.estado).toBe('inactiva');
+      expect(dbGestante?.deletedAt).not.toBeNull();
+      expect(dbGestante?.user?.isActive).toBe(false);
+      expect(dbGestante?.user?.deletedAt).not.toBeNull();
+    });
+
+    it('devuelve 404 si la gestante ya fue dada de baja', async () => {
+      const res = await request(app)
+        .delete(`${PREFIX}/patients/${testGestanteId}`)
+        .set('Authorization', `Bearer ${obstetraToken}`);
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('Antropometría e IMC automático (Issue #40)', () => {
+    it('calcula el IMC automáticamente y normaliza talla en centímetros a metros', async () => {
+      // Peso 64 kg, talla 160 cm (debe normalizarse a 1.60 m -> IMC = 64 / (1.6 * 1.6) = 25.0)
+      const res = await request(app)
+        .patch(`${PREFIX}/patients/${gestanteId}`)
+        .set('Authorization', `Bearer ${obstetraToken}`)
+        .send({
+          pesoHabitual: 64,
+          talla: 160,
+        });
+
+      expect(res.status).toBe(200);
+      expect(Number(res.body.data.talla)).toBe(1.6);
+      expect(Number(res.body.data.imc)).toBe(25);
+
+      const detail = await request(app)
+        .get(`${PREFIX}/patients/${gestanteId}`)
+        .set('Authorization', `Bearer ${obstetraToken}`);
+
+      expect(detail.status).toBe(200);
+      expect(Number(detail.body.data.talla)).toBe(1.6);
+      expect(Number(detail.body.data.imc)).toBe(25);
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validate.middleware.js';
+import { requireRole } from '../../middleware/rbac.middleware.js';
 import * as schema from './patient.schema.js';
 import * as controller from './patient.controller.js';
 
@@ -48,4 +49,11 @@ patientRoutes.patch(
   '/:id',
   validate(schema.updatePatientSchema),
   controller.updatePatient
+);
+
+patientRoutes.delete(
+  '/:id',
+  requireRole('obstetra', 'admin'),
+  validate(schema.deletePatientSchema),
+  controller.deletePatient
 );

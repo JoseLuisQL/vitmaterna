@@ -68,3 +68,13 @@ export const updateUbicacion = async (req: Request, res: Response, next: NextFun
     next(error);
   }
 };
+
+export const deletePatient = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await patientService.deletePatient(id, req.user);
+    res.json(successResponse(data));
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -63,7 +63,16 @@ const schema = z.object({
 
   // Paso 3 — Medidas y antecedentes
   pesoHabitual: optNum('Peso', 30, 200),
-  talla: optNum('Talla', 1.2, 2.2),
+  talla: z
+    .string()
+    .optional()
+    .refine((v) => {
+      if (!v || !v.trim()) return true;
+      let n = Number(v.replace(',', '.'));
+      if (Number.isNaN(n)) return false;
+      if (n > 3) n = n / 100;
+      return n >= 1.2 && n <= 2.2;
+    }, 'Talla entre 1.20 y 2.20 m (o 120 y 220 cm)'),
   grupoSanguineo: z.string().optional(),
   factorRh: z.string().optional(),
   gestaciones: optNum('Gestaciones', 0, 25),
@@ -210,6 +219,33 @@ export default function NuevaGestanteScreen(): React.ReactElement {
     }
   }, [dniValue, setError, clearErrors]);
 
+  const pesoVal = watch('pesoHabitual');
+  const tallaVal = watch('talla');
+  const computedImc = useMemo(() => {
+    const p = parseFloat((pesoVal || '').replace(',', '.'));
+    let t = parseFloat((tallaVal || '').replace(',', '.'));
+    if (!p || !t || p <= 0 || t <= 0) return null;
+    if (t > 3) t = t / 100;
+    const imc = p / (t * t);
+    const imcRounded = Math.round(imc * 10) / 10;
+    let label = 'Normal';
+    let color: string = semanticColors.success;
+    if (imcRounded < 18.5) {
+      label = 'Bajo peso';
+      color = semanticColors.warning;
+    } else if (imcRounded < 25) {
+      label = 'Normal';
+      color = semanticColors.success;
+    } else if (imcRounded < 30) {
+      label = 'Sobrepeso';
+      color = semanticColors.warning;
+    } else {
+      label = 'Obesidad';
+      color = semanticColors.danger;
+    }
+    return { imc: imcRounded, label, color };
+  }, [pesoVal, tallaVal]);
+
   const nextStep = async () => {
     const fields = STEP_FIELDS[currentStep] ?? [];
     const isStepValid = await trigger(fields as any);
@@ -257,8 +293,13 @@ export default function NuevaGestanteScreen(): React.ReactElement {
           cesareas: data.cesareas && data.cesareas !== '' ? parseInt(data.cesareas, 10) : 0,
           abortos: data.abortos && data.abortos !== '' ? parseInt(data.abortos, 10) : 0,
 
-          pesoHabitual: data.pesoHabitual ? parseFloat(data.pesoHabitual) : null,
-          talla: data.talla ? parseFloat(data.talla) : null,
+          pesoHabitual: data.pesoHabitual ? parseFloat(data.pesoHabitual.replace(',', '.')) : null,
+          talla: (() => {
+            if (!data.talla) return null;
+            let t = parseFloat(data.talla.replace(',', '.'));
+            if (t > 3) t = t / 100;
+            return t;
+          })(),
           grupoSanguineo: data.grupoSanguineo || null,
           factorRh: data.factorRh || null,
 
@@ -481,7 +522,19 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                     <Text style={styles.sectionTitle}>Medidas y antecedentes</Text>
                     <Text style={styles.subTitle}>Antropometría y tipo de sangre</Text>
                     <AppInput name="pesoHabitual" control={control} label="Peso habitual (kg)" keyboardType="decimal-pad" placeholder="Ej. 62" error={errors.pesoHabitual?.message} themeColor={BRAND} />
-                    <AppInput name="talla" control={control} label="Talla (en metros, ej. 1.58)" keyboardType="decimal-pad" placeholder="Ej. 1.58" error={errors.talla?.message} themeColor={BRAND} />
+                    <AppInput name="talla" control={control} label="Talla (en metros o cm, ej. 1.58 o 158)" keyboardType="decimal-pad" placeholder="Ej. 1.58 o 158" error={errors.talla?.message} themeColor={BRAND} />
+                    {computedImc && (
+                      <View style={styles.imcBox}>
+                        <Text style={styles.imcLabel}>
+                          IMC calculado: <Text style={styles.imcValue}>{computedImc.imc} kg/m²</Text>
+                        </Text>
+                        <View style={[styles.imcBadge, { backgroundColor: computedImc.color === semanticColors.success ? semanticColors.successLight : computedImc.color === semanticColors.danger ? semanticColors.dangerLight : semanticColors.warningLight }]}>
+                          <Text style={[styles.imcBadgeText, { color: computedImc.color }]}>
+                            {computedImc.label}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
                     <View style={styles.row}>
                       <View style={{ flex: 1, paddingRight: 8 }}>
                         <AppInput name="grupoSanguineo" control={control} label="Grupo sanguíneo" placeholder="O, A, B, AB" autoCapitalize="characters" themeColor={BRAND} />
@@ -685,7 +738,19 @@ export default function NuevaGestanteScreen(): React.ReactElement {
                 <Text style={styles.sectionTitle}>Medidas y antecedentes</Text>
                 <Text style={styles.subTitle}>Antropometría y tipo de sangre</Text>
                 <AppInput name="pesoHabitual" control={control} label="Peso habitual (kg)" keyboardType="decimal-pad" placeholder="Ej. 62" error={errors.pesoHabitual?.message} themeColor={BRAND} />
-                <AppInput name="talla" control={control} label="Talla (en metros, ej. 1.58)" keyboardType="decimal-pad" placeholder="Ej. 1.58" error={errors.talla?.message} themeColor={BRAND} />
+                <AppInput name="talla" control={control} label="Talla (en metros o cm, ej. 1.58 o 158)" keyboardType="decimal-pad" placeholder="Ej. 1.58 o 158" error={errors.talla?.message} themeColor={BRAND} />
+                {computedImc && (
+                  <View style={styles.imcBox}>
+                    <Text style={styles.imcLabel}>
+                      IMC calculado: <Text style={styles.imcValue}>{computedImc.imc} kg/m²</Text>
+                    </Text>
+                    <View style={[styles.imcBadge, { backgroundColor: computedImc.color === semanticColors.success ? semanticColors.successLight : computedImc.color === semanticColors.danger ? semanticColors.dangerLight : semanticColors.warningLight }]}>
+                      <Text style={[styles.imcBadgeText, { color: computedImc.color }]}>
+                        {computedImc.label}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 <View style={styles.row}>
                   <View style={{ flex: 1, paddingRight: 8 }}>
                     <AppInput name="grupoSanguineo" control={control} label="Grupo sanguíneo" placeholder="O, A, B, AB" autoCapitalize="characters" themeColor={BRAND} />
@@ -809,6 +874,36 @@ const styles = StyleSheet.create({
   dniStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -spacing.sm, marginBottom: spacing.xs },
   dniStatusText: { ...typography.caption, color: commonColors.textTertiary },
   fieldError: { ...typography.caption, color: semanticColors.danger, marginTop: -spacing.sm },
+
+  imcBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: commonColors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: commonColors.border,
+  },
+  imcLabel: {
+    ...typography.bodySm,
+    color: commonColors.textSecondary,
+  },
+  imcValue: {
+    ...typography.label,
+    color: commonColors.text,
+    fontWeight: '700',
+  },
+  imcBadge: {
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  imcBadgeText: {
+    ...typography.caption,
+    fontWeight: '700',
+  },
 
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: commonColors.borderStrong, backgroundColor: commonColors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 },

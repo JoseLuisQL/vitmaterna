@@ -111,6 +111,7 @@ export default function UsuariosScreen(): React.ReactElement {
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editCop, setEditCop] = useState('');
+  const [editObstetraId, setEditObstetraId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
   const openEdit = () => {
@@ -120,6 +121,7 @@ export default function UsuariosScreen(): React.ReactElement {
     setEditPhone(selectedUser.phone || '');
     setEditEmail(selectedUser.email || '');
     setEditCop(selectedUser.obstetra?.cop || '');
+    setEditObstetraId(selectedUser.gestante?.assignedObstetra?.id || null);
     // Un solo modal a la vez: cerramos el detalle antes de abrir el de edición.
     // (Dos Modal nativos montados a la vez se apilan mal en react-native-web y
     // el nuevo queda detrás del principal.)
@@ -154,10 +156,26 @@ export default function UsuariosScreen(): React.ReactElement {
       phone: editPhone.trim(), email: editEmail.trim(),
     };
     if (selectedUser.role === 'obstetra' && editCop.trim()) data.cop = editCop.trim();
+    if (selectedUser.role === 'gestante' && editObstetraId) data.obstetraId = editObstetraId;
     updateUserMutation.mutate({ id: selectedUser.id, data }, {
       onSuccess: () => {
         toast.success('Usuario actualizado', 'Los datos se guardaron correctamente.');
-        setSelectedUser({ ...selectedUser, ...data, obstetra: selectedUser.obstetra ? { ...selectedUser.obstetra, cop: data.cop ?? selectedUser.obstetra.cop } : undefined });
+        const assignedObs = editObstetraId ? obstetras.find((o: any) => o.id === editObstetraId) : null;
+        setSelectedUser({
+          ...selectedUser,
+          ...data,
+          gestante: selectedUser.gestante
+            ? {
+                ...selectedUser.gestante,
+                assignedObstetra: assignedObs
+                  ? { id: assignedObs.id, nombre: assignedObs.nombre, cop: assignedObs.cop }
+                  : selectedUser.gestante.assignedObstetra,
+              }
+            : undefined,
+          obstetra: selectedUser.obstetra
+            ? { ...selectedUser.obstetra, cop: data.cop ?? selectedUser.obstetra.cop }
+            : undefined,
+        });
         closeEditBackToDetail();
       },
       onError: (e: any) => toast.error('Error', e?.response?.data?.error?.message || 'No se pudo actualizar.'),
@@ -469,10 +487,14 @@ export default function UsuariosScreen(): React.ReactElement {
                     />
                     <DetailRow label="Nivel de Riesgo" value={user.gestante.nivelRiesgo ? user.gestante.nivelRiesgo.toUpperCase() : 'VERDE'} />
                     <DetailRow label="Estado" value={user.gestante.estado ? user.gestante.estado.toUpperCase() : 'ACTIVA'} />
-                    <DetailRow 
-                      label="Ubicación" 
-                      value={`${user.gestante.distrito || '—'}, ${user.gestante.provincia || '—'}, ${user.gestante.departamento || '—'}`} 
-                      isLast 
+                    <DetailRow
+                      label="Ubicación"
+                      value={`${user.gestante.distrito || '—'}, ${user.gestante.provincia || '—'}, ${user.gestante.departamento || '—'}`}
+                    />
+                    <DetailRow
+                      label="Obstetra Responsable"
+                      value={user.gestante.assignedObstetra ? `${user.gestante.assignedObstetra.nombre} (COP ${user.gestante.assignedObstetra.cop})` : 'Sin asignar'}
+                      isLast
                     />
                   </View>
                 </View>
@@ -559,6 +581,43 @@ export default function UsuariosScreen(): React.ReactElement {
         <TextField label="Correo electrónico" value={editEmail} onChangeText={setEditEmail} placeholder="correo@ejemplo.com" keyboardType="email-address" autoCapitalize="none" themeColor={BRAND} />
         {selectedUser?.role === 'obstetra' && (
           <TextField label="Número COP" value={editCop} onChangeText={setEditCop} placeholder="COP" themeColor={BRAND} />
+        )}
+        {selectedUser?.role === 'gestante' && (
+          <View style={styles.inputFieldGroup}>
+            <Text style={styles.inputLabel}>Obstetra responsable</Text>
+            {obstetras.length === 0 ? (
+              <Text style={styles.assignHint}>No hay obstetras activos disponibles.</Text>
+            ) : (
+              <View style={styles.obstetraList}>
+                <TouchableOpacity
+                  style={[styles.obstetraItem, editObstetraId === null && styles.obstetraItemActive]}
+                  onPress={() => setEditObstetraId(null)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sin asignar obstetra"
+                >
+                  <Text style={[styles.obstetraItemText, editObstetraId === null && styles.obstetraItemTextActive]}>
+                    Sin asignar
+                  </Text>
+                </TouchableOpacity>
+                {obstetras.map((o) => (
+                  <TouchableOpacity
+                    key={o.id}
+                    style={[styles.obstetraItem, editObstetraId === o.id && styles.obstetraItemActive]}
+                    onPress={() => setEditObstetraId(o.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Asignar a ${o.nombre}`}
+                  >
+                    <Text style={[styles.obstetraItemText, editObstetraId === o.id && styles.obstetraItemTextActive]}>
+                      {o.nombre}
+                    </Text>
+                    <Text style={[styles.obstetraItemMeta, editObstetraId === o.id && styles.obstetraItemTextActive]}>
+                      COP {o.cop}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         )}
       </View>
     </AppModal>

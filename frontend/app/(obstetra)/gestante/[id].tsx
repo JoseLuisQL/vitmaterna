@@ -27,7 +27,7 @@ import { typography } from '../../../src/theme/typography';
 import { shadows, coloredGlow } from '../../../src/theme/shadows';
 import {
   usePatientProfile, useCreateLabResult, useCreateVaccine, useUpdateVaccine, useCreateTreatment,
-  useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient,
+  useCreateAntecedente, useDeleteAntecedente, useUpdateTreatment, useUpdatePatient, useDeletePatient,
   useEducationCatalog, useRecommendContent,
   usePatientDangerSigns, useUpdateDangerSign, useHomeVisits,
 } from '../../../src/services/api-queries';
@@ -218,8 +218,30 @@ export default function PatientProfileScreen(): React.ReactElement {
   const { mutate: deleteAntecedente } = useDeleteAntecedente();
   const { mutate: updateTreatment, isPending: isUpdatingTreat } = useUpdateTreatment();
   const { mutate: updatePatient, isPending: isSavingEmb } = useUpdatePatient();
+  const { mutate: deletePatient, isPending: isDeletingPatient } = useDeletePatient();
   const { data: dangerSigns = [] } = usePatientDangerSigns(id || '');
   const { mutate: updateDangerSign, isPending: isUpdatingDanger } = useUpdateDangerSign();
+
+  const handleDeletePatient = async () => {
+    if (!patient) return;
+    const ok = await confirmAction({
+      title: 'Dar de baja a la gestante',
+      message: `¿Estás seguro de que deseas dar de baja a ${patient.firstName} ${patient.lastName}? Esta acción desactivará su cuenta y cancelará sus citas pendientes.`,
+      confirmText: 'Dar de baja',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    deletePatient(patient.id, {
+      onSuccess: () => {
+        toast.success('Gestante dada de baja', 'El registro y la cuenta fueron desactivados correctamente.');
+        router.replace('/(obstetra)/(tabs)/gestantes');
+      },
+      onError: (err: any) => {
+        toast.error('Error al dar de baja', err?.response?.data?.message || 'No se pudo dar de baja a la gestante.');
+      },
+    });
+  };
 
 
   // Recomendar contenido educativo a esta gestante
@@ -287,6 +309,27 @@ export default function PatientProfileScreen(): React.ReactElement {
     setIsEmbModalVisible(true);
   };
 
+  const computedEmbImc = React.useMemo(() => {
+    const peso = parseFloat(embPesoHabitual);
+    let talla = parseFloat(embTalla);
+    if (!peso || !talla || isNaN(peso) || isNaN(talla) || peso <= 0 || talla <= 0) return null;
+    if (talla > 3) talla = talla / 100;
+    const val = Number((peso / (talla * talla)).toFixed(1));
+    let clasificacion = 'Normal';
+    let color: string = semanticColors.success;
+    if (val < 18.5) {
+      clasificacion = 'Bajo peso';
+      color = semanticColors.warning;
+    } else if (val >= 25 && val < 30) {
+      clasificacion = 'Sobrepeso';
+      color = semanticColors.warning;
+    } else if (val >= 30) {
+      clasificacion = 'Obesidad';
+      color = semanticColors.danger;
+    }
+    return { val, clasificacion, color };
+  }, [embPesoHabitual, embTalla]);
+
   const handleSaveEmbarazo = () => {
     if (!patient) return;
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -301,7 +344,15 @@ export default function PatientProfileScreen(): React.ReactElement {
     data.fum = embFum ? new Date(embFum).toISOString() : null;
     if (embFppEco) data.fppEco = new Date(embFppEco).toISOString();
     if (embPesoHabitual) data.pesoHabitual = Number(embPesoHabitual);
-    if (embTalla) data.talla = Number(embTalla);
+    if (embTalla) {
+      let t = Number(embTalla);
+      if (t > 3) t = t / 100;
+      data.talla = t;
+    }
+    if (computedEmbImc) {
+      data.imc = computedEmbImc.val;
+      data.clasificacionImc = computedEmbImc.clasificacion;
+    }
     if (embGrupo) data.grupoSanguineo = embGrupo.trim();
     if (embFactor) data.factorRh = embFactor.trim();
 
@@ -309,7 +360,7 @@ export default function PatientProfileScreen(): React.ReactElement {
       { id: patient.id, data },
       {
         onSuccess: () => {
-          toast.success('Datos actualizados', 'La FPP se recalculó automáticamente.');
+          toast.success('Datos actualizados', 'El IMC y la FPP se recalcularon automáticamente.');
           setIsEmbModalVisible(false);
         },
         onError: (e: any) => toast.error('No se pudo guardar', e?.response?.data?.error?.message || 'Inténtalo de nuevo.'),
@@ -768,6 +819,14 @@ export default function PatientProfileScreen(): React.ReactElement {
                   <ClipboardList size={22} color={commonColors.white} />
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                style={styles.iconBtnGlass}
+                onPress={handleDeletePatient}
+                accessibilityRole="button"
+                accessibilityLabel="Dar de baja a la gestante"
+              >
+                <Trash2 size={20} color={commonColors.white} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1054,6 +1113,23 @@ export default function PatientProfileScreen(): React.ReactElement {
                 <Fila label="Estudios" value={patient.education} />
                 <Fila label="Código SIS" value={patient.sisCode} isLast />
               </Accordion>
+
+              {/* Zona de peligro: dar de baja a la gestante */}
+              <View style={[styles.card, designTokens.cardShadow, { padding: spacing.lg, marginTop: spacing.lg, borderColor: semanticColors.danger, borderWidth: 1, backgroundColor: commonColors.surface }]}>
+                <Text style={[styles.cardHeader, { color: semanticColors.danger, marginBottom: spacing.xs }]}>
+                  Dar de baja a la gestante
+                </Text>
+                <Text style={[styles.clinicoIntro, { marginBottom: spacing.md }]}>
+                  Esta acción desactiva la cuenta de la paciente y cancela todas sus citas pendientes. Los datos históricos se conservan para fines de auditoría médica.
+                </Text>
+                <AppButton
+                  title="Dar de baja / Desactivar gestante"
+                  variant="danger"
+                  onPress={handleDeletePatient}
+                  loading={isDeletingPatient}
+                  icon={Trash2}
+                />
+              </View>
             </View>
           )}
 
@@ -1993,9 +2069,41 @@ export default function PatientProfileScreen(): React.ReactElement {
               <PlainInput label="Peso habitual (kg)" placeholder="Ej. 55" value={embPesoHabitual} onChangeText={setEmbPesoHabitual} keyboardType="numeric" themeColor={BRAND} />
             </View>
             <View style={{ flex: 1 }}>
-              <PlainInput label="Talla (m)" placeholder="Ej. 1.60" value={embTalla} onChangeText={setEmbTalla} keyboardType="numeric" themeColor={BRAND} />
+              <PlainInput label="Talla (m o cm)" placeholder="Ej. 1.60 o 160" value={embTalla} onChangeText={setEmbTalla} keyboardType="numeric" themeColor={BRAND} />
             </View>
           </View>
+          {computedEmbImc ? (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+              backgroundColor: commonColors.surfaceAlt,
+              borderRadius: borderRadius.md,
+              borderLeftWidth: 4,
+              borderLeftColor: computedEmbImc.color,
+            }}>
+              <View>
+                <Text style={{ ...typography.label, color: commonColors.textSecondary }}>IMC Calculado (Peso / Talla²)</Text>
+                <Text style={{ ...typography.h3, color: commonColors.text }}>
+                  {computedEmbImc.val} <Text style={{ ...typography.caption, color: commonColors.textSecondary }}>kg/m²</Text>
+                </Text>
+              </View>
+              <View style={{
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.xs2,
+                borderRadius: borderRadius.full,
+                backgroundColor: commonColors.surface,
+                borderWidth: 1,
+                borderColor: computedEmbImc.color,
+              }}>
+                <Text style={{ ...typography.label, color: computedEmbImc.color }}>
+                  {computedEmbImc.clasificacion}
+                </Text>
+              </View>
+            </View>
+          ) : null}
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <PlainInput label="Grupo sanguíneo" placeholder="Ej. O" value={embGrupo} onChangeText={setEmbGrupo} autoCapitalize="characters" themeColor={BRAND} />

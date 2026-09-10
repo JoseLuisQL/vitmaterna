@@ -623,12 +623,17 @@ export class PatientService {
     let calculatedImc = gestanteFields.imc;
     let classification = gestanteFields.clasificacionImc;
     const peso = gestanteFields.pesoActual || gestanteFields.pesoHabitual || currentGestante.pesoActual || currentGestante.pesoHabitual;
-    const talla = gestanteFields.talla || currentGestante.talla;
+    let talla = gestanteFields.talla !== undefined ? gestanteFields.talla : currentGestante.talla;
+    if (talla && Number(talla) > 3) {
+      // Normalizar centímetros a metros (ej: 160 cm -> 1.60 m)
+      talla = Number(talla) / 100;
+      gestanteFields.talla = talla;
+    }
     if (peso && talla) {
       const p = Number(peso);
       const t = Number(talla);
       if (t > 0) {
-        calculatedImc = p / (t * t);
+        calculatedImc = Number((p / (t * t)).toFixed(1));
         classification = classifyImc(calculatedImc);
       }
     }
@@ -733,6 +738,54 @@ export class PatientService {
 
       return normalizePatient(updatedGestante);
     });
+  }
+
+  async deletePatient(id: string, userContext?: any) {
+    const gestante = await prisma.gestante.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!gestante || gestante.deletedAt) {
+      throw new AppError(404, ErrorCodes.NOT_FOUND, 'Paciente no encontrada');
+    }
+
+    const now = new Date();
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Dar de baja la gestante
+      await tx.gestante.update({
+        where: { id },
+        data: {
+          estado: 'inactiva',
+          deletedAt: now,
+        },
+      });
+
+      // 2. Desactivar y soft-delete de su usuario de acceso
+      if (gestante.userId) {
+        await tx.user.update({
+          where: { id: gestante.userId },
+          data: {
+            isActive: false,
+            deletedAt: now,
+          },
+        });
+      }
+
+      // 3. Cancelar citas pendientes o confirmadas
+      await tx.appointment.updateMany({
+        where: {
+          gestanteId: id,
+          estado: { in: ['programada', 'confirmada'] },
+        },
+        data: {
+          estado: 'cancelada',
+        },
+      });
+    });
+
+    return { ok: true, message: 'Paciente dada de baja correctamente' };
   }
 }
 
